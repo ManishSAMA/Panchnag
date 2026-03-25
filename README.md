@@ -137,3 +137,4 @@ python visualize.py --debug --date 2025-01-14 --lat 26.9124 --lon 75.7873
 | Varanasi | 25.3176 | 82.9739 |
 | Chennai | 13.0827 | 80.2707 |
 | Kolkata | 22.5726 | 88.3639 |
+# Panchnag
