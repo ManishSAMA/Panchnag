@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jain Panchang</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Sunrise-based Panchang</p>
+      <h1>Generate a location-aware daily Panchang.</h1>
+      <p class="lede">Search for a city or enter coordinates, choose a date, and get a clean sunrise-based Panchang with the Udaya Tithi and the separate +2h45m reference.</p>
+    </section>
+
+    <section class="panel">
+      <form id="panchang-form" class="form" autocomplete="off">
+        <label class="field">
+          <span>City search</span>
+          <input id="city" name="city" type="text" placeholder="Jaipur, Mumbai, Varanasi..." />
+          <div id="suggestions" class="suggestions"></div>
+        </label>
+
+        <div class="grid">
+          <label class="field">
+            <span>Latitude</span>
+            <input id="lat" name="lat" type="number" step="any" placeholder="26.9124" />
+          </label>
+          <label class="field">
+            <span>Longitude</span>
+            <input id="lon" name="lon" type="number" step="any" placeholder="75.7873" />
+          </label>
+        </div>
+
+        <div class="grid">
+          <label class="field">
+            <span>Date</span>
+            <input id="date" name="date" type="date" required />
+          </label>
+          <label class="field">
+            <span>Ayanamsa</span>
+            <select id="ayanamsa" name="ayanamsa">
+              <option value="Lahiri">Lahiri</option>
+              <option value="Raman">Raman</option>
+              <option value="Krishnamurti">Krishnamurti</option>
+            </select>
+          </label>
+        </div>
+
+        <button id="submit" type="submit">Generate Panchang</button>
+      </form>
+
+      <div id="status" class="status" aria-live="polite"></div>
+    </section>
+
+    <section id="result" class="result hidden">
+      <div class="result-header">
+        <div>
+          <p class="eyebrow">Result</p>
+          <h2 id="result-title">Daily Panchang</h2>
+        </div>
+        <p id="result-subtitle" class="subtitle"></p>
+      </div>
+
+      <div class="cards">
+        <article class="card">
+          <h3>Events</h3>
+          <dl id="events-list"></dl>
+        </article>
+        <article class="card">
+          <h3>Panchang</h3>
+          <dl id="panchang-list"></dl>
+        </article>
+        <article class="card">
+          <h3>Rules</h3>
+          <dl id="rules-list"></dl>
+        </article>
+      </div>
+
+      <article class="json-panel">
+        <h3>Structured JSON</h3>
+        <pre id="json-output"></pre>
+      </article>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

@@ -69,7 +69,9 @@ def _init_worker(cfg: dict) -> None:
     _G = cfg
 
 
-def _compute_day(args_tuple) -> dict:
+from typing import Optional
+
+def _compute_day(args_tuple) -> Optional[dict]:
     """Compute all Panchang data for a single date.
 
     Args:
@@ -96,7 +98,9 @@ def _compute_day(args_tuple) -> dict:
         planets = get_all_planet_positions(jd, ayanamsa)
 
         # Panchang elements
-        panchang = generate_daily_panchang(jd, ayanamsa)
+        panchang = generate_daily_panchang(
+            jd, ayanamsa, sun_lon=planets['Sun'], moon_lon=planets['Moon']
+        )
 
         # Sunrise / Sunset / Moonrise / Moonset
         jd_sr = get_sunrise(jd, lat, lon)

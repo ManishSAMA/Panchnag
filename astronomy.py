@@ -9,6 +9,9 @@ Provides:
   - Julian Day → local time string conversion
 """
 
+from datetime import date, datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
+
 import swisseph as swe
 import math
 
@@ -72,6 +75,28 @@ def local_time_to_jd(year: int, month: int, day: int,
         delta_days = 1
     jd = swe.julday(year, month, day, hour_utc)
     return jd + delta_days
+
+
+def zoned_datetime_to_jd(local_dt: datetime) -> float:
+    """Convert a timezone-aware local datetime to Julian Day (UTC-based)."""
+    if local_dt.tzinfo is None:
+        raise ValueError("local_dt must be timezone-aware")
+
+    utc_dt = local_dt.astimezone(timezone.utc)
+    hour_utc = (
+        utc_dt.hour
+        + utc_dt.minute / 60.0
+        + utc_dt.second / 3600.0
+        + utc_dt.microsecond / 3_600_000_000.0
+    )
+    return swe.julday(utc_dt.year, utc_dt.month, utc_dt.day, hour_utc)
+
+
+def local_date_anchor_jd(local_date: date, tz_name: str, hour: int = 0) -> float:
+    """Return the Julian Day for a local civil date at the given local hour."""
+    tz = ZoneInfo(tz_name)
+    local_dt = datetime.combine(local_date, time(hour=hour), tzinfo=tz)
+    return zoned_datetime_to_jd(local_dt)
 
 
 # ---------------------------------------------------------------------------
@@ -194,10 +219,9 @@ def _rise_set(julian_date: float, body: int,
     """
     geopos = (lon, lat, 0.0)       # (longitude, latitude, altitude_m)
 
-    # Start from 00:00 UTC of the given calendar day
-    # swe.julday gives JD at 12:00 UTC (noon), subtract 0.5 to get midnight
-    y, m, d, _ = swe.revjul(julian_date, swe.GREG_CAL)
-    jd_start = swe.julday(y, m, d, 0.0)   # 00:00 UTC of that date
+    # Search forward from the supplied JD so callers can anchor the event
+    # to the intended local civil date instead of an arbitrary UTC midnight.
+    jd_start = julian_date
 
     rsmi = swe.CALC_RISE if is_rise else swe.CALC_SET
     rsmi |= swe.BIT_DISC_CENTER
@@ -279,6 +303,26 @@ def jd_to_local_time_string(jd: float, tz_offset: float = 5.5) -> str:
         return f"{hh:02d}:{mm:02d}:{ss:02d}"
     except Exception:
         return '--:--:--'
+
+
+def jd_to_zoned_datetime(jd: float, tz_name: str) -> datetime | None:
+    """Convert a Julian Day to a timezone-aware datetime."""
+    if jd == 0.0:
+        return None
+    try:
+        y, m, d, h_utc = swe.revjul(jd, swe.GREG_CAL)
+        base_utc = datetime(y, m, d, tzinfo=timezone.utc) + timedelta(hours=h_utc)
+        return base_utc.astimezone(ZoneInfo(tz_name))
+    except Exception:
+        return None
+
+
+def jd_to_iso_local_string(jd: float, tz_name: str) -> str:
+    """Convert a Julian Day to an ISO-like local datetime string."""
+    local_dt = jd_to_zoned_datetime(jd, tz_name)
+    if local_dt is None:
+        return ""
+    return local_dt.isoformat(timespec="seconds")
 
 
 # Backward-compatible alias used by old callers

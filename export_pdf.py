@@ -61,7 +61,11 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
             jd_ss = get_sunset(jd_start, lat, lon)
             
             # Important: We determine the active panchang elements at Sunrise
-            panchang = generate_daily_panchang(jd_sr, ayanamsa)
+            moon_lon = get_planetary_longitude(jd_sr, 'Moon', ayanamsa)
+            sun_lon = get_planetary_longitude(jd_sr, 'Sun', ayanamsa)
+            panchang = generate_daily_panchang(jd_sr, ayanamsa, sun_lon=sun_lon, moon_lon=moon_lon)
+            
+            rashi = get_rashi_name(moon_lon).split(' (')[0] # Get only Sanskrit name
             
             sr_str = jd_to_local_time_string(jd_sr, tz_offset)
             ss_str = jd_to_local_time_string(jd_ss, tz_offset)
@@ -78,12 +82,10 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
             ng, np = get_ishta_kaala(n_end_jd, jd_sr)
             nak_disp = Paragraph(f"<b>{panchang['Nakshatra_Name']}</b><br/>{n_end_str} ({ng}g {np}p)", cell_style)
             
-            moon_lon = get_planetary_longitude(jd_sr, 'Moon', ayanamsa)
-            rashi = get_rashi_name(moon_lon).split(' (')[0] # Get only Sanskrit name
-            
-            # Use jd_start to get correct day
-            vara_idx = int((math.floor(jd_start + 0.5) + 1) % 7) if 'math' in sys.modules else panchang['Vara_Name']
-            vara_name = panchang['Vara_Name'].split(' ')[0]
+            # Use the civil date for the row's weekday label.
+            vara_idx = int((math.floor(jd_start + 0.5) + 1) % 7)
+            vara_name = ['Ravivara', 'Somavara', 'Mangalavara', 'Budhavara',
+                         'Guruvara', 'Shukravara', 'Shanivara'][vara_idx]
             
             row = [
                 Paragraph(f"{day:02d}-{month:02d}-{year}", cell_style),

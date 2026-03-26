@@ -12,6 +12,7 @@ All formulas follow classical Vedic astronomy.
 """
 
 import math
+from typing import Optional
 from astronomy import get_planetary_longitude
 
 # ---------------------------------------------------------------------------
@@ -189,16 +190,24 @@ def get_nakshatra_at_jd(jd: float, ayanamsa_name: str) -> int:
     return get_nakshatra(moon_lon)
 
 
-def _find_exact_end_time(jd_start: float, get_index_func, current_index: int, ayanamsa_name: str, step_hours: float = 30.0, max_iter: int = 20) -> float:
+def _find_exact_end_time(jd_start: float, get_index_func, current_index: int, ayanamsa_name: str, 
+                         low_guess: Optional[float] = None, high_guess: Optional[float] = None, max_iter: int = 25) -> float:
     """Find the Julian Date when the given index (Tithi/Nakshatra) changes."""
-    jd_end = jd_start + (step_hours / 24.0)
-    # Check if it actually changed by jd_end
-    if get_index_func(jd_end, ayanamsa_name) == current_index:
-        jd_end += 12.0 / 24.0  # Step further if not changed
-    
-    low = jd_start
-    high = jd_end
-    
+    low = low_guess if low_guess is not None else jd_start
+    high = high_guess if high_guess is not None else jd_start + (30.0 / 24.0)
+
+    # Ensure low is still within the current element.
+    if get_index_func(low, ayanamsa_name) != current_index:
+        low = jd_start
+        if get_index_func(low, ayanamsa_name) != current_index:
+            raise ValueError("Starting JD is not within the current Panchang element.")
+
+    # Ensure high is on the far side of the boundary before bisection.
+    while get_index_func(high, ayanamsa_name) == current_index:
+        high += 12.0 / 24.0
+        if high - jd_start > 3.0:
+            raise ValueError("Could not bracket Panchang element end time within 3 days.")
+        
     for _ in range(max_iter):
         mid = (low + high) / 2.0
         val = get_index_func(mid, ayanamsa_name)
@@ -206,6 +215,10 @@ def _find_exact_end_time(jd_start: float, get_index_func, current_index: int, ay
             low = mid
         else:
             high = mid
+            
+        # Early exit if window < 1 second (1/86400 days ≈ 0.0000115)
+        if (high - low) < 0.00001:
+            break
             
     return high
 
@@ -226,15 +239,19 @@ def get_ishta_kaala(jd_event: float, jd_sunrise: float) -> tuple[int, int]:
 # ---------------------------------------------------------------------------
 
 def generate_daily_panchang(julian_date: float,
-                             ayanamsa_name: str = 'Lahiri') -> dict:
+                             ayanamsa_name: str = 'Lahiri',
+                             sun_lon: Optional[float] = None,
+                             moon_lon: Optional[float] = None) -> dict:
     """Compute all five Panchang elements for a given Julian Day.
 
     Typically called with the JD corresponding to 05:30 IST (00:00 UTC).
 
     Returns a dict with Tithi, Nakshatra, Yoga, Karana, and Vara data.
     """
-    sun_lon  = get_planetary_longitude(julian_date, 'Sun',  ayanamsa_name)
-    moon_lon = get_planetary_longitude(julian_date, 'Moon', ayanamsa_name)
+    if sun_lon is None:
+        sun_lon  = get_planetary_longitude(julian_date, 'Sun',  ayanamsa_name)
+    if moon_lon is None:
+        moon_lon = get_planetary_longitude(julian_date, 'Moon', ayanamsa_name)
 
     tithi_idx   = get_tithi(sun_lon, moon_lon)
     nak_idx     = get_nakshatra(moon_lon)
@@ -243,8 +260,20 @@ def generate_daily_panchang(julian_date: float,
     kar_idx, kar_name = get_karana(sun_lon, moon_lon)
     vara_idx    = get_vara(julian_date)
 
-    tithi_end_jd = _find_exact_end_time(julian_date, get_tithi_at_jd, tithi_idx, ayanamsa_name)
-    nak_end_jd = _find_exact_end_time(julian_date, get_nakshatra_at_jd, nak_idx, ayanamsa_name)
+    # Compute tight bounds for Tithi
+    diff = (moon_lon - sun_lon) % 360.0
+    tithi_left_deg = 12.0 - (diff % 12.0)
+    tithi_low = julian_date + (tithi_left_deg / 15.0)
+    tithi_high = julian_date + (tithi_left_deg / 10.0) + 0.05
+
+    # Compute tight bounds for Nakshatra
+    nak_len = 360.0 / 27.0
+    nak_left_deg = nak_len - (moon_lon % nak_len)
+    nak_low = julian_date + (nak_left_deg / 16.0)
+    nak_high = julian_date + (nak_left_deg / 11.0) + 0.05
+
+    tithi_end_jd = _find_exact_end_time(julian_date, get_tithi_at_jd, tithi_idx, ayanamsa_name, tithi_low, tithi_high)
+    nak_end_jd = _find_exact_end_time(julian_date, get_nakshatra_at_jd, nak_idx, ayanamsa_name, nak_low, nak_high)
 
     return {
         'Tithi_Index':     tithi_idx,

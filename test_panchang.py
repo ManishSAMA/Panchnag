@@ -1,11 +1,12 @@
 import pandas as pd
 import subprocess
 import os
+import sys
 
 def test_panchang():
     print("Running Panchang Generator for 1 day (2025-01-01)...")
     cmd = [
-        r"venv\Scripts\python.exe", "main.py",
+        sys.executable, "main.py",
         "--start_year", "2025",
         "--end_year", "2025",
         "--lat", "26.9124",
@@ -33,9 +34,9 @@ def test_panchang():
     assert 250 <= sun_dec <= 290, f"Sun Dec out of range: {sun_dec}"
     
     # 3. Validates Tithi is between 1-30, Nakshatra 1-27, Yoga 1-27
-    assert 1 <= float(jan1['Tithi_Index']) <= 30, f"Tithi out of range: {jan1['Tithi_Index']}"
-    assert 1 <= float(jan1['Nakshatra_Index']) <= 27, f"Nakshatra out of range: {jan1['Nakshatra_Index']}"
-    assert 1 <= float(jan1['Yoga_Index']) <= 27, f"Yoga out of range: {jan1['Yoga_Index']}"
+    assert 1 <= float(jan1['Tithi_No']) <= 30, f"Tithi out of range: {jan1['Tithi_No']}"
+    assert 1 <= float(jan1['Nakshatra_No']) <= 27, f"Nakshatra out of range: {jan1['Nakshatra_No']}"
+    assert 1 <= float(jan1['Yoga_No']) <= 27, f"Yoga out of range: {jan1['Yoga_No']}"
     
     # 4. Validates Sunrise is a plausible IST time (06:00-08:00)
     sunrise = jan1['Sunrise (IST)']

@@ -1,0 +1,259 @@
+:root {
+  --bg: #f3ead8;
+  --surface: rgba(255, 251, 242, 0.9);
+  --surface-strong: #fffdf8;
+  --ink: #1f1d1a;
+  --muted: #665f54;
+  --line: rgba(73, 53, 24, 0.14);
+  --accent: #b3522b;
+  --accent-dark: #7f3517;
+  --shadow: 0 18px 50px rgba(79, 54, 21, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Manrope", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(208, 128, 65, 0.16), transparent 30%),
+    linear-gradient(160deg, #efe4cc 0%, #f9f4e7 50%, #f2e6d3 100%);
+  min-height: 100vh;
+}
+
+.shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 40px 0 64px;
+}
+
+.hero {
+  max-width: 760px;
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--accent-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+h1, h2, h3 {
+  font-family: "Fraunces", serif;
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2.4rem, 5vw, 4.5rem);
+  line-height: 0.97;
+  max-width: 10ch;
+}
+
+.lede,
+.subtitle,
+.status {
+  color: var(--muted);
+}
+
+.panel,
+.result,
+.json-panel {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow);
+}
+
+.panel {
+  border-radius: 24px;
+  padding: 22px;
+}
+
+.form {
+  display: grid;
+  gap: 18px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  position: relative;
+}
+
+.field span {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+input,
+select {
+  width: 100%;
+  border: 1px solid rgba(64, 44, 13, 0.16);
+  border-radius: 14px;
+  padding: 14px 15px;
+  background: var(--surface-strong);
+  color: var(--ink);
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid rgba(179, 82, 43, 0.22);
+  border-color: var(--accent);
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, var(--accent), #d47638);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  justify-self: start;
+  min-width: 220px;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(179, 82, 43, 0.24);
+}
+
+.status {
+  min-height: 24px;
+  margin-top: 14px;
+}
+
+.suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  display: none;
+  z-index: 5;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #fffdf8;
+  box-shadow: var(--shadow);
+}
+
+.suggestions.visible {
+  display: block;
+}
+
+.suggestion {
+  width: 100%;
+  border: 0;
+  background: #fffdf8;
+  text-align: left;
+  padding: 12px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(64, 44, 13, 0.08);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.suggestion:last-child {
+  border-bottom: 0;
+}
+
+.suggestion:hover {
+  background: rgba(179, 82, 43, 0.08);
+}
+
+.result {
+  margin-top: 28px;
+  border-radius: 28px;
+  padding: 24px;
+}
+
+.hidden {
+  display: none;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 20px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.card,
+.json-panel {
+  border-radius: 22px;
+  padding: 20px;
+  background: rgba(255, 253, 248, 0.96);
+  border: 1px solid var(--line);
+}
+
+.card dl,
+.json-panel pre {
+  margin: 14px 0 0;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: minmax(100px, 140px) 1fr;
+  gap: 10px 12px;
+}
+
+dt {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+dd {
+  margin: 0;
+}
+
+.json-panel {
+  margin-top: 18px;
+}
+
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #2d2b27;
+}
+
+@media (max-width: 860px) {
+  .grid,
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .result-header {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  button {
+    width: 100%;
+  }
+}
