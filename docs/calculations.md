@@ -1,91 +1,211 @@
-# Panchang Calculations
+# Calculations
 
-The **Panchang Generator** relies on highly accurate ephemeris data provided by the C-based Swiss Ephemeris (`pyswisseph`). The foundational data includes planetary sidereal longitudes, from which the Vedic Panchang elements ("Pancha Anga", or Five Limbs) are derived.
+This document explains the calculation model used by the current implementation.
 
-Here is a step-by-step breakdown of how the daily elements are calculated.
+## 1. Astronomical Foundation
 
----
+The project uses Swiss Ephemeris through the `pyswisseph` package.
 
-## 1. Time Setup: Julian Date
+That gives us:
 
-All astronomical functions take a **Julian Day Number (JD)** as input.
-By local Vedic tradition, the civil day starts at sunrise. However, typical daily almanacs evaluate the planetary positions at a standardized time—commonly 05:30 IST (Indian Standard Time).
+- accurate Sun and Moon positions
+- ayanamsa-aware sidereal longitudes
+- sunrise and sunset calculations
+- moonrise and moonset calculations
 
-1. Convert local time (e.g., `05:30 IST`) to **UTC** (e.g., `00:00 UTC`).
-2. Pass the date and UTC hour into `swe.julday(year, month, day, hour_utc)` to get the Julian Date.
+The app does not invent planetary positions on its own. It uses Swiss Ephemeris as the underlying astronomy engine and applies Panchang logic on top of those values.
 
----
+## 2. Time Model
 
-## 2. Ayanamsa & Planetary Longitudes
+Most astronomy functions work with Julian Day Number (`JD`), so the project must convert civil times into Julian Days and convert the results back into local clock times.
 
-In Vedic astrology, planetary positions are measured against the fixed stars (Sidereal/Nirayana system). This requires subtracting the **Ayanamsa** (precessional offset) from the Tropical (Sayana) longitudes.
+### Core helpers
 
-1. **Ayanamsa**: We set the sidereal mode `swe.set_sid_mode()` according to the user's choice (e.g., Lahiri, Raman, or Krishnamurti) and get the precessional difference using `swe.get_ayanamsa_ut()`.
-2. **Geocentric Apparent Longitudes**: We fetch the position of celestial bodies (Sun, Moon, Mars, etc.) using `swe.calc_ut()` with the flags `FLG_SWIEPH | FLG_SIDEREAL | FLG_SPEED`.
-   - This returns the decimal degree `[0, 360)` of the planet in the sidereal zodiac.
-   - For **Rahu/Ketu**, we use the *True Lunar North Node*. Ketu is computed as `(Rahu_Longitude + 180) % 360`.
+Important helpers in `astronomy.py`:
 
----
+- `get_julian_date()`
+- `local_time_to_jd()`
+- `zoned_datetime_to_jd()`
+- `local_date_anchor_jd()`
+- `jd_to_local_time_string()`
+- `jd_to_zoned_datetime()`
 
-## 3. The 5 Panchang Elements (Pancha Anga)
+### Why this matters
 
-With the specific longitudes of the Sun and Moon (`Sun_Lon` and `Moon_Lon`) determined for the day, we calculate the five limbs:
+Panchang logic is extremely sensitive to timing. Even a small shift in the reference instant can change:
 
-### I. Tithi (Lunar Day)
-The `Tithi` is based on the angular difference between the Moon and the Sun. There are 30 Tithis in a lunar month, evenly divided into 12° segments.
+- the Tithi index
+- the Nakshatra index
+- end times for Tithi and Nakshatra
 
-**Formula:**
+## 3. Ayanamsa and Sidereal Positions
+
+The system supports these ayanamsas:
+
+- Lahiri
+- Raman
+- Krishnamurti
+
+At calculation time:
+
+1. the sidereal mode is set in Swiss Ephemeris
+2. the requested planet is computed using sidereal flags
+3. the longitude is normalized into `[0, 360)`
+
+For Rahu and Ketu:
+
+- Rahu is based on the true lunar node
+- Ketu is computed as `(Rahu + 180) % 360`
+
+## 4. Panchang Formulas
+
+The five Panchang elements are derived from Sun and Moon longitudes.
+
+### Tithi
+
+Tithi is determined by the angular separation between the Moon and the Sun.
+
 ```text
 Difference = (Moon_Lon - Sun_Lon) % 360
-Tithi_Index = FLOOR( Difference / 12.0 ) + 1
+Tithi_Index = floor(Difference / 12) + 1
 ```
-*Result*: A value from 1 to 30. Tithi 15 is Purnima (Full Moon), and Tithi 30 is Amavasya (New Moon).
 
-### II. Nakshatra (Lunar Mansion)
-The zodiac of 360° is divided into 27 `Nakshatras`, each spanning exactly 13° 20' (or 13.3333°).
+There are 30 Tithis:
 
-**Formula:**
+- 15 in the Shukla paksha
+- 15 in the Krishna paksha
+
+### Nakshatra
+
+The zodiac is divided into 27 equal Nakshatras.
+
 ```text
-Nakshatra_Index = FLOOR( Moon_Lon / (360 / 27) ) + 1
+Nakshatra_Index = floor(Moon_Lon / (360 / 27)) + 1
 ```
-We also calculate the `Pada` (quarter) by dividing each Nakshatra into 4 parts (3° 20' each):
+
+### Nakshatra Pada
+
+Each Nakshatra is divided into 4 padas.
+
 ```text
-Pada_Index = FLOOR( Moon_Lon / ((360 / 27) / 4) ) % 4 + 1
+Pada_Index = floor(Moon_Lon / ((360 / 27) / 4)) % 4 + 1
 ```
 
-### III. Yoga (Luni-Solar Combination)
-The `Yoga` depends on the **sum** of the longitudes of the Sun and the Moon, rather than the difference. There are 27 Yogas.
+### Yoga
 
-**Formula:**
+Yoga is based on the sum of Sun and Moon longitudes.
+
 ```text
 Sum = (Sun_Lon + Moon_Lon) % 360
-Yoga_Index = FLOOR( Sum / (360 / 27) ) + 1
+Yoga_Index = floor(Sum / (360 / 27)) + 1
 ```
 
-### IV. Karana (Half-Tithi)
-A `Karana` is exactly half of a Tithi (spanning 6° of the lunar–solar difference). Since there are 30 Tithis in a month, there are 60 Karanas.
+### Karana
 
-**Formula:**
+Karana is half a Tithi.
+
 ```text
 Difference = (Moon_Lon - Sun_Lon) % 360
-Karana_Index = FLOOR( Difference / 6.0 ) + 1
+Karana_Index = floor(Difference / 6) + 1
 ```
-The 60 Karanas are mapped cyclically to an 11-Karana name list (4 fixed Karanas and 7 movable Karanas repeating 8 times).
 
-### V. Vara (Weekday)
-Vedic weekdays map directly to modern weekdays (0 = Sunday to 6 = Saturday). This is easily derived from the astronomical Julian Day because JD 0 was on a Monday (noon). We add an offset to align noon-epochs and map properly to the day of the week.
+The project maps Karana positions through the classical movable/fixed Karana cycle.
 
-**Formula:**
+### Vara
+
+Vara is derived from Julian Day.
+
 ```text
-Vara_Index = (FLOOR(Julian_Date + 0.5) + 1) % 7
+Vara_Index = (floor(JD + 0.5) + 1) % 7
 ```
 
----
+## 5. End-Time Search
 
-## 4. Rise / Set Times
+The app does not just label the current Tithi and Nakshatra. It also estimates when they end.
 
-**Sunrise, Sunset, Moonrise, and Moonset** are calculated contextually based on the user's Geographic Coordinate location.
+This is handled by:
 
-1. Using `swe.rise_trans()` with the `BIT_DISC_CENTER` modifier.
-2. The search starts from `00:00 UTC` of the target calendar date.
-3. The returned times are converted back from UTC Julian Dates to the requested Timezone (e.g. UTC+5:30) using standard local time fraction math to determine `HH:MM:SS`.
+- `get_tithi_at_jd()`
+- `get_nakshatra_at_jd()`
+- `_find_exact_end_time()`
+
+### How the search works
+
+1. determine the current index at the reference JD
+2. choose a low and high guess for when the index will change
+3. expand the search window if the change is not yet bracketed
+4. apply repeated bisection until the boundary is tightly located
+
+This gives end times precise enough for application display purposes.
+
+## 6. Rise and Set Calculations
+
+Sunrise, sunset, moonrise, and moonset are calculated with Swiss Ephemeris rise/set functionality.
+
+Important behaviors:
+
+- calculations are location-dependent
+- the event search starts from the provided JD anchor
+- atmospheric parameters are passed to Swiss Ephemeris
+- a fallback call is attempted if the preferred rise/set call fails
+
+For the daily web flow, sunrise and sunset are especially important because they define the reference frame for the daily Panchang label.
+
+## 7. Daily Rule Handling in the Current App
+
+The current implementation uses a sunrise-bound daily model.
+
+That means:
+
+- sunrise is computed for the requested local civil date and location
+- Sun and Moon longitudes are sampled at sunrise
+- Tithi, Nakshatra, Yoga, Karana, and Vara are derived from that sunrise instant
+
+The response also exposes:
+
+- a legacy special reference
+- comparison snapshots for `+2h24m`
+- comparison snapshots for `+2h45m`
+
+These snapshots are included for inspection and comparison. They do not override the primary daily label.
+
+## 8. Validation Around Sunrise
+
+Because the whole daily model depends on sunrise being correct, the service validates that:
+
+- sunrise exists
+- sunset exists
+- next sunrise exists
+- sunrise resolves to the requested local civil date
+- sunset occurs after sunrise
+
+If these checks fail, the service returns an error instead of a misleading Panchang payload.
+
+## 9. Export Calculation Model
+
+The export paths reuse the core Panchang logic but shape the outputs differently.
+
+### Year-range exports
+
+These use the existing batch-generation engine in `main.py`:
+
+- compute a JD reference per day
+- compute planetary longitudes
+- compute Panchang fields
+- compute sunrise/sunset/moonrise/moonset
+- flatten results with `format_row_data()`
+- export through `export.py`
+
+### PDF exports
+
+The PDF exporter computes daily sunrise-based Panchang values per day and renders them month by month into a printable layout.
+
+## 10. Important Scope Note
+
+This project currently calculates a sunrise-based Panchang and exposes comparison snapshots for alternative offset inspection.
+
+It does not yet claim to fully encode every Jain sect-specific or Agamic calendrical rule. If such rules are finalized later, the most likely place for those changes will be:
+
+- `panchang_service.py` for daily orchestration
+- tests in `tests/test_panchang_rules.py`
+- documentation in this file

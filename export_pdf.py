@@ -8,7 +8,7 @@ from reportlab.lib.pagesizes import landscape, letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from astronomy import local_time_to_jd, jd_to_local_time_string, get_sunrise, get_sunset, get_planetary_longitude, get_rashi_name
-from panchang import generate_daily_panchang, get_ishta_kaala
+from panchang import calculate_jain_tithi_from_sunrise, generate_daily_panchang, get_ishta_kaala
 
 def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon: float=75.7873, tz_offset: float=5.5, ayanamsa: str='Lahiri'):
     doc = SimpleDocTemplate(
@@ -44,10 +44,17 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
         # Header Info
         loc_info = Paragraph(f"<b>Location:</b> Lat {lat}, Lon {lon} | <b>Timezone:</b> UTC+{tz_offset} | <b>Ayanamsa:</b> {ayanamsa}", styles['Normal'])
         elements.append(loc_info)
+        elements.append(
+            Paragraph(
+                "<b>Legend:</b> Hindu Tithi is sunrise-based. Jain Tithi is the Tithi active 2 hours 24 minutes after sunrise.",
+                styles['Normal'],
+            )
+        )
         elements.append(Spacer(1, 10))
-        
+
         data = [[
-            "Date", "Day", "Tithi\nEnd (HH:MM | Ghati-Pala)", 
+            "Date", "Day", "Tithi\nEnd (HH:MM | Ghati-Pala)",
+            "Jain Tithi\nEnd (HH:MM | Ghati-Pala)",
             "Nakshatra\nEnd (HH:MM | Ghati-Pala)", "Yoga", "Karana", 
             "Moon Rashi", "Sunrise", "Sunset"
         ]]
@@ -55,7 +62,7 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
         num_days = calendar.monthrange(year, month)[1]
         for day in range(1, num_days + 1):
             # Midnight local
-            jd_start = local_time_to_jd(year, month, day, tz_offset, tz_offset)
+            jd_start = local_time_to_jd(year, month, day, 0.0, tz_offset)
             
             jd_sr = get_sunrise(jd_start, lat, lon)
             jd_ss = get_sunset(jd_start, lat, lon)
@@ -64,6 +71,7 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
             moon_lon = get_planetary_longitude(jd_sr, 'Moon', ayanamsa)
             sun_lon = get_planetary_longitude(jd_sr, 'Sun', ayanamsa)
             panchang = generate_daily_panchang(jd_sr, ayanamsa, sun_lon=sun_lon, moon_lon=moon_lon)
+            jain_tithi = calculate_jain_tithi_from_sunrise(jd_sr, ayanamsa)
             
             rashi = get_rashi_name(moon_lon).split(' (')[0] # Get only Sanskrit name
             
@@ -75,6 +83,14 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
             t_end_str = jd_to_local_time_string(t_end_jd, tz_offset)
             tg, tp = get_ishta_kaala(t_end_jd, jd_sr)
             tithi_disp = Paragraph(f"<b>{panchang['Tithi_Name']}</b><br/>{t_end_str} ({tg}g {tp}p)", cell_style)
+
+            j_end_jd = jain_tithi['Jain_Tithi_End_JD']
+            j_end_str = jd_to_local_time_string(j_end_jd, tz_offset)
+            jg, jp = get_ishta_kaala(j_end_jd, jd_sr)
+            jain_tithi_disp = Paragraph(
+                f"<b>{jain_tithi['Jain_Tithi_Name']}</b><br/>{j_end_str} ({jg}g {jp}p)",
+                cell_style,
+            )
             
             # Nakshatra End processing
             n_end_jd = panchang['Nakshatra_End_JD']
@@ -91,6 +107,7 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
                 Paragraph(f"{day:02d}-{month:02d}-{year}", cell_style),
                 Paragraph(vara_name, cell_style),
                 tithi_disp,
+                jain_tithi_disp,
                 nak_disp,
                 Paragraph(panchang['Yoga_Name'], cell_style),
                 Paragraph(panchang['Karana_Name'], cell_style),
@@ -99,8 +116,8 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
                 Paragraph(ss_str, cell_style)
             ]
             data.append(row)
-            
-        t = Table(data, colWidths=[65, 60, 130, 130, 70, 70, 65, 55, 55], repeatRows=1)
+
+        t = Table(data, colWidths=[55, 55, 100, 100, 100, 60, 60, 60, 45, 45], repeatRows=1)
         t.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2c3e50')),
             ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),

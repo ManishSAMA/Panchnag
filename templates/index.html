@@ -14,47 +14,127 @@
     <section class="hero">
       <p class="eyebrow">Sunrise-based Panchang</p>
       <h1>Generate a location-aware daily Panchang.</h1>
-      <p class="lede">Search for a city or enter coordinates, choose a date, and get a clean sunrise-based Panchang with the Udaya Tithi and the separate +2h45m reference.</p>
+      <p class="lede">Search for a city or enter coordinates, choose a date, and get a sunrise-based Panchang with explicit rule snapshots. You can also export full year ranges directly from the same interface.</p>
     </section>
 
-    <section class="panel">
-      <form id="panchang-form" class="form" autocomplete="off">
-        <label class="field">
-          <span>City search</span>
-          <input id="city" name="city" type="text" placeholder="Jaipur, Mumbai, Varanasi..." />
-          <div id="suggestions" class="suggestions"></div>
-        </label>
-
-        <div class="grid">
-          <label class="field">
-            <span>Latitude</span>
-            <input id="lat" name="lat" type="number" step="any" placeholder="26.9124" />
-          </label>
-          <label class="field">
-            <span>Longitude</span>
-            <input id="lon" name="lon" type="number" step="any" placeholder="75.7873" />
-          </label>
+    <section class="panel-stack">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Daily</p>
+            <h2>Single-date Panchang</h2>
+          </div>
+          <p class="panel-copy">Use this when you want the Panchang for one exact date and location.</p>
         </div>
 
-        <div class="grid">
+        <form id="panchang-form" class="form" autocomplete="off">
           <label class="field">
-            <span>Date</span>
-            <input id="date" name="date" type="date" required />
+            <span>City search</span>
+            <input id="city" name="city" type="text" placeholder="Jaipur, Mumbai, Varanasi..." />
+            <div id="suggestions" class="suggestions"></div>
           </label>
-          <label class="field">
-            <span>Ayanamsa</span>
-            <select id="ayanamsa" name="ayanamsa">
-              <option value="Lahiri">Lahiri</option>
-              <option value="Raman">Raman</option>
-              <option value="Krishnamurti">Krishnamurti</option>
-            </select>
-          </label>
+
+          <div class="grid">
+            <label class="field">
+              <span>Latitude</span>
+              <input id="lat" name="lat" type="number" step="any" placeholder="26.9124" />
+            </label>
+            <label class="field">
+              <span>Longitude</span>
+              <input id="lon" name="lon" type="number" step="any" placeholder="75.7873" />
+            </label>
+          </div>
+
+          <div class="grid">
+            <label class="field">
+              <span>Date</span>
+              <input id="date" name="date" type="date" required />
+            </label>
+            <label class="field">
+              <span>Ayanamsa</span>
+              <select id="ayanamsa" name="ayanamsa">
+                <option value="Lahiri">Lahiri</option>
+                <option value="Raman">Raman</option>
+                <option value="Krishnamurti">Krishnamurti</option>
+              </select>
+            </label>
+          </div>
+
+          <button id="submit" type="submit">Generate Daily Panchang</button>
+        </form>
+
+        <div id="status" class="status" aria-live="polite"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Export</p>
+            <h2>Year-range Panchang</h2>
+          </div>
+          <p class="panel-copy">Create downloadable CSV, Excel, or JSON exports for a full span like 2025 to 2030.</p>
         </div>
 
-        <button id="submit" type="submit">Generate Panchang</button>
-      </form>
+        <form id="range-form" class="form" autocomplete="off">
+          <div class="grid">
+            <label class="field">
+              <span>Start year</span>
+              <input id="start-year" name="start_year" type="number" min="1900" max="2200" placeholder="2025" required />
+            </label>
+            <label class="field">
+              <span>End year</span>
+              <input id="end-year" name="end_year" type="number" min="1900" max="2200" placeholder="2030" required />
+            </label>
+          </div>
 
-      <div id="status" class="status" aria-live="polite"></div>
+          <div class="grid">
+            <label class="field">
+              <span>Format</span>
+              <select id="range-format" name="format">
+                <option value="csv">CSV</option>
+                <option value="excel">Excel</option>
+                <option value="json">JSON</option>
+                <option value="all">All formats</option>
+              </select>
+            </label>
+            <label class="field checkbox-field">
+              <span>Monthly files</span>
+              <input id="range-monthly" name="monthly" type="checkbox" />
+            </label>
+          </div>
+
+          <button id="range-submit" type="submit">Generate Year Range</button>
+        </form>
+
+        <div id="range-status" class="status" aria-live="polite"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">PDF</p>
+            <h2>Printable PDF Panchang</h2>
+          </div>
+          <p class="panel-copy">Generate a year-wise printable PDF calendar for the current location and ayanamsa.</p>
+        </div>
+
+        <form id="pdf-form" class="form" autocomplete="off">
+          <div class="grid">
+            <label class="field">
+              <span>Year</span>
+              <input id="pdf-year" name="year" type="number" min="1900" max="2200" placeholder="2025" required />
+            </label>
+            <div class="field field-note">
+              <span>Uses current location</span>
+              <p>City or coordinates from the daily section will be reused for this PDF export.</p>
+            </div>
+          </div>
+
+          <button id="pdf-submit" type="submit">Generate PDF</button>
+        </form>
+
+        <div id="pdf-status" class="status" aria-live="polite"></div>
+      </section>
     </section>
 
     <section id="result" class="result hidden">
@@ -85,6 +165,48 @@
         <h3>Structured JSON</h3>
         <pre id="json-output"></pre>
       </article>
+    </section>
+
+    <section id="range-result" class="result hidden">
+      <div class="result-header">
+        <div>
+          <p class="eyebrow">Export Result</p>
+          <h2 id="range-result-title">Year-range Panchang</h2>
+        </div>
+        <p id="range-result-subtitle" class="subtitle"></p>
+      </div>
+
+      <div class="cards cards-two">
+        <article class="card">
+          <h3>Summary</h3>
+          <dl id="range-summary-list"></dl>
+        </article>
+        <article class="card">
+          <h3>Downloads</h3>
+          <div id="range-files" class="file-list"></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="pdf-result" class="result hidden">
+      <div class="result-header">
+        <div>
+          <p class="eyebrow">PDF Result</p>
+          <h2 id="pdf-result-title">Printable Panchang PDF</h2>
+        </div>
+        <p id="pdf-result-subtitle" class="subtitle"></p>
+      </div>
+
+      <div class="cards cards-two">
+        <article class="card">
+          <h3>Summary</h3>
+          <dl id="pdf-summary-list"></dl>
+        </article>
+        <article class="card">
+          <h3>Download</h3>
+          <div id="pdf-file" class="file-list"></div>
+        </article>
+      </div>
     </section>
   </main>
 

@@ -81,6 +81,7 @@ MOVABLE_KARANAS: list[str] = [
 
 FIXED_KARANAS_START: list[str] = ["Kimstughna"]   # index 0
 FIXED_KARANAS_END: list[str]   = ["Shakuni", "Chatushpada", "Naga"]  # indices 57-59
+JAIN_TITHI_OFFSET_DAYS = 144.0 / 1440.0
 
 
 def _get_karana_name_from_index(karana_index: int) -> str:
@@ -234,6 +235,51 @@ def get_ishta_kaala(jd_event: float, jd_sunrise: float) -> tuple[int, int]:
     return g, p
 
 
+def calculate_tithi_details(
+    julian_date: float,
+    ayanamsa_name: str = 'Lahiri',
+    sun_lon: Optional[float] = None,
+    moon_lon: Optional[float] = None,
+    key_prefix: str = 'Tithi',
+) -> dict:
+    """Compute the Tithi active at a specific JD and its end time."""
+    if sun_lon is None:
+        sun_lon = get_planetary_longitude(julian_date, 'Sun', ayanamsa_name)
+    if moon_lon is None:
+        moon_lon = get_planetary_longitude(julian_date, 'Moon', ayanamsa_name)
+
+    tithi_idx = get_tithi(sun_lon, moon_lon)
+    diff = (moon_lon - sun_lon) % 360.0
+    tithi_left_deg = 12.0 - (diff % 12.0)
+    tithi_low = julian_date + (tithi_left_deg / 15.0)
+    tithi_high = julian_date + (tithi_left_deg / 10.0) + 0.05
+    tithi_end_jd = _find_exact_end_time(
+        julian_date,
+        get_tithi_at_jd,
+        tithi_idx,
+        ayanamsa_name,
+        tithi_low,
+        tithi_high,
+    )
+
+    return {
+        f'{key_prefix}_Index': tithi_idx,
+        f'{key_prefix}_Name': TITHI_NAMES[tithi_idx - 1],
+        f'{key_prefix}_End_JD': tithi_end_jd,
+    }
+
+
+def calculate_jain_tithi_from_sunrise(
+    sunrise_jd: float,
+    ayanamsa_name: str = 'Lahiri',
+) -> dict:
+    """Compute Jain Tithi from the Tithi active 2h24m after sunrise."""
+    reference_jd = sunrise_jd + JAIN_TITHI_OFFSET_DAYS
+    result = calculate_tithi_details(reference_jd, ayanamsa_name, key_prefix='Jain_Tithi')
+    result['Jain_Tithi_Reference_JD'] = reference_jd
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Aggregate Daily Panchang
 # ---------------------------------------------------------------------------
@@ -253,18 +299,13 @@ def generate_daily_panchang(julian_date: float,
     if moon_lon is None:
         moon_lon = get_planetary_longitude(julian_date, 'Moon', ayanamsa_name)
 
-    tithi_idx   = get_tithi(sun_lon, moon_lon)
+    tithi_data  = calculate_tithi_details(julian_date, ayanamsa_name, sun_lon=sun_lon, moon_lon=moon_lon)
+    tithi_idx   = tithi_data['Tithi_Index']
     nak_idx     = get_nakshatra(moon_lon)
     nak_pada    = get_nakshatra_pada(moon_lon)
     yoga_idx    = get_yoga(sun_lon, moon_lon)
     kar_idx, kar_name = get_karana(sun_lon, moon_lon)
     vara_idx    = get_vara(julian_date)
-
-    # Compute tight bounds for Tithi
-    diff = (moon_lon - sun_lon) % 360.0
-    tithi_left_deg = 12.0 - (diff % 12.0)
-    tithi_low = julian_date + (tithi_left_deg / 15.0)
-    tithi_high = julian_date + (tithi_left_deg / 10.0) + 0.05
 
     # Compute tight bounds for Nakshatra
     nak_len = 360.0 / 27.0
@@ -272,13 +313,10 @@ def generate_daily_panchang(julian_date: float,
     nak_low = julian_date + (nak_left_deg / 16.0)
     nak_high = julian_date + (nak_left_deg / 11.0) + 0.05
 
-    tithi_end_jd = _find_exact_end_time(julian_date, get_tithi_at_jd, tithi_idx, ayanamsa_name, tithi_low, tithi_high)
     nak_end_jd = _find_exact_end_time(julian_date, get_nakshatra_at_jd, nak_idx, ayanamsa_name, nak_low, nak_high)
 
     return {
-        'Tithi_Index':     tithi_idx,
-        'Tithi_Name':      TITHI_NAMES[tithi_idx - 1],
-        'Tithi_End_JD':    tithi_end_jd,
+        **tithi_data,
         'Nakshatra_Index': nak_idx,
         'Nakshatra_Name':  NAKSHATRA_NAMES[nak_idx - 1],
         'Nakshatra_Pada':  nak_pada,

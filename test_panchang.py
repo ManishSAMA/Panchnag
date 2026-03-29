@@ -28,6 +28,9 @@ def test_panchang():
     # Check Jan 1 2025 properties (row 0)
     jan1 = df.iloc[0]
     assert jan1['Date'] == '2025-01-01', f"Expected Date 2025-01-01, got {jan1['Date']}"
+    assert 'Jain_Tithi' in df.columns, "Jain_Tithi column missing"
+    assert 'Jain_Tithi_End_Time' in df.columns, "Jain_Tithi_End_Time column missing"
+    assert isinstance(jan1['Jain_Tithi'], str) and jan1['Jain_Tithi'], "Jain_Tithi value missing"
     
     # 2. Validates Sun longitude is in the range 270°-285° (early January - Capricorn/Sagittarius)
     sun_dec = float(jan1['Sun_Dec'])
@@ -35,6 +38,7 @@ def test_panchang():
     
     # 3. Validates Tithi is between 1-30, Nakshatra 1-27, Yoga 1-27
     assert 1 <= float(jan1['Tithi_No']) <= 30, f"Tithi out of range: {jan1['Tithi_No']}"
+    assert 1 <= float(jan1['Jain_Tithi_No']) <= 30, f"Jain Tithi out of range: {jan1['Jain_Tithi_No']}"
     assert 1 <= float(jan1['Nakshatra_No']) <= 27, f"Nakshatra out of range: {jan1['Nakshatra_No']}"
     assert 1 <= float(jan1['Yoga_No']) <= 27, f"Yoga out of range: {jan1['Yoga_No']}"
     

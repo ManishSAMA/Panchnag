@@ -13,7 +13,8 @@ and human-readable DMS strings for every planetary longitude.
 import csv
 import json
 import os
-from astronomy import format_dms
+
+from astronomy import format_dms, jd_to_local_time_string
 
 # ---------------------------------------------------------------------------
 # Row Formatter
@@ -24,11 +25,13 @@ def format_row_data(
     julian_date: float,
     planets: dict[str, float],   # name → decimal degrees
     panchang: dict,
+    jain_tithi: dict,
     sunrise_str: str,
     sunset_str: str,
     moonrise_str: str,
     moonset_str: str,
     ayanamsa_dec: float,
+    tz_offset: float = 5.5,
     tz_label: str = "IST",
 ) -> dict:
     """Build a flat dict representing one row of the Panchang table.
@@ -58,6 +61,9 @@ def format_row_data(
     # ---- Panchang Elements ----
     row['Tithi_No']    = panchang['Tithi_Index']
     row['Tithi']       = panchang['Tithi_Name']
+    row['Jain_Tithi_No'] = jain_tithi['Jain_Tithi_Index']
+    row['Jain_Tithi'] = jain_tithi['Jain_Tithi_Name']
+    row['Jain_Tithi_End_Time'] = jd_to_local_time_string(jain_tithi['Jain_Tithi_End_JD'], tz_offset)
     row['Nakshatra_No']= panchang['Nakshatra_Index']
     row['Nakshatra']   = panchang['Nakshatra_Name']
     row['Nakshatra_Pada'] = panchang['Nakshatra_Pada']
@@ -115,6 +121,9 @@ def export_to_excel(data_list: list[dict], filename: str = "panchang_output.xlsx
     """Export data to an Excel workbook (.xlsx)."""
     try:
         import pandas as pd
+        from openpyxl import load_workbook
+        from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+        from openpyxl.utils import get_column_letter
     except ImportError:
         print("pandas not installed. Run: pip install pandas openpyxl")
         return
@@ -123,6 +132,39 @@ def export_to_excel(data_list: list[dict], filename: str = "panchang_output.xlsx
         return
     df = pd.DataFrame(data_list)
     df.to_excel(filename, index=False, engine='openpyxl')
+
+    workbook = load_workbook(filename)
+    worksheet = workbook.active
+    worksheet.freeze_panes = "A2"
+    worksheet.auto_filter.ref = worksheet.dimensions
+
+    header_fill = PatternFill(fill_type="solid", fgColor="2C3E50")
+    accent_fill = PatternFill(fill_type="solid", fgColor="E8F1FB")
+    thin_side = Side(style="thin", color="D0D7DE")
+    border = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
+    centered = Alignment(horizontal="center", vertical="center")
+
+    accent_headers = {"Tithi_No", "Tithi", "Jain_Tithi_No", "Jain_Tithi", "Jain_Tithi_End_Time"}
+
+    for cell in worksheet[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = header_fill
+        cell.alignment = centered
+        cell.border = border
+
+    header_map = {cell.column: cell.value for cell in worksheet[1]}
+    for row in worksheet.iter_rows(min_row=2):
+        for cell in row:
+            cell.alignment = centered
+            cell.border = border
+            if header_map.get(cell.column) in accent_headers:
+                cell.fill = accent_fill
+
+    for index, column_name in enumerate(df.columns, start=1):
+        max_length = max(len(str(column_name)), *(len(str(value)) for value in df[column_name].fillna("")))
+        worksheet.column_dimensions[get_column_letter(index)].width = min(max_length + 2, 28)
+
+    workbook.save(filename)
     print(f"  ✓ Excel→ {os.path.abspath(filename)}")
 
 

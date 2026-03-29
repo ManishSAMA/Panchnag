@@ -1,27 +1,61 @@
-# Panchang Generator
+# Documentation Index
 
-Welcome to the **Panchang Generator**, a high-precision, Python-based CLI tool dedicated to calculating Vedic Ephemeris (Panchang) elements. Powered by the renowned [Swiss Ephemeris](#) (`pyswisseph`), it calculates highly accurate planetary positions and core Panchang elements for any location on Earth over any specified date range.
+This directory contains the long-form documentation for the project.
 
-## What is a Panchang?
-Panchang (or Panchanga) is a traditional Hindu calendar system based on the positions of the Sun and the Moon. It comprises five key attributes ("Pancha Anga"):
-1. **Tithi** (Lunar Day)
-2. **Nakshatra** (Lunar Mansion or Constellation)
-3. **Yoga** (Luni-Solar combination)
-4. **Karana** (Half-Tithi)
-5. **Vara** (Weekday)
+## Recommended Reading Order
 
-## Key Features
-- **High Precision:** Computes exact planetary longitudes up to seconds using the Swiss Ephemeris (`pyswisseph`).
-- **Ayanamsa Support:** Native support for Lahiri, Raman, and Krishnamurti ayanamsa systems.
-- **Data Export:** Generate the parsed records in **CSV**, **Excel (.xlsx)**, **JSON**, or even a well-formatted **PDF Table**.
-- **Flexibility:** Customize latitude, longitude, and custom time zones to determine the localized sunrise/sunset/moonrise/moonset timings for accurate start/end constraints.
-- **Multiprocessing Support:** Drastically speed up large data generation (like an ephemeris for multiple decades) using CPU parallel processing.
-- **Built-in Visualizations:** Tools to graph planetary motions intuitively, display Tithi frequency, or show an element-based heatmap calendar.
+If you are new to the project:
 
-## Documentation Contents
+1. [Setup and usage](./setup_and_usage.md)
+2. [Architecture](./architecture.md)
+3. [Components](./components.md)
+4. [Calculations](./calculations.md)
 
-- [**Setup and Usage**](./setup_and_usage.md) - Learn how to install prerequisites and run the generator from the CLI. Includes examples.
-- [**Architecture**](./architecture.md) - Get a high-level overview of how the tools function, interact with the Swiss Ephemeris, and construct the dates.
-- [**Components Details**](./components.md) - Explore what each underlying Python module (`astronomy.py`, `panchang.py`, etc.) accomplishes.
-- [**Panchang Calculations**](./calculations.md) - Detailed formulas and steps explaining how each astronomical element is calculated from Julian dates and planetary longitudes.
-- [**Visualizations Guide**](./visualizations.md) - Dive into mapping astronomical phenomena to visual graphics using `visualize.py`.
+## Which Doc Should You Read?
+
+### If you are a user
+
+Read [Setup and usage](./setup_and_usage.md). It covers:
+
+- installation
+- running the Flask app
+- using the daily generator
+- using the year-range generator
+- using the PDF generator
+- CLI examples
+- common mistakes and practical notes
+
+### If you are a developer
+
+Start with [Architecture](./architecture.md), then read [Components](./components.md).
+
+Those docs explain:
+
+- request flow
+- service boundaries
+- how the web app and CLI reuse logic
+- where to add new features
+- where rule logic lives
+- where export logic lives
+
+### If you want the formulas and rule behavior
+
+Read [Calculations](./calculations.md).
+
+That document explains:
+
+- Julian Day setup
+- Sun and Moon longitude derivation
+- Tithi, Nakshatra, Yoga, Karana, and Vara formulas
+- how transition end times are found
+- how sunrise-bound daily labeling works in the current implementation
+
+## Scope and Caution
+
+The project currently documents itself as:
+
+- a sunrise-based Panchang generator
+- with comparison reference snapshots for rule inspection
+- not a finalized Agamic Jain rules engine
+
+That wording is intentional. It is accurate to the current implementation and helps avoid overstating the scope of the current rule model.

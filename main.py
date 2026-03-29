@@ -36,7 +36,7 @@ from astronomy import (
     jd_to_local_time_string,
     AYANAMSA_SYSTEMS,
 )
-from panchang import generate_daily_panchang
+from panchang import calculate_jain_tithi_from_sunrise, generate_daily_panchang
 from export import format_row_data, export_data
 
 # ---------------------------------------------------------------------------
@@ -88,19 +88,8 @@ def _compute_day(args_tuple) -> Optional[dict]:
     ayanamsa    = _G['ayanamsa']
 
     try:
-        # 05:30 local time → JD
+        # 05:30 local time → JD anchor for the civil day.
         jd = local_time_to_jd(year, month, day, local_hour=5.5, tz_offset=tz_offset)
-
-        # Ayanamsa value
-        ayanamsa_val = get_ayanamsa(jd, ayanamsa)
-
-        # All 9 planet sidereal longitudes in one call
-        planets = get_all_planet_positions(jd, ayanamsa)
-
-        # Panchang elements
-        panchang = generate_daily_panchang(
-            jd, ayanamsa, sun_lon=planets['Sun'], moon_lon=planets['Moon']
-        )
 
         # Sunrise / Sunset / Moonrise / Moonset
         jd_sr = get_sunrise(jd, lat, lon)
@@ -108,16 +97,30 @@ def _compute_day(args_tuple) -> Optional[dict]:
         jd_mr = get_moonrise(jd, lat, lon)
         jd_ms = get_moonset(jd, lat, lon)
 
+        # Ayanamsa value
+        ayanamsa_val = get_ayanamsa(jd_sr, ayanamsa)
+
+        # All 9 planet sidereal longitudes in one call at sunrise.
+        planets = get_all_planet_positions(jd_sr, ayanamsa)
+
+        # Panchang elements are sunrise-bound for the daily label.
+        panchang = generate_daily_panchang(
+            jd_sr, ayanamsa, sun_lon=planets['Sun'], moon_lon=planets['Moon']
+        )
+        jain_tithi = calculate_jain_tithi_from_sunrise(jd_sr, ayanamsa)
+
         row = format_row_data(
             date_str      = f"{year:04d}-{month:02d}-{day:02d}",
-            julian_date   = jd,
+            julian_date   = jd_sr,
             planets       = planets,
             panchang      = panchang,
+            jain_tithi    = jain_tithi,
             sunrise_str   = jd_to_local_time_string(jd_sr, tz_offset),
             sunset_str    = jd_to_local_time_string(jd_ss, tz_offset),
             moonrise_str  = jd_to_local_time_string(jd_mr, tz_offset),
             moonset_str   = jd_to_local_time_string(jd_ms, tz_offset),
             ayanamsa_dec  = ayanamsa_val,
+            tz_offset     = tz_offset,
             tz_label      = tz_label,
         )
         return row
