@@ -252,6 +252,7 @@ def generate_location_panchang(
         ayanamsa_name,
         sun_lon=sunrise_planets["Sun"],
         moon_lon=sunrise_planets["Moon"],
+        local_date=local_date,
     )
     daily_panchang.update(calculate_jain_tithi_from_sunrise(events.sunrise_jd, ayanamsa_name))
 

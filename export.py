@@ -14,7 +14,13 @@ import csv
 import json
 import os
 
-from astronomy import format_dms, jd_to_local_time_string
+from astronomy import format_dms, jd_to_local_datetime_string, jd_to_local_time_string
+
+ELEMENT_DISPLAY_SPECS = (
+    ("Tithi", "Tithi_End_JD"),
+    ("Nakshatra", "Nakshatra_End_JD"),
+    ("Yoga", "Yoga_End_JD"),
+)
 
 # ---------------------------------------------------------------------------
 # Row Formatter
@@ -61,14 +67,17 @@ def format_row_data(
     # ---- Panchang Elements ----
     row['Tithi_No']    = panchang['Tithi_Index']
     row['Tithi']       = panchang['Tithi_Name']
+    row['__Tithi_End_JD'] = panchang.get('Tithi_End_JD', 0.0)
     row['Jain_Tithi_No'] = jain_tithi['Jain_Tithi_Index']
     row['Jain_Tithi'] = jain_tithi['Jain_Tithi_Name']
     row['Jain_Tithi_End_Time'] = jd_to_local_time_string(jain_tithi['Jain_Tithi_End_JD'], tz_offset)
     row['Nakshatra_No']= panchang['Nakshatra_Index']
     row['Nakshatra']   = panchang['Nakshatra_Name']
     row['Nakshatra_Pada'] = panchang['Nakshatra_Pada']
+    row['__Nakshatra_End_JD'] = panchang.get('Nakshatra_End_JD', 0.0)
     row['Yoga_No']     = panchang['Yoga_Index']
     row['Yoga']        = panchang['Yoga_Name']
+    row['__Yoga_End_JD'] = panchang.get('Yoga_End_JD', 0.0)
     row['Karana_No']   = panchang['Karana_Index']
     row['Karana']      = panchang['Karana_Name']
 
@@ -93,6 +102,63 @@ def format_row_data(
     return row
 
 
+def _format_element_value(name: str, end_jd: float, show_end_info: bool, tz_offset: float) -> str:
+    if not name:
+        return ""
+    if not show_end_info or not end_jd:
+        return name
+
+    end_label = jd_to_local_datetime_string(end_jd, tz_offset)
+    if not end_label:
+        return name
+    return f"{name} [{end_label}]"
+
+
+def apply_element_continuity_formatting(data_list: list[dict], tz_offset: float = 5.5) -> list[dict]:
+    """Apply shared continuity formatting for repeating Panchang elements."""
+    if not data_list:
+        return []
+
+    formatted_rows: list[dict] = []
+    for index, source_row in enumerate(data_list):
+        row = dict(source_row)
+        for element_key, end_key in ELEMENT_DISPLAY_SPECS:
+            current_name = source_row.get(element_key, "")
+            prev_name = data_list[index - 1].get(element_key, "") if index > 0 else ""
+            next_name = data_list[index + 1].get(element_key, "") if index + 1 < len(data_list) else ""
+
+            is_first_occurrence = current_name != prev_name
+            is_continuation = current_name == prev_name
+            is_last_occurrence = current_name != next_name
+
+            row[f"__{element_key}_Is_First_Occurrence"] = is_first_occurrence
+            row[f"__{element_key}_Is_Continuation"] = is_continuation
+            row[f"__{element_key}_Is_Last_Occurrence"] = is_last_occurrence
+            row[element_key] = _format_element_value(
+                current_name,
+                float(source_row.get(f"__{end_key}", 0.0) or 0.0),
+                show_end_info=is_last_occurrence,
+                tz_offset=tz_offset,
+            )
+
+        row["Jain_Tithi_PDF"] = source_row.get("Jain_Tithi", "")
+        formatted_rows.append(row)
+
+    return formatted_rows
+
+
+def strip_internal_output_fields(data_list: list[dict]) -> list[dict]:
+    """Remove helper fields before writing rows to flat file outputs."""
+    cleaned_rows: list[dict] = []
+    for row in data_list:
+        cleaned_rows.append({
+            key: value
+            for key, value in row.items()
+            if not key.startswith("__") and key != "Jain_Tithi_PDF"
+        })
+    return cleaned_rows
+
+
 # ---------------------------------------------------------------------------
 # Export Functions
 # ---------------------------------------------------------------------------
@@ -102,18 +168,19 @@ def export_to_csv(data_list: list[dict], filename: str = "panchang_output.csv") 
     if not data_list:
         print("No data to export.")
         return
-    keys = list(data_list[0].keys())
+    clean_rows = strip_internal_output_fields(data_list)
+    keys = list(clean_rows[0].keys())
     with open(filename, 'w', newline='', encoding='utf-8-sig') as f:
         writer = csv.DictWriter(f, fieldnames=keys)
         writer.writeheader()
-        writer.writerows(data_list)
+        writer.writerows(clean_rows)
     print(f"  ✓ CSV  → {os.path.abspath(filename)}")
 
 
 def export_to_json(data_list: list[dict], filename: str = "panchang_output.json") -> None:
     """Export data to a pretty-printed JSON file."""
     with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(data_list, f, indent=2, ensure_ascii=False)
+        json.dump(strip_internal_output_fields(data_list), f, indent=2, ensure_ascii=False)
     print(f"  ✓ JSON → {os.path.abspath(filename)}")
 
 
@@ -130,7 +197,7 @@ def export_to_excel(data_list: list[dict], filename: str = "panchang_output.xlsx
     if not data_list:
         print("No data to export.")
         return
-    df = pd.DataFrame(data_list)
+    df = pd.DataFrame(strip_internal_output_fields(data_list))
     df.to_excel(filename, index=False, engine='openpyxl')
 
     workbook = load_workbook(filename)

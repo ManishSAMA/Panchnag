@@ -305,6 +305,19 @@ def jd_to_local_time_string(jd: float, tz_offset: float = 5.5) -> str:
         return '--:--:--'
 
 
+def jd_to_local_datetime_string(jd: float, tz_offset: float = 5.5) -> str:
+    """Convert a Julian Day to a local datetime string YYYY-MM-DD HH:MM."""
+    if jd == 0.0:
+        return ''
+    try:
+        _y, _m, _d, h_utc = swe.revjul(jd, swe.GREG_CAL)
+        utc_dt = datetime(_y, _m, _d, tzinfo=timezone.utc) + timedelta(hours=h_utc)
+        local_dt = utc_dt + timedelta(hours=tz_offset)
+        return local_dt.strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return ''
+
+
 def jd_to_zoned_datetime(jd: float, tz_name: str) -> datetime | None:
     """Convert a Julian Day to a timezone-aware datetime."""
     if jd == 0.0:

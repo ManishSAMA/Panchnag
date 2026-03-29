@@ -37,7 +37,7 @@ from astronomy import (
     AYANAMSA_SYSTEMS,
 )
 from panchang import calculate_jain_tithi_from_sunrise, generate_daily_panchang
-from export import format_row_data, export_data
+from export import apply_element_continuity_formatting, export_data, format_row_data
 
 # ---------------------------------------------------------------------------
 # Progress bar (optional tqdm, fallback to simple print)
@@ -105,7 +105,11 @@ def _compute_day(args_tuple) -> Optional[dict]:
 
         # Panchang elements are sunrise-bound for the daily label.
         panchang = generate_daily_panchang(
-            jd_sr, ayanamsa, sun_lon=planets['Sun'], moon_lon=planets['Moon']
+            jd_sr,
+            ayanamsa,
+            sun_lon=planets['Sun'],
+            moon_lon=planets['Moon'],
+            local_date=date(year, month, day),
         )
         jain_tithi = calculate_jain_tithi_from_sunrise(jd_sr, ayanamsa)
 
@@ -261,42 +265,34 @@ def main():
     print(f"  Monthly    : {args.monthly}")
     print("=" * 65)
 
+    all_dates = list(_dates_in_range(start_date, end_date))
+    print(f"  Computing {len(all_dates)} days with {workers} worker(s) …")
+    results = run_generation(config, all_dates, workers)
+    formatted_results = apply_element_continuity_formatting(results, tz_offset=args.tz_offset)
+
+    print(f"\n  ✓ Computed {len(results)} days")
+    print("  Exporting …")
+
     if args.monthly:
-        # One file per (year, month)
         import calendar
+
         for year in range(args.start_year, args.end_year + 1):
             for month in range(1, 13):
-                m_start = date(year, month, 1)
-                _, last_day = calendar.monthrange(year, month)
-                m_end = date(year, month, last_day)
-
-                # Clamp to the overall range
-                m_start = max(m_start, start_date)
-                m_end   = min(m_end,   end_date)
-                if m_start > m_end:
+                month_rows = [
+                    row for row in formatted_results
+                    if date.fromisoformat(row["Date"]).year == year
+                    and date.fromisoformat(row["Date"]).month == month
+                ]
+                if not month_rows:
                     continue
 
-                month_dates = list(_dates_in_range(m_start, m_end))
-                month_name  = calendar.month_abbr[month]
-                print(f"  ► {year}-{month_name} ({len(month_dates)} days) …")
-
-                results = run_generation(config, month_dates, workers)
-                if results:
-                    fname = f"{args.output}_{year}_{month:02d}_{month_name}"
-                    export_data(results, fname, args.format)
-
+                month_name = calendar.month_abbr[month]
+                print(f"  ► {year}-{month_name} ({len(month_rows)} days) …")
+                fname = f"{args.output}_{year}_{month:02d}_{month_name}"
+                export_data(month_rows, fname, args.format)
     else:
-        # One big file
-        all_dates = list(_dates_in_range(start_date, end_date))
-        print(f"  Computing {len(all_dates)} days with {workers} worker(s) …")
-
-        results = run_generation(config, all_dates, workers)
-
-        print(f"\n  ✓ Computed {len(results)} days")
-        print("  Exporting …")
-
         out_base = f"{args.output}_{args.start_year}_{args.end_year}"
-        export_data(results, out_base, args.format)
+        export_data(formatted_results, out_base, args.format)
 
     print("\n  ✅ Done!\n")
 

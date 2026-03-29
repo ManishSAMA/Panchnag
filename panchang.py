@@ -12,6 +12,7 @@ All formulas follow classical Vedic astronomy.
 """
 
 import math
+from datetime import date
 from typing import Optional
 from astronomy import get_planetary_longitude
 
@@ -180,6 +181,15 @@ def get_vara(julian_date: float) -> int:
     return int((jd_int + 1) % 7)   # 0=Sun, 6=Sat
 
 
+def get_vara_from_date(local_date: date) -> int:
+    """Return the weekday index for a local civil date.
+
+    Python's weekday() uses Monday=0..Sunday=6, while Vara uses
+    Sunday=0..Saturday=6.
+    """
+    return int((local_date.weekday() + 1) % 7)
+
+
 def get_tithi_at_jd(jd: float, ayanamsa_name: str) -> int:
     sun_lon = get_planetary_longitude(jd, 'Sun', ayanamsa_name)
     moon_lon = get_planetary_longitude(jd, 'Moon', ayanamsa_name)
@@ -189,6 +199,12 @@ def get_tithi_at_jd(jd: float, ayanamsa_name: str) -> int:
 def get_nakshatra_at_jd(jd: float, ayanamsa_name: str) -> int:
     moon_lon = get_planetary_longitude(jd, 'Moon', ayanamsa_name)
     return get_nakshatra(moon_lon)
+
+
+def get_yoga_at_jd(jd: float, ayanamsa_name: str) -> int:
+    sun_lon = get_planetary_longitude(jd, 'Sun', ayanamsa_name)
+    moon_lon = get_planetary_longitude(jd, 'Moon', ayanamsa_name)
+    return get_yoga(sun_lon, moon_lon)
 
 
 def _find_exact_end_time(jd_start: float, get_index_func, current_index: int, ayanamsa_name: str, 
@@ -280,6 +296,40 @@ def calculate_jain_tithi_from_sunrise(
     return result
 
 
+def calculate_yoga_details(
+    julian_date: float,
+    ayanamsa_name: str = 'Lahiri',
+    sun_lon: Optional[float] = None,
+    moon_lon: Optional[float] = None,
+) -> dict:
+    """Compute the Yoga active at a specific JD and its end time."""
+    if sun_lon is None:
+        sun_lon = get_planetary_longitude(julian_date, 'Sun', ayanamsa_name)
+    if moon_lon is None:
+        moon_lon = get_planetary_longitude(julian_date, 'Moon', ayanamsa_name)
+
+    yoga_idx = get_yoga(sun_lon, moon_lon)
+    yoga_length = 360.0 / 27.0
+    total = (sun_lon + moon_lon) % 360.0
+    yoga_left_deg = yoga_length - (total % yoga_length)
+    yoga_low = julian_date + (yoga_left_deg / 30.0)
+    yoga_high = julian_date + (yoga_left_deg / 20.0) + 0.05
+    yoga_end_jd = _find_exact_end_time(
+        julian_date,
+        get_yoga_at_jd,
+        yoga_idx,
+        ayanamsa_name,
+        yoga_low,
+        yoga_high,
+    )
+
+    return {
+        'Yoga_Index': yoga_idx,
+        'Yoga_Name': YOGA_NAMES[yoga_idx - 1],
+        'Yoga_End_JD': yoga_end_jd,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Aggregate Daily Panchang
 # ---------------------------------------------------------------------------
@@ -287,7 +337,8 @@ def calculate_jain_tithi_from_sunrise(
 def generate_daily_panchang(julian_date: float,
                              ayanamsa_name: str = 'Lahiri',
                              sun_lon: Optional[float] = None,
-                             moon_lon: Optional[float] = None) -> dict:
+                             moon_lon: Optional[float] = None,
+                             local_date: Optional[date] = None) -> dict:
     """Compute all five Panchang elements for a given Julian Day.
 
     Typically called with the JD corresponding to 05:30 IST (00:00 UTC).
@@ -303,9 +354,9 @@ def generate_daily_panchang(julian_date: float,
     tithi_idx   = tithi_data['Tithi_Index']
     nak_idx     = get_nakshatra(moon_lon)
     nak_pada    = get_nakshatra_pada(moon_lon)
-    yoga_idx    = get_yoga(sun_lon, moon_lon)
     kar_idx, kar_name = get_karana(sun_lon, moon_lon)
-    vara_idx    = get_vara(julian_date)
+    vara_idx    = get_vara_from_date(local_date) if local_date is not None else get_vara(julian_date)
+    yoga_data = calculate_yoga_details(julian_date, ayanamsa_name, sun_lon=sun_lon, moon_lon=moon_lon)
 
     # Compute tight bounds for Nakshatra
     nak_len = 360.0 / 27.0
@@ -321,8 +372,7 @@ def generate_daily_panchang(julian_date: float,
         'Nakshatra_Name':  NAKSHATRA_NAMES[nak_idx - 1],
         'Nakshatra_Pada':  nak_pada,
         'Nakshatra_End_JD':nak_end_jd,
-        'Yoga_Index':      yoga_idx,
-        'Yoga_Name':       YOGA_NAMES[yoga_idx - 1],
+        **yoga_data,
         'Karana_Index':    kar_idx,
         'Karana_Name':     kar_name,
         'Vara_Index':      vara_idx,

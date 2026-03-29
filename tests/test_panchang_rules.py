@@ -1,7 +1,8 @@
 import unittest
+from datetime import date
 
 from astronomy import get_planetary_longitude, jd_to_zoned_datetime
-from panchang import get_nakshatra, get_tithi
+from panchang import VARA_NAMES, generate_daily_panchang, get_nakshatra, get_tithi
 from panchang_service import (
     JAIN_OFFSET_CHECK,
     SPECIAL_RULE_OFFSET,
@@ -113,6 +114,25 @@ class PanchangRuleTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "Longitude must be between -180 and 180 degrees."):
             resolve_location(lat=28.6139, lon=220.0)
+
+    def test_weekday_matches_requested_local_date(self):
+        result = generate_location_panchang(
+            "2026-05-05",
+            lat=26.9124,
+            lon=75.7873,
+        )
+
+        self.assertEqual(result["panchang"]["vara"]["index"], 2)
+        self.assertEqual(result["panchang"]["vara"]["name"], "Mangalavara (Tuesday)")
+
+    def test_generate_daily_panchang_local_date_overrides_jd_boundary_effect(self):
+        local_date = date(2026, 5, 5)
+        midnight_like_jd = 2461165.2708333335
+
+        panchang = generate_daily_panchang(midnight_like_jd, local_date=local_date)
+
+        self.assertEqual(panchang["Vara_Index"], 2)
+        self.assertEqual(panchang["Vara_Name"], VARA_NAMES[2])
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-from export import export_data
+from export import apply_element_continuity_formatting, export_data
 from main import _dates_in_range, run_generation
 from panchang_service import resolve_location
 
@@ -46,6 +46,9 @@ def generate_year_range_exports(
 
     start_date = datetime(start_year, 1, 1).date()
     end_date = datetime(end_year, 12, 31).date()
+    all_dates = list(_dates_in_range(start_date, end_date))
+    rows = run_generation(config, all_dates, workers)
+    formatted_rows = apply_element_continuity_formatting(rows, tz_offset=tz_info["offset_hours"])
     rows_generated = 0
     if monthly:
         for year in range(start_year, end_year + 1):
@@ -59,18 +62,18 @@ def generate_year_range_exports(
                 if scoped_start > scoped_end:
                     continue
 
-                month_dates = list(_dates_in_range(scoped_start, scoped_end))
-                month_rows = run_generation(config, month_dates, workers)
+                month_rows = [
+                    row for row in formatted_rows
+                    if scoped_start <= datetime.fromisoformat(row["Date"]).date() <= scoped_end
+                ]
                 rows_generated += len(month_rows)
 
                 base_name = target_dir / f"panchang_{year}_{month:02d}_{calendar.month_abbr[month]}"
                 export_data(month_rows, str(base_name), output_format)
     else:
-        all_dates = list(_dates_in_range(start_date, end_date))
-        rows = run_generation(config, all_dates, workers)
-        rows_generated = len(rows)
+        rows_generated = len(formatted_rows)
         base_name = target_dir / f"panchang_{start_year}_{end_year}"
-        export_data(rows, str(base_name), output_format)
+        export_data(formatted_rows, str(base_name), output_format)
 
     generated_paths = sorted(path for path in target_dir.iterdir() if path.is_file())
 
