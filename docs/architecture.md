@@ -176,7 +176,7 @@ The implementation currently does this:
 
 - determines the primary daily Tithi at local sunrise
 - computes the day’s Nakshatra, Yoga, Karana, and Vara from the same sunrise reference
-- exposes comparison snapshots at `+2h24m` and `+2h45m`
+- exposes the Jain Tithi reference at `+2h24m` after sunrise
 
 The implementation currently does not claim:
 

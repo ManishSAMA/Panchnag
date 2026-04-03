@@ -3,6 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
+# ---------------------------------------------------------------------------
+# Request dataclasses
+# ---------------------------------------------------------------------------
+
 @dataclass(frozen=True)
 class PanchangRequest:
     input_date: str
@@ -34,6 +38,10 @@ class PdfGenerationRequest:
     ayanamsa_name: str
 
 
+# ---------------------------------------------------------------------------
+# Public parsers
+# ---------------------------------------------------------------------------
+
 def parse_panchang_request(payload: dict | None) -> PanchangRequest:
     payload = payload or {}
 
@@ -41,19 +49,9 @@ def parse_panchang_request(payload: dict | None) -> PanchangRequest:
     if not input_date:
         raise ValueError("Missing required field: date")
 
-    city = payload.get("city")
-    if isinstance(city, str):
-        city = city.strip() or None
-
-    lat = _parse_optional_float(payload.get("lat"), "Latitude")
-    lon = _parse_optional_float(payload.get("lon"), "Longitude")
-
-    if (lat is None) ^ (lon is None):
-        raise ValueError("Latitude and longitude must be provided together.")
-    if city is None and lat is None and lon is None:
-        raise ValueError("Provide either a city name or both latitude and longitude.")
-
+    city, lat, lon = _parse_location_fields(payload)
     ayanamsa_name = payload.get("ayanamsa", "Lahiri")
+
     return PanchangRequest(
         input_date=input_date,
         city=city,
@@ -71,26 +69,14 @@ def parse_range_generation_request(payload: dict | None) -> RangeGenerationReque
     if start_year > end_year:
         raise ValueError("start_year must be less than or equal to end_year.")
 
-    city = payload.get("city")
-    if isinstance(city, str):
-        city = city.strip() or None
-
-    lat = _parse_optional_float(payload.get("lat"), "Latitude")
-    lon = _parse_optional_float(payload.get("lon"), "Longitude")
-
-    if (lat is None) ^ (lon is None):
-        raise ValueError("Latitude and longitude must be provided together.")
-    if city is None and lat is None and lon is None:
-        raise ValueError("Provide either a city name or both latitude and longitude.")
-
+    city, lat, lon = _parse_location_fields(payload)
     ayanamsa_name = payload.get("ayanamsa", "Lahiri")
+
     output_format = payload.get("format", "csv")
     if output_format not in {"csv", "excel", "json", "all"}:
         raise ValueError("format must be one of: csv, excel, json, all.")
 
-    workers = _parse_optional_int(payload.get("workers"), "workers")
-    if workers is None:
-        workers = 1
+    workers = _parse_optional_int(payload.get("workers"), "workers") or 1
     if workers < 1:
         raise ValueError("workers must be at least 1.")
 
@@ -111,7 +97,27 @@ def parse_pdf_generation_request(payload: dict | None) -> PdfGenerationRequest:
     payload = payload or {}
 
     year = _parse_required_int(payload.get("year"), "year")
+    city, lat, lon = _parse_location_fields(payload)
+    ayanamsa_name = payload.get("ayanamsa", "Lahiri")
 
+    return PdfGenerationRequest(
+        year=year,
+        city=city,
+        lat=lat,
+        lon=lon,
+        ayanamsa_name=ayanamsa_name,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Shared field parsers (private)
+# ---------------------------------------------------------------------------
+
+def _parse_location_fields(payload: dict) -> tuple[str | None, float | None, float | None]:
+    """Extract and validate city, lat, lon from a payload dict.
+
+    Returns (city, lat, lon). Raises ValueError for invalid combinations.
+    """
     city = payload.get("city")
     if isinstance(city, str):
         city = city.strip() or None
@@ -124,21 +130,12 @@ def parse_pdf_generation_request(payload: dict | None) -> PdfGenerationRequest:
     if city is None and lat is None and lon is None:
         raise ValueError("Provide either a city name or both latitude and longitude.")
 
-    ayanamsa_name = payload.get("ayanamsa", "Lahiri")
-
-    return PdfGenerationRequest(
-        year=year,
-        city=city,
-        lat=lat,
-        lon=lon,
-        ayanamsa_name=ayanamsa_name,
-    )
+    return city, lat, lon
 
 
 def _parse_optional_float(value: object, field_name: str) -> float | None:
     if value in (None, ""):
         return None
-
     try:
         return float(value)
     except (TypeError, ValueError) as exc:
@@ -148,7 +145,6 @@ def _parse_optional_float(value: object, field_name: str) -> float | None:
 def _parse_optional_int(value: object, field_name: str) -> int | None:
     if value in (None, ""):
         return None
-
     try:
         return int(value)
     except (TypeError, ValueError) as exc:

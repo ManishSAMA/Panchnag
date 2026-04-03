@@ -19,9 +19,10 @@ Usage examples:
 """
 
 import argparse
-import sys
+import calendar
 import os
-from datetime import datetime, timedelta, date
+import sys
+from datetime import date, datetime, timedelta
 from multiprocessing import Pool, cpu_count
 
 # ---------------------------------------------------------------------------
@@ -69,9 +70,7 @@ def _init_worker(cfg: dict) -> None:
     _G = cfg
 
 
-from typing import Optional
-
-def _compute_day(args_tuple) -> Optional[dict]:
+def _compute_day(args_tuple) -> dict | None:
     """Compute all Panchang data for a single date.
 
     Args:
@@ -149,7 +148,6 @@ def _dates_in_range(start: date, end: date):
 
 def _dates_in_month(year: int, month: int):
     """Yield (year, month, day) tuples for every day in the given month."""
-    import calendar
     _, num_days = calendar.monthrange(year, month)
     for day in range(1, num_days + 1):
         yield (year, month, day)
@@ -274,8 +272,6 @@ def main():
     print("  Exporting …")
 
     if args.monthly:
-        import calendar
-
         for year in range(args.start_year, args.end_year + 1):
             for month in range(1, 13):
                 month_rows = [

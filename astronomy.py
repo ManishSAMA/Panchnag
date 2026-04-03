@@ -9,11 +9,11 @@ Provides:
   - Julian Day → local time string conversion
 """
 
+import math
 from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import swisseph as swe
-import math
 
 # ---------------------------------------------------------------------------
 # Setup
@@ -29,6 +29,13 @@ AYANAMSA_SYSTEMS: dict[str, int] = {
     'Raman':        swe.SIDM_RAMAN,
     'Krishnamurti': swe.SIDM_KRISHNAMURTI,
 }
+
+RASHI_NAMES: list[str] = [
+    "Mesha (Aries)",       "Vrishabha (Taurus)",  "Mithuna (Gemini)",
+    "Karka (Cancer)",      "Simha (Leo)",          "Kanya (Virgo)",
+    "Tula (Libra)",        "Vrishchika (Scorpio)", "Dhanu (Sagittarius)",
+    "Makara (Capricorn)",  "Kumbha (Aquarius)",    "Meena (Pisces)",
+]
 
 PLANETS: dict[str, int] = {
     'Sun':     swe.SUN,
@@ -189,12 +196,6 @@ def format_dms(decimal_degrees: float) -> str:
 
 def get_rashi_name(decimal_degrees: float) -> str:
     """Return the Rashi (zodiac sign) name for a given sidereal longitude."""
-    RASHI_NAMES = [
-        "Mesha (Aries)", "Vrishabha (Taurus)", "Mithuna (Gemini)",
-        "Karka (Cancer)", "Simha (Leo)", "Kanya (Virgo)",
-        "Tula (Libra)", "Vrishchika (Scorpio)", "Dhanu (Sagittarius)",
-        "Makara (Capricorn)", "Kumbha (Aquarius)", "Meena (Pisces)",
-    ]
     idx = int(decimal_degrees / 30.0) % 12
     return RASHI_NAMES[idx]
 

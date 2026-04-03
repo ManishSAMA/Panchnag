@@ -13,7 +13,6 @@ All formulas follow classical Vedic astronomy.
 
 import math
 from datetime import date
-from typing import Optional
 from astronomy import get_planetary_longitude
 
 # ---------------------------------------------------------------------------
@@ -207,8 +206,15 @@ def get_yoga_at_jd(jd: float, ayanamsa_name: str) -> int:
     return get_yoga(sun_lon, moon_lon)
 
 
-def _find_exact_end_time(jd_start: float, get_index_func, current_index: int, ayanamsa_name: str, 
-                         low_guess: Optional[float] = None, high_guess: Optional[float] = None, max_iter: int = 25) -> float:
+def _find_exact_end_time(
+    jd_start: float,
+    get_index_func,
+    current_index: int,
+    ayanamsa_name: str,
+    low_guess: float | None = None,
+    high_guess: float | None = None,
+    max_iter: int = 25,
+) -> float:
     """Find the Julian Date when the given index (Tithi/Nakshatra) changes."""
     low = low_guess if low_guess is not None else jd_start
     high = high_guess if high_guess is not None else jd_start + (30.0 / 24.0)
@@ -254,8 +260,8 @@ def get_ishta_kaala(jd_event: float, jd_sunrise: float) -> tuple[int, int]:
 def calculate_tithi_details(
     julian_date: float,
     ayanamsa_name: str = 'Lahiri',
-    sun_lon: Optional[float] = None,
-    moon_lon: Optional[float] = None,
+    sun_lon: float | None = None,
+    moon_lon: float | None = None,
     key_prefix: str = 'Tithi',
 ) -> dict:
     """Compute the Tithi active at a specific JD and its end time."""
@@ -299,8 +305,8 @@ def calculate_jain_tithi_from_sunrise(
 def calculate_yoga_details(
     julian_date: float,
     ayanamsa_name: str = 'Lahiri',
-    sun_lon: Optional[float] = None,
-    moon_lon: Optional[float] = None,
+    sun_lon: float | None = None,
+    moon_lon: float | None = None,
 ) -> dict:
     """Compute the Yoga active at a specific JD and its end time."""
     if sun_lon is None:
@@ -334,11 +340,13 @@ def calculate_yoga_details(
 # Aggregate Daily Panchang
 # ---------------------------------------------------------------------------
 
-def generate_daily_panchang(julian_date: float,
-                             ayanamsa_name: str = 'Lahiri',
-                             sun_lon: Optional[float] = None,
-                             moon_lon: Optional[float] = None,
-                             local_date: Optional[date] = None) -> dict:
+def generate_daily_panchang(
+    julian_date: float,
+    ayanamsa_name: str = 'Lahiri',
+    sun_lon: float | None = None,
+    moon_lon: float | None = None,
+    local_date: date | None = None,
+) -> dict:
     """Compute all five Panchang elements for a given Julian Day.
 
     Typically called with the JD corresponding to 05:30 IST (00:00 UTC).
@@ -350,9 +358,8 @@ def generate_daily_panchang(julian_date: float,
     if moon_lon is None:
         moon_lon = get_planetary_longitude(julian_date, 'Moon', ayanamsa_name)
 
-    tithi_data  = calculate_tithi_details(julian_date, ayanamsa_name, sun_lon=sun_lon, moon_lon=moon_lon)
-    tithi_idx   = tithi_data['Tithi_Index']
-    nak_idx     = get_nakshatra(moon_lon)
+    tithi_data = calculate_tithi_details(julian_date, ayanamsa_name, sun_lon=sun_lon, moon_lon=moon_lon)
+    nak_idx    = get_nakshatra(moon_lon)
     nak_pada    = get_nakshatra_pada(moon_lon)
     kar_idx, kar_name = get_karana(sun_lon, moon_lon)
     vara_idx    = get_vara_from_date(local_date) if local_date is not None else get_vara(julian_date)

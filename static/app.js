@@ -68,11 +68,7 @@ function clearSuggestions() {
 
 function buildReferenceCheckRows(items) {
   return items.map((item) => {
-    const label = item.rule.includes("2h24")
-      ? "Check at +2h24m"
-      : item.rule.includes("2h45")
-      ? "Check at +2h45m"
-      : item.rule;
+    const label = item.rule.includes("2h24") ? "Jain ref (+2h24m)" : item.rule;
     return [label, `${item.reference.local} • ${item.tithi.name}`];
   });
 }
@@ -185,9 +181,6 @@ form.addEventListener("submit", async (event) => {
 
     renderDl(rulesList, [
       ["Primary rule", data.rules.primary_day_rule],
-      ["Special time", data.rules.special_reference.reference.local],
-      ["Special Tithi", data.rules.special_reference.tithi.name],
-      ["Special Nakshatra", data.rules.special_reference.nakshatra.name],
       ...buildReferenceCheckRows(data.rules.reference_checks || []),
     ]);
 

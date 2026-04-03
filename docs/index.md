@@ -31,12 +31,12 @@ Start with [Architecture](./architecture.md), then read [Components](./component
 
 Those docs explain:
 
-- request flow
-- service boundaries
-- how the web app and CLI reuse logic
-- where to add new features
+- request flow through each generator path
+- service layer boundaries
+- how the web app and CLI share computation logic
+- where to add new features or export formats
 - where rule logic lives
-- where export logic lives
+- where export and serialization logic lives
 
 ### If you want the formulas and rule behavior
 
@@ -44,11 +44,24 @@ Read [Calculations](./calculations.md).
 
 That document explains:
 
-- Julian Day setup
-- Sun and Moon longitude derivation
+- Julian Day setup and time model
+- Sun and Moon longitude derivation via Swiss Ephemeris
 - Tithi, Nakshatra, Yoga, Karana, and Vara formulas
-- how transition end times are found
+- how transition end times are found via bisection
 - how sunrise-bound daily labeling works in the current implementation
+- how comparison snapshots differ from the primary label
+
+### If you want visual debugging tools
+
+Read [Visualizations](./visualizations.md).
+
+That document explains how to use `visualize.py` to:
+
+- plot planetary sidereal longitudes over time
+- chart Tithi frequency distributions
+- render Panchang element heatmaps
+- diff two CSV outputs for QA
+- dump a single day to the console for debugging
 
 ## Scope and Caution
 

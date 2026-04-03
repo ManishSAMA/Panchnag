@@ -13,7 +13,7 @@ That gives us:
 - sunrise and sunset calculations
 - moonrise and moonset calculations
 
-The app does not invent planetary positions on its own. It uses Swiss Ephemeris as the underlying astronomy engine and applies Panchang logic on top of those values.
+The app does not compute planetary positions from scratch. It uses Swiss Ephemeris as the underlying astronomy engine and applies Panchang logic on top of those values.
 
 ## 2. Time Model
 
@@ -161,13 +161,11 @@ That means:
 - Sun and Moon longitudes are sampled at sunrise
 - Tithi, Nakshatra, Yoga, Karana, and Vara are derived from that sunrise instant
 
-The response also exposes:
+The response also exposes the Jain Tithi reference at `+2h24m` (2 hours 24 minutes) after local sunrise:
 
-- a legacy special reference
-- comparison snapshots for `+2h24m`
-- comparison snapshots for `+2h45m`
-
-These snapshots are included for inspection and comparison. They do not override the primary daily label.
+- the Jain Tithi is the Tithi active at sunrise + 2h24m
+- this reference is separate from the Udaya Tithi and does not override the primary daily label
+- the `+2h24m` offset is the correct Jain calendrical reference for Tithi determination
 
 ## 8. Validation Around Sunrise
 
