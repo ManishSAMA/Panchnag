@@ -6,12 +6,17 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import landscape, letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from astronomy import local_time_to_jd, jd_to_local_time_string, get_sunrise, get_sunset, get_planetary_longitude, get_rashi_name
+from astronomy import local_time_to_jd, jd_to_local_time_string, get_sunrise, get_sunset, get_planetary_longitude, get_rashi_name, get_sun_rashi
 from export import apply_element_continuity_formatting, format_row_data
 from panchang import (
     calculate_jain_tithi_from_sunrise,
+    find_chaitra_shukla_1,
+    find_diwali,
     generate_daily_panchang,
+    get_hindu_month_from_sun_lon,
     get_vara_from_date,
+    get_vikram_samvat,
+    get_vira_nirvana_samvat,
 )
 
 def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon: float=75.7873, tz_offset: float=5.5, ayanamsa: str='Lahiri'):
@@ -30,9 +35,17 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
         parent=styles['Heading1'],
         alignment=1, # Center
         fontSize=16,
-        spaceAfter=15
+        spaceAfter=5
     )
-    
+
+    subtitle_style = ParagraphStyle(
+        name='SubtitleStyle',
+        parent=styles['Normal'],
+        alignment=1,
+        fontSize=12,
+        spaceAfter=10,
+    )
+
     cell_style = ParagraphStyle(
         name='CellStyle',
         parent=styles['Normal'],
@@ -41,6 +54,9 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
         alignment=1 # Center
     )
     
+    chaitra_shukla_1 = find_chaitra_shukla_1(year, lat, lon, tz_offset, ayanamsa)
+    diwali = find_diwali(year, lat, lon, tz_offset, ayanamsa)
+
     all_rows: list[dict] = []
     for month in range(1, 13):
         num_days = calendar.monthrange(year, month)[1]
@@ -74,15 +90,46 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
                 ayanamsa_dec=0.0,
                 tz_offset=tz_offset,
                 tz_label="PDF",
+                vikram_samvat=get_vikram_samvat(civil_date, chaitra_shukla_1),
+                vira_nirvana_samvat=get_vira_nirvana_samvat(civil_date, diwali),
             )
             row["Moon_Rashi"] = get_rashi_name(moon_lon).split(' (')[0]
+            row["Sun_Rashi"] = get_sun_rashi(jd_sr)
             all_rows.append(row)
+
+    for i, row in enumerate(all_rows):
+        prev_rashi = all_rows[i - 1]["Sun_Rashi"] if i > 0 else None
+        curr_rashi = row["Sun_Rashi"]
+        row["Sun_Rashi_Display"] = (
+            f"{prev_rashi} \u2192 {curr_rashi}" if prev_rashi and prev_rashi != curr_rashi
+            else curr_rashi
+        )
 
     formatted_rows = apply_element_continuity_formatting(all_rows, tz_offset=tz_offset)
 
+    # Precompute representative Hindu month for each Gregorian month using mid-month Sun longitude.
+    month_to_hindu: dict[int, tuple[str, str]] = {}
+    for m in range(1, 13):
+        m_rows = [r for r in all_rows if datetime.fromisoformat(r["Date"]).month == m]
+        if m_rows:
+            mid = m_rows[len(m_rows) // 2]
+            month_to_hindu[m] = get_hindu_month_from_sun_lon(mid["Sun_Dec"])
+
     for month in range(1, 13):
         month_name = calendar.month_name[month]
-        elements.append(Paragraph(f"Monthly Panchang Table - {month_name} {year}", title_style))
+        hindu_common, hindu_sanskrit = month_to_hindu.get(month, ("", ""))
+
+        month_rows_pre = [r for r in all_rows if datetime.fromisoformat(r["Date"]).month == month]
+        vs_years = sorted({r['Vikram_Samvat'] for r in month_rows_pre})
+        vns_years = sorted({r['Vira_Nirvana_Samvat'] for r in month_rows_pre})
+        vs_str = '/'.join(str(y) for y in vs_years)
+        vns_str = '/'.join(str(y) for y in vns_years)
+
+        elements.append(Paragraph(
+            f"{hindu_common} {year}  —  {month_name}  |  {vs_str} VS  |  {vns_str} VNS",
+            title_style,
+        ))
+        elements.append(Paragraph(f"({hindu_sanskrit})", subtitle_style))
         
         # Header Info
         loc_info = Paragraph(f"<b>Location:</b> Lat {lat}, Lon {lon} | <b>Timezone:</b> UTC+{tz_offset} | <b>Ayanamsa:</b> {ayanamsa}", styles['Normal'])
@@ -96,10 +143,10 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
         elements.append(Spacer(1, 10))
 
         data = [[
-            "Date", "Day", "Tithi",
+            "Date", "Day", "Month", "Tithi",
             "Jain Tithi",
             "Nakshatra", "Yoga", "Karana",
-            "Moon Rashi", "Sunrise", "Sunset"
+            "Moon Rashi", "Sun Rashi", "Sunrise", "Sunset"
         ]]
 
         month_rows = [
@@ -115,18 +162,24 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
             row = [
                 Paragraph(civil_date.strftime("%d-%m-%Y"), cell_style),
                 Paragraph(vara_name, cell_style),
+                Paragraph(row_data['Hindu_Month_Common'], cell_style),
                 Paragraph(row_data['Tithi'], cell_style),
                 Paragraph(row_data['Jain_Tithi_PDF'], cell_style),
                 Paragraph(row_data['Nakshatra'], cell_style),
                 Paragraph(row_data['Yoga'], cell_style),
-                Paragraph(row_data['Karana'], cell_style),
+                Paragraph(
+                    f"{row_data['Karana']}<br/>"
+                    f"<font size='6'>{row_data['Karana Start']} – {row_data['Karana End']}</font>",
+                    cell_style,
+                ),
                 Paragraph(row_data['Moon_Rashi'], cell_style),
+                Paragraph(row_data['Sun_Rashi_Display'], cell_style),
                 Paragraph(row_data['Sunrise (PDF)'], cell_style),
                 Paragraph(row_data['Sunset (PDF)'], cell_style)
             ]
             data.append(row)
 
-        t = Table(data, colWidths=[55, 55, 100, 100, 100, 60, 60, 60, 45, 45], repeatRows=1)
+        t = Table(data, colWidths=[55, 55, 50, 100, 100, 100, 60, 60, 60, 55, 45, 45], repeatRows=1)
         t.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2c3e50')),
             ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),

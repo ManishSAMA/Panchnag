@@ -12,8 +12,8 @@ All formulas follow classical Vedic astronomy.
 """
 
 import math
-from datetime import date
-from astronomy import get_planetary_longitude
+from datetime import date, timedelta
+from astronomy import get_planetary_longitude, get_sunrise, local_time_to_jd
 
 # ---------------------------------------------------------------------------
 # Reference Name Lists
@@ -62,6 +62,40 @@ VARA_NAMES: list[str] = [
     "Guruvara (Thursday)",  "Shukravara (Friday)",
     "Shanivara (Saturday)",
 ]
+
+# Hindu/Jain lunar month names (Sanskrit/formal and common colloquial forms).
+# Index 0–11 corresponds to Sun Rashi index 0–11 (Mesha→Chaitra … Meena→Phalguna).
+HINDU_MONTH_NAMES: list[str] = [
+    "Chaitra", "Vaishakha", "Jyeshtha",  "Ashadha",
+    "Shravana", "Bhadrapada", "Ashwin",  "Kartika",
+    "Agrahayana", "Pausha",  "Magha",    "Phalguna",
+]
+
+HINDU_MONTH_COMMON_NAMES: dict[str, str] = {
+    "Chaitra":    "Chaitra",
+    "Vaishakha":  "Vaishakh",
+    "Jyeshtha":   "Jeth",
+    "Ashadha":    "Ashadh",
+    "Shravana":   "Shravan",
+    "Bhadrapada": "Bhadarvo",
+    "Ashwin":     "Aaso",
+    "Kartika":    "Kartak",
+    "Agrahayana": "Maagsar",
+    "Pausha":     "Posh",
+    "Magha":      "Maha",
+    "Phalguna":   "Faagan",
+}
+
+
+def get_hindu_month_from_sun_lon(sun_lon: float) -> tuple[str, str]:
+    """Return (Sanskrit_name, common_name) for the Hindu lunar month.
+
+    Derived from the Sun's sidereal longitude: the Sun Rashi index (0–11)
+    maps directly to the lunar month index (Mesha→Chaitra, …, Meena→Phalguna).
+    """
+    idx = int(sun_lon / 30.0) % 12
+    sanskrit = HINDU_MONTH_NAMES[idx]
+    return sanskrit, HINDU_MONTH_COMMON_NAMES[sanskrit]
 
 # ---------------------------------------------------------------------------
 # Karana Names & Cycle Logic
@@ -193,6 +227,13 @@ def get_tithi_at_jd(jd: float, ayanamsa_name: str) -> int:
     sun_lon = get_planetary_longitude(jd, 'Sun', ayanamsa_name)
     moon_lon = get_planetary_longitude(jd, 'Moon', ayanamsa_name)
     return get_tithi(sun_lon, moon_lon)
+
+
+def get_karana_index_at_jd(jd: float, ayanamsa_name: str) -> int:
+    sun_lon = get_planetary_longitude(jd, 'Sun', ayanamsa_name)
+    moon_lon = get_planetary_longitude(jd, 'Moon', ayanamsa_name)
+    idx, _ = get_karana(sun_lon, moon_lon)
+    return idx
 
 
 def get_nakshatra_at_jd(jd: float, ayanamsa_name: str) -> int:
@@ -336,6 +377,56 @@ def calculate_yoga_details(
     }
 
 
+def calculate_karana_details(
+    julian_date: float,
+    ayanamsa_name: str = 'Lahiri',
+    sun_lon: float | None = None,
+    moon_lon: float | None = None,
+) -> dict:
+    """Compute the Karana active at a specific JD and its start/end times.
+
+    Uses the same bisection approach as calculate_tithi_details but for 6°
+    intervals (half a Tithi).  Both start and end are returned as Julian Dates.
+    """
+    if sun_lon is None:
+        sun_lon = get_planetary_longitude(julian_date, 'Sun', ayanamsa_name)
+    if moon_lon is None:
+        moon_lon = get_planetary_longitude(julian_date, 'Moon', ayanamsa_name)
+
+    karana_idx, karana_name = get_karana(sun_lon, moon_lon)
+    diff = (moon_lon - sun_lon) % 360.0
+
+    # Degrees remaining until next 6° boundary → end time
+    karana_left_deg = 6.0 - (diff % 6.0)
+    karana_end_jd = _find_exact_end_time(
+        julian_date,
+        get_karana_index_at_jd,
+        karana_idx,
+        ayanamsa_name,
+        low_guess=julian_date + (karana_left_deg / 15.0),
+        high_guess=julian_date + (karana_left_deg / 10.0) + 0.05,
+    )
+
+    # Degrees already elapsed since last 6° boundary → start time
+    karana_elapsed_deg = diff % 6.0
+    prev_karana_idx = ((karana_idx - 2) % 60) + 1  # wrap within 1-based [1,60]
+    karana_start_jd = _find_exact_end_time(
+        julian_date - (karana_elapsed_deg / 10.0) - 0.05,
+        get_karana_index_at_jd,
+        prev_karana_idx,
+        ayanamsa_name,
+        low_guess=julian_date - (karana_elapsed_deg / 10.0) - 0.05,
+        high_guess=julian_date,
+    )
+
+    return {
+        'Karana_Index': karana_idx,
+        'Karana_Name': karana_name,
+        'Karana_Start_JD': karana_start_jd,
+        'Karana_End_JD': karana_end_jd,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Aggregate Daily Panchang
 # ---------------------------------------------------------------------------
@@ -361,7 +452,7 @@ def generate_daily_panchang(
     tithi_data = calculate_tithi_details(julian_date, ayanamsa_name, sun_lon=sun_lon, moon_lon=moon_lon)
     nak_idx    = get_nakshatra(moon_lon)
     nak_pada    = get_nakshatra_pada(moon_lon)
-    kar_idx, kar_name = get_karana(sun_lon, moon_lon)
+    karana_data = calculate_karana_details(julian_date, ayanamsa_name, sun_lon=sun_lon, moon_lon=moon_lon)
     vara_idx    = get_vara_from_date(local_date) if local_date is not None else get_vara(julian_date)
     yoga_data = calculate_yoga_details(julian_date, ayanamsa_name, sun_lon=sun_lon, moon_lon=moon_lon)
 
@@ -380,8 +471,121 @@ def generate_daily_panchang(
         'Nakshatra_Pada':  nak_pada,
         'Nakshatra_End_JD':nak_end_jd,
         **yoga_data,
-        'Karana_Index':    kar_idx,
-        'Karana_Name':     kar_name,
+        **karana_data,
         'Vara_Index':      vara_idx,
         'Vara_Name':       VARA_NAMES[vara_idx],
     }
+
+
+# ---------------------------------------------------------------------------
+# Samvat (Traditional Year) Calculations
+# ---------------------------------------------------------------------------
+
+def get_vikram_samvat(gregorian_date: date, chaitra_shukla_1_date: date) -> int:
+    """Return the Vikram Samvat year for a given Gregorian date.
+
+    The VS new year starts on Chaitra Shukla Pratipada (the first day of the
+    bright fortnight of Chaitra).  Dates on or after that day use year + 57;
+    dates before it use year + 56.
+    """
+    if gregorian_date >= chaitra_shukla_1_date:
+        return gregorian_date.year + 57
+    return gregorian_date.year + 56
+
+
+def get_vira_nirvana_samvat(gregorian_date: date, diwali_date: date) -> int:
+    """Return the Vira Nirvana Samvat year for a given Gregorian date.
+
+    The VNS new year starts the day after Diwali (Kartik Krishna Amavasya).
+    Dates strictly after Diwali use year + 527; dates on or before use year + 526.
+    """
+    if gregorian_date > diwali_date:
+        return gregorian_date.year + 527
+    return gregorian_date.year + 526
+
+
+def _find_tithi_in_range(
+    year: int,
+    start_month: int,
+    start_day: int,
+    search_days: int,
+    target_tithi: int,
+    lat: float,
+    lon: float,
+    tz_offset: float,
+    ayanamsa_name: str,
+) -> date:
+    """Scan a date range and return the first day whose sunrise Tithi matches.
+
+    Uses the Udaya Tithi rule: Tithi evaluated at local sunrise determines the day.
+    The search windows are chosen so that only one occurrence of the target
+    Tithi exists in each window (no month-name filter is required).
+    """
+    for i in range(search_days):
+        d = date(year, start_month, start_day) + timedelta(days=i)
+        jd_start = local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset)
+        jd_sr = get_sunrise(jd_start, lat, lon)
+        sun_lon = get_planetary_longitude(jd_sr, 'Sun', ayanamsa_name)
+        moon_lon = get_planetary_longitude(jd_sr, 'Moon', ayanamsa_name)
+        if get_tithi(sun_lon, moon_lon) == target_tithi:
+            return d
+    raise ValueError(
+        f"Could not find Tithi={target_tithi} in {year}-{start_month:02d}-{start_day:02d} "
+        f"+ {search_days} days"
+    )
+
+
+def find_chaitra_shukla_1(
+    year: int,
+    lat: float,
+    lon: float,
+    tz_offset: float = 5.5,
+    ayanamsa_name: str = 'Lahiri',
+) -> date:
+    """Return the Gregorian date of Chaitra Shukla Pratipada for the given year.
+
+    In the amanta system, Chaitra Shukla Pratipada is defined as the civil day
+    immediately after the Phalguna Amavasya — regardless of whether the Udaya
+    Tithi at sunrise is 1 (Pratipada can be skipped when the New Moon falls
+    very close to sunrise, as in 2026 where March 19 Amavasya jumps directly
+    to Tithi=2 on March 20).
+
+    The Phalguna Amavasya is the FIRST Tithi=30 in the March 1 – April 22
+    window (52 days). In most years there is only one Amavasya in this range;
+    in years with two (e.g. 2026: March 19 and April 17), the first one is
+    always the Phalguna Amavasya.
+    """
+    phalguna_amavasya = _find_tithi_in_range(
+        year, 3, 1, 52, 30, lat, lon, tz_offset, ayanamsa_name
+    )
+    return phalguna_amavasya + timedelta(days=1)
+
+
+def find_diwali(
+    year: int,
+    lat: float,
+    lon: float,
+    tz_offset: float = 5.5,
+    ayanamsa_name: str = 'Lahiri',
+) -> date:
+    """Return the Gregorian date of Diwali (Kartik Krishna Amavasya) for the given year.
+
+    The Kartika Amavasya (Diwali) is identified as the first Amavasya (Tithi=30)
+    in the October 10 – November 25 window where the Sun's sidereal longitude
+    is ≥ 179°.  This threshold cleanly separates Diwali from the preceding
+    Ashwin Amavasya (Mahalaya, max Sun ~178°) and avoids the subsequent
+    Margashirsha Amavasya (min Sun ~213°).
+
+    When there are two Amavasyas in the window (e.g. 2026: Ashwin Oct 10 at
+    172.5°, Diwali Nov 9 at 202.4°), the Ashwin one is excluded by the
+    sun-longitude filter and Diwali is returned as the first qualifying match.
+    """
+    for i in range(46):  # Oct 10 – Nov 24 inclusive
+        d = date(year, 10, 10) + timedelta(days=i)
+        jd_start = local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset)
+        jd_sr = get_sunrise(jd_start, lat, lon)
+        sun_lon = get_planetary_longitude(jd_sr, 'Sun', ayanamsa_name)
+        moon_lon = get_planetary_longitude(jd_sr, 'Moon', ayanamsa_name)
+        if get_tithi(sun_lon, moon_lon) == 30 and sun_lon >= 179.0:
+            return d
+    raise ValueError(f"Could not find Diwali (Kartika Amavasya) for year {year}")

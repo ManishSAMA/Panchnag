@@ -119,7 +119,7 @@ class WeekdayOutputTests(unittest.TestCase):
         self.assertEqual(may_5_row[0], "05-05-2026")
         self.assertEqual(may_5_row[1], "Mangalavara")
         self.assertEqual(PDF_VARA_NAMES[may_5_row[1]], "Tuesday")
-        self.assertNotIn(, may_5_row[3])
+        self.assertEqual(may_5_row[3], "Krishna Chaturthi")
         self.assertFalse(any(ch.isdigit() for ch in may_5_row[3]))
 
 

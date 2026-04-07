@@ -16,7 +16,8 @@ Domain rules implemented here:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from astronomy import (
     get_all_planet_positions,
@@ -25,6 +26,7 @@ from astronomy import (
     get_moonset,
     get_planetary_longitude,
     get_rashi_name,
+    get_sun_rashi,
     get_sunrise,
     get_sunset,
     jd_to_iso_local_string,
@@ -37,9 +39,14 @@ from panchang import (
     NAKSHATRA_NAMES,
     TITHI_NAMES,
     calculate_jain_tithi_from_sunrise,
+    find_chaitra_shukla_1,
+    find_diwali,
     generate_daily_panchang,
+    get_hindu_month_from_sun_lon,
     get_nakshatra,
     get_tithi,
+    get_vikram_samvat,
+    get_vira_nirvana_samvat,
 )
 
 # 2 hours 24 minutes expressed as a timedelta — the Jain Tithi reference offset.
@@ -193,6 +200,8 @@ def _element_payload(panchang_data: dict, next_sunrise_jd: float, tz_name: str) 
         "karana": {
             "index": panchang_data["Karana_Index"],
             "name": panchang_data["Karana_Name"],
+            "starts": _serialize_event(panchang_data["Karana_Start_JD"], tz_name),
+            "ends": _serialize_event(panchang_data["Karana_End_JD"], tz_name),
         },
         "vara": {
             "index": panchang_data["Vara_Index"],
@@ -285,6 +294,21 @@ def generate_location_panchang(
 
     ayanamsa_value = get_ayanamsa(events.sunrise_jd, ayanamsa_name)
     tz_name = location.timezone
+    hindu_month, hindu_month_common = get_hindu_month_from_sun_lon(sunrise_planets["Sun"])
+
+    tz = ZoneInfo(tz_name)
+    tz_offset_float = (
+        datetime.combine(local_date, time(hour=12), tzinfo=tz).utcoffset().total_seconds()
+        / 3600.0
+    )
+    chaitra_shukla_1 = find_chaitra_shukla_1(
+        local_date.year, location.lat, location.lon, tz_offset_float, ayanamsa_name
+    )
+    diwali = find_diwali(
+        local_date.year, location.lat, location.lon, tz_offset_float, ayanamsa_name
+    )
+    vikram_samvat = get_vikram_samvat(local_date, chaitra_shukla_1)
+    vira_nirvana_samvat = get_vira_nirvana_samvat(local_date, diwali)
 
     return {
         "location": location.name,
@@ -305,7 +329,15 @@ def generate_location_panchang(
         },
         "panchang": {
             **_element_payload(daily_panchang, events.next_sunrise_jd, tz_name),
+            "sun_rashi": get_sun_rashi(events.sunrise_jd),
             "moon_rashi": get_rashi_name(sunrise_planets["Moon"]),
+            "hindu_month": {
+                "index": int(sunrise_planets["Sun"] / 30.0) % 12,
+                "name": hindu_month,
+                "name_common": hindu_month_common,
+            },
+            "vikram_samvat": vikram_samvat,
+            "vira_nirvana_samvat": vira_nirvana_samvat,
             "reference_time": _serialize_event(events.sunrise_jd, tz_name),
         },
         "rules": {
@@ -338,8 +370,13 @@ def generate_location_panchang(
                 events.sunrise_jd + JAIN_TITHI_OFFSET_DAYS,
                 tz_name,
             ),
+            "sun_rashi": get_sun_rashi(events.sunrise_jd),
             "nakshatra": daily_panchang["Nakshatra_Name"],
             "yoga": daily_panchang["Yoga_Name"],
             "karana": daily_panchang["Karana_Name"],
+            "month": hindu_month,
+            "month_common": hindu_month_common,
+            "vikram_samvat": vikram_samvat,
+            "vira_nirvana_samvat": vira_nirvana_samvat,
         },
     }

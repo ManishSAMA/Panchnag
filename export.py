@@ -14,7 +14,8 @@ import csv
 import json
 import os
 
-from astronomy import format_dms, jd_to_local_datetime_string, jd_to_local_time_string
+from astronomy import format_dms, get_sun_rashi, jd_to_local_datetime_string, jd_to_local_time_string
+from panchang import get_hindu_month_from_sun_lon
 
 ELEMENT_DISPLAY_SPECS = (
     ("Tithi", "Tithi_End_JD"),
@@ -39,6 +40,8 @@ def format_row_data(
     ayanamsa_dec: float,
     tz_offset: float = 5.5,
     tz_label: str = "IST",
+    vikram_samvat: int | None = None,
+    vira_nirvana_samvat: int | None = None,
 ) -> dict:
     """Build a flat dict representing one row of the Panchang table.
 
@@ -61,8 +64,19 @@ def format_row_data(
 
     # ---- Date & JD ----
     row['Date'] = date_str
+    if vikram_samvat is not None:
+        row['Vikram_Samvat'] = vikram_samvat
+    if vira_nirvana_samvat is not None:
+        row['Vira_Nirvana_Samvat'] = vira_nirvana_samvat
     row['Julian_Date'] = round(julian_date, 5)
     row['Weekday'] = panchang['Vara_Name']
+    row['Sun_Rashi'] = get_sun_rashi(julian_date)
+
+    # ---- Hindu Lunar Month ----
+    sun_lon = planets.get('Sun', 0.0)
+    hindu_month, hindu_month_common = get_hindu_month_from_sun_lon(sun_lon)
+    row['Hindu_Month'] = hindu_month
+    row['Hindu_Month_Common'] = hindu_month_common
 
     # ---- Panchang Elements ----
     row['Tithi_No']    = panchang['Tithi_Index']
@@ -80,6 +94,8 @@ def format_row_data(
     row['__Yoga_End_JD'] = panchang.get('Yoga_End_JD', 0.0)
     row['Karana_No']   = panchang['Karana_Index']
     row['Karana']      = panchang['Karana_Name']
+    row['Karana Start'] = jd_to_local_time_string(panchang['Karana_Start_JD'], tz_offset)[:5]
+    row['Karana End']   = jd_to_local_time_string(panchang['Karana_End_JD'], tz_offset)[:5]
 
     # ---- Sunrise / Sunset / Moonrise / Moonset ----
     row[f'Sunrise ({tz_label})']  = sunrise_str

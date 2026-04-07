@@ -37,6 +37,11 @@ RASHI_NAMES: list[str] = [
     "Makara (Capricorn)",  "Kumbha (Aquarius)",    "Meena (Pisces)",
 ]
 
+SUN_RASHI_NAMES: list[str] = [
+    "Mesh", "Vrishabh", "Mithun", "Kark", "Simha", "Kanya",
+    "Tula", "Vrishchik", "Dhanu", "Makar", "Kumbh", "Meen",
+]
+
 PLANETS: dict[str, int] = {
     'Sun':     swe.SUN,
     'Moon':    swe.MOON,
@@ -198,6 +203,18 @@ def get_rashi_name(decimal_degrees: float) -> str:
     """Return the Rashi (zodiac sign) name for a given sidereal longitude."""
     idx = int(decimal_degrees / 30.0) % 12
     return RASHI_NAMES[idx]
+
+
+def get_sun_rashi(jd_sunrise: float) -> str:
+    """Return the Sun Rashi name for the given Julian Day, always using Lahiri ayanamsa."""
+    flags = swe.FLG_SWIEPH | swe.FLG_SPEED
+    res, _err = swe.calc_ut(jd_sunrise, swe.SUN, flags)
+    tropical_lon = res[0]
+    swe.set_sid_mode(swe.SIDM_LAHIRI, 0, 0)
+    ayanamsa = swe.get_ayanamsa_ut(jd_sunrise)
+    sidereal_lon = (tropical_lon - ayanamsa) % 360.0
+    idx = int(sidereal_lon / 30.0)
+    return SUN_RASHI_NAMES[idx]
 
 
 # ---------------------------------------------------------------------------

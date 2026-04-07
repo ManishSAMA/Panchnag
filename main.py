@@ -37,7 +37,14 @@ from astronomy import (
     jd_to_local_time_string,
     AYANAMSA_SYSTEMS,
 )
-from panchang import calculate_jain_tithi_from_sunrise, generate_daily_panchang
+from panchang import (
+    calculate_jain_tithi_from_sunrise,
+    find_chaitra_shukla_1,
+    find_diwali,
+    generate_daily_panchang,
+    get_vikram_samvat,
+    get_vira_nirvana_samvat,
+)
 from export import apply_element_continuity_formatting, export_data, format_row_data
 
 # ---------------------------------------------------------------------------
@@ -103,28 +110,37 @@ def _compute_day(args_tuple) -> dict | None:
         planets = get_all_planet_positions(jd_sr, ayanamsa)
 
         # Panchang elements are sunrise-bound for the daily label.
+        civil_date = date(year, month, day)
         panchang = generate_daily_panchang(
             jd_sr,
             ayanamsa,
             sun_lon=planets['Sun'],
             moon_lon=planets['Moon'],
-            local_date=date(year, month, day),
+            local_date=civil_date,
         )
         jain_tithi = calculate_jain_tithi_from_sunrise(jd_sr, ayanamsa)
 
+        festivals = _G.get('festival_dates', {}).get(year, {})
+        cs1 = festivals.get('chaitra_shukla_1')
+        diwali = festivals.get('diwali')
+        vs = get_vikram_samvat(civil_date, cs1) if cs1 else None
+        vns = get_vira_nirvana_samvat(civil_date, diwali) if diwali else None
+
         row = format_row_data(
-            date_str      = f"{year:04d}-{month:02d}-{day:02d}",
-            julian_date   = jd_sr,
-            planets       = planets,
-            panchang      = panchang,
-            jain_tithi    = jain_tithi,
-            sunrise_str   = jd_to_local_time_string(jd_sr, tz_offset),
-            sunset_str    = jd_to_local_time_string(jd_ss, tz_offset),
-            moonrise_str  = jd_to_local_time_string(jd_mr, tz_offset),
-            moonset_str   = jd_to_local_time_string(jd_ms, tz_offset),
-            ayanamsa_dec  = ayanamsa_val,
-            tz_offset     = tz_offset,
-            tz_label      = tz_label,
+            date_str            = f"{year:04d}-{month:02d}-{day:02d}",
+            julian_date         = jd_sr,
+            planets             = planets,
+            panchang            = panchang,
+            jain_tithi          = jain_tithi,
+            sunrise_str         = jd_to_local_time_string(jd_sr, tz_offset),
+            sunset_str          = jd_to_local_time_string(jd_ss, tz_offset),
+            moonrise_str        = jd_to_local_time_string(jd_mr, tz_offset),
+            moonset_str         = jd_to_local_time_string(jd_ms, tz_offset),
+            ayanamsa_dec        = ayanamsa_val,
+            tz_offset           = tz_offset,
+            tz_label            = tz_label,
+            vikram_samvat       = vs,
+            vira_nirvana_samvat = vns,
         )
         return row
 
@@ -238,13 +254,27 @@ def main():
         parser.error("--start_year must be ≤ --end_year")
     workers = max(1, min(args.workers, cpu_count()))
 
+    # Precompute festival dates for Samvat calculations (once per year, before workers start)
+    print("  Computing festival dates for Samvat years …")
+    festival_dates: dict = {}
+    for year in range(args.start_year, args.end_year + 1):
+        festival_dates[year] = {
+            'chaitra_shukla_1': find_chaitra_shukla_1(
+                year, args.lat, args.lon, args.tz_offset, args.ayanamsa
+            ),
+            'diwali': find_diwali(
+                year, args.lat, args.lon, args.tz_offset, args.ayanamsa
+            ),
+        }
+
     # Shared worker config
     config = {
-        'lat':       args.lat,
-        'lon':       args.lon,
-        'tz_offset': args.tz_offset,
-        'tz_label':  args.tz_label,
-        'ayanamsa':  args.ayanamsa,
+        'lat':           args.lat,
+        'lon':           args.lon,
+        'tz_offset':     args.tz_offset,
+        'tz_label':      args.tz_label,
+        'ayanamsa':      args.ayanamsa,
+        'festival_dates': festival_dates,
     }
 
     start_date = date(args.start_year, 1, 1)

@@ -41,15 +41,22 @@ class OutputFormattingTests(unittest.TestCase):
         formatted = apply_element_continuity_formatting(rows, tz_offset=5.5)
 
         self.assertEqual(formatted[0]["Tithi"], "Ekadashi")
-        self.assertIn(, formatted[1]["Tithi"])
-        self.assertIn("2026-", formatted[1]["Tithi"])
+        self.assertEqual(formatted[0]["__Tithi_Is_First_Occurrence"], True)
+        self.assertEqual(formatted[0]["__Tithi_Is_Last_Occurrence"], False)
+        self.assertEqual(formatted[1]["__Tithi_Is_Continuation"], True)
+        self.assertEqual(formatted[1]["__Tithi_Is_Last_Occurrence"], True)
 
         self.assertEqual(formatted[0]["Nakshatra"], "Rohini")
-        self.assertIn(, formatted[1]["Nakshatra"])
+        self.assertEqual(formatted[1]["__Nakshatra_Is_Continuation"], True)
+        self.assertEqual(formatted[1]["__Nakshatra_Is_Last_Occurrence"], True)
 
-        self.assertIn(, formatted[0]["Yoga"])
+        self.assertEqual(formatted[0]["__Yoga_Is_First_Occurrence"], True)
+        self.assertEqual(formatted[0]["__Yoga_Is_Last_Occurrence"], True)
         self.assertEqual(formatted[1]["Yoga"], "Atiganda")
-        self.assertIn(, formatted[2]["Yoga"])
+        self.assertEqual(formatted[1]["__Yoga_Is_First_Occurrence"], True)
+        self.assertEqual(formatted[1]["__Yoga_Is_Last_Occurrence"], False)
+        self.assertEqual(formatted[2]["__Yoga_Is_Continuation"], True)
+        self.assertEqual(formatted[2]["__Yoga_Is_Last_Occurrence"], True)
 
     def test_single_day_occurrence_keeps_end_info(self):
         rows = [{
@@ -65,9 +72,12 @@ class OutputFormattingTests(unittest.TestCase):
 
         formatted = apply_element_continuity_formatting(rows, tz_offset=5.5)
 
-        self.assertIn(, formatted[0]["Tithi"])
-        self.assertIn(, formatted[0]["Nakshatra"])
-        self.assertIn(, formatted[0]["Yoga"])
+        self.assertEqual(formatted[0]["__Tithi_Is_First_Occurrence"], True)
+        self.assertEqual(formatted[0]["__Tithi_Is_Last_Occurrence"], True)
+        self.assertEqual(formatted[0]["__Nakshatra_Is_First_Occurrence"], True)
+        self.assertEqual(formatted[0]["__Nakshatra_Is_Last_Occurrence"], True)
+        self.assertEqual(formatted[0]["__Yoga_Is_First_Occurrence"], True)
+        self.assertEqual(formatted[0]["__Yoga_Is_Last_Occurrence"], True)
         self.assertEqual(formatted[0]["Jain_Tithi_PDF"], "Shukla Panchami")
 
     def test_strip_internal_fields_removes_helper_keys(self):
