@@ -8,7 +8,6 @@ You need:
 
 - Python 3.9 or newer (the project is developed on Python 3.14)
 - the dependencies listed in `requirements.txt`
-- `reportlab` for PDF generation (install separately, see below)
 - internet access if you want to use city search, because geocoding depends on Nominatim
 
 ## 2. Installation
@@ -19,7 +18,6 @@ Create and activate a virtual environment, then install dependencies:
 python -m venv venv
 source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-pip install reportlab
 ```
 
 Packages installed from `requirements.txt`:
@@ -32,8 +30,7 @@ Packages installed from `requirements.txt`:
 - `openpyxl` — Excel file writing
 - `matplotlib` — planetary charts and visualization tools
 - `tqdm` — progress bars for CLI batch generation
-
-`reportlab` is required for PDF export but is not currently listed in `requirements.txt`, so install it explicitly.
+- `reportlab` — PDF generation
 
 ## 3. Running the Web App
 
@@ -81,11 +78,13 @@ The result includes:
 - sunrise, sunset, moonrise, moonset times
 - next sunrise
 - Tithi (with end time)
+- Jain Tithi with its `+2h24m` reference time and end time
 - Nakshatra and Pada (with end time)
 - Yoga
 - Karana
 - Vara (weekday)
-- Moon Rashi (zodiac sign)
+- Sun Rashi and Moon Rashi
+- Hindu month, Vikram Samvat, and Vira Nirvana Samvat
 - full structured JSON payload
 
 ### Rule snapshots
@@ -128,6 +127,8 @@ After generation, the interface returns:
 
 If `Monthly files` is enabled, you receive one file per month instead of one large file for the full range.
 
+The exported rows use a fixed timezone label and numeric offset snapshot for the whole run. That is a good fit for the main India-focused workflow, but locations with daylight-saving transitions can show one-hour drift in exported civil times.
+
 ### Good use cases
 
 - yearly Panchang archives
@@ -158,7 +159,9 @@ The app generates a downloadable PDF named like:
 panchang_2025.pdf
 ```
 
-The PDF renders landscape monthly tables for the selected year, including Tithi, Nakshatra, Yoga, sunrise, and Vara.
+The PDF renders landscape monthly tables for the selected year, including Tithi, Jain Tithi, Nakshatra, Yoga, Karana, Moon Rashi, Sun Rashi, sunrise, sunset, and Vara.
+
+Like the range generator, the PDF path uses a fixed timezone offset snapshot for the selected year rather than a full per-date timezone conversion.
 
 ## 7. CLI Usage
 
@@ -215,6 +218,8 @@ The server enforces:
 - either a city or both coordinates must be supplied
 - output format must be one of `csv`, `excel`, `json`, or `all`
 
+The UI offers `Lahiri`, `Raman`, and `Krishnamurti` ayanamsas. Unknown ayanamsa names currently fall back to Lahiri in the astronomy layer, so API clients should send one of those exact names.
+
 ## 10. Practical Notes
 
 ### Timezones
@@ -251,6 +256,8 @@ python visualize.py --debug --date 2025-01-14 --lat 26.9124 --lon 75.7873
 python -m unittest discover -s tests -v
 ```
 
+Install the dependencies first, because the tests import application modules that require packages such as `pyswisseph`, `Flask`, `requests`, and `reportlab`.
+
 ## 13. Troubleshooting
 
 ### The server does not start
@@ -263,7 +270,7 @@ Check internet access and Nominatim availability. Manual coordinates still work 
 
 ### PDF generation fails
 
-Check that `reportlab` is installed (`pip install reportlab`) and that the location is valid.
+Check that the dependencies from `requirements.txt` are installed and that the location is valid.
 
 ### Excel export fails
 

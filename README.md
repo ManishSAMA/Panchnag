@@ -55,7 +55,7 @@ Supported export formats:
 
 ### 3. Printable PDF
 
-Use the web app to generate a year-wise PDF calendar for the selected location and ayanamsa. The PDF renders month-by-month tables with Tithi, Nakshatra, Yoga, sunrise times, and Vara.
+Use the web app to generate a year-wise PDF calendar for the selected location and ayanamsa. The PDF renders month-by-month tables with Tithi, Jain Tithi, Nakshatra, Yoga, Karana, Moon Rashi, Sun Rashi, sunrise, sunset, and Vara.
 
 ## Project Structure
 
@@ -90,7 +90,6 @@ Jain_panchang/
 
 ```bash
 pip install -r requirements.txt
-pip install reportlab
 ```
 
 ### Run the web app
@@ -192,7 +191,11 @@ The app supports two input styles:
 
 The daily web generator uses a location-derived IANA timezone and validates that the resolved sunrise belongs to the requested civil date.
 
-The range and PDF generators derive a timezone label and offset snapshot for export formatting. This works well for the main India-based use case and keeps the export engine compatible with the existing CLI pipeline.
+The range and PDF generators derive a timezone label and offset snapshot for export formatting. This works well for the main India-based use case and keeps the export engine compatible with the existing CLI pipeline, but it is a fixed offset for the whole export. Locations with daylight-saving transitions can therefore show drifted civil times in range and PDF outputs.
+
+### Generated downloads
+
+Generated range exports and PDFs are written to temporary directories under `/tmp` and exposed through per-process UUID download tokens. Those download URLs are convenient for the current running server, but they are not durable across app restarts and there is no built-in cleanup lifecycle yet.
 
 ### Parallel batch generation
 
@@ -205,6 +208,8 @@ Run the test suite:
 ```bash
 python -m unittest discover -s tests -v
 ```
+
+The test modules import the application directly, so install the dependencies from `requirements.txt` before running them.
 
 Verify syntax for the main Python modules:
 

@@ -48,6 +48,8 @@ It validates:
 - allowed output formats
 - workers count
 
+It currently passes ayanamsa names through without validating them against the supported set.
+
 Why it matters:
 
 - keeps Flask routes short
@@ -88,7 +90,7 @@ This module powers the year-range export path used by the web UI.
 It is responsible for:
 
 - resolving the location once
-- deriving a timezone export label and offset
+- deriving a timezone export label and offset snapshot
 - building generation config for the existing runner
 - generating rows for the requested date range
 - exporting files into a temporary directory
@@ -233,8 +235,9 @@ It includes:
 
 - PDF page assembly
 - monthly Panchang tables
-- Tithi and Nakshatra end-time display
-- ghati/pala formatting for time intervals
+- continuity-aware Tithi and Nakshatra display
+- Jain Tithi, Karana, Moon Rashi, Sun Rashi, sunrise, and sunset columns
+- month headers that can show more than one lunar month when a Gregorian month spans a transition
 
 Why it matters:
 
@@ -311,7 +314,5 @@ Covers:
 
 Covers:
 
-- CSV row structure and column presence
-- Excel output formatting
-- JSON output structure
-- DMS string formatting for planet longitudes
+- continuity formatting for repeated Tithi, Nakshatra, and Yoga values
+- helper-field stripping before flat-file export

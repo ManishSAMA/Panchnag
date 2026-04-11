@@ -13,7 +13,6 @@ from panchang import (
     find_chaitra_shukla_1,
     find_diwali,
     generate_daily_panchang,
-    get_hindu_month_from_sun_lon,
     get_vara_from_date,
     get_vikram_samvat,
     get_vira_nirvana_samvat,
@@ -107,29 +106,40 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
 
     formatted_rows = apply_element_continuity_formatting(all_rows, tz_offset=tz_offset)
 
-    # Precompute representative Hindu month for each Gregorian month using mid-month Sun longitude.
-    month_to_hindu: dict[int, tuple[str, str]] = {}
+    # Collect unique lunar months per Gregorian month, in order of first appearance.
+    month_lunar_months: dict[int, list[tuple[str, str]]] = {}
     for m in range(1, 13):
         m_rows = [r for r in all_rows if datetime.fromisoformat(r["Date"]).month == m]
-        if m_rows:
-            mid = m_rows[len(m_rows) // 2]
-            month_to_hindu[m] = get_hindu_month_from_sun_lon(mid["Sun_Dec"])
+        seen: dict[tuple[str, str], None] = {}
+        for r in m_rows:
+            key = (r['Hindu_Month'], r['Hindu_Month_Common'])
+            seen[key] = None  # dict preserves insertion order, deduplicates
+        month_lunar_months[m] = list(seen.keys())
 
     for month in range(1, 13):
         month_name = calendar.month_name[month]
-        hindu_common, hindu_sanskrit = month_to_hindu.get(month, ("", ""))
-
         month_rows_pre = [r for r in all_rows if datetime.fromisoformat(r["Date"]).month == month]
+
+        unique_months = month_lunar_months[month]  # [(Sanskrit, Common), ...]
+
+        # Detect if the first lunar month on this page continues from the previous page.
+        prev_last = month_lunar_months.get(month - 1, [])
+        is_continuation = bool(unique_months and prev_last and unique_months[0][0] == prev_last[-1][0])
+        contd_suffix = " (contd.)" if is_continuation else ""
+
+        common_str   = " / ".join(common   for _, common   in unique_months)
+        sanskrit_str = " / ".join(sanskrit for sanskrit, _ in unique_months)
+
         vs_years = sorted({r['Vikram_Samvat'] for r in month_rows_pre})
         vns_years = sorted({r['Vira_Nirvana_Samvat'] for r in month_rows_pre})
         vs_str = '/'.join(str(y) for y in vs_years)
         vns_str = '/'.join(str(y) for y in vns_years)
 
         elements.append(Paragraph(
-            f"{hindu_common} {year}  —  {month_name}  |  {vs_str} VS  |  {vns_str} VNS",
+            f"{common_str} {year}{contd_suffix}  —  {month_name}  |  {vs_str} VS  |  {vns_str} VNS",
             title_style,
         ))
-        elements.append(Paragraph(f"({hindu_sanskrit})", subtitle_style))
+        elements.append(Paragraph(f"({sanskrit_str})", subtitle_style))
         
         # Header Info
         loc_info = Paragraph(f"<b>Location:</b> Lat {lat}, Lon {lon} | <b>Timezone:</b> UTC+{tz_offset} | <b>Ayanamsa:</b> {ayanamsa}", styles['Normal'])

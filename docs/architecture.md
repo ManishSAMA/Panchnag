@@ -197,6 +197,11 @@ This design keeps:
 
 The tokenized path also avoids exposing arbitrary filesystem paths directly in the browser.
 
+Current caveats:
+
+- the token registry is an in-memory dict in `app.py`, so download URLs are only valid for the current server process
+- generated temporary directories are not cleaned up automatically yet
+
 ## 9. Frontend Design Notes
 
 The UI is organized into three independent action areas:
@@ -237,5 +242,6 @@ The current architecture makes pragmatic tradeoffs:
 - range export reuses the CLI-style engine rather than duplicating logic
 - PDF export uses a dedicated table renderer rather than a generic export abstraction
 - daily and export paths share rule logic where possible but still have distinct output assembly layers
+- range and PDF generation use a single timezone offset snapshot for the whole export, which is simple and stable for India-style use cases but not DST-accurate for every locale
 
 These choices keep the project easier to maintain while still allowing new UI workflows to be added quickly.
