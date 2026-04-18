@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import calendar
+from datetime import date as date_type
+from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
 from flask import Flask, abort, jsonify, render_template, request, send_file
 
-from location_service import geocode_city, search_locations
+from astronomy import get_sunrise, get_sunset, jd_to_zoned_datetime, local_date_anchor_jd
+from location_service import geocode_city, get_timezone_name, search_locations
 from pdf_generation_service import generate_pdf_export
 from panchang_service import generate_location_panchang, resolve_location
 from range_generation_service import generate_year_range_exports
@@ -15,6 +18,19 @@ from request_parsing import (
     parse_pdf_generation_request,
     parse_range_generation_request,
 )
+
+_CHOGHADIYA_ORDER = ["Udveg", "Amrit", "Rog", "Labh", "Shubh", "Char", "Kaal"]
+_CHOGHADIYA_MEANINGS = {
+    "Udveg": "Tension", "Amrit": "Nectar", "Rog": "Illness",
+    "Labh": "Gain", "Shubh": "Auspicious", "Char": "Movement", "Kaal": "Loss",
+}
+_CHOGHADIYA_NATURE = {
+    "Udveg": "inauspicious", "Amrit": "auspicious", "Rog": "inauspicious",
+    "Labh": "auspicious", "Shubh": "auspicious", "Char": "neutral", "Kaal": "inauspicious",
+}
+# Python weekday(): Mon=0 … Sun=6 → starting index in _CHOGHADIYA_ORDER
+_DAY_START_IDX   = [1, 2, 3, 4, 5, 6, 0]  # Mon→Amrit … Sun→Udveg
+_NIGHT_START_IDX = [5, 6, 0, 1, 2, 3, 4]  # Mon→Char … Sun→Shubh
 
 GENERATED_EXPORTS: dict[str, str] = {}
 
@@ -220,6 +236,75 @@ def create_app() -> Flask:
                 "hindu_month_index": hindu_month_index,
                 "vikram_samvat": vikram_samvat,
                 "days": days,
+            })
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except Exception as exc:
+            return jsonify({"error": str(exc)}), 500
+
+    @app.post("/choghadiya")
+    def choghadiya():
+        try:
+            body = request.get_json(silent=True) or {}
+            date_str = body.get("date")
+            lat = body.get("lat")
+            lon = body.get("lon")
+
+            if not date_str:
+                return jsonify({"error": "Missing required field: date"}), 400
+            if lat is None or lon is None:
+                return jsonify({"error": "Missing required fields: lat and lon"}), 400
+
+            try:
+                parsed_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                return jsonify({"error": "date must be in YYYY-MM-DD format"}), 400
+
+            tz_name = get_timezone_name(float(lat), float(lon))
+            anchor_jd = local_date_anchor_jd(parsed_date, tz_name)
+            sunrise_jd = get_sunrise(anchor_jd, float(lat), float(lon))
+            sunset_jd = get_sunset(anchor_jd, float(lat), float(lon))
+
+            next_date = parsed_date + timedelta(days=1)
+            next_anchor_jd = local_date_anchor_jd(next_date, tz_name)
+            next_sunrise_jd = get_sunrise(next_anchor_jd, float(lat), float(lon))
+
+            weekday = parsed_date.weekday()
+            day_start = _DAY_START_IDX[weekday]
+            night_start = _NIGHT_START_IDX[weekday]
+
+            def _make_slots(start_jd: float, end_jd: float, start_idx: int, period: str) -> list[dict]:
+                slot_duration = (end_jd - start_jd) / 8
+                slots = []
+                for i in range(8):
+                    name = _CHOGHADIYA_ORDER[(start_idx + i) % 7]
+                    slot_start = start_jd + i * slot_duration
+                    slot_end = start_jd + (i + 1) * slot_duration
+                    start_dt = jd_to_zoned_datetime(slot_start, tz_name)
+                    end_dt = jd_to_zoned_datetime(slot_end, tz_name)
+                    slots.append({
+                        "name": name,
+                        "meaning": _CHOGHADIYA_MEANINGS[name],
+                        "nature": _CHOGHADIYA_NATURE[name],
+                        "start_time": start_dt.strftime("%H:%M") if start_dt else "",
+                        "end_time": end_dt.strftime("%H:%M") if end_dt else "",
+                        "period": period,
+                    })
+                return slots
+
+            sunrise_dt = jd_to_zoned_datetime(sunrise_jd, tz_name)
+            sunset_dt = jd_to_zoned_datetime(sunset_jd, tz_name)
+
+            slots = (
+                _make_slots(sunrise_jd, sunset_jd, day_start, "day")
+                + _make_slots(sunset_jd, next_sunrise_jd, night_start, "night")
+            )
+
+            return jsonify({
+                "date": date_str,
+                "sunrise": sunrise_dt.strftime("%H:%M") if sunrise_dt else "",
+                "sunset": sunset_dt.strftime("%H:%M") if sunset_dt else "",
+                "slots": slots,
             })
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400

@@ -1,192 +1,379 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>जैन पंचांग</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Noto+Sans+Devanagari:wght@400;500;700&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Jain Panchang</title>
+  <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
 
-  <!-- ── Header ──────────────────────────────────────────────── -->
-  <header class="app-header">
-    <div class="header-left">
-      <span class="app-icon" aria-hidden="true">ॐ</span>
-      <span class="app-title" data-i18n="appTitle">जैन पंचांग</span>
-    </div>
-    <div class="header-right">
-      <button id="lang-toggle" class="header-btn lang-btn" title="Switch language">EN</button>
-      <button id="location-btn" class="header-btn location-btn">
-        <span class="btn-icon" aria-hidden="true">⊕</span>
-        <span id="location-display" data-i18n="setLocation">स्थान चुनें</span>
-      </button>
-      <button id="tools-btn" class="header-btn tools-btn">
-        <span class="btn-icon" aria-hidden="true">↓</span>
-        <span data-i18n="tools">एक्सपोर्ट</span>
-      </button>
-    </div>
-  </header>
+<!-- ═══════════════════════════════════════════════
+     DRAWER (hamburger menu — shared across pages)
+═══════════════════════════════════════════════ -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    Jain Panchang
+    <small>जैन पंचांग</small>
+  </div>
+  <nav class="drawer-nav">
+    <button class="drawer-link" data-nav="home"><span class="icon">🏠</span> Home</button>
+    <button class="drawer-link" data-nav="calendar"><span class="icon">🗓️</span> Hindu Calendar</button>
+    <button class="drawer-link" data-nav="panchang"><span class="icon">📜</span> Dainika Panchang</button>
+    <button class="drawer-link" data-nav="muhurta"><span class="icon">🕐</span> Dainika Muhurta</button>
+    <button class="drawer-link" data-nav="location"><span class="icon">📍</span> Change Location</button>
+    <button class="drawer-link" data-nav="settings"><span class="icon">⚙️</span> Settings</button>
+  </nav>
+</div>
 
-  <!-- ── Calendar navigation ──────────────────────────────────── -->
-  <nav class="cal-nav" aria-label="Calendar navigation">
-    <button id="prev-month" class="nav-btn" aria-label="Previous month">&#8249;</button>
-    <div class="cal-title">
-      <h1 id="cal-month-year" class="cal-heading"></h1>
-      <p id="cal-samvat" class="cal-samvat"></p>
+<!-- ═══════════════════════════════════════════════
+     APP SHELL
+═══════════════════════════════════════════════ -->
+<div id="app">
+
+<!-- ─────────────────── HOME PAGE ─────────────────── -->
+<section class="page" id="page-home">
+  <nav class="navbar">
+    <button class="navbar-btn" id="homeMenuBtn">☰</button>
+    <span class="navbar-title">Jain Panchang</span>
+    <div class="navbar-right">
+      <button class="navbar-btn">🔍</button>
+      <button class="navbar-btn">⋮</button>
     </div>
-    <button id="next-month" class="nav-btn" aria-label="Next month">&#8250;</button>
   </nav>
 
-  <!-- ── Calendar grid ────────────────────────────────────────── -->
-  <main class="cal-main" aria-label="Calendar">
-    <div class="cal-grid-wrap">
-      <div id="cal-weekdays" class="cal-weekdays" role="row" aria-hidden="true"></div>
-      <div id="cal-days" class="cal-days" role="grid"></div>
-      <div id="cal-loading" class="cal-loading hidden" aria-live="polite">
-        <div class="spinner"></div>
-        <span data-i18n="loading">लोड हो रहा है...</span>
+  <div class="date-banner" id="homeBanner">
+    <div class="date-banner-moon">🌙</div>
+    <div class="date-banner-info">
+      <div class="date-banner-gregorian" id="homeGregorianDate">Loading…</div>
+      <div class="date-banner-details" id="homeBannerDetails">—</div>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="card-grid">
+      <button class="card" data-nav="calendar">
+        <div class="card-icon">🗓️</div>
+        <div class="card-title">Hindu Calendar</div>
+        <div class="card-desc">monthly calendar with tithi and nakshatra</div>
+      </button>
+      <button class="card" data-nav="panchang">
+        <div class="card-icon">📜</div>
+        <div class="card-title">Dainika Panchang</div>
+        <div class="card-desc">detailed daily panchang for any date</div>
+      </button>
+      <button class="card" data-nav="muhurta">
+        <div class="card-icon">🕐</div>
+        <div class="card-title">Dainika Muhurta</div>
+        <div class="card-desc">Choghadiya, Hora, and auspicious timings</div>
+      </button>
+      <button class="card" data-nav="panchang">
+        <div class="card-icon">🌙</div>
+        <div class="card-title">Nakshatra</div>
+        <div class="card-desc">daily nakshatra and yoga details</div>
+      </button>
+      <button class="card" data-nav="location">
+        <div class="card-icon">📍</div>
+        <div class="card-title">Change Location</div>
+        <div class="card-desc">set your city for accurate calculations</div>
+      </button>
+      <button class="card" data-nav="settings">
+        <div class="card-icon">⚙️</div>
+        <div class="card-title">Settings</div>
+        <div class="card-desc">ayanamsa, language, and display preferences</div>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── CALENDAR PAGE ─────────────────── -->
+<section class="page" id="page-calendar">
+  <nav class="navbar">
+    <button class="navbar-btn" data-nav="home">←</button>
+    <span class="navbar-title">Hindu Calendar</span>
+    <div class="navbar-right">
+      <button class="navbar-btn" id="calMenuBtn">☰</button>
+    </div>
+  </nav>
+
+  <div class="cal-month-banner" id="calMonthBanner">
+    <h2 id="calMonthTitle">April 2026</h2>
+    <small id="calSamvat">Vikram Samvat 2083</small>
+  </div>
+
+  <div class="cal-toolbar">
+    <button class="toolbar-btn active">Calendar</button>
+    <button class="toolbar-btn">Vertical</button>
+    <button class="toolbar-btn">Purnimanta</button>
+    <button class="toolbar-btn" id="calTodayBtn">Today</button>
+  </div>
+
+  <div class="cal-nav-row">
+    <button class="nav-arrow" id="calPrev">‹</button>
+    <h3 id="calNavTitle">April 2026</h3>
+    <button class="nav-arrow" id="calNext">›</button>
+  </div>
+
+  <div class="cal-weekdays">
+    <div class="cal-weekday">Sun</div>
+    <div class="cal-weekday">Mon</div>
+    <div class="cal-weekday">Tue</div>
+    <div class="cal-weekday">Wed</div>
+    <div class="cal-weekday">Thu</div>
+    <div class="cal-weekday">Fri</div>
+    <div class="cal-weekday">Sat</div>
+  </div>
+
+  <div class="page-content">
+    <div class="cal-grid" id="calGrid">
+      <div class="cal-loading">Loading calendar…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── PANCHANG PAGE ─────────────────── -->
+<section class="page" id="page-panchang">
+  <nav class="navbar">
+    <button class="navbar-btn" id="panchangBack">←</button>
+    <span class="navbar-title">Dainika Panchang</span>
+    <div class="navbar-right">
+      <button class="navbar-btn" id="panchangMenuBtn">☰</button>
+    </div>
+  </nav>
+
+  <div class="date-banner" id="panchangBanner">
+    <div class="date-banner-moon" id="panchangMoon">🌙</div>
+    <div class="date-banner-info">
+      <div class="date-banner-gregorian" id="panchangGregorianDate">—</div>
+      <div class="date-banner-details" id="panchangBannerDetails">—</div>
+    </div>
+  </div>
+
+  <div class="time-toggle">
+    <button class="time-toggle-btn active" data-fmt="12h">12 Hour</button>
+    <button class="time-toggle-btn" data-fmt="24h">24 Hour</button>
+  </div>
+
+  <div class="page-content">
+    <div id="panchangContent">
+      <div class="loading-spinner">Loading panchang…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── MUHURTA PAGE ─────────────────── -->
+<section class="page" id="page-muhurta">
+  <nav class="navbar">
+    <button class="navbar-btn" data-nav="home">←</button>
+    <span class="navbar-title">Dainika Muhurta</span>
+    <div class="navbar-right">
+      <button class="navbar-btn" id="muhurtaMenuBtn">☰</button>
+    </div>
+  </nav>
+
+  <div class="page-content">
+    <div class="card-grid">
+      <button class="card" data-nav="choghadiya">
+        <div class="card-icon">🪔</div>
+        <div class="card-title">Choghadiya Muhurta</div>
+        <div class="card-desc">day and night Choghadiya table</div>
+      </button>
+      <button class="card" id="horaCard">
+        <div class="card-icon">⏰</div>
+        <div class="card-title">Hora Muhurta</div>
+        <div class="card-desc">hora table for the day</div>
+      </button>
+      <button class="card" id="lagnaCard">
+        <div class="card-icon">✨</div>
+        <div class="card-title">Lagna Muhurta</div>
+        <div class="card-desc">Udaya Lagna table</div>
+      </button>
+      <button class="card" id="chandraCard">
+        <div class="card-icon">🌙</div>
+        <div class="card-title">Chandrabalam</div>
+        <div class="card-desc">for all 12 Rashi</div>
+      </button>
+      <button class="card" id="taraCard">
+        <div class="card-icon">⭐</div>
+        <div class="card-title">Tarabalam</div>
+        <div class="card-desc">for all 27 Nakshatra</div>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── CHOGHADIYA PAGE ─────────────────── -->
+<section class="page" id="page-choghadiya">
+  <nav class="navbar">
+    <button class="navbar-btn" data-nav="muhurta">←</button>
+    <span class="navbar-title">Choghadiya Muhurta</span>
+    <div class="navbar-right">
+      <button class="navbar-btn" id="chogMenuBtn">☰</button>
+    </div>
+  </nav>
+
+  <div class="chog-banner">
+    <div class="chog-banner-left">
+      <div class="chog-banner-time" id="chogCurrentTime">— to —</div>
+      <div class="chog-banner-countdown" id="chogCountdown">--:--:--</div>
+      <div class="chog-banner-date" id="chogBannerDate">—</div>
+    </div>
+    <div class="chog-banner-right" id="chogCurrentSlot">
+      <div class="chog-banner-name" id="chogCurrentName">—</div>
+      <div class="chog-banner-quality" id="chogCurrentQuality">—</div>
+    </div>
+  </div>
+
+  <div class="chog-time-toggle">
+    <button class="time-toggle-btn active" data-chog-fmt="12h">12 Hour</button>
+    <button class="time-toggle-btn" data-chog-fmt="24h">24 Hour</button>
+    <button class="time-toggle-btn" data-chog-fmt="24plus">24 Plus</button>
+  </div>
+
+  <div class="chog-date-nav">
+    <button class="nav-arrow" id="chogPrev">‹</button>
+    <span class="chog-date-label" id="chogDateLabel">—</span>
+    <button class="nav-arrow" id="chogNext">›</button>
+  </div>
+
+  <div class="weekday-tabs" id="weekdayTabs"></div>
+
+  <div class="page-content" id="chogContent">
+    <div class="loading-spinner">Loading Choghadiya…</div>
+  </div>
+</section>
+
+<!-- ─────────────────── LOCATION PAGE ─────────────────── -->
+<section class="page" id="page-location">
+  <nav class="navbar">
+    <button class="navbar-btn" id="locationBack">←</button>
+    <span class="navbar-title">Change Location</span>
+  </nav>
+
+  <div class="page-content">
+    <div class="location-form">
+      <div class="location-current" id="locationCurrent">
+        <strong id="locationCurrentName">No location set</strong>
+        Set a location to get accurate panchang data.
       </div>
-    </div>
 
-    <!-- Legend -->
-    <div class="cal-legend" aria-label="Legend">
-      <span class="legend-item purnima-dot" data-i18n="purnima">पूर्णिमा</span>
-      <span class="legend-item amavasya-dot" data-i18n="amavasya">अमावस्या</span>
-      <span class="legend-item ekadashi-dot" data-i18n="ekadashi">एकादशी</span>
-    </div>
-  </main>
-
-  <!-- ── Day detail panel ─────────────────────────────────────── -->
-  <div id="overlay" class="overlay" aria-hidden="true"></div>
-
-  <aside id="day-panel" class="day-panel" aria-label="Daily Panchang details">
-    <div class="day-panel-header">
-      <div>
-        <h2 id="panel-date" class="panel-date"></h2>
-        <p id="panel-location-line" class="panel-location-line"></p>
+      <div class="search-box">
+        <input type="text" class="search-input" id="locationSearch"
+          placeholder="Search city (e.g. Jaipur, Mumbai…)" autocomplete="off">
+        <div class="search-results hidden" id="locationResults"></div>
       </div>
-      <button id="panel-close" class="panel-close-btn" aria-label="Close panel">&#x2715;</button>
-    </div>
 
-    <div id="panel-loading" class="panel-loading" aria-live="polite">
-      <div class="spinner"></div>
-    </div>
+      <div class="form-divider">or enter coordinates manually</div>
 
-    <div id="panel-body" class="day-panel-body" hidden>
-      <section class="detail-section">
-        <h3 class="detail-heading" data-i18n="panchangHeading">पंचांग</h3>
-        <dl id="panel-panchang" class="detail-dl"></dl>
-      </section>
-      <section class="detail-section">
-        <h3 class="detail-heading" data-i18n="eventsHeading">घटनाएं</h3>
-        <dl id="panel-events" class="detail-dl"></dl>
-      </section>
-      <section class="detail-section">
-        <h3 class="detail-heading" data-i18n="samvatHeading">संवत</h3>
-        <dl id="panel-samvat" class="detail-dl"></dl>
-      </section>
-    </div>
-  </aside>
-
-  <!-- ── Location dialog ──────────────────────────────────────── -->
-  <dialog id="location-dialog" class="app-dialog">
-    <div class="dialog-header">
-      <h2 data-i18n="locationTitle">स्थान चुनें</h2>
-      <button id="location-dialog-close" class="dialog-close-btn" aria-label="Close">&#x2715;</button>
-    </div>
-    <form id="location-form" autocomplete="off" class="dialog-form">
-      <label class="field">
-        <span data-i18n="citySearch">शहर खोजें</span>
-        <input id="city" type="text" placeholder="Jaipur, Mumbai, Varanasi…" />
-        <div id="suggestions" class="suggestions"></div>
-      </label>
-      <div class="field-row">
-        <label class="field">
-          <span data-i18n="latitude">अक्षांश</span>
-          <input id="lat" type="number" step="any" placeholder="26.9124" />
-        </label>
-        <label class="field">
-          <span data-i18n="longitude">देशांतर</span>
-          <input id="lon" type="number" step="any" placeholder="75.7873" />
-        </label>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="latInput">Latitude</label>
+          <input type="number" step="any" class="form-input" id="latInput" placeholder="26.9124">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="lonInput">Longitude</label>
+          <input type="number" step="any" class="form-input" id="lonInput" placeholder="75.7873">
+        </div>
       </div>
-      <label class="field">
-        <span data-i18n="ayanamsa">अयनांश</span>
-        <select id="ayanamsa">
-          <option value="Lahiri">Lahiri</option>
-          <option value="Raman">Raman</option>
-          <option value="Krishnamurti">Krishnamurti</option>
-        </select>
-      </label>
-      <p id="location-error" class="field-error" hidden></p>
-      <div class="dialog-actions">
-        <button type="submit" class="btn-primary" data-i18n="save">सहेजें</button>
-        <button type="button" id="location-cancel" class="btn-secondary" data-i18n="cancel">रद्द करें</button>
+
+      <div class="form-group">
+        <label class="form-label" for="locationNameInput">Location Name</label>
+        <input type="text" class="form-input" id="locationNameInput" placeholder="e.g. Jaipur, Rajasthan">
       </div>
-    </form>
-  </dialog>
 
-  <!-- ── Tools dialog ─────────────────────────────────────────── -->
-  <dialog id="tools-dialog" class="app-dialog tools-dialog">
-    <div class="dialog-header">
-      <h2 data-i18n="toolsTitle">निर्यात उपकरण</h2>
-      <button id="tools-dialog-close" class="dialog-close-btn" aria-label="Close">&#x2715;</button>
+      <button class="btn-primary" id="locationSaveBtn">Save Location</button>
+      <div class="error-msg hidden" id="locationError"></div>
     </div>
-    <div class="tools-body">
+  </div>
+</section>
 
-      <section class="tool-section">
-        <h3 data-i18n="yearRangeTitle">वर्ष-श्रेणी निर्यात</h3>
-        <form id="range-form" autocomplete="off" class="dialog-form">
-          <div class="field-row">
-            <label class="field">
-              <span data-i18n="startYear">प्रारंभ वर्ष</span>
-              <input id="start-year" type="number" min="1900" max="2200" placeholder="2025" required />
-            </label>
-            <label class="field">
-              <span data-i18n="endYear">अंतिम वर्ष</span>
-              <input id="end-year" type="number" min="1900" max="2200" placeholder="2030" required />
-            </label>
+<!-- ─────────────────── SETTINGS PAGE ─────────────────── -->
+<section class="page" id="page-settings">
+  <nav class="navbar">
+    <button class="navbar-btn" data-nav="home">←</button>
+    <span class="navbar-title">Settings</span>
+  </nav>
+
+  <div class="page-content">
+    <div class="settings-section">
+      <div class="settings-section-title">Display</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <span class="settings-label">Language</span>
+          <div class="toggle-group">
+            <button class="toggle-btn active" data-lang="en">EN</button>
+            <button class="toggle-btn" data-lang="hi">हि</button>
           </div>
-          <div class="field-row">
-            <label class="field">
-              <span data-i18n="format">प्रारूप</span>
-              <select id="range-format">
-                <option value="csv">CSV</option>
-                <option value="excel">Excel</option>
-                <option value="json">JSON</option>
-                <option value="all">All formats</option>
-              </select>
-            </label>
-            <label class="field checkbox-field">
-              <span data-i18n="monthlyFiles">मासिक फ़ाइलें</span>
-              <input id="range-monthly" type="checkbox" />
-            </label>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Time Format</span>
+          <div class="toggle-group">
+            <button class="toggle-btn active" data-timefmt="12h">12h</button>
+            <button class="toggle-btn" data-timefmt="24h">24h</button>
           </div>
-          <button type="submit" class="btn-primary" data-i18n="generateRange">निर्यात करें</button>
-          <p id="range-status" class="tool-status" aria-live="polite"></p>
-          <div id="range-files" class="file-list"></div>
-        </form>
-      </section>
-
-      <section class="tool-section">
-        <h3 data-i18n="pdfTitle">PDF पंचांग</h3>
-        <form id="pdf-form" autocomplete="off" class="dialog-form">
-          <label class="field">
-            <span data-i18n="year">वर्ष</span>
-            <input id="pdf-year" type="number" min="1900" max="2200" placeholder="2025" required />
-          </label>
-          <button type="submit" class="btn-primary" data-i18n="generatePdf">PDF बनाएं</button>
-          <p id="pdf-status" class="tool-status" aria-live="polite"></p>
-          <div id="pdf-file" class="file-list"></div>
-        </form>
-      </section>
-
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Ayanamsa</span>
+          <select class="form-select" id="ayanamsaSelect">
+            <option value="Lahiri">Lahiri</option>
+            <option value="Raman">Raman</option>
+            <option value="Krishnamurti">Krishnamurti</option>
+          </select>
+        </div>
+      </div>
     </div>
-  </dialog>
 
-  <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <div class="settings-section">
+      <div class="settings-section-title">Export Panchang</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <span class="settings-label">PDF (Single Year)</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Year</label>
+            <input type="number" class="form-input" id="pdfYear" value="2026" min="1900" max="2200">
+          </div>
+          <div class="form-group" style="justify-content: flex-end;">
+            <label class="form-label">&nbsp;</label>
+            <button class="btn-primary" id="pdfExportBtn">Generate PDF</button>
+          </div>
+        </div>
+        <div class="export-result" id="pdfResult"></div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-row">
+          <span class="settings-label">CSV / Excel / JSON Range</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Start Year</label>
+            <input type="number" class="form-input" id="rangeStart" value="2025" min="1900" max="2200">
+          </div>
+          <div class="form-group">
+            <label class="form-label">End Year</label>
+            <input type="number" class="form-input" id="rangeEnd" value="2026" min="1900" max="2200">
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Format</span>
+          <select class="form-select" id="rangeFormat">
+            <option value="csv">CSV</option>
+            <option value="excel">Excel</option>
+            <option value="json">JSON</option>
+          </select>
+        </div>
+        <button class="btn-primary" id="rangeExportBtn">Generate Export</button>
+        <div class="export-result" id="rangeResult"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- #app -->
+
+<script src="/static/app.js"></script>
 </body>
 </html>

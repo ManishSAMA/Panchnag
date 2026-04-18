@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -X POST http://localhost:5000/choghadiya -H 'Content-Type: application/json' -d '{\"date\":\"2026-04-18\",\"lat\":26.9124,\"lon\":75.7873}')",
+      "Bash(python3 -m json.tool)"
+    ]
+  }
+}
