@@ -360,3 +360,17 @@ def jd_to_iso_local_string(jd: float, tz_name: str) -> str:
 def jd_to_ist_string(jd: float) -> str:
     """Convert a Julian Day to IST (UTC+5:30) time string."""
     return jd_to_local_time_string(jd, tz_offset=5.5)
+
+
+# ---------------------------------------------------------------------------
+# Sankranti (solar ingress) detection
+# ---------------------------------------------------------------------------
+
+def _sidereal_sun_lon_lahiri(jd: float) -> float:
+    """Sun's sidereal longitude using Lahiri ayanamsa. Internal helper."""
+    flags = swe.FLG_SWIEPH | swe.FLG_SPEED
+    res, _err = swe.calc_ut(jd, swe.SUN, flags)
+    tropical_lon = res[0]
+    swe.set_sid_mode(swe.SIDM_LAHIRI, 0, 0)
+    ayanamsa = swe.get_ayanamsa_ut(jd)
+    return (tropical_lon - ayanamsa) % 360.0
