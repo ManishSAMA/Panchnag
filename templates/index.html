@@ -1,96 +1,159 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jain Panchang</title>
+  <title>जैन पंचांग</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Noto+Sans+Devanagari:wght@400;500;700&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 </head>
 <body>
-  <main class="shell">
-    <section class="hero">
-      <p class="eyebrow">Sunrise-based Panchang</p>
-      <h1>Generate a location-aware daily Panchang.</h1>
-      <p class="lede">Search for a city or enter coordinates, choose a date, and get a sunrise-based Panchang with explicit rule snapshots. You can also export full year ranges directly from the same interface.</p>
-    </section>
 
-    <section class="panel-stack">
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <p class="eyebrow">Daily</p>
-            <h2>Single-date Panchang</h2>
-          </div>
-          <p class="panel-copy">Use this when you want the Panchang for one exact date and location.</p>
-        </div>
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="header-left">
+      <span class="app-icon" aria-hidden="true">ॐ</span>
+      <span class="app-title" data-i18n="appTitle">जैन पंचांग</span>
+    </div>
+    <div class="header-right">
+      <button id="lang-toggle" class="header-btn lang-btn" title="Switch language">EN</button>
+      <button id="location-btn" class="header-btn location-btn">
+        <span class="btn-icon" aria-hidden="true">⊕</span>
+        <span id="location-display" data-i18n="setLocation">स्थान चुनें</span>
+      </button>
+      <button id="tools-btn" class="header-btn tools-btn">
+        <span class="btn-icon" aria-hidden="true">↓</span>
+        <span data-i18n="tools">एक्सपोर्ट</span>
+      </button>
+    </div>
+  </header>
 
-        <form id="panchang-form" class="form" autocomplete="off">
-          <label class="field">
-            <span>City search</span>
-            <input id="city" name="city" type="text" placeholder="Jaipur, Mumbai, Varanasi..." />
-            <div id="suggestions" class="suggestions"></div>
-          </label>
+  <!-- ── Calendar navigation ──────────────────────────────────── -->
+  <nav class="cal-nav" aria-label="Calendar navigation">
+    <button id="prev-month" class="nav-btn" aria-label="Previous month">&#8249;</button>
+    <div class="cal-title">
+      <h1 id="cal-month-year" class="cal-heading"></h1>
+      <p id="cal-samvat" class="cal-samvat"></p>
+    </div>
+    <button id="next-month" class="nav-btn" aria-label="Next month">&#8250;</button>
+  </nav>
 
-          <div class="grid">
-            <label class="field">
-              <span>Latitude</span>
-              <input id="lat" name="lat" type="number" step="any" placeholder="26.9124" />
-            </label>
-            <label class="field">
-              <span>Longitude</span>
-              <input id="lon" name="lon" type="number" step="any" placeholder="75.7873" />
-            </label>
-          </div>
+  <!-- ── Calendar grid ────────────────────────────────────────── -->
+  <main class="cal-main" aria-label="Calendar">
+    <div class="cal-grid-wrap">
+      <div id="cal-weekdays" class="cal-weekdays" role="row" aria-hidden="true"></div>
+      <div id="cal-days" class="cal-days" role="grid"></div>
+      <div id="cal-loading" class="cal-loading hidden" aria-live="polite">
+        <div class="spinner"></div>
+        <span data-i18n="loading">लोड हो रहा है...</span>
+      </div>
+    </div>
 
-          <div class="grid">
-            <label class="field">
-              <span>Date</span>
-              <input id="date" name="date" type="date" required />
-            </label>
-            <label class="field">
-              <span>Ayanamsa</span>
-              <select id="ayanamsa" name="ayanamsa">
-                <option value="Lahiri">Lahiri</option>
-                <option value="Raman">Raman</option>
-                <option value="Krishnamurti">Krishnamurti</option>
-              </select>
-            </label>
-          </div>
+    <!-- Legend -->
+    <div class="cal-legend" aria-label="Legend">
+      <span class="legend-item purnima-dot" data-i18n="purnima">पूर्णिमा</span>
+      <span class="legend-item amavasya-dot" data-i18n="amavasya">अमावस्या</span>
+      <span class="legend-item ekadashi-dot" data-i18n="ekadashi">एकादशी</span>
+    </div>
+  </main>
 
-          <button id="submit" type="submit">Generate Daily Panchang</button>
-        </form>
+  <!-- ── Day detail panel ─────────────────────────────────────── -->
+  <div id="overlay" class="overlay" aria-hidden="true"></div>
 
-        <div id="status" class="status" aria-live="polite"></div>
+  <aside id="day-panel" class="day-panel" aria-label="Daily Panchang details">
+    <div class="day-panel-header">
+      <div>
+        <h2 id="panel-date" class="panel-date"></h2>
+        <p id="panel-location-line" class="panel-location-line"></p>
+      </div>
+      <button id="panel-close" class="panel-close-btn" aria-label="Close panel">&#x2715;</button>
+    </div>
+
+    <div id="panel-loading" class="panel-loading" aria-live="polite">
+      <div class="spinner"></div>
+    </div>
+
+    <div id="panel-body" class="day-panel-body" hidden>
+      <section class="detail-section">
+        <h3 class="detail-heading" data-i18n="panchangHeading">पंचांग</h3>
+        <dl id="panel-panchang" class="detail-dl"></dl>
       </section>
+      <section class="detail-section">
+        <h3 class="detail-heading" data-i18n="eventsHeading">घटनाएं</h3>
+        <dl id="panel-events" class="detail-dl"></dl>
+      </section>
+      <section class="detail-section">
+        <h3 class="detail-heading" data-i18n="samvatHeading">संवत</h3>
+        <dl id="panel-samvat" class="detail-dl"></dl>
+      </section>
+    </div>
+  </aside>
 
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <p class="eyebrow">Export</p>
-            <h2>Year-range Panchang</h2>
-          </div>
-          <p class="panel-copy">Create downloadable CSV, Excel, or JSON exports for a full span like 2025 to 2030.</p>
-        </div>
+  <!-- ── Location dialog ──────────────────────────────────────── -->
+  <dialog id="location-dialog" class="app-dialog">
+    <div class="dialog-header">
+      <h2 data-i18n="locationTitle">स्थान चुनें</h2>
+      <button id="location-dialog-close" class="dialog-close-btn" aria-label="Close">&#x2715;</button>
+    </div>
+    <form id="location-form" autocomplete="off" class="dialog-form">
+      <label class="field">
+        <span data-i18n="citySearch">शहर खोजें</span>
+        <input id="city" type="text" placeholder="Jaipur, Mumbai, Varanasi…" />
+        <div id="suggestions" class="suggestions"></div>
+      </label>
+      <div class="field-row">
+        <label class="field">
+          <span data-i18n="latitude">अक्षांश</span>
+          <input id="lat" type="number" step="any" placeholder="26.9124" />
+        </label>
+        <label class="field">
+          <span data-i18n="longitude">देशांतर</span>
+          <input id="lon" type="number" step="any" placeholder="75.7873" />
+        </label>
+      </div>
+      <label class="field">
+        <span data-i18n="ayanamsa">अयनांश</span>
+        <select id="ayanamsa">
+          <option value="Lahiri">Lahiri</option>
+          <option value="Raman">Raman</option>
+          <option value="Krishnamurti">Krishnamurti</option>
+        </select>
+      </label>
+      <p id="location-error" class="field-error" hidden></p>
+      <div class="dialog-actions">
+        <button type="submit" class="btn-primary" data-i18n="save">सहेजें</button>
+        <button type="button" id="location-cancel" class="btn-secondary" data-i18n="cancel">रद्द करें</button>
+      </div>
+    </form>
+  </dialog>
 
-        <form id="range-form" class="form" autocomplete="off">
-          <div class="grid">
+  <!-- ── Tools dialog ─────────────────────────────────────────── -->
+  <dialog id="tools-dialog" class="app-dialog tools-dialog">
+    <div class="dialog-header">
+      <h2 data-i18n="toolsTitle">निर्यात उपकरण</h2>
+      <button id="tools-dialog-close" class="dialog-close-btn" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="tools-body">
+
+      <section class="tool-section">
+        <h3 data-i18n="yearRangeTitle">वर्ष-श्रेणी निर्यात</h3>
+        <form id="range-form" autocomplete="off" class="dialog-form">
+          <div class="field-row">
             <label class="field">
-              <span>Start year</span>
-              <input id="start-year" name="start_year" type="number" min="1900" max="2200" placeholder="2025" required />
+              <span data-i18n="startYear">प्रारंभ वर्ष</span>
+              <input id="start-year" type="number" min="1900" max="2200" placeholder="2025" required />
             </label>
             <label class="field">
-              <span>End year</span>
-              <input id="end-year" name="end_year" type="number" min="1900" max="2200" placeholder="2030" required />
+              <span data-i18n="endYear">अंतिम वर्ष</span>
+              <input id="end-year" type="number" min="1900" max="2200" placeholder="2030" required />
             </label>
           </div>
-
-          <div class="grid">
+          <div class="field-row">
             <label class="field">
-              <span>Format</span>
-              <select id="range-format" name="format">
+              <span data-i18n="format">प्रारूप</span>
+              <select id="range-format">
                 <option value="csv">CSV</option>
                 <option value="excel">Excel</option>
                 <option value="json">JSON</option>
@@ -98,117 +161,31 @@
               </select>
             </label>
             <label class="field checkbox-field">
-              <span>Monthly files</span>
-              <input id="range-monthly" name="monthly" type="checkbox" />
+              <span data-i18n="monthlyFiles">मासिक फ़ाइलें</span>
+              <input id="range-monthly" type="checkbox" />
             </label>
           </div>
-
-          <button id="range-submit" type="submit">Generate Year Range</button>
-        </form>
-
-        <div id="range-status" class="status" aria-live="polite"></div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <p class="eyebrow">PDF</p>
-            <h2>Printable PDF Panchang</h2>
-          </div>
-          <p class="panel-copy">Generate a year-wise printable PDF calendar for the current location and ayanamsa.</p>
-        </div>
-
-        <form id="pdf-form" class="form" autocomplete="off">
-          <div class="grid">
-            <label class="field">
-              <span>Year</span>
-              <input id="pdf-year" name="year" type="number" min="1900" max="2200" placeholder="2025" required />
-            </label>
-            <div class="field field-note">
-              <span>Uses current location</span>
-              <p>City or coordinates from the daily section will be reused for this PDF export.</p>
-            </div>
-          </div>
-
-          <button id="pdf-submit" type="submit">Generate PDF</button>
-        </form>
-
-        <div id="pdf-status" class="status" aria-live="polite"></div>
-      </section>
-    </section>
-
-    <section id="result" class="result hidden">
-      <div class="result-header">
-        <div>
-          <p class="eyebrow">Result</p>
-          <h2 id="result-title">Daily Panchang</h2>
-        </div>
-        <p id="result-subtitle" class="subtitle"></p>
-      </div>
-
-      <div class="cards">
-        <article class="card">
-          <h3>Events</h3>
-          <dl id="events-list"></dl>
-        </article>
-        <article class="card">
-          <h3>Panchang</h3>
-          <dl id="panchang-list"></dl>
-        </article>
-        <article class="card">
-          <h3>Rules</h3>
-          <dl id="rules-list"></dl>
-        </article>
-      </div>
-
-      <article class="json-panel">
-        <h3>Structured JSON</h3>
-        <pre id="json-output"></pre>
-      </article>
-    </section>
-
-    <section id="range-result" class="result hidden">
-      <div class="result-header">
-        <div>
-          <p class="eyebrow">Export Result</p>
-          <h2 id="range-result-title">Year-range Panchang</h2>
-        </div>
-        <p id="range-result-subtitle" class="subtitle"></p>
-      </div>
-
-      <div class="cards cards-two">
-        <article class="card">
-          <h3>Summary</h3>
-          <dl id="range-summary-list"></dl>
-        </article>
-        <article class="card">
-          <h3>Downloads</h3>
+          <button type="submit" class="btn-primary" data-i18n="generateRange">निर्यात करें</button>
+          <p id="range-status" class="tool-status" aria-live="polite"></p>
           <div id="range-files" class="file-list"></div>
-        </article>
-      </div>
-    </section>
+        </form>
+      </section>
 
-    <section id="pdf-result" class="result hidden">
-      <div class="result-header">
-        <div>
-          <p class="eyebrow">PDF Result</p>
-          <h2 id="pdf-result-title">Printable Panchang PDF</h2>
-        </div>
-        <p id="pdf-result-subtitle" class="subtitle"></p>
-      </div>
-
-      <div class="cards cards-two">
-        <article class="card">
-          <h3>Summary</h3>
-          <dl id="pdf-summary-list"></dl>
-        </article>
-        <article class="card">
-          <h3>Download</h3>
+      <section class="tool-section">
+        <h3 data-i18n="pdfTitle">PDF पंचांग</h3>
+        <form id="pdf-form" autocomplete="off" class="dialog-form">
+          <label class="field">
+            <span data-i18n="year">वर्ष</span>
+            <input id="pdf-year" type="number" min="1900" max="2200" placeholder="2025" required />
+          </label>
+          <button type="submit" class="btn-primary" data-i18n="generatePdf">PDF बनाएं</button>
+          <p id="pdf-status" class="tool-status" aria-live="polite"></p>
           <div id="pdf-file" class="file-list"></div>
-        </article>
-      </div>
-    </section>
-  </main>
+        </form>
+      </section>
+
+    </div>
+  </dialog>
 
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>

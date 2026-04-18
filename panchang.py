@@ -97,6 +97,112 @@ def get_hindu_month_from_sun_lon(sun_lon: float) -> tuple[str, str]:
     sanskrit = HINDU_MONTH_NAMES[idx]
     return sanskrit, HINDU_MONTH_COMMON_NAMES[sanskrit]
 
+
+def _moon_sun_elongation(jd: float, ayanamsa: str = 'Lahiri') -> float:
+    moon = get_planetary_longitude(jd, 'Moon', ayanamsa)
+    sun = get_planetary_longitude(jd, 'Sun', ayanamsa)
+    return (moon - sun) % 360.0
+
+
+def find_new_moon_before(jd: float, ayanamsa: str = 'Lahiri') -> float:
+    """Return JD of the most recent Amavasya (new moon) strictly before jd."""
+    e = _moon_sun_elongation(jd, ayanamsa)
+    centre = jd - e / 13.2
+    lo = centre - 3.0
+    prev_e = _moon_sun_elongation(lo, ayanamsa)
+    for i in range(14):
+        curr = lo + (i + 1) * 0.5
+        curr_e = _moon_sun_elongation(curr, ayanamsa)
+        if prev_e > 270.0 and curr_e < 90.0:
+            a, b = lo + i * 0.5, curr
+            for _ in range(50):
+                mid = (a + b) / 2
+                if _moon_sun_elongation(mid, ayanamsa) > 180.0:
+                    a = mid
+                else:
+                    b = mid
+            return b
+        prev_e = curr_e
+    raise ValueError(f"No new moon found before JD {jd}")
+
+
+def find_new_moon_after(jd: float, ayanamsa: str = 'Lahiri') -> float:
+    """Return JD of the next Amavasya (new moon) strictly after jd."""
+    e = _moon_sun_elongation(jd, ayanamsa)
+    centre = jd + (360.0 - e) / 13.2
+    lo = centre - 3.0
+    prev_e = _moon_sun_elongation(lo, ayanamsa)
+    for i in range(14):
+        curr = lo + (i + 1) * 0.5
+        curr_e = _moon_sun_elongation(curr, ayanamsa)
+        if prev_e > 270.0 and curr_e < 90.0:
+            a, b = lo + i * 0.5, curr
+            for _ in range(50):
+                mid = (a + b) / 2
+                if _moon_sun_elongation(mid, ayanamsa) > 180.0:
+                    a = mid
+                else:
+                    b = mid
+            if b > jd:
+                return b
+        prev_e = curr_e
+    raise ValueError(f"No new moon found after JD {jd}")
+
+
+def find_sankrantis_in_range(
+    start_jd: float, end_jd: float, ayanamsa: str = 'Lahiri'
+) -> list[int]:
+    """Return zodiac sign indices (0–11) of all Sankrantis in (start_jd, end_jd].
+
+    A Sankranti occurs when the Sun crosses a 30° boundary into a new sign.
+    """
+    results: list[int] = []
+    step = 0.5
+    t = start_jd
+    prev_sign = int(get_planetary_longitude(t, 'Sun', ayanamsa) / 30.0) % 12
+    t += step
+    while t <= end_jd + step:
+        curr_sign = int(get_planetary_longitude(t, 'Sun', ayanamsa) / 30.0) % 12
+        if curr_sign != prev_sign:
+            a, b = t - step, t
+            for _ in range(50):
+                mid = (a + b) / 2
+                if int(get_planetary_longitude(mid, 'Sun', ayanamsa) / 30.0) % 12 == prev_sign:
+                    a = mid
+                else:
+                    b = mid
+            if start_jd < b <= end_jd:
+                results.append(curr_sign)
+            prev_sign = curr_sign
+        t += step
+    return results
+
+
+def get_hindu_month(jd: float, ayanamsa: str = 'Lahiri') -> tuple[str, str, bool]:
+    """Return (sanskrit_name, common_name, is_adhika) for the lunar month containing jd.
+
+    Amanta rule: the month is named after the Sankranti (Sun sign ingress) that
+    falls within the lunar month (prev Amavasya → next Amavasya).
+    Zero Sankrantis in a month → Adhika (leap) masa, named after the next month's Sankranti.
+    """
+    prev_nm = find_new_moon_before(jd, ayanamsa)
+    next_nm = find_new_moon_after(prev_nm + 1.0, ayanamsa)
+    sankrantis = find_sankrantis_in_range(prev_nm, next_nm, ayanamsa)
+
+    if sankrantis:
+        name = HINDU_MONTH_NAMES[sankrantis[0]]
+        return name, HINDU_MONTH_COMMON_NAMES[name], False
+
+    next_next_nm = find_new_moon_after(next_nm + 1.0, ayanamsa)
+    next_sankrantis = find_sankrantis_in_range(next_nm, next_next_nm, ayanamsa)
+    if next_sankrantis:
+        base = HINDU_MONTH_NAMES[next_sankrantis[0]]
+        return f"Adhika {base}", f"Adhika {HINDU_MONTH_COMMON_NAMES[base]}", True
+
+    sun_lon = get_planetary_longitude(jd, 'Sun', ayanamsa)
+    base = HINDU_MONTH_NAMES[int(sun_lon / 30.0) % 12]
+    return f"Adhika {base}", f"Adhika {HINDU_MONTH_COMMON_NAMES[base]}", True
+
 # ---------------------------------------------------------------------------
 # Karana Names & Cycle Logic
 # ---------------------------------------------------------------------------

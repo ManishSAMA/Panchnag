@@ -137,6 +137,7 @@ def _compute_day(args_tuple) -> dict | None:
             moonrise_str        = jd_to_local_time_string(jd_mr, tz_offset),
             moonset_str         = jd_to_local_time_string(jd_ms, tz_offset),
             ayanamsa_dec        = ayanamsa_val,
+            ayanamsa_name       = ayanamsa,
             tz_offset           = tz_offset,
             tz_label            = tz_label,
             vikram_samvat       = vs,

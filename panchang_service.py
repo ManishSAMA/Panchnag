@@ -35,6 +35,7 @@ from astronomy import (
 )
 from location_service import geocode_city, get_timezone_name
 from panchang import (
+    HINDU_MONTH_NAMES,
     JAIN_TITHI_OFFSET_DAYS,
     NAKSHATRA_NAMES,
     TITHI_NAMES,
@@ -42,7 +43,7 @@ from panchang import (
     find_chaitra_shukla_1,
     find_diwali,
     generate_daily_panchang,
-    get_hindu_month_from_sun_lon,
+    get_hindu_month,
     get_nakshatra,
     get_tithi,
     get_vikram_samvat,
@@ -294,7 +295,7 @@ def generate_location_panchang(
 
     ayanamsa_value = get_ayanamsa(events.sunrise_jd, ayanamsa_name)
     tz_name = location.timezone
-    hindu_month, hindu_month_common = get_hindu_month_from_sun_lon(sunrise_planets["Sun"])
+    hindu_month, hindu_month_common, is_adhika = get_hindu_month(events.sunrise_jd, ayanamsa_name)
 
     tz = ZoneInfo(tz_name)
     tz_offset_float = (
@@ -332,9 +333,12 @@ def generate_location_panchang(
             "sun_rashi": get_sun_rashi(events.sunrise_jd),
             "moon_rashi": get_rashi_name(sunrise_planets["Moon"]),
             "hindu_month": {
-                "index": int(sunrise_planets["Sun"] / 30.0) % 12,
+                "index": HINDU_MONTH_NAMES.index(
+                    hindu_month.removeprefix("Adhika ") if is_adhika else hindu_month
+                ),
                 "name": hindu_month,
                 "name_common": hindu_month_common,
+                "is_adhika": is_adhika,
             },
             "vikram_samvat": vikram_samvat,
             "vira_nirvana_samvat": vira_nirvana_samvat,

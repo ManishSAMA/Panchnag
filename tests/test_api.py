@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from app import app
 
@@ -205,6 +205,67 @@ class ApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()["error"], "Missing required field: year")
+
+
+    def test_month_overview_requires_location(self):
+        response = self.client.get("/month-overview?year=2026&month=4")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("city", response.get_json()["error"].lower())
+
+    def test_month_overview_missing_year(self):
+        response = self.client.get("/month-overview?month=4&lat=26.91&lon=75.78")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("year", response.get_json()["error"].lower())
+
+    def test_month_overview_missing_month(self):
+        response = self.client.get("/month-overview?year=2026&lat=26.91&lon=75.78")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("month", response.get_json()["error"].lower())
+
+    def test_month_overview_invalid_month(self):
+        response = self.client.get("/month-overview?year=2026&month=13&lat=26.91&lon=75.78")
+        self.assertEqual(response.status_code, 400)
+
+    @patch("app.resolve_location")
+    @patch("app.generate_location_panchang")
+    def test_month_overview_returns_all_days_in_month(self, mock_generate, mock_resolve):
+        mock_location = MagicMock()
+        mock_location.name = "Jaipur, Rajasthan, India"
+        mock_location.lat = 26.9124
+        mock_location.lon = 75.7873
+        mock_location.timezone = "Asia/Kolkata"
+        mock_resolve.return_value = mock_location
+
+        mock_generate.return_value = {
+            "location": "Jaipur, Rajasthan, India",
+            "panchang": {
+                "tithi": {"index": 3, "name": "Shukla Tritiya"},
+                "nakshatra": {"index": 5, "name": "Ardra"},
+                "vara": {"index": 2, "name": "Mangalavara (Tuesday)"},
+                "hindu_month": {"index": 0, "name": "Chaitra", "name_common": "Chaitra"},
+                "vikram_samvat": 2083,
+                "vira_nirvana_samvat": 2550,
+            },
+        }
+
+        response = self.client.get(
+            "/month-overview?year=2026&month=4&lat=26.9124&lon=75.7873&ayanamsa=Lahiri"
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["year"], 2026)
+        self.assertEqual(payload["month"], 4)
+        self.assertEqual(len(payload["days"]), 30)
+        first_day = payload["days"][0]
+        self.assertEqual(first_day["date"], "2026-04-01")
+        self.assertEqual(first_day["tithi_name"], "Shukla Tritiya")
+        self.assertEqual(first_day["tithi_index"], 3)
+        self.assertEqual(first_day["nakshatra_name"], "Ardra")
+        self.assertFalse(first_day["is_purnima"])
+        self.assertFalse(first_day["is_amavasya"])
+        self.assertFalse(first_day["is_ekadashi"])
+        self.assertEqual(payload["vikram_samvat"], 2083)
+        self.assertEqual(payload["hindu_month_index"], 0)
 
 
 if __name__ == "__main__":

@@ -87,6 +87,7 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
                 moonrise_str="",
                 moonset_str="",
                 ayanamsa_dec=0.0,
+                ayanamsa_name=ayanamsa,
                 tz_offset=tz_offset,
                 tz_label="PDF",
                 vikram_samvat=get_vikram_samvat(civil_date, chaitra_shukla_1),

@@ -15,7 +15,7 @@ import json
 import os
 
 from astronomy import format_dms, get_sun_rashi, jd_to_local_datetime_string, jd_to_local_time_string
-from panchang import get_hindu_month_from_sun_lon
+from panchang import get_hindu_month
 
 ELEMENT_DISPLAY_SPECS = (
     ("Tithi", "Tithi_End_JD"),
@@ -38,6 +38,7 @@ def format_row_data(
     moonrise_str: str,
     moonset_str: str,
     ayanamsa_dec: float,
+    ayanamsa_name: str = 'Lahiri',
     tz_offset: float = 5.5,
     tz_label: str = "IST",
     vikram_samvat: int | None = None,
@@ -73,8 +74,7 @@ def format_row_data(
     row['Sun_Rashi'] = get_sun_rashi(julian_date)
 
     # ---- Hindu Lunar Month ----
-    sun_lon = planets.get('Sun', 0.0)
-    hindu_month, hindu_month_common = get_hindu_month_from_sun_lon(sun_lon)
+    hindu_month, hindu_month_common, _is_adhika = get_hindu_month(julian_date, ayanamsa_name)
     row['Hindu_Month'] = hindu_month
     row['Hindu_Month_Common'] = hindu_month_common
 
