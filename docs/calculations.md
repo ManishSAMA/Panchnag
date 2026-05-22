@@ -198,7 +198,39 @@ These use the existing batch-generation engine in `main.py`:
 
 The PDF exporter computes daily sunrise-based Panchang values per day and renders them month by month into a printable layout.
 
-## 10. Important Scope Note
+## 10. Month Overview and Choghadiya
+
+### Month overview
+
+The month overview endpoint calls the same daily Panchang service for every day in the requested Gregorian month. It then keeps only the compact fields needed by a calendar grid:
+
+- Tithi
+- Nakshatra
+- Vara
+- selected end times
+- Purnima, Amavasya, and Ekadashi flags
+
+Because it uses the daily service, it inherits the same sunrise-bound rule model.
+
+### Choghadiya
+
+Choghadiya generation uses the local sunrise, sunset, and next sunrise for the requested date and coordinates.
+
+The daytime span is divided into eight equal parts:
+
+```text
+day_slot_duration = (sunset - sunrise) / 8
+```
+
+The nighttime span is also divided into eight equal parts:
+
+```text
+night_slot_duration = (next_sunrise - sunset) / 8
+```
+
+The starting Choghadiya depends on the weekday, and each following slot advances through the fixed Choghadiya order.
+
+## 11. Important Scope Note
 
 This project currently calculates a sunrise-based Panchang and exposes comparison snapshots for alternative offset inspection.
 

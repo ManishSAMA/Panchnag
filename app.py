@@ -202,16 +202,17 @@ def create_app() -> Flask:
                 if first_result is None:
                     first_result = result
 
-                tithi_index = result["panchang"]["tithi"]["index"]
+                udaya_tithi = result["panchang"]["tithi"][0]
+                tithi_index = udaya_tithi["index"]
                 nakshatra_index = result["panchang"]["nakshatra"]["index"]
                 vara_index = result["panchang"]["vara"]["index"]
 
-                tithi_end_raw = result["panchang"]["tithi"]["ends"]["time"]
+                tithi_end_raw = udaya_tithi["ends"]["time"] if udaya_tithi["ends"] else ""
                 nakshatra_end_raw = result["panchang"]["nakshatra"]["ends"]["time"]
                 days.append({
                     "date": date_str,
                     "tithi_index": tithi_index,
-                    "tithi_name": result["panchang"]["tithi"]["name"],
+                    "tithi_name": udaya_tithi["name"],
                     "tithi_end_time": tithi_end_raw[:5] if tithi_end_raw else "",
                     "nakshatra_index": nakshatra_index,
                     "nakshatra_name": result["panchang"]["nakshatra"]["name"],

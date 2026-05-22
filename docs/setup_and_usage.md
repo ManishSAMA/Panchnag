@@ -1,12 +1,12 @@
 # Setup and Usage
 
-This guide is written primarily for people who want to run and use the application.
+This guide is for people who want to run the application locally, use the web UI, call the API, or generate exports from the command line.
 
 ## 1. Requirements
 
 You need:
 
-- Python 3.9 or newer (the project is developed on Python 3.14)
+- Python 3.9 or newer
 - the dependencies listed in `requirements.txt`
 - internet access if you want to use city search, because geocoding depends on Nominatim
 
@@ -46,11 +46,13 @@ Open:
 http://127.0.0.1:5000
 ```
 
-The web app contains three generator sections:
+The web app contains the main generator flows:
 
 1. single-date Panchang lookup
-2. year-range export
-3. printable PDF generation
+2. month overview data
+3. Choghadiya slots
+4. year-range export
+5. printable PDF generation
 
 ## 4. Using the Daily Panchang Generator
 
@@ -96,9 +98,46 @@ The current daily generator shows:
 
 The Jain Tithi does not override the primary daily label; it is displayed alongside it for comparison.
 
-## 5. Using the Year-Range Generator
+## 5. Using the Month Overview Endpoint
 
-The second section is designed for bulk exports.
+The month overview endpoint returns compact day-level data for a Gregorian month. It is mainly intended for calendar-style UI views.
+
+Example:
+
+```text
+/month-overview?year=2026&month=4&lat=26.9124&lon=75.7873&ayanamsa=Lahiri
+```
+
+The response includes one item per day with:
+
+- Tithi name and index
+- Tithi end time
+- Nakshatra name and index
+- Nakshatra end time
+- Vara
+- flags for Purnima, Amavasya, and Ekadashi
+
+The endpoint requires `year`, `month`, and either a city or both coordinates.
+
+## 6. Using Choghadiya
+
+The Choghadiya endpoint returns eight daytime slots and eight nighttime slots.
+
+Example request:
+
+```json
+{
+  "date": "2026-04-18",
+  "lat": 26.9124,
+  "lon": 75.7873
+}
+```
+
+Each slot includes a name, meaning, nature, start time, end time, and whether it belongs to the day or night period.
+
+## 7. Using the Year-Range Generator
+
+The range generator is designed for bulk exports.
 
 ### How it works
 
@@ -136,7 +175,7 @@ The exported rows use a fixed timezone label and numeric offset snapshot for the
 - downstream spreadsheet analysis
 - historical comparisons across ayanamsas
 
-## 6. Using the PDF Generator
+## 8. Using the PDF Generator
 
 The third section generates a printable PDF for a single year.
 
@@ -163,7 +202,7 @@ The PDF renders landscape monthly tables for the selected year, including Tithi,
 
 Like the range generator, the PDF path uses a fixed timezone offset snapshot for the selected year rather than a full per-date timezone conversion.
 
-## 7. CLI Usage
+## 9. CLI Usage
 
 The CLI is useful when:
 
@@ -195,32 +234,53 @@ python main.py --start_year 2025 --end_year 2026 --lat 26.9124 --lon 75.7873 --f
 python main.py --start_year 2025 --end_year 2025 --lat 26.9124 --lon 75.7873 --format all
 ```
 
-## 8. API Overview
+## 10. API Overview
 
 If you want to use the app programmatically, the main endpoints are:
 
 - `GET /search-location?q=<query>` — city autocomplete
 - `GET /get-coordinates?city=<name>` — resolve city to coordinates and timezone
 - `POST /generate-panchang` — daily Panchang payload
+- `GET /month-overview` — compact month data for calendar views
+- `POST /choghadiya` — day and night Choghadiya slots
 - `POST /generate-range-panchang` — multi-year export files
 - `POST /generate-pdf-panchang` — year PDF
 - `GET /downloads/<token>` — download a generated file by UUID token
 
-## 9. Common Validation Rules
+For payload examples, see [API reference](./api.md).
+
+## 11. Common Validation Rules
 
 The server enforces:
 
 - date is required for daily generation
 - year is required for PDF generation
+- year and month are required for month overview
 - `start_year <= end_year` for range generation
 - coordinates must be numeric
 - latitude and longitude must be provided together
 - either a city or both coordinates must be supplied
 - output format must be one of `csv`, `excel`, `json`, or `all`
 
+## 12. Generated Files
+
+Generated range exports and PDFs are written under:
+
+```text
+/tmp/jain_panchang_exports
+```
+
+The browser receives tokenized download URLs such as:
+
+```text
+/downloads/<token>
+```
+
+Those tokens live in memory inside the running Flask process. If the process restarts, old download links stop working.
+
 The UI offers `Lahiri`, `Raman`, and `Krishnamurti` ayanamsas. Unknown ayanamsa names currently fall back to Lahiri in the astronomy layer, so API clients should send one of those exact names.
 
-## 10. Practical Notes
+## 13. Practical Notes
 
 ### Timezones
 
@@ -236,7 +296,7 @@ Location search depends on Nominatim. If the service is unavailable or the netwo
 
 Single-date lookups are near-instant. Multi-year exports take longer depending on range size, output format, and machine speed. Use `--workers` to parallelize over multiple CPU cores for large ranges.
 
-## 11. Visualization Tools
+## 14. Visualization Tools
 
 The `visualize.py` module provides charts and debugging utilities against generated CSV output. See [Visualizations](./visualizations.md) for full usage details.
 
@@ -250,7 +310,7 @@ python visualize.py --file panchang_2025_2025.csv --plot planets --year 2025
 python visualize.py --debug --date 2025-01-14 --lat 26.9124 --lon 75.7873
 ```
 
-## 12. Running Tests
+## 15. Running Tests
 
 ```bash
 python -m unittest discover -s tests -v
@@ -258,7 +318,7 @@ python -m unittest discover -s tests -v
 
 Install the dependencies first, because the tests import application modules that require packages such as `pyswisseph`, `Flask`, `requests`, and `reportlab`.
 
-## 13. Troubleshooting
+## 16. Troubleshooting
 
 ### The server does not start
 

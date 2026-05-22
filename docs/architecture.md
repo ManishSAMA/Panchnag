@@ -4,11 +4,13 @@ This document explains how the system is organized and why the main modules are 
 
 ## 1. High-Level View
 
-The project has three runtime-oriented product flows:
+The project has five runtime-oriented product flows:
 
 1. daily Panchang lookup through the web UI
-2. year-range data export through the web UI or CLI
-3. printable PDF generation through the web UI
+2. month overview lookup for calendar-style UI data
+3. Choghadiya slot generation
+4. year-range data export through the web UI or CLI
+5. printable PDF generation through the web UI
 
 These flows share core Panchang and astronomy logic, but they do not all need the same output assembly path.
 
@@ -142,7 +144,15 @@ flowchart TD
     Flask --> Browser
 ```
 
-## 6. Validation Boundaries
+## 6. Month Overview and Choghadiya Flows
+
+The month overview path is a lightweight API flow in `app.py`. It validates the requested year and month, resolves the location, then calls `generate_location_panchang()` once per day in the month. The response is intentionally compact so the frontend can render a month grid without needing the full daily payload for every day.
+
+The Choghadiya path is also implemented in `app.py`. It validates date and coordinates, resolves the timezone from coordinates, computes sunrise, sunset, and next sunrise, then divides the day and night spans into eight slots each.
+
+These two flows currently remain route-local because they are small and have limited reuse. If either grows, the natural next step is to move them into dedicated service modules.
+
+## 7. Validation Boundaries
 
 Validation is intentionally split across layers.
 
@@ -168,7 +178,7 @@ Validation is intentionally split across layers.
 
 This split is useful because it separates malformed input from failed astronomical or domain resolution.
 
-## 7. Rule Model
+## 8. Rule Model
 
 The current rule model is intentionally conservative in wording.
 
@@ -185,7 +195,7 @@ The implementation currently does not claim:
 
 That distinction is important for correctness and documentation honesty.
 
-## 8. File Download Strategy
+## 9. File Download Strategy
 
 Generated files are written to temporary export directories under `/tmp`, then exposed through tokenized download URLs.
 
@@ -202,17 +212,19 @@ Current caveats:
 - the token registry is an in-memory dict in `app.py`, so download URLs are only valid for the current server process
 - generated temporary directories are not cleaned up automatically yet
 
-## 9. Frontend Design Notes
+## 10. Frontend Design Notes
 
-The UI is organized into three independent action areas:
+The UI is organized around shared location and ayanamsa context, then separate action areas:
 
 1. daily JSON-style lookup
-2. range export generation
-3. PDF generation
+2. month overview and calendar-oriented data
+3. Choghadiya slots
+4. range export generation
+5. PDF generation
 
 The location and ayanamsa inputs are shared at the page level so the user does not need to repeat them for the other generators.
 
-## 10. Extension Points
+## 11. Extension Points
 
 If you want to extend the system, these are the natural places:
 
@@ -235,7 +247,13 @@ If you want to extend the system, these are the natural places:
 - update `export.py` for flat file formats
 - update `export_pdf.py` for PDF layout changes
 
-## 11. Tradeoffs and Current Limitations
+### Expand month or Choghadiya behavior
+
+- move route-local logic into a service module if it grows
+- add focused API tests in `tests/test_api.py` or `tests/test_choghadiya.py`
+- update [API reference](./api.md) and [Setup and usage](./setup_and_usage.md)
+
+## 12. Tradeoffs and Current Limitations
 
 The current architecture makes pragmatic tradeoffs:
 

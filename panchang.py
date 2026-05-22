@@ -63,6 +63,17 @@ VARA_NAMES: list[str] = [
     "Shanivara (Saturday)",
 ]
 
+# Rahu Kaal slot (1-indexed, out of 8 equal daylight parts) per weekday.
+_RAHU_KAAL_SLOT: dict[int, int] = {
+    0: 8,  # Sunday
+    1: 2,  # Monday
+    2: 7,  # Tuesday
+    3: 5,  # Wednesday
+    4: 6,  # Thursday
+    5: 4,  # Friday
+    6: 3,  # Saturday
+}
+
 # Hindu/Jain lunar month names (Sanskrit/formal and common colloquial forms).
 # Index 0–11 corresponds to Sun Rashi index 0–11 (Mesha→Chaitra … Meena→Phalguna).
 HINDU_MONTH_NAMES: list[str] = [
@@ -327,6 +338,25 @@ def get_vara_from_date(local_date: date) -> int:
     Sunday=0..Saturday=6.
     """
     return int((local_date.weekday() + 1) % 7)
+
+
+def calculate_rahu_kaal(
+    sunrise_jd: float, sunset_jd: float, weekday_index: int
+) -> dict[str, float]:
+    """Return the Rahu Kaal window as Julian Dates.
+
+    Args:
+        sunrise_jd: Julian date of local sunrise.
+        sunset_jd: Julian date of local sunset.
+        weekday_index: 0=Sunday … 6=Saturday (same convention as get_vara_from_date).
+
+    Returns:
+        Dict with 'start_jd' and 'end_jd'.
+    """
+    slot = _RAHU_KAAL_SLOT[weekday_index]
+    part = (sunset_jd - sunrise_jd) / 8
+    start_jd = sunrise_jd + (slot - 1) * part
+    return {"start_jd": start_jd, "end_jd": start_jd + part}
 
 
 def get_tithi_at_jd(jd: float, ayanamsa_name: str) -> int:

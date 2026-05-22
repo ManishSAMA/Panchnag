@@ -1,74 +1,79 @@
 # Documentation Index
 
-This directory contains the long-form documentation for the project.
+Welcome to the long-form documentation for Jain Panchang. The README is the quick front door; this directory explains how to run, use, extend, and reason about the project in more detail.
 
 ## Recommended Reading Order
 
-If you are new to the project:
+If you are new to the project, read:
 
 1. [Setup and usage](./setup_and_usage.md)
-2. [Architecture](./architecture.md)
-3. [Components](./components.md)
-4. [Calculations](./calculations.md)
+2. [API reference](./api.md)
+3. [Architecture](./architecture.md)
+4. [Components](./components.md)
+5. [Calculations](./calculations.md)
 
-## Which Doc Should You Read?
+## By Goal
 
-### If you are a user
+### Run the app
 
-Read [Setup and usage](./setup_and_usage.md). It covers:
+Use [Setup and usage](./setup_and_usage.md) for:
 
-- installation
-- running the Flask app
-- using the daily generator
-- using the year-range generator
-- using the PDF generator
+- local installation
+- web app startup
+- daily lookup
+- month overview
+- Choghadiya lookup
+- year-range exports
+- PDF generation
 - CLI examples
-- common mistakes and practical notes
+- common validation rules
 
-### If you are a developer
+### Integrate with the app
 
-Start with [Architecture](./architecture.md), then read [Components](./components.md).
+Use [API reference](./api.md) for:
+
+- endpoint list
+- request payloads
+- response shapes
+- download behavior
+- location input rules
+
+### Work on the code
+
+Start with [Architecture](./architecture.md), then [Components](./components.md).
 
 Those docs explain:
 
-- request flow through each generator path
-- service layer boundaries
-- how the web app and CLI share computation logic
-- where to add new features or export formats
-- where rule logic lives
-- where export and serialization logic lives
+- how requests move through Flask, parsing, services, astronomy, and exporters
+- why the daily, range, and PDF flows have separate service boundaries
+- where to add new features
+- where rule logic belongs
+- where export and serialization logic belongs
 
-### If you want the formulas and rule behavior
+### Understand the calculations
 
-Read [Calculations](./calculations.md).
+Use [Calculations](./calculations.md) for:
 
-That document explains:
-
-- Julian Day setup and time model
-- Sun and Moon longitude derivation via Swiss Ephemeris
+- Julian Day and timezone handling
+- Swiss Ephemeris usage
+- ayanamsa behavior
 - Tithi, Nakshatra, Yoga, Karana, and Vara formulas
-- how transition end times are found via bisection
-- how sunrise-bound daily labeling works in the current implementation
-- how comparison snapshots differ from the primary label
+- transition end-time search
+- sunrise-bound daily labeling
+- Jain Tithi reference handling
 
-### If you want visual debugging tools
+Use [Hindi calculations](./Hindi_calculations.md) for a simpler Hindi explanation of the calculation flow.
 
-Read [Visualizations](./visualizations.md).
+### Debug generated data
 
-That document explains how to use `visualize.py` to:
+Use [Visualizations](./visualizations.md) for:
 
-- plot planetary sidereal longitudes over time
-- chart Tithi frequency distributions
-- render Panchang element heatmaps
-- diff two CSV outputs for QA
-- dump a single day to the console for debugging
+- planetary longitude charts
+- Tithi frequency charts
+- Panchang element heatmaps
+- CSV diff comparisons
+- single-day console dumps
 
-## Scope and Caution
+## Scope Note
 
-The project currently documents itself as:
-
-- a sunrise-based Panchang generator
-- with comparison reference snapshots for rule inspection
-- not a finalized Agamic Jain rules engine
-
-That wording is intentional. It is accurate to the current implementation and helps avoid overstating the scope of the current rule model.
+The project currently documents itself as a sunrise-based Panchang generator with Jain Tithi reference support. It does not claim to be a finalized Agamic or sect-specific Jain rules engine.

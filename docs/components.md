@@ -19,6 +19,8 @@ Current endpoints:
 - `GET /search-location`
 - `GET /get-coordinates`
 - `POST /generate-panchang`
+- `GET /month-overview`
+- `POST /choghadiya`
 - `POST /generate-range-panchang`
 - `POST /generate-pdf-panchang`
 - `GET /downloads/<token>`
@@ -82,6 +84,7 @@ Why it matters:
 
 - it is the main bridge between raw astronomy and the user-facing daily payload
 - if daily rule behavior changes, this is the first place to inspect
+- the month overview endpoint also depends on this module for each day in the requested month
 
 ## `range_generation_service.py`
 
@@ -267,7 +270,7 @@ Why it matters:
 
 ### `templates/index.html`
 
-Defines the main UI structure with three generator sections and multiple result panels. Location and ayanamsa inputs are shared at the page level across all three generators.
+Defines the main UI structure and result panels. Location and ayanamsa inputs are shared at the page level across the generator flows.
 
 ### `static/app.js`
 
@@ -281,7 +284,7 @@ Handles:
 
 ### `static/app.css`
 
-Controls layout, card styling, responsiveness, and visual grouping of the three generator sections.
+Controls layout, card styling, responsiveness, and visual grouping for the generator flows.
 
 ## Test Files
 

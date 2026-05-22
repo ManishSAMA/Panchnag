@@ -16,7 +16,7 @@ Domain rules implemented here:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from astronomy import (
@@ -40,6 +40,8 @@ from panchang import (
     NAKSHATRA_NAMES,
     TITHI_NAMES,
     calculate_jain_tithi_from_sunrise,
+    calculate_rahu_kaal,
+    calculate_tithi_details,
     find_chaitra_shukla_1,
     find_diwali,
     generate_daily_panchang,
@@ -179,14 +181,42 @@ def _serialize_event(jd: float, tz_name: str) -> dict:
     }
 
 
-def _element_payload(panchang_data: dict, next_sunrise_jd: float, tz_name: str) -> dict:
+_TITHI_LOOP_LIMIT = 5  # safety cap; real maximum across a solar day is 3
+
+
+def _collect_all_tithis_in_day(
+    sunrise_jd: float,
+    next_sunrise_jd: float,
+    ayanamsa_name: str,
+    tz_name: str,
+) -> list[dict]:
+    tithis = []
+    current_jd = sunrise_jd
+    for _ in range(_TITHI_LOOP_LIMIT):
+        details = calculate_tithi_details(current_jd, ayanamsa_name)
+        end_jd = details["Tithi_End_JD"]
+        continues = end_jd >= next_sunrise_jd
+        tithis.append({
+            "index": details["Tithi_Index"],
+            "name": details["Tithi_Name"],
+            "ends": None if continues else _serialize_event(end_jd, tz_name),
+            "continues_past_next_sunrise": continues,
+        })
+        if continues:
+            break
+        current_jd = end_jd + 30.0 / 86400.0  # 30 seconds past tithi end
+    return tithis
+
+
+def _element_payload(
+    panchang_data: dict,
+    next_sunrise_jd: float,
+    tz_name: str,
+    sunrise_jd: float,
+    ayanamsa_name: str,
+) -> dict:
     payload = {
-        "tithi": {
-            "index": panchang_data["Tithi_Index"],
-            "name": panchang_data["Tithi_Name"],
-            "ends": _serialize_event(panchang_data["Tithi_End_JD"], tz_name),
-            "continues_past_next_sunrise": panchang_data["Tithi_End_JD"] >= next_sunrise_jd,
-        },
+        "tithi": _collect_all_tithis_in_day(sunrise_jd, next_sunrise_jd, ayanamsa_name, tz_name),
         "nakshatra": {
             "index": panchang_data["Nakshatra_Index"],
             "name": panchang_data["Nakshatra_Name"],
@@ -293,8 +323,18 @@ def generate_location_panchang(
     )
     daily_panchang.update(calculate_jain_tithi_from_sunrise(events.sunrise_jd, ayanamsa_name))
 
+    rahu_raw = calculate_rahu_kaal(
+        events.sunrise_jd,
+        events.sunset_jd,
+        daily_panchang["Vara_Index"],
+    )
+    _j2000 = datetime(2000, 1, 1, 12, tzinfo=timezone.utc)
+    jd_now = 2451545.0 + (datetime.now(timezone.utc) - _j2000).total_seconds() / 86400.0
+
     ayanamsa_value = get_ayanamsa(events.sunrise_jd, ayanamsa_name)
     tz_name = location.timezone
+    rahu_start = _serialize_event(rahu_raw["start_jd"], tz_name)
+    rahu_end = _serialize_event(rahu_raw["end_jd"], tz_name)
     hindu_month, hindu_month_common, is_adhika = get_hindu_month(events.sunrise_jd, ayanamsa_name)
 
     tz = ZoneInfo(tz_name)
@@ -329,7 +369,7 @@ def generate_location_panchang(
             "next_sunrise": _serialize_event(events.next_sunrise_jd, tz_name),
         },
         "panchang": {
-            **_element_payload(daily_panchang, events.next_sunrise_jd, tz_name),
+            **_element_payload(daily_panchang, events.next_sunrise_jd, tz_name, events.sunrise_jd, ayanamsa_name),
             "sun_rashi": get_sun_rashi(events.sunrise_jd),
             "moon_rashi": get_rashi_name(sunrise_planets["Moon"]),
             "hindu_month": {
@@ -343,6 +383,14 @@ def generate_location_panchang(
             "vikram_samvat": vikram_samvat,
             "vira_nirvana_samvat": vira_nirvana_samvat,
             "reference_time": _serialize_event(events.sunrise_jd, tz_name),
+        },
+        "rahu_kaal": {
+            "start": rahu_start,
+            "end": rahu_end,
+            "duration_minutes": round(
+                (rahu_raw["end_jd"] - rahu_raw["start_jd"]) * 1440, 1
+            ),
+            "is_active_now": rahu_raw["start_jd"] <= jd_now <= rahu_raw["end_jd"],
         },
         "rules": {
             "primary_day_rule": "udaya_tithi",
@@ -382,5 +430,6 @@ def generate_location_panchang(
             "month_common": hindu_month_common,
             "vikram_samvat": vikram_samvat,
             "vira_nirvana_samvat": vira_nirvana_samvat,
+            "rahu_kaal": f"{rahu_start['time'][:5]} – {rahu_end['time'][:5]}",
         },
     }

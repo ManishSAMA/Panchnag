@@ -10,6 +10,7 @@ from astronomy import local_time_to_jd, jd_to_local_time_string, get_sunrise, ge
 from export import apply_element_continuity_formatting, format_row_data
 from panchang import (
     calculate_jain_tithi_from_sunrise,
+    calculate_rahu_kaal,
     find_chaitra_shukla_1,
     find_diwali,
     generate_daily_panchang,
@@ -95,6 +96,12 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
             )
             row["Moon_Rashi"] = get_rashi_name(moon_lon).split(' (')[0]
             row["Sun_Rashi"] = get_sun_rashi(jd_sr)
+            rahu = calculate_rahu_kaal(jd_sr, jd_ss, panchang["Vara_Index"])
+            row["Rahu_Kaal"] = (
+                jd_to_local_time_string(rahu["start_jd"], tz_offset)[:5]
+                + "–"
+                + jd_to_local_time_string(rahu["end_jd"], tz_offset)[:5]
+            )
             all_rows.append(row)
 
     for i, row in enumerate(all_rows):
@@ -157,7 +164,7 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
             "Date", "Day", "Month", "Tithi",
             "Jain Tithi",
             "Nakshatra", "Yoga", "Karana",
-            "Moon Rashi", "Sun Rashi", "Sunrise", "Sunset"
+            "Moon Rashi", "Sun Rashi", "Sunrise", "Sunset", "Rahu Kaal"
         ]]
 
         month_rows = [
@@ -186,11 +193,12 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
                 Paragraph(row_data['Moon_Rashi'], cell_style),
                 Paragraph(row_data['Sun_Rashi_Display'], cell_style),
                 Paragraph(row_data['Sunrise (PDF)'], cell_style),
-                Paragraph(row_data['Sunset (PDF)'], cell_style)
+                Paragraph(row_data['Sunset (PDF)'], cell_style),
+                Paragraph(row_data.get('Rahu_Kaal', ''), cell_style),
             ]
             data.append(row)
 
-        t = Table(data, colWidths=[55, 55, 50, 100, 100, 100, 60, 60, 60, 55, 45, 45], repeatRows=1)
+        t = Table(data, colWidths=[55, 55, 50, 85, 85, 85, 55, 55, 55, 50, 40, 40, 45], repeatRows=1)
         t.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2c3e50')),
             ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),

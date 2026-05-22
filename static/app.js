@@ -167,10 +167,34 @@ function initNavButtons() {
   });
 }
 
+// ── Tithi row helpers ─────────────────────────────────────────
+function tithiEndSub(tithi, panchangDate, ft) {
+  if (tithi.continues_past_next_sunrise || !tithi.ends) return '';
+  const endTime = ft(tithi.ends.time);
+  const endDate = tithi.ends.local?.slice(0, 10);
+  if (endDate && endDate !== panchangDate) {
+    const label = new Date(endDate + 'T12:00:00').toLocaleDateString('en-IN', {
+      day: 'numeric', month: 'short',
+    });
+    return `upto ${endTime}, ${label}`;
+  }
+  return `upto ${endTime}`;
+}
+
+function tithiRows(tithiField, panchangDate, ft) {
+  const arr = Array.isArray(tithiField) ? tithiField : (tithiField ? [tithiField] : []);
+  return arr.map((t, i) => ({
+    label: i === 0 ? 'Tithi' : '',
+    value: t.name || '—',
+    sub: tithiEndSub(t, panchangDate, ft),
+  }));
+}
+
 // ── Date Banner render ────────────────────────────────────────
 function renderDateBanner(moonEl, gregorianEl, detailsEl, data) {
   const p = data.panchang;
-  const tithiIdx = p.tithi?.index || 1;
+  const tithiArr = Array.isArray(p.tithi) ? p.tithi : (p.tithi ? [p.tithi] : []);
+  const tithiIdx = tithiArr[0]?.index || 1;
   moonEl.textContent = moonEmoji(tithiIdx);
 
   const dt = new Date(data.date + 'T00:00:00');
@@ -180,7 +204,7 @@ function renderDateBanner(moonEl, gregorianEl, detailsEl, data) {
 
   const samvat   = p.vikram_samvat || '—';
   const month    = p.hindu_month?.name || '—';
-  const tithi    = p.tithi?.name || '—';
+  const tithi    = tithiArr.map(t => t.name).join(' / ') || '—';
   const location = data.location || '—';
   detailsEl.textContent = `VS ${samvat} | ${month} | ${tithi} | ${location}`;
 }
@@ -410,7 +434,7 @@ registerPage('panchang', {
     const ft = t => formatTime(t?.slice(0,5), fmt);
 
     const rows = [
-      { label: 'Tithi', value: p.tithi?.name, sub: p.tithi?.ends?.time ? `upto ${ft(p.tithi.ends.time)}` : '' },
+      ...tithiRows(p.tithi, data.date, ft),
       { label: 'Nakshatra', value: `${p.nakshatra?.name || '—'} (Pada ${p.nakshatra?.pada || '—'})`, sub: p.nakshatra?.ends?.time ? `upto ${ft(p.nakshatra.ends.time)}` : '' },
       { label: 'Yoga', value: p.yoga?.name || '—', sub: '' },
       { label: 'Karana', value: p.karana?.name || '—', sub: '' },
@@ -451,6 +475,28 @@ registerPage('panchang', {
           </div>
         `).join('')}
       </div>
+      ${(() => {
+        const rk = data.rahu_kaal;
+        if (!rk) return '';
+        const startTime = (rk.start?.time || '').slice(0, 5);
+        const endTime   = (rk.end?.time   || '').slice(0, 5);
+        const badge = rk.is_active_now
+          ? '<span class="rahu-badge rahu-badge--active">ACTIVE NOW 🔴</span>'
+          : '<span class="rahu-badge rahu-badge--inactive">Not Active ✓</span>';
+        return `
+          <div class="panchang-card rahu-kaal-card">
+            <div class="rahu-kaal-title">🚫 Rahu Kaal</div>
+            <div class="panchang-row">
+              <div class="panchang-label">Time</div>
+              <div class="panchang-value">${startTime} – ${endTime} ${badge}</div>
+            </div>
+            <div class="panchang-row">
+              <div class="panchang-label">Duration</div>
+              <div class="panchang-value">${rk.duration_minutes} min</div>
+            </div>
+            <div class="rahu-kaal-note">Avoid important activities during this period.</div>
+          </div>`;
+      })()}
     `;
   }
 });

@@ -1,101 +1,50 @@
 # Jain Panchang
 
-Jain Panchang is a location-aware Panchang generator built on Swiss Ephemeris. It provides:
+Jain Panchang is a location-aware Panchang generator built with Flask and Swiss Ephemeris. It can generate a daily Panchang, month summaries, Choghadiya slots, year-range exports, and printable PDF calendars from either a searched city or manual latitude/longitude coordinates.
 
-- a Flask web interface for daily lookup
-- year-range export generation from the UI or CLI
-- printable PDF generation from the UI
-- a CLI for larger batch generation
-- JSON, CSV, Excel, and PDF outputs
+The project is designed for practical Panchang lookup and export workflows while keeping the astronomical calculations and rule assumptions visible in the code and documentation.
 
-The project is intended to make Panchang generation practical for both day-to-day use and larger archival and export workflows, while keeping the underlying astronomy and Panchang math explicit and maintainable.
+## What It Does
 
-## Current Scope
+- Daily Panchang lookup from the web UI or API
+- City search and timezone detection through Nominatim and TimezoneFinder
+- Sunrise-bound Tithi, Nakshatra, Yoga, Karana, and Vara calculation
+- Jain Tithi calculation using the sunrise `+2h24m` reference
+- Month overview data for calendar-style UI views
+- Day and night Choghadiya slot generation
+- Year-range exports as CSV, Excel, JSON, or all formats
+- Optional monthly split exports
+- Printable year PDF generation
+- CLI batch generation with optional multiprocessing
+- Visualization and QA helpers for generated CSV files
 
-The current implementation is best described as a sunrise-based Panchang engine with comparison reference snapshots.
+## Scope
 
-What that means:
+The current implementation is a sunrise-based Panchang engine.
 
-- the primary daily Tithi is determined from the Tithi active at local sunrise
-- the daily Nakshatra, Yoga, Karana, and Vara are computed from the same sunrise reference
-- the Jain Tithi is determined from the Tithi active `+2h24m` (2 hours 24 minutes) after local sunrise
+It currently:
 
-What that does not mean:
+- determines the primary daily Tithi from the Tithi active at local sunrise
+- computes daily Nakshatra, Yoga, Karana, and Vara from the same sunrise reference
+- computes Jain Tithi from the Tithi active 2 hours 24 minutes after local sunrise
+- exposes reference data clearly so results can be inspected and compared
 
-- this is not yet a finalized Agamic Jain calendrical rules engine
-- the comparison snapshots are inspection aids and do not override the primary daily label
-
-That distinction is important, especially if you intend to use this system for strict sect-specific calendrical decisions.
-
-## Main User Flows
-
-### 1. Daily Panchang
-
-Use the web app to:
-
-- search for a city or enter manual coordinates
-- pick a date
-- choose an ayanamsa (Lahiri, Raman, or Krishnamurti)
-- inspect sunrise, sunset, moonrise, moonset, all five Panchang elements, and rule snapshots
-
-### 2. Year-Range Export
-
-Use the web app or CLI to generate:
-
-- a single year such as `2025`
-- a multi-year range such as `2025` to `2030`
-- monthly-split output files if needed
-
-Supported export formats:
-
-- CSV
-- Excel
-- JSON
-- all supported formats in one run
-
-### 3. Printable PDF
-
-Use the web app to generate a year-wise PDF calendar for the selected location and ayanamsa. The PDF renders month-by-month tables with Tithi, Jain Tithi, Nakshatra, Yoga, Karana, Moon Rashi, Sun Rashi, sunrise, sunset, and Vara.
-
-## Project Structure
-
-```
-Jain_panchang/
-├── app.py                      Flask app factory, API routes, file downloads
-├── main.py                     CLI entry point and batch generation engine
-├── request_parsing.py          Shared validation for all API payloads
-├── panchang_service.py         Daily Panchang orchestration and payload assembly
-├── range_generation_service.py Web-facing multi-year export orchestration
-├── pdf_generation_service.py   Web-facing PDF generation orchestration
-├── astronomy.py                Swiss Ephemeris wrapper and time utilities
-├── panchang.py                 Tithi, Nakshatra, Yoga, Karana, Vara math
-├── location_service.py         Geocoding and timezone resolution
-├── export.py                   CSV, Excel, and JSON serialization
-├── export_pdf.py               PDF table generation via ReportLab
-├── visualize.py                Planetary charts and debug tools
-├── templates/index.html        Single-page web UI
-├── static/app.js               Client-side interaction logic
-├── static/app.css              Frontend styling
-├── tests/
-│   ├── test_api.py             API endpoint and validation tests
-│   ├── test_panchang_rules.py  Sunrise and rule-model tests
-│   ├── test_weekday_outputs.py Weekday consistency tests
-│   └── test_output_formatting.py Output serialization tests
-└── docs/                       Long-form documentation
-```
+It does not yet claim to be a complete Agamic or sect-specific Jain calendrical authority. Use the output with that distinction in mind, especially for strict religious decision-making.
 
 ## Quick Start
 
-### Install dependencies
+Create an environment and install dependencies:
 
 ```bash
+python -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Run the web app
+Run the web app:
 
 ```bash
-python app.py
+
 ```
 
 Open:
@@ -104,27 +53,84 @@ Open:
 http://127.0.0.1:5000
 ```
 
-### Run the CLI
+Run a CLI export:
 
 ```bash
 python main.py --start_year 2025 --end_year 2025 --lat 26.9124 --lon 75.7873 --format csv
 ```
 
-## API Endpoints
+Run the tests:
 
-### `GET /search-location?q=jaipur`
+```bash
+python -m unittest discover -s tests -v
+```
 
-Searches locations via Nominatim and returns lightweight suggestions for city autocomplete.
+## Web App Workflows
 
-### `GET /get-coordinates?city=Jaipur`
+The app has five main user-facing workflows:
 
-Resolves a city or place string to a normalized coordinate result including timezone.
+1. Daily Panchang lookup
+2. Month overview lookup
+3. Choghadiya slot lookup
+4. Year-range export generation
+5. Printable PDF calendar generation
 
-### `POST /generate-panchang`
+Daily lookup returns sunrise, sunset, moonrise, moonset, Tithi, Jain Tithi, Nakshatra, Pada, Yoga, Karana, Vara, Sun Rashi, Moon Rashi, Hindu month, Vikram Samvat, and Vira Nirvana Samvat.
 
-Generates a daily Panchang JSON payload.
+Range exports and PDFs reuse the selected location and ayanamsa. Generated files are stored in temporary directories and served through short-lived download tokens.
 
-Example:
+## CLI Examples
+
+Single-year CSV:
+
+```bash
+python main.py --start_year 2025 --end_year 2025 --lat 26.9124 --lon 75.7873 --format csv
+```
+
+Multi-year Excel with workers:
+
+```bash
+python main.py --start_year 2025 --end_year 2030 --lat 26.9124 --lon 75.7873 --format excel --workers 4
+```
+
+Monthly JSON files:
+
+```bash
+python main.py --start_year 2025 --end_year 2026 --lat 26.9124 --lon 75.7873 --format json --monthly
+```
+
+All supported flat formats:
+
+```bash
+python main.py --start_year 2025 --end_year 2025 --lat 26.9124 --lon 75.7873 --format all
+```
+
+Use a non-default ayanamsa and timezone label:
+
+```bash
+python main.py --start_year 2025 --end_year 2025 --lat 19.0760 --lon 72.8777 --ayanamsa Krishnamurti --tz_offset 5.5 --tz_label IST
+```
+
+Supported ayanamsas:
+
+- `Lahiri`
+- `Raman`
+- `Krishnamurti`
+
+## API Overview
+
+Core endpoints:
+
+- `GET /search-location?q=jaipur`
+- `GET /get-coordinates?city=Jaipur`
+- `POST /generate-panchang`
+- `GET /month-overview`
+- `POST /choghadiya`
+- `POST /generate-range-panchang`
+- `POST /generate-pdf-panchang`
+- `GET /downloads/<token>`
+
+Daily Panchang request:
 
 ```json
 {
@@ -135,11 +141,7 @@ Example:
 }
 ```
 
-### `POST /generate-range-panchang`
-
-Generates downloadable CSV, Excel, or JSON exports for a year range.
-
-Example:
+Range export request:
 
 ```json
 {
@@ -149,15 +151,12 @@ Example:
   "lon": 75.7873,
   "format": "csv",
   "monthly": false,
+  "workers": 1,
   "ayanamsa": "Lahiri"
 }
 ```
 
-### `POST /generate-pdf-panchang`
-
-Generates a downloadable year-wise PDF calendar.
-
-Example:
+PDF request:
 
 ```json
 {
@@ -168,59 +167,43 @@ Example:
 }
 ```
 
-### `GET /downloads/<token>`
+See [API reference](./docs/api.md) for request and response notes.
 
-Serves a previously generated file by its UUID token.
+## Project Structure
 
-## Developer Notes
-
-### Validation strategy
-
-Request validation is intentionally centralized in `request_parsing.py`. This keeps Flask route handlers thin and makes it easier to add new generators without duplicating coordinate, year, or format validation logic.
-
-### Location handling
-
-The app supports two input styles:
-
-- city search with automatic coordinate lookup
-- direct latitude and longitude input
-
-`panchang_service.resolve_location()` is the shared boundary for normalizing both inputs into a consistent `ResolvedLocation` object.
-
-### Timezone behavior
-
-The daily web generator uses a location-derived IANA timezone and validates that the resolved sunrise belongs to the requested civil date.
-
-The range and PDF generators derive a timezone label and offset snapshot for export formatting. This works well for the main India-based use case and keeps the export engine compatible with the existing CLI pipeline, but it is a fixed offset for the whole export. Locations with daylight-saving transitions can therefore show drifted civil times in range and PDF outputs.
-
-### Generated downloads
-
-Generated range exports and PDFs are written to temporary directories under `/tmp` and exposed through per-process UUID download tokens. Those download URLs are convenient for the current running server, but they are not durable across app restarts and there is no built-in cleanup lifecycle yet.
-
-### Parallel batch generation
-
-The CLI and range export engine support parallel processing via `multiprocessing.Pool`. Worker count is configurable. Day-level computation is fully independent, so parallelism scales well over multi-year ranges.
-
-## Testing
-
-Run the test suite:
-
-```bash
-python -m unittest discover -s tests -v
+```text
+Jain_panchang/
+├── app.py                      Flask app factory, routes, file downloads
+├── main.py                     CLI entry point and batch generation engine
+├── request_parsing.py          Shared request validation
+├── panchang_service.py         Daily Panchang orchestration
+├── range_generation_service.py Web range export orchestration
+├── pdf_generation_service.py   Web PDF export orchestration
+├── astronomy.py                Swiss Ephemeris wrapper and time helpers
+├── panchang.py                 Panchang formulas and rule helpers
+├── location_service.py         Geocoding and timezone lookup
+├── export.py                   CSV, Excel, and JSON serialization
+├── export_pdf.py               PDF generation
+├── visualize.py                CSV visualization and debug tools
+├── templates/index.html        Web UI
+├── static/                     Frontend JavaScript and CSS
+├── tests/                      Unit and API tests
+└── docs/                       Long-form documentation
 ```
 
-The test modules import the application directly, so install the dependencies from `requirements.txt` before running them.
+## Important Notes
 
-Verify syntax for the main Python modules:
-
-```bash
-python -m py_compile app.py panchang_service.py request_parsing.py range_generation_service.py pdf_generation_service.py
-```
+- City search requires internet access because it uses Nominatim.
+- Daily API output uses the resolved IANA timezone for local civil dates.
+- Range and PDF exports use a timezone offset snapshot for the whole run. This is simple and works well for India-focused usage, but it is not daylight-saving aware for every date in every location.
+- Download URLs are stored in memory and are only valid for the current Flask process.
+- Generated export files are placed under `/tmp/jain_panchang_exports`.
 
 ## Documentation
 
 - [Documentation index](./docs/index.md)
 - [Setup and usage](./docs/setup_and_usage.md)
+- [API reference](./docs/api.md)
 - [Architecture](./docs/architecture.md)
 - [Components](./docs/components.md)
 - [Calculations](./docs/calculations.md)

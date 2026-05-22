@@ -24,7 +24,7 @@ class PanchangRuleTests(unittest.TestCase):
         moon_lon = get_planetary_longitude(sunrise_jd, "Moon")
         expected_tithi = get_tithi(sun_lon, moon_lon)
 
-        self.assertEqual(result["panchang"]["tithi"]["index"], expected_tithi)
+        self.assertEqual(result["panchang"]["tithi"][0]["index"], expected_tithi)
         self.assertEqual(result["rules"]["primary_day_rule"], "udaya_tithi")
 
     def test_jain_tithi_uses_exact_2h24m_after_sunrise(self):

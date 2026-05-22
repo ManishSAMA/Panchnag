@@ -239,8 +239,8 @@ class ApiTests(unittest.TestCase):
         mock_generate.return_value = {
             "location": "Jaipur, Rajasthan, India",
             "panchang": {
-                "tithi": {"index": 3, "name": "Shukla Tritiya"},
-                "nakshatra": {"index": 5, "name": "Ardra"},
+                "tithi": [{"index": 3, "name": "Shukla Tritiya", "ends": {"time": "07:28:00"}, "continues_past_next_sunrise": False}],
+                "nakshatra": {"index": 5, "name": "Ardra", "ends": {"time": "16:45:00"}},
                 "vara": {"index": 2, "name": "Mangalavara (Tuesday)"},
                 "hindu_month": {"index": 0, "name": "Chaitra", "name_common": "Chaitra"},
                 "vikram_samvat": 2083,
