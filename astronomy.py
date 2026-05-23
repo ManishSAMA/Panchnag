@@ -241,8 +241,8 @@ def _rise_set(julian_date: float, body: int,
     # to the intended local civil date instead of an arbitrary UTC midnight.
     jd_start = julian_date
 
+    # Use the default Swiss Ephemeris sunrise/sunset definition: upper limb with refraction.
     rsmi = swe.CALC_RISE if is_rise else swe.CALC_SET
-    rsmi |= swe.BIT_DISC_CENTER
 
     try:
         # pyswisseph 2.10.x signature:
@@ -255,6 +255,7 @@ def _rise_set(julian_date: float, body: int,
             geopos,
             1013.25,
             15.0,
+            swe.FLG_SWIEPH,
         )
         if ret == 0 and tret[0] > 0:
             return tret[0]
@@ -264,7 +265,7 @@ def _rise_set(julian_date: float, body: int,
     # Fallback without disc-center correction
     try:
         rsmi2 = swe.CALC_RISE if is_rise else swe.CALC_SET
-        ret, tret = swe.rise_trans(jd_start, body, rsmi2, geopos, 1013.25, 15.0)
+        ret, tret = swe.rise_trans(jd_start, body, rsmi2, geopos, 1013.25, 15.0, swe.FLG_SWIEPH)
         if ret == 0 and tret[0] > 0:
             return tret[0]
     except Exception:

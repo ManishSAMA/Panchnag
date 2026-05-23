@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import calendar
 from datetime import date as date_type
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
@@ -19,7 +19,7 @@ from request_parsing import (
     parse_range_generation_request,
 )
 
-_CHOGHADIYA_ORDER = ["Udveg", "Amrit", "Rog", "Labh", "Shubh", "Char", "Kaal"]
+_CHOGHADIYA_ORDER = ["Udveg", "Char", "Labh", "Amrit", "Kaal", "Shubh", "Rog"]
 _CHOGHADIYA_MEANINGS = {
     "Udveg": "Tension", "Amrit": "Nectar", "Rog": "Illness",
     "Labh": "Gain", "Shubh": "Auspicious", "Char": "Movement", "Kaal": "Loss",
@@ -28,9 +28,9 @@ _CHOGHADIYA_NATURE = {
     "Udveg": "inauspicious", "Amrit": "auspicious", "Rog": "inauspicious",
     "Labh": "auspicious", "Shubh": "auspicious", "Char": "neutral", "Kaal": "inauspicious",
 }
-# Python weekday(): Mon=0 … Sun=6 → starting index in _CHOGHADIYA_ORDER
-_DAY_START_IDX   = [1, 2, 3, 4, 5, 6, 0]  # Mon→Amrit … Sun→Udveg
-_NIGHT_START_IDX = [5, 6, 0, 1, 2, 3, 4]  # Mon→Char … Sun→Shubh
+# Vara index: Sun=0 … Sat=6 → starting index in _CHOGHADIYA_ORDER
+_DAY_START_IDX = [0, 3, 6, 2, 5, 1, 4]
+_NIGHT_START_IDX = [5, 1, 4, 0, 2, 6, 3]
 
 GENERATED_EXPORTS: dict[str, str] = {}
 
@@ -270,12 +270,16 @@ def create_app() -> Flask:
             next_anchor_jd = local_date_anchor_jd(next_date, tz_name)
             next_sunrise_jd = get_sunrise(next_anchor_jd, float(lat), float(lon))
 
-            weekday = parsed_date.weekday()
+            if not sunrise_jd or not sunset_jd or not next_sunrise_jd:
+                return jsonify({"error": "Sunrise or sunset could not be calculated for this location/date."}), 400
+
+            weekday = (parsed_date.weekday() + 1) % 7
             day_start = _DAY_START_IDX[weekday]
             night_start = _NIGHT_START_IDX[weekday]
 
             def _make_slots(start_jd: float, end_jd: float, start_idx: int, period: str) -> list[dict]:
                 slot_duration = (end_jd - start_jd) / 8
+                slot_duration_minutes = slot_duration * 1440
                 slots = []
                 for i in range(8):
                     name = _CHOGHADIYA_ORDER[(start_idx + i) % 7]
@@ -283,18 +287,40 @@ def create_app() -> Flask:
                     slot_end = start_jd + (i + 1) * slot_duration
                     start_dt = jd_to_zoned_datetime(slot_start, tz_name)
                     end_dt = jd_to_zoned_datetime(slot_end, tz_name)
+                    start_utc = start_dt.astimezone(timezone.utc) if start_dt else None
+                    end_utc = end_dt.astimezone(timezone.utc) if end_dt else None
+
+                    def _label(local_dt: datetime | None) -> str:
+                        if local_dt is None:
+                            return ""
+                        time_label = local_dt.strftime("%I:%M %p").lstrip("0")
+                        if local_dt.date() == parsed_date:
+                            return time_label
+                        return f"{time_label}, {local_dt.strftime('%B')} {local_dt.day}"
+
                     slots.append({
                         "name": name,
                         "meaning": _CHOGHADIYA_MEANINGS[name],
                         "nature": _CHOGHADIYA_NATURE[name],
                         "start_time": start_dt.strftime("%H:%M") if start_dt else "",
                         "end_time": end_dt.strftime("%H:%M") if end_dt else "",
+                        "start_local": start_dt.isoformat(timespec="seconds") if start_dt else "",
+                        "end_local": end_dt.isoformat(timespec="seconds") if end_dt else "",
+                        "start_utc": start_utc.isoformat(timespec="seconds") if start_utc else "",
+                        "end_utc": end_utc.isoformat(timespec="seconds") if end_utc else "",
+                        "start_label": _label(start_dt),
+                        "end_label": _label(end_dt),
+                        "duration_minutes": round(slot_duration_minutes, 3),
                         "period": period,
                     })
                 return slots
 
             sunrise_dt = jd_to_zoned_datetime(sunrise_jd, tz_name)
             sunset_dt = jd_to_zoned_datetime(sunset_jd, tz_name)
+            sunrise_utc = sunrise_dt.astimezone(timezone.utc) if sunrise_dt else None
+            sunset_utc = sunset_dt.astimezone(timezone.utc) if sunset_dt else None
+            day_slot_duration_minutes = (sunset_jd - sunrise_jd) * 1440 / 8
+            night_slot_duration_minutes = (next_sunrise_jd - sunset_jd) * 1440 / 8
 
             slots = (
                 _make_slots(sunrise_jd, sunset_jd, day_start, "day")
@@ -303,8 +329,15 @@ def create_app() -> Flask:
 
             return jsonify({
                 "date": date_str,
+                "timezone": tz_name,
                 "sunrise": sunrise_dt.strftime("%H:%M") if sunrise_dt else "",
                 "sunset": sunset_dt.strftime("%H:%M") if sunset_dt else "",
+                "sunrise_local": sunrise_dt.isoformat(timespec="seconds") if sunrise_dt else "",
+                "sunset_local": sunset_dt.isoformat(timespec="seconds") if sunset_dt else "",
+                "sunrise_utc": sunrise_utc.isoformat(timespec="seconds") if sunrise_utc else "",
+                "sunset_utc": sunset_utc.isoformat(timespec="seconds") if sunset_utc else "",
+                "day_slot_duration_minutes": round(day_slot_duration_minutes, 3),
+                "night_slot_duration_minutes": round(night_slot_duration_minutes, 3),
                 "slots": slots,
             })
         except ValueError as exc:

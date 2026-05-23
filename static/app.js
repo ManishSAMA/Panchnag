@@ -574,14 +574,17 @@ function parseTimeToday(timeStr, dateStr) {
   return new Date(y, m - 1, d, h, min, 0).getTime();
 }
 
+function parseSlotTime(slot, field, fallbackDate) {
+  const local = slot[`${field}_local`];
+  if (local) return new Date(local).getTime();
+  return parseTimeToday(slot[`${field}_time`], fallbackDate);
+}
+
 function findCurrentSlot(slots, dateStr) {
   const now = Date.now();
   return slots.find(s => {
-    const start = parseTimeToday(s.start_time, dateStr);
-    let   end   = parseTimeToday(s.end_time, dateStr);
-    if (end !== null && s.period === 'night' && end < start) {
-      end += 24 * 60 * 60 * 1000;
-    }
+    const start = parseSlotTime(s, 'start', dateStr);
+    const end = parseSlotTime(s, 'end', dateStr);
     return start !== null && end !== null && now >= start && now < end;
   }) || null;
 }
@@ -593,11 +596,7 @@ function startCountdown(slot, dateStr) {
     return;
   }
 
-  let endMs = parseTimeToday(slot.end_time, dateStr);
-  if (slot.period === 'night') {
-    const startMs = parseTimeToday(slot.start_time, dateStr);
-    if (endMs < startMs) endMs += 24 * 60 * 60 * 1000;
-  }
+  const endMs = parseSlotTime(slot, 'end', dateStr);
 
   function tick() {
     const remaining = Math.max(0, endMs - Date.now());
@@ -627,6 +626,20 @@ function chogFormatTime(t, fmt) {
   return formatTime(t, fmt);
 }
 
+function chogDateSuffix(localIso, baseDate) {
+  if (!localIso || localIso.slice(0, 10) === baseDate) return '';
+  const label = new Date(localIso).toLocaleDateString('en-IN', {
+    day: 'numeric', month: 'short',
+  });
+  return `, ${label}`;
+}
+
+function chogSlotDisplayTime(slot, field, fmt, baseDate) {
+  const label = slot[`${field}_label`];
+  if (fmt === '12h' && label) return label;
+  return `${chogFormatTime(slot[`${field}_time`], fmt)}${chogDateSuffix(slot[`${field}_local`], baseDate)}`;
+}
+
 function renderChoghadiya(data) {
   const { slots, sunrise, sunset, date } = data;
   chogState.slots   = slots;
@@ -647,9 +660,8 @@ function renderChoghadiya(data) {
   // Current slot
   const current = findCurrentSlot(slots, date);
   if (current) {
-    const ft = t => chogFormatTime(t, fmt);
     document.getElementById('chogCurrentTime').textContent =
-      `${ft(current.start_time)} – ${ft(current.end_time)}`;
+      `${chogSlotDisplayTime(current, 'start', fmt, date)} – ${chogSlotDisplayTime(current, 'end', fmt, date)}`;
     document.getElementById('chogCurrentName').textContent = `🪔 ${current.name}`;
     document.getElementById('chogCurrentQuality').textContent = chogQualityLabel(current.nature);
     const bannerRight = document.getElementById('chogCurrentSlot');
@@ -671,7 +683,8 @@ function renderChoghadiya(data) {
   function makeSlotHTML(slot) {
     const isCurrent = current && slot.start_time === current.start_time && slot.period === current.period;
     const icon = isCurrent ? '⏳' : slot.nature === 'inauspicious' ? '❌' : '';
-    const ft = t => chogFormatTime(t, fmt);
+    const startText = chogSlotDisplayTime(slot, 'start', fmt, date);
+    const endText = chogSlotDisplayTime(slot, 'end', fmt, date);
     return `
       <div class="chog-slot ${slot.nature}${isCurrent ? ' current' : ''}">
         <div class="chog-slot-name">
@@ -682,7 +695,7 @@ function renderChoghadiya(data) {
           <span>🪔</span>
         </div>
         <div class="chog-slot-time">
-          <span>${ft(slot.start_time)} to ${ft(slot.end_time)}</span>
+          <span>${startText} to ${endText}</span>
           <span class="chog-slot-icon">${icon}</span>
         </div>
       </div>
