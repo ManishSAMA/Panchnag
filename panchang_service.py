@@ -39,6 +39,7 @@ from panchang import (
     JAIN_TITHI_OFFSET_DAYS,
     NAKSHATRA_NAMES,
     TITHI_NAMES,
+    calculate_bhadra_kaal,
     calculate_jain_tithi_from_sunrise,
     calculate_rahu_kaal,
     calculate_tithi_details,
@@ -348,10 +349,43 @@ def generate_location_panchang(
     diwali = find_diwali(
         local_date.year, location.lat, location.lon, tz_offset_float, ayanamsa_name
     )
+    bhadra_segments = calculate_bhadra_kaal(events.sunrise_jd, events.next_sunrise_jd, ayanamsa_name)
+    serialized_windows = []
+    has_windows = len(bhadra_segments) > 0
+    max_risk = "Low"
+    is_active = False
+
+    for seg in bhadra_segments:
+        start_serialized = _serialize_event(seg["start_jd"], tz_name)
+        end_serialized = _serialize_event(seg["end_jd"], tz_name)
+        seg_active = seg["start_jd"] <= jd_now <= seg["end_jd"]
+        if seg_active:
+            is_active = True
+        if seg["risk_level"] == "High":
+            max_risk = "High"
+        serialized_windows.append({
+            "start": start_serialized,
+            "end": end_serialized,
+            "moon_rashi": seg["moon_rashi"],
+            "residence": seg["residence"],
+            "risk_level": seg["risk_level"],
+            "is_active": seg_active,
+            "clipped_start": seg["clipped_start"],
+            "clipped_end": seg["clipped_end"]
+        })
+
+    bhadra_payload = {
+        "has_windows": has_windows,
+        "is_active": is_active,
+        "risk_level": max_risk,
+        "windows": serialized_windows
+    }
+
     vikram_samvat = get_vikram_samvat(local_date, chaitra_shukla_1)
     vira_nirvana_samvat = get_vira_nirvana_samvat(local_date, diwali)
 
     return {
+        "bhadra_kaal": bhadra_payload,
         "location": location.name,
         "lat": location.lat,
         "lon": location.lon,

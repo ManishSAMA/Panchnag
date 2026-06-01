@@ -17,9 +17,11 @@ from request_parsing import (
     parse_panchang_request,
     parse_pdf_generation_request,
     parse_range_generation_request,
+    parse_jain_festivals_request,
 )
 
-_CHOGHADIYA_ORDER = ["Udveg", "Char", "Labh", "Amrit", "Kaal", "Shubh", "Rog"]
+_DAY_CHOGHADIYA_ORDER = ["Udveg", "Char", "Labh", "Amrit", "Kaal", "Shubh", "Rog"]
+_NIGHT_CHOGHADIYA_ORDER = ["Shubh", "Amrit", "Char", "Rog", "Kaal", "Labh", "Udveg"]
 _CHOGHADIYA_MEANINGS = {
     "Udveg": "Tension", "Amrit": "Nectar", "Rog": "Illness",
     "Labh": "Gain", "Shubh": "Auspicious", "Char": "Movement", "Kaal": "Loss",
@@ -28,9 +30,9 @@ _CHOGHADIYA_NATURE = {
     "Udveg": "inauspicious", "Amrit": "auspicious", "Rog": "inauspicious",
     "Labh": "auspicious", "Shubh": "auspicious", "Char": "neutral", "Kaal": "inauspicious",
 }
-# Vara index: Sun=0 … Sat=6 → starting index in _CHOGHADIYA_ORDER
+# Vara index: Sun=0 ... Sat=6 -> starting index in the day/night Choghadiya order
 _DAY_START_IDX = [0, 3, 6, 2, 5, 1, 4]
-_NIGHT_START_IDX = [5, 1, 4, 0, 2, 6, 3]
+_NIGHT_START_IDX = [0, 2, 4, 6, 5, 3, 1]
 
 GENERATED_EXPORTS: dict[str, str] = {}
 
@@ -70,7 +72,9 @@ def create_app() -> Flask:
     @app.post("/generate-panchang")
     def generate_panchang():
         try:
-            parsed = parse_panchang_request(request.get_json(silent=True))
+            body = request.get_json(silent=True) or {}
+            profile = body.get("profile")
+            parsed = parse_panchang_request(body)
             result = generate_location_panchang(
                 parsed.input_date,
                 city=parsed.city,
@@ -78,6 +82,22 @@ def create_app() -> Flask:
                 lon=parsed.lon,
                 ayanamsa_name=parsed.ayanamsa_name,
             )
+            if profile:
+                from jain_festival_service import generate_jain_festivals
+                d_obj = datetime.strptime(parsed.input_date, "%Y-%m-%d").date()
+                fest_data = generate_jain_festivals(d_obj.year, result["lat"], result["lon"], parsed.ayanamsa_name, profile)
+                day_festivals = []
+                for f in fest_data.get("festivals", []):
+                    start_d = datetime.strptime(f["start_date"], "%Y-%m-%d").date()
+                    end_d = datetime.strptime(f["end_date"], "%Y-%m-%d").date()
+                    if start_d <= d_obj <= end_d:
+                        day_festivals.append({
+                            "occurrence_id": f["occurrence_id"],
+                            "name": f["name"],
+                            "category": f["category"],
+                            "status": f["status"]
+                        })
+                result["panchang"]["jain_festivals"] = day_festivals
             return jsonify(result)
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
@@ -191,6 +211,29 @@ def create_app() -> Flask:
             days = []
             first_result = None
 
+            profile = request.args.get("profile")
+            date_to_festivals = {}
+            if profile:
+                from jain_festival_service import generate_jain_festivals
+                fest_data = generate_jain_festivals(year, location.lat, location.lon, ayanamsa, profile)
+                for f in fest_data.get("festivals", []):
+                    start_d = datetime.strptime(f["start_date"], "%Y-%m-%d").date()
+                    end_d = datetime.strptime(f["end_date"], "%Y-%m-%d").date()
+                    curr_d = start_d
+                    while curr_d <= end_d:
+                        if curr_d.year == year and curr_d.month == month:
+                            d_str = curr_d.isoformat()
+                            if d_str not in date_to_festivals:
+                                date_to_festivals[d_str] = []
+                            if not any(x["occurrence_id"] == f["occurrence_id"] for x in date_to_festivals[d_str]):
+                                date_to_festivals[d_str].append({
+                                    "occurrence_id": f["occurrence_id"],
+                                    "name": f["name"],
+                                    "category": f["category"],
+                                    "status": f["status"]
+                                })
+                        curr_d += timedelta(days=1)
+
             for day_num in range(1, num_days + 1):
                 date_str = f"{year:04d}-{month:02d}-{day_num:02d}"
                 result = generate_location_panchang(
@@ -209,7 +252,8 @@ def create_app() -> Flask:
 
                 tithi_end_raw = udaya_tithi["ends"]["time"] if udaya_tithi["ends"] else ""
                 nakshatra_end_raw = result["panchang"]["nakshatra"]["ends"]["time"]
-                days.append({
+                
+                day_payload = {
                     "date": date_str,
                     "tithi_index": tithi_index,
                     "tithi_name": udaya_tithi["name"],
@@ -222,7 +266,10 @@ def create_app() -> Flask:
                     "is_purnima": tithi_index == 15,
                     "is_amavasya": tithi_index == 30,
                     "is_ekadashi": tithi_index in (11, 26),
-                })
+                }
+                if profile:
+                    day_payload["jain_festivals"] = date_to_festivals.get(date_str, [])
+                days.append(day_payload)
 
             hindu_month_index = first_result["panchang"]["hindu_month"]["index"] if first_result else 0
             hindu_month = first_result["panchang"]["hindu_month"]["name"] if first_result else ""
@@ -237,6 +284,185 @@ def create_app() -> Flask:
                 "hindu_month_index": hindu_month_index,
                 "vikram_samvat": vikram_samvat,
                 "days": days,
+            })
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except Exception as exc:
+            return jsonify({"error": str(exc)}), 500
+
+    @app.post("/generate-jain-festivals")
+    def generate_jain_festivals_api():
+        try:
+            body = request.get_json(silent=True) or {}
+            parsed = parse_jain_festivals_request(body)
+            from jain_festival_service import generate_jain_festivals
+            result = generate_jain_festivals(
+                year=parsed.year,
+                lat=parsed.lat,
+                lon=parsed.lon,
+                ayanamsa=parsed.ayanamsa_name,
+                profile=parsed.profile
+            )
+            return jsonify(result)
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except Exception as exc:
+            return jsonify({"error": str(exc)}), 500
+
+    @app.post("/generate-jain-festival-exports")
+    def generate_jain_festival_exports_api():
+        try:
+            body = request.get_json(silent=True) or {}
+            parsed = parse_jain_festivals_request(body)
+            fmt = body.get("format", "csv").lower()
+            if fmt not in {"csv", "excel", "json", "pdf", "all"}:
+                return jsonify({"error": "format must be one of: csv, excel, json, pdf, all"}), 400
+                
+            from jain_festival_service import generate_jain_festivals
+            result = generate_jain_festivals(
+                year=parsed.year,
+                lat=parsed.lat,
+                lon=parsed.lon,
+                ayanamsa=parsed.ayanamsa_name,
+                profile=parsed.profile
+            )
+            
+            flat_rows = []
+            for f in result.get("festivals", []):
+                flat_rows.append({
+                    "Festival_ID": f["id"],
+                    "Name_English": f["name"],
+                    "Name_Gujarati": f["name_gujarati"],
+                    "Category": f["category"],
+                    "Start_Date": f["start_date"],
+                    "End_Date": f["end_date"],
+                    "Jain_Month": f["jain_month"],
+                    "Paksha": f["paksha"],
+                    "Tithi": f["tithi"],
+                    "Profile": f["profile"],
+                    "Status": f["status"],
+                    "Meaning": f["meaning"],
+                    "Observance": f["observance"],
+                    "Sources": "; ".join(f["sources"])
+                })
+                
+            import tempfile
+            import os
+            from uuid import uuid4
+            
+            tmpdir = tempfile.gettempdir()
+            unique_id = uuid4().hex
+            files = []
+            
+            formats_to_gen = ["csv", "json", "excel", "pdf"] if fmt == "all" else [fmt]
+            for f_format in formats_to_gen:
+                if f_format == "csv":
+                    filename = f"jain_festivals_{parsed.year}_{unique_id}.csv"
+                    path = os.path.join(tmpdir, filename)
+                    import csv
+                    with open(path, 'w', newline='', encoding='utf-8-sig') as f_out:
+                        writer = csv.DictWriter(f_out, fieldnames=list(flat_rows[0].keys()) if flat_rows else [])
+                        writer.writeheader()
+                        writer.writerows(flat_rows)
+                    token = uuid4().hex
+                    GENERATED_EXPORTS[token] = path
+                    files.append({
+                        "name": f"jain_festivals_{parsed.year}.csv",
+                        "download_url": f"/downloads/{token}"
+                    })
+                elif f_format == "json":
+                    filename = f"jain_festivals_{parsed.year}_{unique_id}.json"
+                    path = os.path.join(tmpdir, filename)
+                    import json
+                    with open(path, 'w', encoding='utf-8') as f_out:
+                        json.dump(flat_rows, f_out, indent=2, ensure_ascii=False)
+                    token = uuid4().hex
+                    GENERATED_EXPORTS[token] = path
+                    files.append({
+                        "name": f"jain_festivals_{parsed.year}.json",
+                        "download_url": f"/downloads/{token}"
+                    })
+                elif f_format == "excel":
+                    filename = f"jain_festivals_{parsed.year}_{unique_id}.xlsx"
+                    path = os.path.join(tmpdir, filename)
+                    import pandas as pd
+                    df = pd.DataFrame(flat_rows)
+                    df.to_excel(path, index=False, engine='openpyxl')
+                    token = uuid4().hex
+                    GENERATED_EXPORTS[token] = path
+                    files.append({
+                        "name": f"jain_festivals_{parsed.year}.xlsx",
+                        "download_url": f"/downloads/{token}"
+                    })
+                elif f_format == "pdf":
+                    filename = f"jain_festivals_{parsed.year}_{unique_id}.pdf"
+                    path = os.path.join(tmpdir, filename)
+                    
+                    from reportlab.lib.pagesizes import letter
+                    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+                    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+                    from reportlab.lib import colors
+                    
+                    doc = SimpleDocTemplate(path, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)
+                    styles = getSampleStyleSheet()
+                    
+                    title_style = ParagraphStyle(
+                        'TitleStyle',
+                        parent=styles['Heading1'],
+                        fontSize=18,
+                        textColor=colors.HexColor('#2C3E50'),
+                        spaceAfter=12
+                    )
+                    
+                    story = []
+                    story.append(Paragraph(f"Jain Festival Calendar - {parsed.year}", title_style))
+                    story.append(Paragraph(f"Profile: {parsed.profile.replace('_', ' ').title()}", styles['Normal']))
+                    story.append(Paragraph(f"Location: Lat {parsed.lat}, Lon {parsed.lon} ({result['location']['timezone']})", styles['Normal']))
+                    story.append(Spacer(1, 12))
+                    
+                    headers = ["Date", "Name (English)", "Category", "Jain Month", "Tithi", "Observance"]
+                    table_data = [headers]
+                    
+                    for row in flat_rows:
+                        obs_para = Paragraph(row["Observance"], styles["BodyText"])
+                        table_data.append([
+                            row["Start_Date"],
+                            row["Name_English"],
+                            row["Category"].title(),
+                            row["Jain_Month"],
+                            str(row["Tithi"]),
+                            obs_para
+                        ])
+                        
+                    t = Table(table_data, colWidths=[70, 110, 60, 70, 40, 190])
+                    t.setStyle(TableStyle([
+                        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2C3E50')),
+                        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+                        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+                        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0,0), (-1,0), 10),
+                        ('BOTTOMPADDING', (0,0), (-1,0), 6),
+                        ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#F8F9FA')),
+                        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#F2F4F4')]),
+                        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#D0D3D4')),
+                        ('FONTSIZE', (0,1), (-1,-1), 9),
+                    ]))
+                    
+                    story.append(t)
+                    doc.build(story)
+                    
+                    token = uuid4().hex
+                    GENERATED_EXPORTS[token] = path
+                    files.append({
+                        "name": f"jain_festivals_{parsed.year}.pdf",
+                        "download_url": f"/downloads/{token}"
+                    })
+                    
+            return jsonify({
+                "year": parsed.year,
+                "profile": parsed.profile,
+                "files": files
             })
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
@@ -277,12 +503,18 @@ def create_app() -> Flask:
             day_start = _DAY_START_IDX[weekday]
             night_start = _NIGHT_START_IDX[weekday]
 
-            def _make_slots(start_jd: float, end_jd: float, start_idx: int, period: str) -> list[dict]:
+            def _make_slots(
+                start_jd: float,
+                end_jd: float,
+                choghadiya_order: list[str],
+                start_idx: int,
+                period: str,
+            ) -> list[dict]:
                 slot_duration = (end_jd - start_jd) / 8
                 slot_duration_minutes = slot_duration * 1440
                 slots = []
                 for i in range(8):
-                    name = _CHOGHADIYA_ORDER[(start_idx + i) % 7]
+                    name = choghadiya_order[(start_idx + i) % 7]
                     slot_start = start_jd + i * slot_duration
                     slot_end = start_jd + (i + 1) * slot_duration
                     start_dt = jd_to_zoned_datetime(slot_start, tz_name)
@@ -323,8 +555,8 @@ def create_app() -> Flask:
             night_slot_duration_minutes = (next_sunrise_jd - sunset_jd) * 1440 / 8
 
             slots = (
-                _make_slots(sunrise_jd, sunset_jd, day_start, "day")
-                + _make_slots(sunset_jd, next_sunrise_jd, night_start, "night")
+                _make_slots(sunrise_jd, sunset_jd, _DAY_CHOGHADIYA_ORDER, day_start, "day")
+                + _make_slots(sunset_jd, next_sunrise_jd, _NIGHT_CHOGHADIYA_ORDER, night_start, "night")
             )
 
             return jsonify({

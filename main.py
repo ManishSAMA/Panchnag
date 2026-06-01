@@ -38,6 +38,7 @@ from astronomy import (
     AYANAMSA_SYSTEMS,
 )
 from panchang import (
+    calculate_bhadra_kaal,
     calculate_jain_tithi_from_sunrise,
     find_chaitra_shukla_1,
     find_diwali,
@@ -126,6 +127,10 @@ def _compute_day(args_tuple) -> dict | None:
         vs = get_vikram_samvat(civil_date, cs1) if cs1 else None
         vns = get_vira_nirvana_samvat(civil_date, diwali) if diwali else None
 
+        jd_next_day = local_time_to_jd(year, month, day, local_hour=5.5, tz_offset=tz_offset) + 1.0
+        jd_next_sr = get_sunrise(jd_next_day, lat, lon)
+        bhadra_kaal = calculate_bhadra_kaal(jd_sr, jd_next_sr, ayanamsa)
+
         row = format_row_data(
             date_str            = f"{year:04d}-{month:02d}-{day:02d}",
             julian_date         = jd_sr,
@@ -142,6 +147,7 @@ def _compute_day(args_tuple) -> dict | None:
             tz_label            = tz_label,
             vikram_samvat       = vs,
             vira_nirvana_samvat = vns,
+            bhadra_kaal         = bhadra_kaal,
         )
         return row
 

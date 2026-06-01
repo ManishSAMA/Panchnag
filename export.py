@@ -43,6 +43,11 @@ def format_row_data(
     tz_label: str = "IST",
     vikram_samvat: int | None = None,
     vira_nirvana_samvat: int | None = None,
+    bhadra_kaal: list[dict] | None = None,
+    jain_festivals: list[dict] | None = None,
+    jain_parva_tithis: list[dict] | None = None,
+    festival_profile: str | None = None,
+    festival_review_needed: bool | None = None,
 ) -> dict:
     """Build a flat dict representing one row of the Panchang table.
 
@@ -57,6 +62,11 @@ def format_row_data(
         moonset_str:   Formatted local time string for moonset.
         ayanamsa_dec:  Ayanamsa value in decimal degrees.
         tz_label:      Timezone label used in column headers.
+        bhadra_kaal:   Output of calculate_bhadra_kaal().
+        jain_festivals: List of compact Jain festivals for the day.
+        jain_parva_tithis: List of compact Jain parva tithis for the day.
+        festival_profile: Selected Jain profile.
+        festival_review_needed: True if conflict detected.
 
     Returns:
         Ordered flat dict suitable for CSV / Excel / JSON export.
@@ -96,6 +106,34 @@ def format_row_data(
     row['Karana']      = panchang['Karana_Name']
     row['Karana Start'] = jd_to_local_time_string(panchang['Karana_Start_JD'], tz_offset)[:5]
     row['Karana End']   = jd_to_local_time_string(panchang['Karana_End_JD'], tz_offset)[:5]
+
+    # ---- Bhadra Kaal ----
+    has_bhadra = len(bhadra_kaal) > 0 if bhadra_kaal else False
+    max_risk = "Low"
+    summaries = []
+    if bhadra_kaal:
+        for w in bhadra_kaal:
+            start_t = jd_to_local_time_string(w["start_jd"], tz_offset)[:5]
+            end_t = jd_to_local_time_string(w["end_jd"], tz_offset)[:5]
+            summaries.append(
+                f"{start_t}–{end_t} (Residence: {w['residence']}, Rashi: {w['moon_rashi']}, Risk: {w['risk_level']})"
+            )
+            if w["risk_level"] == "High":
+                max_risk = "High"
+
+    row['Has_Bhadra'] = has_bhadra
+    row['Bhadra_Windows'] = "; ".join(summaries) if summaries else "None"
+    row['Bhadra_Max_Risk'] = max_risk
+
+    # ---- Jain Festivals columns ----
+    fests_str = "; ".join(f["name"] for f in jain_festivals) if jain_festivals else ""
+    row['Jain_Festivals'] = fests_str
+    
+    parva_str = "; ".join(f["name"] for f in jain_parva_tithis) if jain_parva_tithis else ""
+    row['Jain_Parva_Tithis'] = parva_str
+    
+    row['Festival_Profile'] = festival_profile or "None"
+    row['Festival_Review_Needed'] = festival_review_needed if festival_review_needed is not None else False
 
     # ---- Sunrise / Sunset / Moonrise / Moonset ----
     row[f'Sunrise ({tz_label})']  = sunrise_str

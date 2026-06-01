@@ -53,15 +53,32 @@ class ChoghadiyaApiTests(unittest.TestCase):
             ["Kaal", "Shubh", "Rog", "Udveg", "Char", "Labh", "Amrit", "Kaal"],
         )
 
-    def test_choghadiya_saturday_night_starts_with_amrit(self):
-        # April 18 2026 is Saturday; standard night Choghadiya starts with Amrit.
+    def test_choghadiya_saturday_night_sequence_matches_reference_table(self):
         response = self.client.post(
             "/choghadiya",
             json={"date": "2026-04-18", "lat": 26.9124, "lon": 75.7873},
         )
         data = response.get_json()
-        first_night = next(s for s in data["slots"] if s["period"] == "night")
-        self.assertEqual(first_night["name"], "Amrit")
+        night_names = [s["name"] for s in data["slots"] if s["period"] == "night"]
+
+        self.assertEqual(
+            night_names,
+            ["Amrit", "Char", "Rog", "Kaal", "Labh", "Udveg", "Shubh", "Amrit"],
+        )
+
+    def test_choghadiya_sunday_night_sequence_matches_reference_table(self):
+        response = self.client.post(
+            "/choghadiya",
+            json={"date": "2026-05-24", "lat": 28.4595, "lon": 77.0266},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        night_names = [s["name"] for s in data["slots"] if s["period"] == "night"]
+
+        self.assertEqual(
+            night_names,
+            ["Shubh", "Amrit", "Char", "Rog", "Kaal", "Labh", "Udveg", "Shubh"],
+        )
 
     def test_choghadiya_friday_delhi_matches_expected_sequence(self):
         response = self.client.post(
@@ -77,8 +94,11 @@ class ChoghadiyaApiTests(unittest.TestCase):
         fourth_day = [s for s in data["slots"] if s["period"] == "day"][3]
         self.assertEqual(fourth_day["name"], "Kaal")
 
-        first_night = next(s for s in data["slots"] if s["period"] == "night")
-        self.assertEqual(first_night["name"], "Rog")
+        night_names = [s["name"] for s in data["slots"] if s["period"] == "night"]
+        self.assertEqual(
+            night_names,
+            ["Rog", "Kaal", "Labh", "Udveg", "Shubh", "Amrit", "Char", "Rog"],
+        )
 
         sunrise = datetime.strptime(data["sunrise"], "%H:%M")
         self.assertEqual(sunrise.hour, 5)

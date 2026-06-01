@@ -209,6 +209,27 @@ function renderDateBanner(moonEl, gregorianEl, detailsEl, data) {
   detailsEl.textContent = `VS ${samvat} | ${month} | ${tithi} | ${location}`;
 }
 
+async function showFestivalDetailById(occurrenceId) {
+  const year = parseInt(occurrenceId.split(':').pop().slice(0, 4), 10);
+  const state = getState();
+  const profile = state.jainProfile || 'shwetambar_murtipujak_tapagachchha';
+  let f = festState.festivals.find(x => x.occurrence_id === occurrenceId);
+  if (f) {
+    openFestivalModal(f);
+    return;
+  }
+  try {
+    const data = await apiFetch('/generate-jain-festivals', 'POST', {
+      year, lat: state.lat, lon: state.lon, ayanamsa: state.ayanamsa || 'Lahiri', profile
+    });
+    festState.festivals = data.festivals || [];
+    f = festState.festivals.find(x => x.occurrence_id === occurrenceId);
+    if (f) openFestivalModal(f);
+  } catch (err) {
+    alert("Could not load festival details: " + err.message);
+  }
+}
+
 // ── HOME ──────────────────────────────────────────────────────
 registerPage('home', {
   onEnter() {
@@ -216,20 +237,42 @@ registerPage('home', {
     const moonEl     = document.getElementById('homeBanner').querySelector('.date-banner-moon');
     const gregorian  = document.getElementById('homeGregorianDate');
     const details    = document.getElementById('homeBannerDetails');
+    const daily      = document.getElementById('homeDailyContent');
 
     if (!state.lat || !state.lon) {
       const dt = new Date();
       gregorian.textContent = dt.toLocaleDateString('en-IN', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
       });
-      details.textContent = 'Set a location for panchang data';
+      details.textContent = 'Set a location for Panchang data';
+      daily.innerHTML = '<div class="home-daily-empty">Set a location to calculate today’s Jain Tithi.</div>';
       return;
     }
 
+    daily.innerHTML = '<div class="loading-spinner">Calculating...</div>';
     apiFetch('/generate-panchang', 'POST', {
       date: todayStr(), lat: state.lat, lon: state.lon, ayanamsa: state.ayanamsa || 'Lahiri'
-    }).then(data => renderDateBanner(moonEl, gregorian, details, data))
-      .catch(() => { details.textContent = 'Could not load panchang'; });
+    }).then(data => {
+      renderDateBanner(moonEl, gregorian, details, data);
+      const p = data.panchang || {};
+      const ev = data.events || {};
+      const jain = p.jain_tithi;
+      const sunrise = ev.sunrise?.time?.slice(0, 5) || '—';
+      daily.innerHTML = `
+        <section class="home-daily-panel" data-nav="panchang">
+          <div class="home-daily-label">Today’s Jain Tithi</div>
+          <div class="home-daily-tithi">${jain?.name || '—'}</div>
+          <div class="home-daily-meta">
+            <span>Sunrise ${formatTime(sunrise, getState().timeFormat || '12h')}</span>
+            <span>${p.vara?.name || ''}</span>
+          </div>
+        </section>
+      `;
+      daily.querySelector('[data-nav="panchang"]').addEventListener('click', () => navigate('panchang'));
+    }).catch(e => {
+      details.textContent = e.message;
+      daily.innerHTML = `<div class="home-daily-empty">${e.message}</div>`;
+    });
   }
 });
 
@@ -260,23 +303,24 @@ registerPage('calendar', {
   async _load() {
     const state = getState();
     const grid  = document.getElementById('calGrid');
-    grid.innerHTML = '<div class="cal-loading">Loading…</div>';
+    grid.innerHTML = '<div class="cal-loading">Calculating...</div>';
 
     if (!state.lat || !state.lon) {
-      grid.innerHTML = '<div class="cal-loading">Please set a location first.</div>';
+      grid.innerHTML = '<div class="cal-loading">Set a location to see the calendar.</div>';
       return;
     }
 
     try {
+      const profile = state.jainProfile || 'shwetambar_murtipujak_tapagachchha';
       const data = await apiFetch(
-        `/month-overview?year=${calState.year}&month=${calState.month}&lat=${state.lat}&lon=${state.lon}&ayanamsa=${state.ayanamsa || 'Lahiri'}`
+        `/month-overview?year=${calState.year}&month=${calState.month}&lat=${state.lat}&lon=${state.lon}&ayanamsa=${state.ayanamsa || 'Lahiri'}&profile=${profile}`
       );
 
       document.getElementById('calSamvat').textContent = `Vikram Samvat ${data.vikram_samvat} | ${data.hindu_month}`;
 
       this._renderGrid(data.days);
     } catch (e) {
-      grid.innerHTML = `<div class="cal-loading">Error: ${e.message}</div>`;
+      grid.innerHTML = `<div class="cal-loading">${e.message}</div>`;
     }
   },
 
@@ -300,22 +344,58 @@ registerPage('calendar', {
     days.forEach(day => {
       const cell = document.createElement('div');
       cell.className = 'cal-cell' + (day.date === today ? ' today' : '');
+      
+      const isReview = day.jain_festivals && day.jain_festivals.some(f => f.status === 'review_needed');
+      if (isReview) cell.className += ' review-needed-cell';
+
       const dayNum = parseInt(day.date.split('-')[2], 10);
-      const tithiNum = day.tithi_index || '';
+      const tithiText = day.tithi_name || day.tithi_index || '';
+      const tithiTime = day.tithi_end_time ? `<span class="cal-endtime">${day.tithi_end_time}</span>` : '';
+      const nakName = day.nakshatra_name || '';
+      const nakTime = day.nakshatra_end_time ? `<span class="cal-endtime">${day.nakshatra_end_time}</span>` : '';
+      const weekdayHindi = new Date(day.date + 'T00:00:00').toLocaleDateString('hi-IN', { weekday: 'long' });
+
+      let markersHTML = '';
+      if (day.jain_festivals && day.jain_festivals.length) {
+        const mainFests = day.jain_festivals.filter(f => f.category !== 'parva');
+        if (mainFests.length) {
+          markersHTML = `<div class="fest-markers-container" style="margin-top:4px;">` +
+            mainFests.map(f => {
+              const catClass = f.status === 'review_needed' ? 'review' : f.category;
+              return `<div class="fest-marker fest-marker--${catClass}" data-festid="${f.occurrence_id}" style="font-size:7px; cursor:pointer;">${f.name}</div>`;
+            }).join('') + `</div>`;
+        }
+      }
 
       cell.innerHTML = `
-        <div class="cal-cell-top">
+        <div class="cal-cell-header">
           <span class="cal-date">${dayNum}</span>
-          <span class="cal-tithi">${tithiNum}</span>
         </div>
-        <div class="cal-cell-bottom">
-          <span class="cal-time" data-sr="">—</span>
-          <span class="cal-time" data-ss="">—</span>
+        <div class="cal-cell-body">
+          <div class="cal-cell-info cal-cell-left">
+            <span class="cal-cell-label">Tithi</span>
+            <span class="cal-value">${tithiText}</span>
+            ${tithiTime}
+          </div>
+          <div class="cal-cell-info cal-cell-right">
+            <span class="cal-cell-label">Nakshatra</span>
+            <span class="cal-value">${nakName}</span>
+            ${nakTime}
+          </div>
         </div>
-        <div class="cal-nakshatra">${(day.nakshatra_name || '').split(' ')[0]}</div>
+        ${markersHTML}
+        <div class="cal-cell-footer">${weekdayHindi}</div>
       `;
 
-      cell.addEventListener('click', () => navigate('panchang', { date: day.date }));
+      cell.addEventListener('click', (e) => {
+        const marker = e.target.closest('[data-festid]');
+        if (marker) {
+          e.stopPropagation();
+          showFestivalDetailById(marker.dataset.festid);
+        } else {
+          navigate('panchang', { date: day.date });
+        }
+      });
       grid.appendChild(cell);
     });
 
@@ -400,11 +480,11 @@ registerPage('panchang', {
     detailEl.textContent = '—';
 
     const content = document.getElementById('panchangContent');
-    content.innerHTML = '<div class="loading-spinner">Loading panchang…</div>';
+    content.innerHTML = '<div class="loading-spinner">Calculating...</div>';
 
     const state = getState();
     if (!state.lat || !state.lon) {
-      content.innerHTML = '<div class="error-msg">Please set a location first.</div>';
+      content.innerHTML = '<div class="error-msg">Set a location to calculate the Panchang.</div>';
       return;
     }
 
@@ -433,8 +513,11 @@ registerPage('panchang', {
 
     const ft = t => formatTime(t?.slice(0,5), fmt);
 
+    const sunrise = ev.sunrise?.time ? ft(ev.sunrise.time) : '—';
+    const sunset = ev.sunset?.time ? ft(ev.sunset.time) : '—';
+
     const rows = [
-      ...tithiRows(p.tithi, data.date, ft),
+      ...tithiRows(p.tithi, data.date, ft).map(r => ({ ...r, label: r.label === 'Tithi' ? 'Hindu Tithi' : r.label })),
       { label: 'Nakshatra', value: `${p.nakshatra?.name || '—'} (Pada ${p.nakshatra?.pada || '—'})`, sub: p.nakshatra?.ends?.time ? `upto ${ft(p.nakshatra.ends.time)}` : '' },
       { label: 'Yoga', value: p.yoga?.name || '—', sub: '' },
       { label: 'Karana', value: p.karana?.name || '—', sub: '' },
@@ -447,21 +530,21 @@ registerPage('panchang', {
       <div class="panchang-card">
         <div class="panchang-sun-moon">
           <div class="sun-moon-cell">
-            <div class="sun-moon-label">🌅 Sunrise</div>
-            <div class="sun-moon-time">${ft(ev.sunrise?.time)}</div>
+            <div class="sun-moon-label">Sunrise</div>
+            <div class="sun-moon-time">${sunrise}</div>
           </div>
           <div class="sun-moon-cell">
-            <div class="sun-moon-label">🌇 Sunset</div>
-            <div class="sun-moon-time">${ft(ev.sunset?.time)}</div>
+            <div class="sun-moon-label">Sunset</div>
+            <div class="sun-moon-time">${sunset}</div>
           </div>
         </div>
         <div class="panchang-sun-moon" style="border-bottom:1px solid var(--gold-dark)">
           <div class="sun-moon-cell">
-            <div class="sun-moon-label">🌕 Moonrise</div>
+            <div class="sun-moon-label">Moonrise</div>
             <div class="sun-moon-time">${ft(ev.moonrise?.time)}</div>
           </div>
           <div class="sun-moon-cell">
-            <div class="sun-moon-label">🌑 Moonset</div>
+            <div class="sun-moon-label">Moonset</div>
             <div class="sun-moon-time">${ft(ev.moonset?.time)}</div>
           </div>
         </div>
@@ -481,11 +564,11 @@ registerPage('panchang', {
         const startTime = (rk.start?.time || '').slice(0, 5);
         const endTime   = (rk.end?.time   || '').slice(0, 5);
         const badge = rk.is_active_now
-          ? '<span class="rahu-badge rahu-badge--active">ACTIVE NOW 🔴</span>'
-          : '<span class="rahu-badge rahu-badge--inactive">Not Active ✓</span>';
+          ? '<span class="rahu-badge rahu-badge--active">Active now</span>'
+          : '<span class="rahu-badge rahu-badge--inactive">Not active</span>';
         return `
           <div class="panchang-card rahu-kaal-card">
-            <div class="rahu-kaal-title">🚫 Rahu Kaal</div>
+            <div class="rahu-kaal-title">Rahu Kaal</div>
             <div class="panchang-row">
               <div class="panchang-label">Time</div>
               <div class="panchang-value">${startTime} – ${endTime} ${badge}</div>
@@ -496,6 +579,55 @@ registerPage('panchang', {
             </div>
             <div class="rahu-kaal-note">Avoid important activities during this period.</div>
           </div>`;
+      })()}
+      ${(() => {
+        const bk = data.bhadra_kaal;
+        if (!bk) return '';
+        let segmentsHTML = '';
+        if (bk.has_windows) {
+          segmentsHTML = bk.windows.map(w => {
+            const startTime = (w.start?.time || '').slice(0, 5);
+            const endTime   = (w.end?.time   || '').slice(0, 5);
+            const activeBadge = w.is_active
+              ? '<span class="bhadra-badge bhadra-badge--active">Active now</span>'
+              : '';
+            const riskClass = w.risk_level === 'High' ? 'bhadra-badge--risk-high' : 'bhadra-badge--risk-low';
+            const riskBadge = `<span class="bhadra-badge ${riskClass}">${w.risk_level} Risk</span>`;
+            return `
+              <div class="bhadra-segment" style="border-top: 1px solid rgba(140, 90, 42, 0.08); padding: 10px 0;">
+                <div class="panchang-row" style="padding: 4px 0; border: none;">
+                  <div class="panchang-label" style="min-width: 90px; color: var(--brand-dark);">Time</div>
+                  <div class="panchang-value">${startTime} – ${endTime} ${activeBadge}</div>
+                </div>
+                <div class="panchang-row" style="padding: 4px 0; border: none;">
+                  <div class="panchang-label" style="min-width: 90px; color: var(--brand-dark);">Moon Rashi</div>
+                  <div class="panchang-value">${w.moon_rashi}</div>
+                </div>
+                <div class="panchang-row" style="padding: 4px 0; border: none;">
+                  <div class="panchang-label" style="min-width: 90px; color: var(--brand-dark);">Residence</div>
+                  <div class="panchang-value">${w.residence} ${riskBadge}</div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          segmentsHTML = `
+            <div class="panchang-row" style="padding: 6px 0; border: none;">
+              <div class="panchang-value" style="color: var(--text-muted);">No Bhadra Kaal active today.</div>
+            </div>
+          `;
+        }
+        const cardTitle = 'Bhadra Kaal (भद्रा काल)';
+        const cardClass = bk.has_windows ? 'bhadra-kaal-card' : 'bhadra-kaal-card bhadra-kaal-card--inactive';
+        return `
+          <div class="panchang-card ${cardClass}" style="padding: 18px; margin-top: 16px;">
+            <div class="bhadra-kaal-title">${cardTitle}</div>
+            ${segmentsHTML}
+            <div class="rahu-kaal-note" style="margin-top: 8px;">
+              ${bk.has_windows ? 'Avoid starting new auspicious works during Bhadra.' : 'Auspicious day: No Bhadra effects.'}
+            </div>
+          </div>
+        `;
       })()}
     `;
   }
@@ -592,7 +724,7 @@ function findCurrentSlot(slots, dateStr) {
 function startCountdown(slot, dateStr) {
   if (chogState.timerInterval) clearInterval(chogState.timerInterval);
   if (!slot) {
-    document.getElementById('chogCountdown').textContent = '--:--:--';
+  document.getElementById('chogCountdown').textContent = '--:--:--';
     return;
   }
 
@@ -662,7 +794,7 @@ function renderChoghadiya(data) {
   if (current) {
     document.getElementById('chogCurrentTime').textContent =
       `${chogSlotDisplayTime(current, 'start', fmt, date)} – ${chogSlotDisplayTime(current, 'end', fmt, date)}`;
-    document.getElementById('chogCurrentName').textContent = `🪔 ${current.name}`;
+    document.getElementById('chogCurrentName').textContent = current.name;
     document.getElementById('chogCurrentQuality').textContent = chogQualityLabel(current.nature);
     const bannerRight = document.getElementById('chogCurrentSlot');
     bannerRight.style.background = current.nature === 'auspicious' ? 'var(--green-slot)'
@@ -682,7 +814,7 @@ function renderChoghadiya(data) {
 
   function makeSlotHTML(slot) {
     const isCurrent = current && slot.start_time === current.start_time && slot.period === current.period;
-    const icon = isCurrent ? '⏳' : slot.nature === 'inauspicious' ? '❌' : '';
+    const icon = '';
     const startText = chogSlotDisplayTime(slot, 'start', fmt, date);
     const endText = chogSlotDisplayTime(slot, 'end', fmt, date);
     return `
@@ -692,7 +824,7 @@ function renderChoghadiya(data) {
             ${slot.name}
             <small>${slot.meaning}</small>
           </div>
-          <span>🪔</span>
+          <span></span>
         </div>
         <div class="chog-slot-time">
           <span>${startText} to ${endText}</span>
@@ -706,13 +838,13 @@ function renderChoghadiya(data) {
   const content = document.getElementById('chogContent');
   content.innerHTML = `
     <div class="chog-section-header">
-      ☀️ Day
-      <span>🌅 Sunrise – ${ft(sunrise)}</span>
+      Day
+      <span>Sunrise - ${ft(sunrise)}</span>
     </div>
     ${daySlots.map(makeSlotHTML).join('')}
     <div class="chog-section-header">
-      🌙 Night
-      <span>🌇 Sunset – ${ft(sunset)}</span>
+      Night
+      <span>Sunset - ${ft(sunset)}</span>
     </div>
     ${nightSlots.map(makeSlotHTML).join('')}
   `;
@@ -721,13 +853,13 @@ function renderChoghadiya(data) {
 async function loadChoghadiya() {
   const state = getState();
   const content = document.getElementById('chogContent');
-  content.innerHTML = '<div class="loading-spinner">Loading Choghadiya…</div>';
+  content.innerHTML = '<div class="loading-spinner">Calculating...</div>';
 
   document.getElementById('chogDateLabel').textContent = formatDateLabel(chogState.date);
   renderWeekdayTabs(chogState.date);
 
   if (!state.lat || !state.lon) {
-    content.innerHTML = '<div class="error-msg">Please set a location first.</div>';
+    content.innerHTML = '<div class="error-msg">Set a location to calculate Choghadiya.</div>';
     return;
   }
 
@@ -942,6 +1074,417 @@ document.getElementById('rangeExportBtn').addEventListener('click', async () => 
     ).join('<br>');
   } catch (e) {
     result.innerHTML = `Error: ${e.message}`;
+  }
+});
+
+// ── JAIN FESTIVALS ───────────────────────────────────────────
+const festState = {
+  year: new Date().getFullYear(),
+  profile: getState().jainProfile || 'shwetambar_murtipujak_tapagachchha',
+  view: 'calendar', // 'calendar' | 'list'
+  filter: 'all', // 'all' | 'kalyanak' | 'festival' | 'fast' | 'parva' | 'review'
+  searchQuery: '',
+  festivals: [],
+  upcoming: [],
+};
+
+// Initialize elements
+const profileSelect = document.getElementById('festProfileSelect');
+if (profileSelect) {
+  profileSelect.value = festState.profile;
+  profileSelect.addEventListener('change', (e) => {
+    festState.profile = e.target.value;
+    saveState({ jainProfile: festState.profile });
+    loadJainFestivals();
+  });
+}
+
+document.getElementById('festPrev')?.addEventListener('click', () => {
+  festState.year--;
+  document.getElementById('festYearLabel').textContent = festState.year;
+  loadJainFestivals();
+});
+
+document.getElementById('festNext')?.addEventListener('click', () => {
+  festState.year++;
+  document.getElementById('festYearLabel').textContent = festState.year;
+  loadJainFestivals();
+});
+
+// Toggle grid / list view
+document.querySelectorAll('#festViewToggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#festViewToggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    festState.view = btn.dataset.view;
+    renderJainFestivalsView();
+  });
+});
+
+// Search input
+document.getElementById('festSearchInput')?.addEventListener('input', (e) => {
+  festState.searchQuery = e.target.value.toLowerCase().trim();
+  renderJainFestivalsView();
+});
+
+// Filter chips
+document.querySelectorAll('#festFilterChips button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#festFilterChips button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    festState.filter = btn.dataset.filter;
+    renderJainFestivalsView();
+  });
+});
+
+// Export toggle
+const exportBtn = document.getElementById('festExportBtn');
+const exportDrawer = document.getElementById('festExportDrawer');
+exportBtn?.addEventListener('click', () => {
+  exportDrawer?.classList.toggle('hidden');
+});
+document.getElementById('festExportDrawerClose')?.addEventListener('click', () => {
+  exportDrawer?.classList.add('hidden');
+});
+
+// Export triggers
+exportDrawer?.querySelectorAll('[data-expfmt]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const format = btn.dataset.expfmt;
+    const state = getState();
+    const resultEl = document.getElementById('festExportResult');
+    if (resultEl) resultEl.innerHTML = 'Generating export…';
+    try {
+      const res = await apiFetch('/generate-jain-festival-exports', 'POST', {
+        year: festState.year,
+        lat: state.lat,
+        lon: state.lon,
+        ayanamsa: state.ayanamsa || 'Lahiri',
+        profile: festState.profile,
+        format
+      });
+      if (resultEl) {
+        resultEl.innerHTML = res.files.map(f =>
+          `<a href="${f.download_url}" target="_blank" style="color:#27AE60; font-weight:bold; text-decoration:underline;">⬇ Download ${f.name}</a>`
+        ).join('<br/>');
+      }
+    } catch (e) {
+      if (resultEl) resultEl.innerHTML = `Error: ${e.message}`;
+    }
+  });
+});
+
+// Details modal close
+const modalOverlay = document.getElementById('festModalOverlay');
+const modal = document.getElementById('festModal');
+const modalClose = document.getElementById('festModalClose');
+
+function openFestivalModal(f) {
+  const modalBody = document.getElementById('festModalBody');
+  const modalTitle = document.getElementById('festModalTitle');
+  if (!modalBody) return;
+
+  if (modalTitle) modalTitle.textContent = f.name;
+
+  const statusBadge = f.status === 'review_needed'
+    ? `<span class="fest-badge fest-badge--review">⚠️ Review Needed</span>`
+    : `<span class="fest-badge fest-badge--${f.category}">${f.category}</span>`;
+
+  modalBody.innerHTML = `
+    <div style="margin-bottom:10px;">${statusBadge}</div>
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Gujarati Name</div>
+      <div class="modal-detail-value" style="font-family: 'Gujarati', sans-serif; font-size:15px; font-weight:bold; color:#8E44AD;">${f.name_gujarati}</div>
+    </div>
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Date / Range</div>
+      <div class="modal-detail-value">${f.start_date === f.end_date ? f.start_date : `${f.start_date} to ${f.end_date}`}</div>
+    </div>
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Jain Month / Paksha / Tithi</div>
+      <div class="modal-detail-value">${f.jain_month} ${f.paksha} ${f.tithi}</div>
+    </div>
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Short Meaning</div>
+      <div class="modal-detail-value">${f.meaning}</div>
+    </div>
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Observance Note</div>
+      <div class="modal-detail-value">${f.observance}</div>
+    </div>
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Sources</div>
+      <div class="modal-detail-value">
+        ${f.sources.map(s => `<a href="${s}" target="_blank" style="color:#3498DB; text-decoration:underline; font-size:11px; display:block; margin-bottom:2px;">${s}</a>`).join('')}
+      </div>
+    </div>
+  `;
+  
+  modalOverlay.classList.remove('hidden');
+  modal.classList.remove('hidden');
+  requestAnimationFrame(() => {
+    modalOverlay.classList.add('visible');
+    modal.classList.add('visible');
+  });
+}
+
+function closeFestivalModal() {
+  modalOverlay.classList.remove('visible');
+  modal.classList.remove('visible');
+  setTimeout(() => {
+    modalOverlay.classList.add('hidden');
+    modal.classList.add('hidden');
+  }, 300);
+}
+
+modalClose?.addEventListener('click', closeFestivalModal);
+modalOverlay?.addEventListener('click', closeFestivalModal);
+
+async function loadJainFestivals() {
+  const state = getState();
+  const locationHeader = document.getElementById('festLocationHeader');
+  if (locationHeader) {
+    locationHeader.textContent = state.locationName ? `📍 ${state.locationName}` : 'No location set';
+  }
+  
+  const grid = document.getElementById('festGrid');
+  const list = document.getElementById('festList');
+  const upcoming = document.getElementById('festUpcomingList');
+  
+  if (grid) grid.innerHTML = '<div class="cal-loading">Loading festival grid...</div>';
+  if (list) list.innerHTML = '<div class="cal-loading">Loading list...</div>';
+  if (upcoming) upcoming.innerHTML = '<div style="font-size:12px; color:#7F8C8D; padding:10px;">Calculating upcoming events...</div>';
+  
+  if (!state.lat || !state.lon) {
+    if (grid) grid.innerHTML = '<div class="cal-loading">Set a location to view Jain Festivals.</div>';
+    return;
+  }
+  
+  try {
+    const data = await apiFetch('/generate-jain-festivals', 'POST', {
+      year: festState.year,
+      lat: state.lat,
+      lon: state.lon,
+      ayanamsa: state.ayanamsa || 'Lahiri',
+      profile: festState.profile
+    });
+    
+    festState.festivals = data.festivals || [];
+    festState.upcoming  = data.upcoming || [];
+    
+    // Render upcoming
+    if (upcoming) {
+      upcoming.innerHTML = '';
+      if (!festState.upcoming.length) {
+        upcoming.innerHTML = '<div style="font-size:11px; color:#95A5A6; padding:10px;">No major events in next 30 days</div>';
+      } else {
+        festState.upcoming.forEach(f => {
+          const card = document.createElement('div');
+          card.className = 'upcoming-festival-card';
+          card.innerHTML = `
+            <div style="font-size:12px; font-weight:bold; color:#2C3E50; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${f.name}</div>
+            <div style="font-size:10px; color:#7F8C8D;">${f.start_date}</div>
+            <div><span class="fest-badge fest-badge--${f.category}" style="font-size:8px; padding:2px 4px;">${f.category}</span></div>
+          `;
+          card.addEventListener('click', () => openFestivalModal(f));
+          upcoming.appendChild(card);
+        });
+      }
+    }
+    
+    renderJainFestivalsView();
+  } catch (e) {
+    if (grid) grid.innerHTML = `<div class="cal-loading">Error: ${e.message}</div>`;
+  }
+}
+
+function getFilteredFestivals() {
+  return festState.festivals.filter(f => {
+    // Search query filter
+    const matchesSearch = !festState.searchQuery || 
+      f.name.toLowerCase().includes(festState.searchQuery) ||
+      f.meaning.toLowerCase().includes(festState.searchQuery) ||
+      f.jain_month.toLowerCase().includes(festState.searchQuery);
+      
+    // Category filter
+    let matchesFilter = true;
+    if (festState.filter !== 'all') {
+      if (festState.filter === 'review') {
+        matchesFilter = f.status === 'review_needed';
+      } else {
+        matchesFilter = f.category === festState.filter;
+      }
+    }
+    
+    return matchesSearch && matchesFilter;
+  });
+}
+
+function renderJainFestivalsView() {
+  const filtered = getFilteredFestivals();
+  
+  if (festState.view === 'calendar') {
+    document.getElementById('festCalendarContainer').classList.remove('hidden');
+    document.getElementById('festListContainer').classList.add('hidden');
+    renderJainGrid(filtered);
+  } else {
+    document.getElementById('festCalendarContainer').classList.add('hidden');
+    document.getElementById('festListContainer').classList.remove('hidden');
+    renderJainList(filtered);
+  }
+}
+
+function renderJainGrid(filteredList) {
+  const grid = document.getElementById('festGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  
+  // We can render a monthly grid for a selected month, or since we are showing the whole year,
+  // let's show a month picker in Year Controls, or show a simple summary grid!
+  // Wait, let's render a month selection dropdown dynamically so the calendar view is highly functional!
+  // Let's add a month picker dropdown to the Year Controls if not already there, or we can just render the current month!
+  // Let's check which month to render: let's default to the current month or March/April where festivals commonly reside.
+  // Actually, we can add a month selector select inside our JS code dynamically!
+  let monthSelector = document.getElementById('festMonthSelect');
+  if (!monthSelector) {
+    // Add month selector dynamically to settings-card
+    const yearLabelParent = document.getElementById('festYearLabel').parentElement;
+    monthSelector = document.createElement('select');
+    monthSelector.id = 'festMonthSelect';
+    monthSelector.className = 'form-select';
+    monthSelector.style.width = '100px';
+    monthSelector.style.padding = '4px 8px';
+    monthSelector.style.fontSize = '12px';
+    MONTH_NAMES.forEach((m, idx) => {
+      const opt = document.createElement('option');
+      opt.value = idx + 1;
+      opt.textContent = m;
+      monthSelector.appendChild(opt);
+    });
+    // Default to current month
+    monthSelector.value = new Date().getMonth() + 1;
+    monthSelector.addEventListener('change', () => renderJainFestivalsView());
+    yearLabelParent.insertBefore(monthSelector, document.getElementById('festNext'));
+  }
+  
+  const selectedMonth = parseInt(monthSelector.value, 10);
+  const year = festState.year;
+  const numDays = new Date(year, selectedMonth, 0).getDate();
+  const firstDayIndex = new Date(year, selectedMonth - 1, 1).getDay(); // 0=Sun
+  
+  // Empty cells before first day
+  for (let i = 0; i < firstDayIndex; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'cal-cell empty';
+    grid.appendChild(empty);
+  }
+  
+  // Render each calendar cell
+  for (let dayNum = 1; dayNum <= numDays; dayNum++) {
+    const dStr = `${year}-${String(selectedMonth).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell';
+    
+    // Find matching festivals for this day
+    const dayEvents = filteredList.filter(f => {
+      return f.start_date <= dStr && dStr <= f.end_date;
+    });
+    
+    const isReview = dayEvents.some(f => f.status === 'review_needed');
+    if (isReview) cell.className += ' review-needed-cell';
+    
+    let markersHTML = '';
+    if (dayEvents.length) {
+      markersHTML = `<div class="fest-markers-container">` + 
+        dayEvents.map(f => {
+          const catClass = f.status === 'review_needed' ? 'review' : f.category;
+          return `<div class="fest-marker fest-marker--${catClass}">${f.name}</div>`;
+        }).join('') + `</div>`;
+    }
+    
+    cell.innerHTML = `
+      <div class="cal-cell-header" style="justify-content:space-between;">
+        <span class="cal-date">${dayNum}</span>
+      </div>
+      <div style="flex:1;">
+        ${markersHTML}
+      </div>
+    `;
+    
+    if (dayEvents.length) {
+      cell.addEventListener('click', () => {
+        // Open modal for the first festival or show choices if multiple
+        if (dayEvents.length === 1) {
+          openFestivalModal(dayEvents[0]);
+        } else {
+          // Open choice modal or first one
+          openFestivalModal(dayEvents[0]);
+        }
+      });
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function renderJainList(filteredList) {
+  const listContainer = document.getElementById('festList');
+  if (!listContainer) return;
+  listContainer.innerHTML = '';
+  
+  if (!filteredList.length) {
+    listContainer.innerHTML = '<div class="cal-loading" style="padding:20px;">No matching festivals found.</div>';
+    return;
+  }
+  
+  // Group list by Gregorian Month
+  const monthGroups = {};
+  filteredList.forEach(f => {
+    const mNum = parseInt(f.start_date.split('-')[1], 10);
+    const mName = MONTH_NAMES[mNum - 1];
+    if (!monthGroups[mName]) monthGroups[mName] = [];
+    monthGroups[mName].push(f);
+  });
+  
+  for (const mName in monthGroups) {
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'settings-section';
+    groupDiv.innerHTML = `
+      <div class="settings-section-title" style="color:#8E44AD; font-weight:bold; font-size:13px; border-bottom:1.5px solid rgba(142,68,173,0.2); padding-bottom:4px; margin-bottom:8px;">${mName}</div>
+      <div class="settings-card" style="gap:4px; margin-bottom:16px;"></div>
+    `;
+    const card = groupDiv.querySelector('.settings-card');
+    
+    monthGroups[mName].forEach(f => {
+      const item = document.createElement('div');
+      item.className = 'panchang-row';
+      item.style.padding = '8px 0';
+      item.style.cursor = 'pointer';
+      
+      const badge = f.status === 'review_needed'
+        ? `<span class="fest-badge fest-badge--review" style="font-size:7px; padding:1px 3px;">⚠️ Review</span>`
+        : `<span class="fest-badge fest-badge--${f.category}" style="font-size:7px; padding:1px 3px;">${f.category}</span>`;
+        
+      item.innerHTML = `
+        <div class="panchang-label" style="min-width:70px; color:#8E44AD; font-size:12px;">${f.start_date.slice(5)}</div>
+        <div class="panchang-value" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          <div>
+            <strong style="color:#2C3E50; font-size:13px;">${f.name}</strong>
+            <div style="font-size:10px; color:#7F8C8D; margin-top:2px;">Tithi: ${f.jain_month} ${f.paksha} ${f.tithi}</div>
+          </div>
+          ${badge}
+        </div>
+      `;
+      item.addEventListener('click', () => openFestivalModal(f));
+      card.appendChild(item);
+    });
+    listContainer.appendChild(groupDiv);
+  }
+}
+
+registerPage('festivals', {
+  onEnter() {
+    document.getElementById('festYearLabel').textContent = festState.year;
+    loadJainFestivals();
   }
 });
 

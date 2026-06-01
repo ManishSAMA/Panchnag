@@ -725,3 +725,138 @@ def find_diwali(
         if get_tithi(sun_lon, moon_lon) == 30 and sun_lon >= 179.0:
             return d
     raise ValueError(f"Could not find Diwali (Kartika Amavasya) for year {year}")
+
+
+# ---------------------------------------------------------------------------
+# Bhadra Kaal Engine Calculations
+# ---------------------------------------------------------------------------
+
+VISHTI_KARANA_INDICES = {8, 15, 22, 29, 36, 43, 50, 57}
+
+
+def validate_vishti_karana(karana_index: int, karana_name: str) -> None:
+    """Validate that Karana index aligns with Vishti (Bhadra) positions."""
+    is_vishti_idx = karana_index in VISHTI_KARANA_INDICES
+    is_vishti_name = karana_name == "Vishti (Bhadra)"
+    if is_vishti_idx != is_vishti_name:
+        raise ValueError(
+            f"Internal mismatch: Karana Index {karana_index} and Name '{karana_name}' "
+            f"do not align on Vishti (Bhadra) standard cycle positions."
+        )
+
+
+def get_bhadra_residence_and_risk(rashi_index: int) -> tuple[str, str]:
+    """Return (residence, risk_level) based on Moon Rashi index (0-11)."""
+    if rashi_index in (3, 4, 10, 11):
+        return "Earth", "High"
+    elif rashi_index in (0, 1, 2, 7):
+        return "Heaven", "Low"
+    elif rashi_index in (5, 6, 8, 9):
+        return "Underworld", "Low"
+    else:
+        raise ValueError(f"Invalid Rashi index {rashi_index}")
+
+
+def calculate_bhadra_kaal(
+    sunrise_jd: float,
+    next_sunrise_jd: float,
+    ayanamsa_name: str = 'Lahiri'
+) -> list[dict]:
+    """Scan all Karana periods overlapping sunrise to next sunrise.
+
+    Select only Vishti. Clip to sunrise-day boundaries and split on Rashi transition.
+    """
+    overlapping_segments = []
+    current_jd = sunrise_jd
+    
+    # Loop limit: a day can have at most 6 Karana transitions
+    for _ in range(6):
+        details = calculate_karana_details(current_jd, ayanamsa_name)
+        karana_idx = details['Karana_Index']
+        karana_name = details['Karana_Name']
+        k_start = details['Karana_Start_JD']
+        k_end = details['Karana_End_JD']
+        
+        # Validate Karana name vs index alignment
+        validate_vishti_karana(karana_idx, karana_name)
+        
+        if karana_name == "Vishti (Bhadra)":
+            start_jd = max(k_start, sunrise_jd)
+            end_jd = min(k_end, next_sunrise_jd)
+            
+            if start_jd < end_jd:
+                clipped_start = k_start < sunrise_jd
+                clipped_end = k_end > next_sunrise_jd
+                overlapping_segments.append({
+                    "start_jd": start_jd,
+                    "end_jd": end_jd,
+                    "clipped_start": clipped_start,
+                    "clipped_end": clipped_end,
+                })
+                
+        if k_end >= next_sunrise_jd:
+            break
+        current_jd = k_end + 30.0 / 86400.0
+        
+    final_windows = []
+    for seg in overlapping_segments:
+        s_jd = seg["start_jd"]
+        e_jd = seg["end_jd"]
+        
+        moon_lon_start = get_planetary_longitude(s_jd, 'Moon', ayanamsa_name)
+        moon_lon_end = get_planetary_longitude(e_jd, 'Moon', ayanamsa_name)
+        
+        rashi_start = int(moon_lon_start / 30.0) % 12
+        rashi_end = int(moon_lon_end / 30.0) % 12
+        
+        if rashi_start != rashi_end:
+            # Bisection to find exact transition point
+            low = s_jd
+            high = e_jd
+            for _ in range(25):
+                mid = (low + high) / 2.0
+                r_mid = int(get_planetary_longitude(mid, 'Moon', ayanamsa_name) / 30.0) % 12
+                if r_mid == rashi_start:
+                    low = mid
+                else:
+                    high = mid
+                if (high - low) < 0.00001:
+                    break
+            jd_transition = high
+            
+            from astronomy import RASHI_NAMES
+            res1, risk1 = get_bhadra_residence_and_risk(rashi_start)
+            final_windows.append({
+                "start_jd": s_jd,
+                "end_jd": jd_transition,
+                "moon_rashi": RASHI_NAMES[rashi_start],
+                "residence": res1,
+                "risk_level": risk1,
+                "clipped_start": seg["clipped_start"],
+                "clipped_end": False,
+            })
+            
+            res2, risk2 = get_bhadra_residence_and_risk(rashi_end)
+            final_windows.append({
+                "start_jd": jd_transition,
+                "end_jd": e_jd,
+                "moon_rashi": RASHI_NAMES[rashi_end],
+                "residence": res2,
+                "risk_level": risk2,
+                "clipped_start": False,
+                "clipped_end": seg["clipped_end"],
+            })
+        else:
+            from astronomy import RASHI_NAMES
+            res, risk = get_bhadra_residence_and_risk(rashi_start)
+            final_windows.append({
+                "start_jd": s_jd,
+                "end_jd": e_jd,
+                "moon_rashi": RASHI_NAMES[rashi_start],
+                "residence": res,
+                "risk_level": risk,
+                "clipped_start": seg["clipped_start"],
+                "clipped_end": seg["clipped_end"],
+            })
+            
+    return final_windows

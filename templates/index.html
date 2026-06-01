@@ -22,6 +22,7 @@
     <button class="drawer-link" data-nav="calendar"><span class="icon">🗓️</span> Hindu Calendar</button>
     <button class="drawer-link" data-nav="panchang"><span class="icon">📜</span> Dainika Panchang</button>
     <button class="drawer-link" data-nav="muhurta"><span class="icon">🕐</span> Dainika Muhurta</button>
+    <button class="drawer-link" data-nav="festivals"><span class="icon">🎡</span> Jain Festivals</button>
     <button class="drawer-link" data-nav="location"><span class="icon">📍</span> Change Location</button>
     <button class="drawer-link" data-nav="settings"><span class="icon">⚙️</span> Settings</button>
   </nav>
@@ -52,6 +53,9 @@
   </div>
 
   <div class="page-content">
+    <div id="homeDailyContent" class="home-daily-content">
+      <div class="loading-spinner">Calculating...</div>
+    </div>
     <div class="card-grid">
       <button class="card" data-nav="calendar">
         <div class="card-icon">🗓️</div>
@@ -72,6 +76,11 @@
         <div class="card-icon">🌙</div>
         <div class="card-title">Nakshatra</div>
         <div class="card-desc">daily nakshatra and yoga details</div>
+      </button>
+      <button class="card" data-nav="festivals">
+        <div class="card-icon">🎡</div>
+        <div class="card-title">Jain Festivals</div>
+        <div class="card-desc">Shwetambar festivals, Parva Tithis, and observances</div>
       </button>
       <button class="card" data-nav="location">
         <div class="card-icon">📍</div>
@@ -245,6 +254,130 @@
 </section>
 
 <!-- ─────────────────── LOCATION PAGE ─────────────────── -->
+<!-- ─────────────────── JAIN FESTIVALS PAGE ─────────────────── -->
+<section class="page" id="page-festivals">
+  <nav class="navbar">
+    <button class="navbar-btn" data-nav="home">←</button>
+    <span class="navbar-title">Jain Festivals</span>
+    <div class="navbar-right">
+      <button class="navbar-btn" id="festMenuBtn">☰</button>
+    </div>
+  </nav>
+
+  <div class="cal-month-banner" style="background: linear-gradient(135deg, #8E44AD, #3498DB);">
+    <h2 style="font-size: 20px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">🎡 Shwetambar Jain Calendar</h2>
+    <div style="font-size: 11px; opacity: 0.9; margin-top: 4px;" id="festLocationHeader">Loading coordinates...</div>
+  </div>
+
+  <div class="page-content">
+    <!-- Controls section -->
+    <div class="settings-card" style="padding: 12px; margin-bottom: 12px;">
+      <div style="display: flex; gap: 8px; flex-direction: column;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span class="settings-label" style="font-weight: 600;">Sect Profile</span>
+          <select class="form-select" id="festProfileSelect" style="width: 60%;">
+            <option value="shwetambar_murtipujak_tapagachchha">Murtipujak Tapagachchha</option>
+            <option value="shwetambar_sthanakvasi">Sthanakvasi</option>
+            <option value="shwetambar_terapanthi">Terapanthi</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
+          <span class="settings-label" style="font-weight: 600;">Year Controls</span>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <button class="nav-arrow" id="festPrev" style="margin:0; width:30px; height:30px; line-height:28px;">‹</button>
+            <span id="festYearLabel" style="font-size: 16px; font-weight: bold; color: #2C3E50;">2026</span>
+            <button class="nav-arrow" id="festNext" style="margin:0; width:30px; height:30px; line-height:28px;">›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upcoming Section -->
+    <div class="settings-section-title">Important Observances (Next 30 Days)</div>
+    <div class="upcoming-festivals-scroll" id="festUpcomingList" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 12px;">
+      <div style="font-size: 12px; color: #7F8C8D; padding: 10px;">Calculating upcoming events...</div>
+    </div>
+
+    <!-- Toolbar / Toggle -->
+    <div class="cal-toolbar" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+      <div class="toggle-group" id="festViewToggle">
+        <button class="toggle-btn active" data-view="calendar">Grid View</button>
+        <button class="toggle-btn" data-view="list">List View</button>
+      </div>
+      <div style="display: flex; gap: 4px;">
+        <button class="toolbar-btn" id="festExportBtn" style="font-size: 11px; padding: 4px 8px; background-color: #27AE60; color: white;">📥 Export</button>
+      </div>
+    </div>
+
+    <!-- Exports Options Drawer (Hidden by default) -->
+    <div class="settings-card hidden" id="festExportDrawer" style="padding: 12px; margin-bottom: 12px; border: 1px dashed #27AE60;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <strong style="color: #27AE60; font-size: 13px;">Dedicated Jain Festival Export</strong>
+        <button class="modal-close" id="festExportDrawerClose" style="position:static; padding:0 4px; font-size:16px;">×</button>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <button class="btn-primary" style="background:#2980B9; font-size:11px; padding:6px;" data-expfmt="csv">CSV</button>
+        <button class="btn-primary" style="background:#E67E22; font-size:11px; padding:6px;" data-expfmt="excel">Excel</button>
+        <button class="btn-primary" style="background:#8E44AD; font-size:11px; padding:6px;" data-expfmt="json">JSON</button>
+        <button class="btn-primary" style="background:#C0392B; font-size:11px; padding:6px;" data-expfmt="pdf">Print PDF</button>
+      </div>
+      <div id="festExportResult" style="font-size:11px; margin-top:8px; color:#2C3E50;"></div>
+    </div>
+
+    <!-- Search / Filter section -->
+    <div style="margin-bottom: 12px;">
+      <input type="text" class="search-input" id="festSearchInput" placeholder="🔍 Search festivals (e.g. Mahavir, Oli, Paryushan…)" style="margin-bottom: 8px;">
+      <div class="weekday-tabs" id="festFilterChips" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; border-bottom: none;">
+        <button class="weekday-tab active" data-filter="all">All</button>
+        <button class="weekday-tab" data-filter="kalyanak">Kalyanak</button>
+        <button class="weekday-tab" data-filter="festival">Festival</button>
+        <button class="weekday-tab" data-filter="fast">Fast</button>
+        <button class="weekday-tab" data-filter="parva">Parva Tithi</button>
+        <button class="weekday-tab" data-filter="review">Review Needed</button>
+      </div>
+    </div>
+
+    <!-- Calendar View Grid -->
+    <div id="festCalendarContainer">
+      <div class="cal-weekdays">
+        <div class="cal-weekday">Sun</div>
+        <div class="cal-weekday">Mon</div>
+        <div class="cal-weekday">Tue</div>
+        <div class="cal-weekday">Wed</div>
+        <div class="cal-weekday">Thu</div>
+        <div class="cal-weekday">Fri</div>
+        <div class="cal-weekday">Sat</div>
+      </div>
+      <div class="cal-grid" id="festGrid" style="margin-top: 6px;">
+        <div class="cal-loading">Loading festival grid...</div>
+      </div>
+    </div>
+
+    <!-- List View Container (Month-grouped list) -->
+    <div id="festListContainer" class="hidden">
+      <div id="festList">
+        <div class="cal-loading">Loading month list...</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     FESTIVAL DETAIL MODAL
+═══════════════════════════════════════════════ -->
+<div class="bottom-sheet-overlay hidden" id="festModalOverlay"></div>
+<div class="bottom-sheet hidden" id="festModal">
+  <div class="bottom-sheet-handle"></div>
+  <div class="bottom-sheet-header">
+    <h3 id="festModalTitle" class="bottom-sheet-title"></h3>
+    <button class="bottom-sheet-close" id="festModalClose" aria-label="Close">×</button>
+  </div>
+  <div class="bottom-sheet-body" id="festModalBody">
+    <!-- Dynamic contents -->
+  </div>
+</div>
+
 <section class="page" id="page-location">
   <nav class="navbar">
     <button class="navbar-btn" id="locationBack">←</button>

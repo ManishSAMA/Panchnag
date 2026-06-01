@@ -156,3 +156,43 @@ def _parse_required_int(value: object, field_name: str) -> int:
     if parsed is None:
         raise ValueError(f"Missing required field: {field_name}")
     return parsed
+
+
+@dataclass(frozen=True)
+class JainFestivalsRequest:
+    year: int
+    city: str | None
+    lat: float | None
+    lon: float | None
+    ayanamsa_name: str
+    profile: str
+
+
+def parse_jain_festivals_request(payload: dict | None) -> JainFestivalsRequest:
+    payload = payload or {}
+
+    year = _parse_required_int(payload.get("year"), "year")
+    if not (1900 <= year <= 2200):
+        raise ValueError("year must be between 1900 and 2200.")
+
+    city, lat, lon = _parse_location_fields(payload)
+    ayanamsa_name = payload.get("ayanamsa", "Lahiri")
+    
+    profile = payload.get("profile", "shwetambar_murtipujak_tapagachchha")
+    valid_profiles = {
+        "shwetambar_murtipujak_tapagachchha",
+        "shwetambar_sthanakvasi",
+        "shwetambar_terapanthi"
+    }
+    if profile not in valid_profiles:
+        raise ValueError("Invalid profile. Must be one of: shwetambar_murtipujak_tapagachchha, shwetambar_sthanakvasi, shwetambar_terapanthi")
+
+    return JainFestivalsRequest(
+        year=year,
+        city=city,
+        lat=lat,
+        lon=lon,
+        ayanamsa_name=ayanamsa_name,
+        profile=profile,
+    )
+

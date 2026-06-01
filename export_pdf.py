@@ -9,6 +9,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from astronomy import local_time_to_jd, jd_to_local_time_string, get_sunrise, get_sunset, get_planetary_longitude, get_rashi_name, get_sun_rashi
 from export import apply_element_continuity_formatting, format_row_data
 from panchang import (
+    calculate_bhadra_kaal,
     calculate_jain_tithi_from_sunrise,
     calculate_rahu_kaal,
     find_chaitra_shukla_1,
@@ -19,7 +20,7 @@ from panchang import (
     get_vira_nirvana_samvat,
 )
 
-def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon: float=75.7873, tz_offset: float=5.5, ayanamsa: str='Lahiri'):
+def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon: float=75.7873, tz_offset: float=5.5, ayanamsa: str='Lahiri', profile: str='shwetambar_murtipujak_tapagachchha'):
     doc = SimpleDocTemplate(
         out_filename, 
         pagesize=landscape(letter),
@@ -57,6 +58,20 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
     chaitra_shukla_1 = find_chaitra_shukla_1(year, lat, lon, tz_offset, ayanamsa)
     diwali = find_diwali(year, lat, lon, tz_offset, ayanamsa)
 
+    from jain_festival_service import generate_jain_festivals
+    jain_fest_data = generate_jain_festivals(year, lat, lon, ayanamsa, profile)
+    date_to_fests = {}
+    for f in jain_fest_data.get("festivals", []):
+        start_d = datetime.strptime(f["start_date"], "%Y-%m-%d").date()
+        end_d = datetime.strptime(f["end_date"], "%Y-%m-%d").date()
+        curr_d = start_d
+        while curr_d <= end_d:
+            d_str = curr_d.isoformat()
+            if d_str not in date_to_fests:
+                date_to_fests[d_str] = []
+            date_to_fests[d_str].append(f)
+            curr_d += timedelta(days=1)
+
     all_rows: list[dict] = []
     for month in range(1, 13):
         num_days = calendar.monthrange(year, month)[1]
@@ -77,8 +92,17 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
             )
             jain_tithi = calculate_jain_tithi_from_sunrise(jd_sr, ayanamsa)
 
+            jd_next_day_start = local_time_to_jd(year, month, day, 0.0, tz_offset) + 1.0
+            jd_next_sr = get_sunrise(jd_next_day_start, lat, lon)
+            bhadra = calculate_bhadra_kaal(jd_sr, jd_next_sr, ayanamsa)
+
+            civil_date_str = f"{year:04d}-{month:02d}-{day:02d}"
+            day_fests = date_to_fests.get(civil_date_str, [])
+            fests_list = [f for f in day_fests if f["category"] != "parva"]
+            parva_list = [f for f in day_fests if f["category"] == "parva"]
+
             row = format_row_data(
-                date_str=f"{year:04d}-{month:02d}-{day:02d}",
+                date_str=civil_date_str,
                 julian_date=jd_sr,
                 planets={"Sun": sun_lon, "Moon": moon_lon},
                 panchang=panchang,
@@ -93,6 +117,11 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
                 tz_label="PDF",
                 vikram_samvat=get_vikram_samvat(civil_date, chaitra_shukla_1),
                 vira_nirvana_samvat=get_vira_nirvana_samvat(civil_date, diwali),
+                bhadra_kaal=bhadra,
+                jain_festivals=fests_list,
+                jain_parva_tithis=parva_list,
+                festival_profile=profile,
+                festival_review_needed=any(f.get("status") == "review_needed" for f in day_fests),
             )
             row["Moon_Rashi"] = get_rashi_name(moon_lon).split(' (')[0]
             row["Sun_Rashi"] = get_sun_rashi(jd_sr)
@@ -102,6 +131,8 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
                 + "–"
                 + jd_to_local_time_string(rahu["end_jd"], tz_offset)[:5]
             )
+            row["Bhadra_Segments"] = bhadra
+            row["Jain_Fests_PDF"] = day_fests
             all_rows.append(row)
 
     for i, row in enumerate(all_rows):
@@ -151,10 +182,13 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
         
         # Header Info
         loc_info = Paragraph(f"<b>Location:</b> Lat {lat}, Lon {lon} | <b>Timezone:</b> UTC+{tz_offset} | <b>Ayanamsa:</b> {ayanamsa}", styles['Normal'])
+        loc_info_profile = Paragraph(f"<b>Festival Profile:</b> {profile.replace('_', ' ').title()}", styles['Normal'])
         elements.append(loc_info)
+        elements.append(loc_info_profile)
         elements.append(
             Paragraph(
-                "<b>Legend:</b> Hindu Tithi is sunrise-based. Jain Tithi is the Tithi active 2 hours 24 minutes after sunrise.",
+                "<b>Legend:</b> Hindu Tithi is sunrise-based. Jain Tithi is the Tithi active 2 hours 24 minutes after sunrise. "
+                "<font color='#7D3C98'>* Indicates festival date has a source conflict / review needed.</font>",
                 styles['Normal'],
             )
         )
@@ -164,7 +198,7 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
             "Date", "Day", "Month", "Tithi",
             "Jain Tithi",
             "Nakshatra", "Yoga", "Karana",
-            "Moon Rashi", "Sun Rashi", "Sunrise", "Sunset", "Rahu Kaal"
+            "Moon Rashi", "Sun Rashi", "Sunrise", "Sunset", "Rahu Kaal", "Bhadra Kaal"
         ]]
 
         month_rows = [
@@ -177,12 +211,50 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
             vara_name = ['Ravivara', 'Somavara', 'Mangalavara', 'Budhavara',
                          'Guruvara', 'Shukravara', 'Shanivara'][vara_idx]
 
+            # Format Bhadra segments as compact multiline summaries
+            bhadra_segs = row_data.get("Bhadra_Segments", [])
+            if bhadra_segs:
+                bhadra_summaries = []
+                for w in bhadra_segs:
+                    start_t = jd_to_local_time_string(w["start_jd"], tz_offset)[:5]
+                    end_t = jd_to_local_time_string(w["end_jd"], tz_offset)[:5]
+                    bhadra_summaries.append(
+                        f"{start_t}–{end_t}<br/><font size='5'>{w['residence']} ({w['risk_level']})</font>"
+                    )
+                bhadra_str = "<br/>".join(bhadra_summaries)
+            else:
+                bhadra_str = "None"
+
+            # Format Jain Tithi + compact festivals list
+            jain_tithi_display = row_data['Jain_Tithi_PDF']
+            day_fests = row_data.get("Jain_Fests_PDF", [])
+            if day_fests:
+                fest_short_names = []
+                for f in day_fests:
+                    name = f["name"]
+                    if "Ayambil Oli" in name:
+                        name = "Oli"
+                    elif "Paryushan Start" in name:
+                        name = "Paryushan"
+                    elif "Samvatsari" in name:
+                        name = "Samvatsari"
+                    elif "Mahavir Janma" in name:
+                        name = "Mahavir Jayanti"
+                    if f.get("status") == "review_needed":
+                        name += "*"
+                    fest_short_names.append(name)
+                deduped_names = []
+                for n in fest_short_names:
+                    if n not in deduped_names:
+                        deduped_names.append(n)
+                jain_tithi_display += f"<br/><font size='5' color='#7D3C98'>({', '.join(deduped_names)})</font>"
+
             row = [
                 Paragraph(civil_date.strftime("%d-%m-%Y"), cell_style),
                 Paragraph(vara_name, cell_style),
                 Paragraph(row_data['Hindu_Month_Common'], cell_style),
                 Paragraph(row_data['Tithi'], cell_style),
-                Paragraph(row_data['Jain_Tithi_PDF'], cell_style),
+                Paragraph(jain_tithi_display, cell_style),
                 Paragraph(row_data['Nakshatra'], cell_style),
                 Paragraph(row_data['Yoga'], cell_style),
                 Paragraph(
@@ -195,10 +267,11 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
                 Paragraph(row_data['Sunrise (PDF)'], cell_style),
                 Paragraph(row_data['Sunset (PDF)'], cell_style),
                 Paragraph(row_data.get('Rahu_Kaal', ''), cell_style),
+                Paragraph(bhadra_str, cell_style),
             ]
             data.append(row)
 
-        t = Table(data, colWidths=[55, 55, 50, 85, 85, 85, 55, 55, 55, 50, 40, 40, 45], repeatRows=1)
+        t = Table(data, colWidths=[50, 50, 40, 75, 75, 75, 45, 50, 45, 45, 35, 35, 40, 60], repeatRows=1)
         t.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2c3e50')),
             ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
