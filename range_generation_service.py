@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import calendar
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
@@ -18,6 +18,37 @@ class GeneratedFile:
     path: str
 
 
+def _build_festival_date_index(
+    start_year: int,
+    end_year: int,
+    lat: float,
+    lon: float,
+    ayanamsa_name: str,
+    profile: str,
+) -> dict[str, dict]:
+    from jain_festival_service import generate_jain_festivals
+    index: dict[str, dict] = {}
+    for year in range(start_year, end_year + 1):
+        fest_data = generate_jain_festivals(year, lat, lon, ayanamsa_name, profile)
+        for f in fest_data.get("festivals", []):
+            start_d = datetime.strptime(f["start_date"], "%Y-%m-%d").date()
+            end_d = datetime.strptime(f["end_date"], "%Y-%m-%d").date()
+            curr = start_d
+            while curr <= end_d:
+                d_str = curr.isoformat()
+                if d_str not in index:
+                    index[d_str] = {"festivals": [], "parva_tithis": []}
+                entry = {"name": f["name"], "category": f["category"], "occurrence_id": f["occurrence_id"]}
+                if f["category"] == "parva":
+                    if not any(x["occurrence_id"] == f["occurrence_id"] for x in index[d_str]["parva_tithis"]):
+                        index[d_str]["parva_tithis"].append(entry)
+                else:
+                    if not any(x["occurrence_id"] == f["occurrence_id"] for x in index[d_str]["festivals"]):
+                        index[d_str]["festivals"].append(entry)
+                curr += timedelta(days=1)
+    return index
+
+
 def generate_year_range_exports(
     *,
     start_year: int,
@@ -29,16 +60,22 @@ def generate_year_range_exports(
     output_format: str,
     monthly: bool,
     workers: int,
+    profile: str = "shwetambar_murtipujak_tapagachchha",
     output_dir: str = "/tmp",
 ) -> dict:
     location = resolve_location(city=city, lat=lat, lon=lon)
     tz_info = _timezone_snapshot(location.timezone, start_year)
+    festival_index = _build_festival_date_index(
+        start_year, end_year, location.lat, location.lon, ayanamsa_name, profile
+    )
     config = {
         "lat": location.lat,
         "lon": location.lon,
         "tz_offset": tz_info["offset_hours"],
         "tz_label": tz_info["label"],
         "ayanamsa": ayanamsa_name,
+        "festival_index": festival_index,
+        "festival_profile": profile,
     }
 
     target_dir = Path(output_dir) / "jain_panchang_exports" / uuid4().hex

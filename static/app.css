@@ -66,6 +66,9 @@ body {
   overflow: hidden;
 }
 
+/* Global utility */
+.hidden { display: none !important; }
+
 /* ── Pages ── */
 .page { display: none; flex-direction: column; flex: 1; }
 .page.active { display: flex; }
@@ -385,17 +388,17 @@ body {
 
 .cal-cell {
   background: var(--surface);
-  padding: 12px 10px;
-  min-height: 92px;
+  padding: 8px 6px 6px;
+  min-height: 80px;
   min-width: 0;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  transition: background 0.2s ease, transform 0.2s ease;
+  gap: 4px;
+  transition: background 0.15s ease;
 }
-.cal-cell:hover { background: var(--surface-soft); transform: translateY(-1px); }
-.cal-cell.empty { background: rgba(255,255,255,0.64); cursor: default; pointer-events: none; }
+.cal-cell:hover { background: var(--surface-soft); }
+.cal-cell.empty { background: rgba(255,255,255,0.5); cursor: default; pointer-events: none; }
 .cal-cell.today {
   background: #f4f5d5;
   outline: 2px solid rgba(91,109,56,0.8);
@@ -406,81 +409,83 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-bottom: 2px;
 }
 
 .cal-date {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 18px;
+  font-weight: 900;
   color: var(--text);
-  line-height: 1.1;
+  line-height: 1;
 }
-.cal-cell.today .cal-date { color: var(--olive-dark); }
+.cal-cell.today .cal-date {
+  color: var(--green);
+}
 
 .cal-cell-body {
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: flex-start;
-  flex-wrap: wrap;
-}
-
-.cal-cell-info {
-  display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
-  flex: 1 1 120px;
-}
-
-.cal-cell-left {
-  align-items: flex-start;
-  text-align: left;
-}
-
-.cal-cell-right {
-  align-items: flex-end;
-  text-align: right;
-}
-
-.cal-value {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cal-cell-footer {
-  font-size: 10px;
-  color: var(--text-muted);
-  margin-top: 6px;
-  text-align: center;
 }
 
 .cal-cell-label {
-  font-size: 9px;
+  font-size: 8px;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   font-weight: 700;
+  line-height: 1;
 }
 
-.cal-tithi,
-.cal-nakshatra-name {
-  font-size: 11px;
+.cal-value {
+  font-size: 10px;
   font-weight: 700;
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.3;
 }
 
 .cal-endtime {
-  font-size: 9px;
+  font-size: 8px;
   color: var(--text-soft);
-  line-height: 1.3;
+  line-height: 1.2;
+  display: block;
 }
+
+.cal-nakshatra-row {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 1px;
+}
+
+.cal-sun-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  color: var(--text-soft);
+  margin-top: auto;
+  padding-top: 4px;
+  gap: 2px;
+}
+.cal-sun-row [data-sr]::before { content: '☀ '; }
+.cal-sun-row [data-ss]::before { content: '🌙 '; }
+
+.cal-cell-footer {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 2px;
+}
+
+.cal-cell-info { display: none; }
+.cal-cell-left, .cal-cell-right { display: none; }
 
 .cal-loading { text-align: center; padding: 40px; color: var(--text-muted); }
 
@@ -1049,6 +1054,150 @@ body {
   color: #27ae60;
 }
 
+/* ── Aaj Ka Panchang Card ── */
+.aaj-ka-panchang-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  margin: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(140,90,42,0.12);
+}
+
+.aaj-ka-panchang-title {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--brand);
+  padding: 14px 18px 4px;
+}
+
+.aaj-ka-panchang-loading {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 10px 18px 14px;
+}
+
+.akp-section-header {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  padding: 10px 18px 4px;
+  background: var(--surface-soft);
+  border-top: 1px solid rgba(140,90,42,0.08);
+}
+
+.akp-section-header--shubh { color: var(--green); }
+.akp-section-header--ashubh { color: var(--red); }
+
+.akp-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 18px;
+  border-bottom: 1px solid rgba(140,90,42,0.07);
+}
+.akp-row:last-of-type { border-bottom: none; }
+
+.akp-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand);
+  min-width: 90px;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.akp-value {
+  font-size: 13px;
+  color: var(--text);
+  flex: 1;
+  line-height: 1.55;
+}
+.akp-value small { font-size: 11px; color: var(--text-muted); }
+
+.akp-sun-moon-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid rgba(140,90,42,0.08);
+}
+
+.akp-sun-moon-cell {
+  padding: 12px 18px;
+  text-align: center;
+  border-bottom: 1px solid rgba(140,90,42,0.08);
+}
+.akp-sun-moon-cell:nth-child(odd) { border-right: 1px solid rgba(140,90,42,0.08); }
+
+.akp-sm-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--brand);
+}
+
+.akp-sm-time {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+.akp-muhurta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(140,90,42,0.06);
+  gap: 8px;
+}
+.akp-muhurta-row:last-child { border-bottom: none; }
+
+.akp-muhurta-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.akp-muhurta-time {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.akp-shubh {
+  background: rgba(91, 109, 56, 0.06);
+  border-left: 3px solid var(--green);
+}
+.akp-shubh .akp-muhurta-name { color: var(--green); }
+
+.akp-ashubh {
+  background: rgba(140, 42, 42, 0.05);
+  border-left: 3px solid var(--red);
+}
+.akp-ashubh .akp-muhurta-name { color: var(--red); }
+
+.akp-active-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: var(--red);
+  border-radius: 50%;
+  margin-left: 4px;
+  vertical-align: middle;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
 /* ═══════════════════════════════════════════════
      JAIN FESTIVALS PRESET STYLES
    ═══════════════════════════════════════════════ */
@@ -1133,9 +1282,13 @@ body {
   background: rgba(0,0,0,0.45);
   z-index: 10000;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.25s ease;
 }
-.bottom-sheet-overlay.visible { opacity: 1; }
+.bottom-sheet-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .bottom-sheet {
   position: fixed;

@@ -283,16 +283,12 @@ const MONTH_NAMES = ['January','February','March','April','May','June',
                      'July','August','September','October','November','December'];
 
 registerPage('calendar', {
-  _abortCtrl: null,
-
   onEnter() {
     this._renderNav();
     this._load();
   },
 
-  onLeave() {
-    if (this._abortCtrl) this._abortCtrl.abort();
-  },
+  onLeave() {},
 
   _renderNav() {
     const label = `${MONTH_NAMES[calState.month - 1]} ${calState.year}`;
@@ -354,6 +350,8 @@ registerPage('calendar', {
       const nakName = day.nakshatra_name || '';
       const nakTime = day.nakshatra_end_time ? `<span class="cal-endtime">${day.nakshatra_end_time}</span>` : '';
       const weekdayHindi = new Date(day.date + 'T00:00:00').toLocaleDateString('hi-IN', { weekday: 'long' });
+      const srText = day.sunrise_time ? formatTime(day.sunrise_time, fmt) : '';
+      const ssText = day.sunset_time  ? formatTime(day.sunset_time,  fmt) : '';
 
       let markersHTML = '';
       if (day.jain_festivals && day.jain_festivals.length) {
@@ -372,18 +370,13 @@ registerPage('calendar', {
           <span class="cal-date">${dayNum}</span>
         </div>
         <div class="cal-cell-body">
-          <div class="cal-cell-info cal-cell-left">
-            <span class="cal-cell-label">Tithi</span>
-            <span class="cal-value">${tithiText}</span>
-            ${tithiTime}
-          </div>
-          <div class="cal-cell-info cal-cell-right">
-            <span class="cal-cell-label">Nakshatra</span>
-            <span class="cal-value">${nakName}</span>
-            ${nakTime}
-          </div>
+          <span class="cal-cell-label">Tithi</span>
+          <span class="cal-value">${tithiText}</span>
+          ${tithiTime}
+          <span class="cal-nakshatra-row">${nakName}</span>
         </div>
         ${markersHTML}
+        ${srText || ssText ? `<div class="cal-sun-row"><span data-sr>${srText}</span><span data-ss>${ssText}</span></div>` : ''}
         <div class="cal-cell-footer">${weekdayHindi}</div>
       `;
 
@@ -399,45 +392,6 @@ registerPage('calendar', {
       grid.appendChild(cell);
     });
 
-    // Lazy-load sunrise/sunset for visible cells
-    this._loadSunTimes(days, fmt);
-  },
-
-  async _loadSunTimes(days, fmt) {
-    const state = getState();
-    if (!state.lat || !state.lon) return;
-
-    this._abortCtrl = new AbortController();
-    const signal = this._abortCtrl.signal;
-    const CONCURRENCY = 5;
-
-    for (let i = 0; i < days.length; i += CONCURRENCY) {
-      if (signal.aborted) break;
-      const chunk = days.slice(i, i + CONCURRENCY);
-      await Promise.all(chunk.map(async day => {
-        if (signal.aborted) return;
-        try {
-          const data = await apiFetch('/generate-panchang', 'POST', {
-            date: day.date, lat: state.lat, lon: state.lon, ayanamsa: state.ayanamsa || 'Lahiri'
-          });
-          const sr = data.events?.sunrise?.time?.slice(0, 5) || '';
-          const ss = data.events?.sunset?.time?.slice(0, 5) || '';
-
-          const cells = document.querySelectorAll('.cal-cell:not(.empty)');
-          const dayNum = parseInt(day.date.split('-')[2], 10);
-          const startWeekday = new Date(days[0].date + 'T00:00:00').getDay();
-          const cellIndex = startWeekday + dayNum - 1;
-          const allCells = document.getElementById('calGrid').children;
-          const cell = allCells[cellIndex];
-          if (cell) {
-            const srEl = cell.querySelector('[data-sr]');
-            const ssEl = cell.querySelector('[data-ss]');
-            if (srEl) srEl.textContent = formatTime(sr, fmt);
-            if (ssEl) ssEl.textContent = formatTime(ss, fmt);
-          }
-        } catch { /* skip */ }
-      }));
-    }
   }
 });
 
@@ -467,6 +421,42 @@ document.getElementById('calTodayBtn').addEventListener('click', () => {
 let panchangData = null;
 let panchangFmt  = '12h';
 
+function renderAajKaPanchang(data, slots, fmt) {
+  const card = document.getElementById('aajKaPanchangCard');
+  if (!card) return;
+
+  const ft = t => formatTime((t || '').slice(0, 5), fmt);
+  const rk = data.rahu_kaal;
+  const shubhSlots  = slots.filter(s => s.nature === 'auspicious');
+  const ashubhSlots = slots.filter(s => s.nature === 'inauspicious');
+
+  function slotRow(slot, colorClass) {
+    const start = ft(slot.start_time);
+    const end   = ft(slot.end_time);
+    return `<div class="akp-muhurta-row ${colorClass}">
+      <span class="akp-muhurta-name">${slot.name}</span>
+      <span class="akp-muhurta-time">${start} – ${end}</span>
+    </div>`;
+  }
+
+  card.innerHTML = `
+    <div class="aaj-ka-panchang-title">Aaj Ka Muhurta</div>
+
+    ${shubhSlots.length ? `
+    <div class="akp-section-header akp-section-header--shubh">✓ Shubh Muhurta (Choghadiya)</div>
+    ${shubhSlots.map(s => slotRow(s, 'akp-shubh')).join('')}` : `
+    <div class="akp-section-header">Choghadiya</div>
+    <div class="akp-muhurta-row"><span class="akp-muhurta-name" style="color:var(--text-muted)">No auspicious slots today</span></div>`}
+
+    <div class="akp-section-header akp-section-header--ashubh">✗ Ashubh Timings</div>
+    ${rk ? `<div class="akp-muhurta-row akp-ashubh">
+      <span class="akp-muhurta-name">Rahu Kaal${rk.is_active_now ? ' <span class="akp-active-dot"></span>' : ''}</span>
+      <span class="akp-muhurta-time">${ft(rk.start?.time)} – ${ft(rk.end?.time)}</span>
+    </div>` : ''}
+    ${ashubhSlots.length ? ashubhSlots.map(s => slotRow(s, 'akp-ashubh')).join('') : ''}
+  `;
+}
+
 registerPage('panchang', {
   onEnter(params) {
     panchangFmt = getState().timeFormat || '12h';
@@ -494,6 +484,9 @@ registerPage('panchang', {
       panchangData = data;
       renderDateBanner(moonEl, gregEl, detailEl, data);
       this._render(data);
+      apiFetch('/choghadiya', 'POST', { date, lat: state.lat, lon: state.lon })
+        .then(chog => renderAajKaPanchang(data, chog.slots, panchangFmt))
+        .catch(() => renderAajKaPanchang(data, [], panchangFmt));
     }).catch(e => {
       content.innerHTML = `<div class="error-msg">${e.message}</div>`;
     });
@@ -580,6 +573,10 @@ registerPage('panchang', {
             <div class="rahu-kaal-note">Avoid important activities during this period.</div>
           </div>`;
       })()}
+      <div id="aajKaPanchangCard" class="aaj-ka-panchang-card">
+        <div class="aaj-ka-panchang-title">Aaj Ka Panchang</div>
+        <div class="aaj-ka-panchang-loading">Loading Choghadiya…</div>
+      </div>
       ${(() => {
         const bk = data.bhadra_kaal;
         if (!bk) return '';
@@ -639,7 +636,16 @@ document.querySelectorAll('[data-fmt]').forEach(btn => {
     panchangFmt = btn.dataset.fmt;
     saveState({ timeFormat: panchangFmt });
     pages['panchang']._updateToggleUI();
-    if (panchangData) pages['panchang']._render(panchangData);
+    if (panchangData) {
+      pages['panchang']._render(panchangData);
+      const card = document.getElementById('aajKaPanchangCard');
+      if (card && !card.querySelector('.aaj-ka-panchang-loading')) {
+        const state = getState();
+        apiFetch('/choghadiya', 'POST', { date: panchangData.date, lat: state.lat, lon: state.lon })
+          .then(chog => renderAajKaPanchang(panchangData, chog.slots, panchangFmt))
+          .catch(() => renderAajKaPanchang(panchangData, [], panchangFmt));
+      }
+    }
   });
 });
 
@@ -977,6 +983,16 @@ document.getElementById('locationSaveBtn').addEventListener('click', () => {
     errEl.classList.remove('hidden');
     return;
   }
+  if (lat < -90 || lat > 90) {
+    errEl.textContent = 'Latitude must be between -90 and 90.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  if (lon < -180 || lon > 180) {
+    errEl.textContent = 'Longitude must be between -180 and 180.';
+    errEl.classList.remove('hidden');
+    return;
+  }
   errEl.classList.add('hidden');
 
   saveState({ lat, lon, locationName: name || `${lat.toFixed(4)}, ${lon.toFixed(4)}` });
@@ -1193,8 +1209,8 @@ function openFestivalModal(f) {
   modalBody.innerHTML = `
     <div style="margin-bottom:10px;">${statusBadge}</div>
     <div class="modal-detail-row">
-      <div class="modal-detail-label">Gujarati Name</div>
-      <div class="modal-detail-value" style="font-family: 'Gujarati', sans-serif; font-size:15px; font-weight:bold; color:#8E44AD;">${f.name_gujarati}</div>
+      <div class="modal-detail-label">Hindi Name</div>
+      <div class="modal-detail-value" style="font-family: 'Noto Sans Devanagari', sans-serif; font-size:15px; font-weight:bold; color:#8E44AD;">${f.name_hindi}</div>
     </div>
     <div class="modal-detail-row">
       <div class="modal-detail-label">Date / Range</div>

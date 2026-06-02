@@ -118,6 +118,7 @@ def create_app() -> Flask:
                 output_format=parsed.output_format,
                 monthly=parsed.monthly,
                 workers=parsed.workers,
+                profile=parsed.profile,
             )
 
             files = []
@@ -266,6 +267,10 @@ def create_app() -> Flask:
                     "is_purnima": tithi_index == 15,
                     "is_amavasya": tithi_index == 30,
                     "is_ekadashi": tithi_index in (11, 26),
+                    "sunrise_time": result["events"]["sunrise"]["time"][:5]
+                        if result.get("events", {}).get("sunrise", {}).get("time") else "",
+                    "sunset_time": result["events"]["sunset"]["time"][:5]
+                        if result.get("events", {}).get("sunset", {}).get("time") else "",
                 }
                 if profile:
                     day_payload["jain_festivals"] = date_to_festivals.get(date_str, [])
@@ -332,7 +337,7 @@ def create_app() -> Flask:
                 flat_rows.append({
                     "Festival_ID": f["id"],
                     "Name_English": f["name"],
-                    "Name_Gujarati": f["name_gujarati"],
+                    "Name_Hindi": f["name_hindi"],
                     "Category": f["category"],
                     "Start_Date": f["start_date"],
                     "End_Date": f["end_date"],

@@ -1,0 +1,5 @@
+# Runtime dependencies (same as requirements.txt)
+-r requirements.txt
+
+# Browser smoke testing
+playwright>=1.44

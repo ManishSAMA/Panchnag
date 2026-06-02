@@ -1,7 +1,7 @@
 import argparse
 import sys
 import calendar
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import landscape, letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak

@@ -15,7 +15,7 @@ class JainFestivalsRegistryTest(unittest.TestCase):
         
         # Test required keys for each registry entry
         required_keys = {
-            "id", "name", "name_gujarati", "category", "profiles",
+            "id", "name", "name_hindi", "category", "profiles",
             "jain_month", "paksha", "tithi", "vriddhi_rule", "kshaya_rule",
             "adhika_rule", "meaning", "observance", "sources"
         }
@@ -162,6 +162,80 @@ class JainFestivalsApiExportTest(unittest.TestCase):
         self.assertIn("files", data)
         self.assertTrue(len(data["files"]) > 0)
         self.assertIn("download_url", data["files"][0])
+
+
+class KrishnaPakshaFestivalsTest(unittest.TestCase):
+    """Verify all Krishna-paksha Jain festivals appear in the 2026 output."""
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_festival_service import generate_jain_festivals
+        cls.res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="shwetambar_murtipujak_tapagachchha",
+        )
+        cls.ids = {f["id"] for f in cls.res["festivals"]}
+
+    def test_diwali_appears(self):
+        self.assertIn("diwali", self.ids)
+
+    def test_meru_trayodashi_appears(self):
+        self.assertIn("meru_trayodashi", self.ids)
+
+    def test_parshvanath_jayanti_appears(self):
+        self.assertIn("parshvanath_jayanti", self.ids)
+
+    def test_pakhi_chaudas_krishna_appears(self):
+        self.assertIn("pakhi_chaudas_krishna", self.ids)
+
+    def test_parva_tithi_ashtami_krishna_appears(self):
+        self.assertIn("parva_tithi_ashtami_krishna", self.ids)
+
+    def test_parva_tithi_amavasya_appears(self):
+        self.assertIn("parva_tithi_amavasya", self.ids)
+
+
+class RecurringParvaCountTest(unittest.TestCase):
+    """Recurring Parva tithis must appear at least 10 times per calendar year.
+
+    A calendar year spans ~12 lunar months, but year boundaries mean some tithis
+    fall outside Jan 1–Dec 31, so the realistic minimum is 10.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_festival_service import generate_jain_festivals
+        cls.res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="shwetambar_murtipujak_tapagachchha",
+        )
+
+    def _count(self, festival_id):
+        return sum(1 for f in self.res["festivals"] if f["id"] == festival_id)
+
+    def test_pakhi_chaudas_shukla_at_least_12(self):
+        self.assertGreaterEqual(self._count("pakhi_chaudas_shukla"), 10)
+
+    def test_pakhi_chaudas_krishna_at_least_12(self):
+        self.assertGreaterEqual(self._count("pakhi_chaudas_krishna"), 10)
+
+    def test_ashtami_shukla_at_least_12(self):
+        self.assertGreaterEqual(self._count("parva_tithi_ashtami_shukla"), 10)
+
+    def test_ashtami_krishna_at_least_12(self):
+        self.assertGreaterEqual(self._count("parva_tithi_ashtami_krishna"), 10)
+
+    def test_purnima_at_least_12(self):
+        self.assertGreaterEqual(self._count("parva_tithi_purnima"), 10)
+
+    def test_amavasya_at_least_12(self):
+        self.assertGreaterEqual(self._count("parva_tithi_amavasya"), 10)
 
 
 if __name__ == "__main__":

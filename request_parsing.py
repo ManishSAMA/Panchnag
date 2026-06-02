@@ -27,6 +27,7 @@ class RangeGenerationRequest:
     output_format: str
     monthly: bool
     workers: int
+    profile: str
 
 
 @dataclass(frozen=True)
@@ -80,6 +81,15 @@ def parse_range_generation_request(payload: dict | None) -> RangeGenerationReque
     if workers < 1:
         raise ValueError("workers must be at least 1.")
 
+    valid_profiles = {
+        "shwetambar_murtipujak_tapagachchha",
+        "shwetambar_sthanakvasi",
+        "shwetambar_terapanthi",
+    }
+    profile = payload.get("profile", "shwetambar_murtipujak_tapagachchha")
+    if profile not in valid_profiles:
+        raise ValueError("Invalid profile. Must be one of: " + ", ".join(sorted(valid_profiles)))
+
     return RangeGenerationRequest(
         start_year=start_year,
         end_year=end_year,
@@ -90,6 +100,7 @@ def parse_range_generation_request(payload: dict | None) -> RangeGenerationReque
         output_format=output_format,
         monthly=bool(payload.get("monthly", False)),
         workers=workers,
+        profile=profile,
     )
 
 

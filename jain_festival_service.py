@@ -100,7 +100,7 @@ def generate_jain_festivals(
             "id": rule["id"],
             "occurrence_id": f"{rule['id']}:{samvatsari_date.isoformat()}",
             "name": rule["name"],
-            "name_gujarati": rule["name_gujarati"],
+            "name_hindi": rule["name_hindi"],
             "category": rule["category"],
             "start_date": samvatsari_date.isoformat(),
             "end_date": samvatsari_date.isoformat(),
@@ -127,7 +127,7 @@ def generate_jain_festivals(
             "id": paryushan_rule["id"],
             "occurrence_id": f"{paryushan_rule['id']}:{paryushan_start.isoformat()}",
             "name": paryushan_rule["name"],
-            "name_gujarati": paryushan_rule["name_gujarati"],
+            "name_hindi": paryushan_rule["name_hindi"],
             "category": paryushan_rule["category"],
             "start_date": paryushan_start.isoformat(),
             "end_date": samvatsari_date.isoformat(),  # Spans to Samvatsari
@@ -167,7 +167,7 @@ def generate_jain_festivals(
                 "id": rule["id"],
                 "occurrence_id": f"{rule['id']}:{start_oli_date.isoformat()}",
                 "name": rule["name"],
-                "name_gujarati": rule["name_gujarati"],
+                "name_hindi": rule["name_hindi"],
                 "category": rule["category"],
                 "start_date": start_oli_date.isoformat(),
                 "end_date": end_oli_date.isoformat(),
@@ -208,40 +208,33 @@ def generate_jain_festivals(
         # Group candidates by matching Udaya Tithi index within the paksha
         # Since Tithis repeat or skip, we do this carefully
         if isinstance(target_tithi, int):
-            # We want to match this specific Tithi
-            candidates = [s for s in matches if s["tithi_in_paksha"] == target_tithi]
-            
-            if candidates:
-                # Handle Vriddhi (repeated Tithi)
-                if len(candidates) > 1:
-                    if rule["vriddhi_rule"] == "second_day":
+            if target_month:
+                # Single annual occurrence: find within a specific month
+                candidates = [s for s in matches if s["tithi_in_paksha"] == target_tithi]
+                if candidates:
+                    if len(candidates) > 1 and rule["vriddhi_rule"] == "second_day":
                         resolved_day = candidates[1]["date"]
                     else:
                         resolved_day = candidates[0]["date"]
+                    festivals.append({
+                        "id": rule["id"],
+                        "occurrence_id": f"{rule['id']}:{resolved_day.isoformat()}",
+                        "name": rule["name"],
+                        "name_hindi": rule["name_hindi"],
+                        "category": rule["category"],
+                        "start_date": resolved_day.isoformat(),
+                        "end_date": resolved_day.isoformat(),
+                        "jain_month": target_month,
+                        "paksha": target_paksha,
+                        "tithi": target_tithi,
+                        "profile": profile,
+                        "status": "confirmed",
+                        "meaning": rule["meaning"],
+                        "observance": rule["observance"],
+                        "sources": rule["sources"]
+                    })
                 else:
-                    resolved_day = candidates[0]["date"]
-                    
-                festivals.append({
-                    "id": rule["id"],
-                    "occurrence_id": f"{rule['id']}:{resolved_day.isoformat()}",
-                    "name": rule["name"],
-                    "name_gujarati": rule["name_gujarati"],
-                    "category": rule["category"],
-                    "start_date": resolved_day.isoformat(),
-                    "end_date": resolved_day.isoformat(),
-                    "jain_month": target_month or "Every Month",
-                    "paksha": target_paksha or "Both",
-                    "tithi": target_tithi,
-                    "profile": profile,
-                    "status": "confirmed",
-                    "meaning": rule["meaning"],
-                    "observance": rule["observance"],
-                    "sources": rule["sources"]
-                })
-            else:
-                # Kshaya (skipped Tithi): find first day whose Tithi is strictly > target_tithi
-                # (only for specific single-day festivals, not recurring monthly ones to avoid duplicate mappings)
-                if target_month:
+                    # Kshaya: fall back to next available tithi in the same month
                     next_days = [s for s in matches if s["tithi_in_paksha"] > target_tithi]
                     if next_days:
                         resolved_day = next_days[0]["date"]
@@ -249,11 +242,40 @@ def generate_jain_festivals(
                             "id": rule["id"],
                             "occurrence_id": f"{rule['id']}:{resolved_day.isoformat()}",
                             "name": rule["name"],
-                            "name_gujarati": rule["name_gujarati"],
+                            "name_hindi": rule["name_hindi"],
                             "category": rule["category"],
                             "start_date": resolved_day.isoformat(),
                             "end_date": resolved_day.isoformat(),
                             "jain_month": target_month,
+                            "paksha": target_paksha,
+                            "tithi": target_tithi,
+                            "profile": profile,
+                            "status": "confirmed",
+                            "meaning": rule["meaning"],
+                            "observance": rule["observance"],
+                            "sources": rule["sources"]
+                        })
+            else:
+                # Recurring monthly: group by lunar month and emit one occurrence per group
+                from itertools import groupby
+                keyed = sorted(matches, key=lambda s: (s["hindu_month"], s["date"]))
+                for _month_name, group_iter in groupby(keyed, key=lambda s: s["hindu_month"]):
+                    group = list(group_iter)
+                    candidates = [s for s in group if s["tithi_in_paksha"] == target_tithi]
+                    if candidates:
+                        if len(candidates) > 1 and rule["vriddhi_rule"] == "second_day":
+                            resolved_day = candidates[1]["date"]
+                        else:
+                            resolved_day = candidates[0]["date"]
+                        festivals.append({
+                            "id": rule["id"],
+                            "occurrence_id": f"{rule['id']}:{resolved_day.isoformat()}",
+                            "name": rule["name"],
+                            "name_hindi": rule["name_hindi"],
+                            "category": rule["category"],
+                            "start_date": resolved_day.isoformat(),
+                            "end_date": resolved_day.isoformat(),
+                            "jain_month": "Every Month",
                             "paksha": target_paksha,
                             "tithi": target_tithi,
                             "profile": profile,

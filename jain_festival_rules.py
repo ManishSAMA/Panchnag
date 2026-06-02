@@ -4,7 +4,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "mahavir_janma_kalyanak",
         "name": "Mahavir Janma Kalyanak",
-        "name_gujarati": "મહાવીર જન્મ કલ્યાણક",
+        "name_hindi": "महावीर जन्म कल्याणक",
         "category": "kalyanak",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": "Chaitra",
@@ -20,7 +20,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "samvatsari_tapagachchha",
         "name": "Samvatsari (Tapagachchha)",
-        "name_gujarati": "સંવત્સરી (તપગચ્છ)",
+        "name_hindi": "संवत्सरी (तपगच्छ)",
         "category": "festival",
         "profiles": ["shwetambar_murtipujak_tapagachchha"],
         "jain_month": "Bhadrapada",
@@ -36,7 +36,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "samvatsari_sthanakvasi",
         "name": "Samvatsari (Sthanakvasi)",
-        "name_gujarati": "સંવત્સરી (સ્થાનકવાસી)",
+        "name_hindi": "संवत्सरी (स्थानकवासी)",
         "category": "festival",
         "profiles": ["shwetambar_sthanakvasi"],
         "jain_month": "Bhadrapada",
@@ -52,7 +52,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "samvatsari_terapanthi",
         "name": "Samvatsari (Terapanthi)",
-        "name_gujarati": "સંવત્સરી (તેરાપંથી)",
+        "name_hindi": "संवत्सरी (तेरापंथी)",
         "category": "festival",
         "profiles": ["shwetambar_terapanthi"],
         "jain_month": "Bhadrapada",
@@ -68,7 +68,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "paryushan_start_tapagachchha",
         "name": "Paryushan Start (Tapagachchha)",
-        "name_gujarati": "પર્યુષણ પ્રારંભ (તપગચ્છ)",
+        "name_hindi": "पर्युषण प्रारंभ (तपगच्छ)",
         "category": "festival",
         "profiles": ["shwetambar_murtipujak_tapagachchha"],
         "jain_month": "Bhadrapada",
@@ -84,7 +84,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "paryushan_start_sthanakvasi",
         "name": "Paryushan Start (Sthanakvasi)",
-        "name_gujarati": "પર્યુષણ પ્રારંભ (સ્થાનકવાસી)",
+        "name_hindi": "पर्युषण प्रारंभ (स्थानकवासी)",
         "category": "festival",
         "profiles": ["shwetambar_sthanakvasi"],
         "jain_month": "Bhadrapada",
@@ -100,7 +100,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "paryushan_start_terapanthi",
         "name": "Paryushan Start (Terapanthi)",
-        "name_gujarati": "પર્યુષણ પ્રારંભ (તેરાપંથી)",
+        "name_hindi": "पर्युषण प्रारंभ (तेरापंथी)",
         "category": "festival",
         "profiles": ["shwetambar_terapanthi"],
         "jain_month": "Bhadrapada",
@@ -116,7 +116,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "ayambil_oli_chaitra",
         "name": "Chaitra Ayambil Oli",
-        "name_gujarati": "ચૈત્રી આયંબિલ ઓળી",
+        "name_hindi": "चैत्री आयंबिल ओली",
         "category": "fast",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": "Chaitra",
@@ -132,7 +132,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "ayambil_oli_ashvin",
         "name": "Ashvin Ayambil Oli",
-        "name_gujarati": "આસોજી આયંબિલ ઓળી",
+        "name_hindi": "आसोज आयंबिल ओली",
         "category": "fast",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": "Ashwin",
@@ -148,12 +148,12 @@ FESTIVAL_REGISTRY = [
     {
         "id": "diwali",
         "name": "Diwali",
-        "name_gujarati": "દિવાળી",
+        "name_hindi": "दिवाली",
         "category": "festival",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": "Kartika",
         "paksha": "Krishna",
-        "tithi": 30,
+        "tithi": 15,
         "vriddhi_rule": "first_day",
         "kshaya_rule": "next_day",
         "adhika_rule": "nija_only",
@@ -164,7 +164,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "jain_new_year",
         "name": "Jain New Year",
-        "name_gujarati": "નૂતન વર્ષ (વીર નિર્વાણ સંવત)",
+        "name_hindi": "नूतन वर्ष (वीर निर्वाण संवत)",
         "category": "festival",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": "Kartika",
@@ -180,7 +180,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "jnan_panchami",
         "name": "Jnan Panchami",
-        "name_gujarati": "જ્ઞાન પંચમી",
+        "name_hindi": "ज्ञान पंचमी",
         "category": "festival",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": "Kartika",
@@ -196,7 +196,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "dev_diwali",
         "name": "Dev Diwali",
-        "name_gujarati": "દેવ દિવાળી",
+        "name_hindi": "देव दिवाली",
         "category": "festival",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": "Kartika",
@@ -212,7 +212,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "maun_ekadashi",
         "name": "Maun Agyaras",
-        "name_gujarati": "મૌન અગિયારસ",
+        "name_hindi": "मौन ग्यारस",
         "category": "festival",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": "Margashirsha",
@@ -228,12 +228,12 @@ FESTIVAL_REGISTRY = [
     {
         "id": "parshvanath_jayanti",
         "name": "Paush Dashami",
-        "name_gujarati": "પોષ દશમી",
+        "name_hindi": "पोष दशमी",
         "category": "festival",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": "Pausha",
         "paksha": "Krishna",
-        "tithi": 25,  # 1-indexed Amanta: Krishna 10 is Tithi 25
+        "tithi": 10,
         "vriddhi_rule": "first_day",
         "kshaya_rule": "next_day",
         "adhika_rule": "nija_only",
@@ -244,12 +244,12 @@ FESTIVAL_REGISTRY = [
     {
         "id": "meru_trayodashi",
         "name": "Meru Trayodashi",
-        "name_gujarati": "મેરુ ત્રયોદશી",
+        "name_hindi": "मेरु त्रयोदशी",
         "category": "festival",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": "Magha",
         "paksha": "Krishna",
-        "tithi": 28,  # 1-indexed Amanta: Krishna 13 is Tithi 28
+        "tithi": 13,
         "vriddhi_rule": "first_day",
         "kshaya_rule": "next_day",
         "adhika_rule": "nija_only",
@@ -260,7 +260,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "chaumasi_chaudas_ashadha",
         "name": "Ashadha Chaumasi Chaudas",
-        "name_gujarati": "અષાઢી ચૌમાસી ચૌદશ",
+        "name_hindi": "आषाढी चौमासी चौदश",
         "category": "festival",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": "Ashadha",
@@ -276,7 +276,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "chaumasi_chaudas_kartika",
         "name": "Kartika Chaumasi Chaudas",
-        "name_gujarati": "કાર્તિકી ચૌમાસી ચૌદશ",
+        "name_hindi": "कार्तिकी चौमासी चौदश",
         "category": "festival",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": "Kartika",
@@ -292,7 +292,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "chaumasi_chaudas_phalguna",
         "name": "Phalguna Chaumasi Chaudas",
-        "name_gujarati": "ફાલ્ગુની ચૌમાસી ચૌદશ",
+        "name_hindi": "फाल्गुनी चौमासी चौदश",
         "category": "festival",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": "Phalguna",
@@ -309,7 +309,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "pakhi_chaudas_shukla",
         "name": "Pakhi Chaudas (Shukla)",
-        "name_gujarati": "પાખી ચૌદશ (શુક્લ)",
+        "name_hindi": "पाखी चौदश (शुक्ल)",
         "category": "parva",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": None,
@@ -325,12 +325,12 @@ FESTIVAL_REGISTRY = [
     {
         "id": "pakhi_chaudas_krishna",
         "name": "Pakhi Chaudas (Krishna)",
-        "name_gujarati": "પાખી ચૌદશ (કૃષ્ણ)",
+        "name_hindi": "पाखी चौदश (कृष्ण)",
         "category": "parva",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": None,
         "paksha": "Krishna",
-        "tithi": 29,  # Tithi index 29 (Krishna 14)
+        "tithi": 14,
         "vriddhi_rule": "first_day",
         "kshaya_rule": "next_day",
         "adhika_rule": "nija_only",
@@ -341,7 +341,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "parva_tithi_ashtami_shukla",
         "name": "Parva Tithi (Shukla Ashtami)",
-        "name_gujarati": "પર્વ તિથિ (શુક્લ અષ્ટમી)",
+        "name_hindi": "पर्व तिथि (शुक्ल अष्टमी)",
         "category": "parva",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": None,
@@ -357,12 +357,12 @@ FESTIVAL_REGISTRY = [
     {
         "id": "parva_tithi_ashtami_krishna",
         "name": "Parva Tithi (Krishna Ashtami)",
-        "name_gujarati": "પર્વ તિથિ (કૃષ્ણ અષ્ટમી)",
+        "name_hindi": "पर्व तिथि (कृष्ण अष्टमी)",
         "category": "parva",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": None,
         "paksha": "Krishna",
-        "tithi": 23,  # Tithi index 23 (Krishna 8)
+        "tithi": 8,
         "vriddhi_rule": "first_day",
         "kshaya_rule": "next_day",
         "adhika_rule": "nija_only",
@@ -373,7 +373,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "parva_tithi_purnima",
         "name": "Parva Tithi (Purnima)",
-        "name_gujarati": "પર્વ તિથિ (પૂનમ)",
+        "name_hindi": "पर्व तिथि (पूर्णिमा)",
         "category": "parva",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": None,
@@ -389,12 +389,12 @@ FESTIVAL_REGISTRY = [
     {
         "id": "parva_tithi_amavasya",
         "name": "Parva Tithi (Amavasya)",
-        "name_gujarati": "પર્વ તિથિ (અમાસ)",
+        "name_hindi": "पर्व तिथि (अमावस्या)",
         "category": "parva",
         "profiles": ["shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"],
         "jain_month": None,
         "paksha": "Krishna",
-        "tithi": 30,
+        "tithi": 15,
         "vriddhi_rule": "first_day",
         "kshaya_rule": "next_day",
         "adhika_rule": "nija_only",

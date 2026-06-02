@@ -131,8 +131,11 @@ def _compute_day(args_tuple) -> dict | None:
         jd_next_sr = get_sunrise(jd_next_day, lat, lon)
         bhadra_kaal = calculate_bhadra_kaal(jd_sr, jd_next_sr, ayanamsa)
 
+        date_str = f"{year:04d}-{month:02d}-{day:02d}"
+        festival_index = _G.get("festival_index", {})
+        day_fests = festival_index.get(date_str, {})
         row = format_row_data(
-            date_str            = f"{year:04d}-{month:02d}-{day:02d}",
+            date_str            = date_str,
             julian_date         = jd_sr,
             planets             = planets,
             panchang            = panchang,
@@ -148,6 +151,9 @@ def _compute_day(args_tuple) -> dict | None:
             vikram_samvat       = vs,
             vira_nirvana_samvat = vns,
             bhadra_kaal         = bhadra_kaal,
+            jain_festivals      = day_fests.get("festivals") or None,
+            jain_parva_tithis   = day_fests.get("parva_tithis") or None,
+            festival_profile    = _G.get("festival_profile"),
         )
         return row
 
