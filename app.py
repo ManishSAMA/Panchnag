@@ -271,6 +271,7 @@ def create_app() -> Flask:
                         if result.get("events", {}).get("sunrise", {}).get("time") else "",
                     "sunset_time": result["events"]["sunset"]["time"][:5]
                         if result.get("events", {}).get("sunset", {}).get("time") else "",
+                    "has_panchak": result.get("panchak_kaal", {}).get("has_window", False),
                 }
                 if profile:
                     day_payload["jain_festivals"] = date_to_festivals.get(date_str, [])

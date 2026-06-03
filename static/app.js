@@ -365,6 +365,10 @@ registerPage('calendar', {
         }
       }
 
+      const panchakBadge = day.has_panchak
+        ? `<div class="cal-panchak-marker" data-panchak-date="${day.date}">पंचक</div>`
+        : '';
+
       cell.innerHTML = `
         <div class="cal-cell-header">
           <span class="cal-date">${dayNum}</span>
@@ -376,11 +380,18 @@ registerPage('calendar', {
           <span class="cal-nakshatra-row">${nakName}</span>
         </div>
         ${markersHTML}
+        ${panchakBadge}
         ${srText || ssText ? `<div class="cal-sun-row"><span data-sr>${srText}</span><span data-ss>${ssText}</span></div>` : ''}
         <div class="cal-cell-footer">${weekdayHindi}</div>
       `;
 
       cell.addEventListener('click', (e) => {
+        const panchakMarker = e.target.closest('[data-panchak-date]');
+        if (panchakMarker) {
+          e.stopPropagation();
+          navigate('panchak', { date: panchakMarker.dataset.panchakDate });
+          return;
+        }
         const marker = e.target.closest('[data-festid]');
         if (marker) {
           e.stopPropagation();
@@ -519,6 +530,14 @@ registerPage('panchang', {
       { label: 'Sun Rashi', value: p.sun_rashi || '—', sub: '' },
     ];
 
+    const pk = data.panchak_kaal;
+    if (pk) {
+      const pkLabel = pk.has_window
+        ? pk.windows.map(w => `${ft(w.start?.time)} – ${ft(w.end?.time)}`).join(', ')
+        : (pk.next_period?.entry?.time ? `Next: ${ft(pk.next_period.entry.time)}` : 'None today');
+      rows.push({ label: 'Panchak Kaal', value: pkLabel, sub: '', _panchak: true });
+    }
+
     content.innerHTML = `
       <div class="panchang-card">
         <div class="panchang-sun-moon">
@@ -542,7 +561,7 @@ registerPage('panchang', {
           </div>
         </div>
         ${rows.map(r => `
-          <div class="panchang-row">
+          <div class="panchang-row${r._panchak ? ' panchak-table-row' : ''}" ${r._panchak ? 'data-panchak-row="1"' : ''}>
             <div class="panchang-label">${r.label}</div>
             <div class="panchang-value">
               ${r.value || '—'}
@@ -626,7 +645,62 @@ registerPage('panchang', {
           </div>
         `;
       })()}
+      ${(() => {
+        const pk = data.panchak_kaal;
+        if (!pk) return '';
+        let segmentsHTML = '';
+        if (pk.has_window) {
+          segmentsHTML = pk.windows.map(w => {
+            const startTime = (w.start?.time || '').slice(0, 5);
+            const endTime   = (w.end?.time   || '').slice(0, 5);
+            const activeBadge = w.is_active
+              ? '<span class="panchak-badge panchak-badge--active">Active now</span>'
+              : '';
+            return `
+              <div class="panchak-segment" style="border-top: 1px solid rgba(93, 78, 117, 0.1); padding: 10px 0;">
+                <div class="panchang-row" style="padding: 4px 0; border: none;">
+                  <div class="panchang-label" style="min-width: 90px; color: #5d4e75;">Time</div>
+                  <div class="panchang-value">${startTime} – ${endTime} ${activeBadge}</div>
+                </div>
+                <div class="panchang-row" style="padding: 4px 0; border: none;">
+                  <div class="panchang-label" style="min-width: 90px; color: #5d4e75;">Nakshatra</div>
+                  <div class="panchang-value">${w.nakshatra || '—'}</div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          const nextEntry = pk.next_period?.entry?.time;
+          const nextExit  = pk.next_period?.exit?.time;
+          const nextStr   = nextEntry ? `${nextEntry.slice(0,5)} – ${(nextExit||'').slice(0,5)}` : '';
+          segmentsHTML = `
+            <div class="panchang-row" style="padding: 6px 0; border: none;">
+              <div class="panchang-value" style="color: var(--text-muted);">No Panchak today.</div>
+            </div>
+            ${nextStr ? `<div class="panchang-row" style="padding: 4px 0; border: none;">
+              <div class="panchang-label" style="min-width: 90px; color: #5d4e75;">Next Period</div>
+              <div class="panchang-value" style="color: var(--text-muted);">${nextStr}</div>
+            </div>` : ''}
+          `;
+        }
+        const cardClass = pk.has_window ? 'panchak-kaal-card' : 'panchak-kaal-card panchak-kaal-card--inactive';
+        return `
+          <div class="panchang-card ${cardClass}" style="padding: 18px; margin-top: 16px;">
+            <div class="panchak-kaal-title">Panchak Kaal (पंचक काल)</div>
+            ${segmentsHTML}
+            <div class="rahu-kaal-note" style="margin-top: 8px;">
+              ${pk.has_window ? 'Avoid starting important works during Panchak.' : 'No Panchak active today.'}
+            </div>
+          </div>
+        `;
+      })()}
     `;
+
+    const pkRow = content.querySelector('[data-panchak-row]');
+    if (pkRow) {
+      pkRow.style.cursor = 'pointer';
+      pkRow.addEventListener('click', () => navigate('panchak', { date: data.date }));
+    }
   }
 });
 
@@ -916,6 +990,152 @@ document.getElementById('chogNext').addEventListener('click', () => {
   chogState.date = chogDateFromOffset(chogState.date, 1);
   loadChoghadiya();
 });
+
+// ── PANCHAK ──────────────────────────────────────────────────
+const panchakState = { date: todayStr() };
+
+function renderPanchakDateTabs(currentDate) {
+  const tabs = document.getElementById('panchakDateTabs');
+  tabs.innerHTML = '';
+  for (let offset = -3; offset <= 3; offset++) {
+    const ds = chogDateFromOffset(currentDate, offset);
+    const dt = new Date(ds + 'T00:00:00');
+    const label = dt.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' });
+    const btn = document.createElement('button');
+    btn.className = 'weekday-tab' + (ds === currentDate ? ' active' : '');
+    btn.textContent = label;
+    btn.style.cssText = 'font-size:11px; padding:4px 8px; white-space:nowrap;';
+    btn.addEventListener('click', () => {
+      panchakState.date = ds;
+      loadPanchak();
+    });
+    tabs.appendChild(btn);
+  }
+}
+
+function renderPanchak(pk) {
+  const content = document.getElementById('panchakContent');
+  if (!pk) {
+    content.innerHTML = '<div class="error-msg">Panchak data unavailable.</div>';
+    return;
+  }
+
+  const ft = t => (t || '').slice(0, 5);
+
+  let bodyHTML = '';
+  if (pk.has_window) {
+    const windowsHTML = pk.windows.map(w => {
+      const startT = ft(w.start?.time);
+      const endT   = ft(w.end?.time);
+      const activeBadge = w.is_active
+        ? '<span class="panchak-badge panchak-badge--active">Active now</span>'
+        : '';
+      const clippedNote = [
+        w.clipped_start ? 'started before sunrise' : '',
+        w.clipped_end   ? 'continues past midnight' : '',
+      ].filter(Boolean).join(', ');
+      return `
+        <div class="panchak-window-card">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <span style="font-weight:700; color:#5d4e75; font-size:15px;">${startT} – ${endT}</span>
+            ${activeBadge}
+          </div>
+          <div class="panchang-row" style="border:none; padding:3px 0;">
+            <div class="panchang-label" style="color:#5d4e75;">Nakshatra</div>
+            <div class="panchang-value">${w.nakshatra || '—'}</div>
+          </div>
+          ${clippedNote ? `<div style="font-size:11px; color:var(--text-muted); margin-top:4px;">(${clippedNote})</div>` : ''}
+        </div>`;
+    }).join('');
+
+    const periodEntry = ft(pk.period?.entry?.time);
+    const periodExit  = ft(pk.period?.exit?.time);
+    bodyHTML = `
+      <div style="padding: 0 16px;">
+        <div style="text-align:center; margin-bottom:12px;">
+          <span class="panchak-badge panchak-badge--active" style="font-size:12px; padding:4px 12px;">Panchak Active</span>
+        </div>
+        ${windowsHTML}
+        ${periodEntry ? `
+          <div class="panchak-window-card" style="background:rgba(93,78,117,0.06);">
+            <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">Full Panchak Period</div>
+            <div style="font-weight:600; color:#5d4e75;">${periodEntry} – ${periodExit}</div>
+          </div>` : ''}
+      </div>`;
+  } else {
+    const nextEntry = ft(pk.next_period?.entry?.time);
+    const nextExit  = ft(pk.next_period?.exit?.time);
+    bodyHTML = `
+      <div style="padding: 0 16px;">
+        <div style="text-align:center; margin-bottom:16px;">
+          <span class="panchak-badge panchak-badge--inactive" style="font-size:12px; padding:4px 12px;">No Panchak Today</span>
+        </div>
+        ${nextEntry ? `
+          <div class="panchak-window-card" style="background:rgba(235,247,241,0.95);">
+            <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">Next Panchak Period</div>
+            <div style="font-weight:600; color:var(--green);">${nextEntry} – ${nextExit}</div>
+          </div>` : ''}
+      </div>`;
+  }
+
+  const infoId = 'panchakInfoBody_' + panchakState.date.replace(/-/g, '');
+  content.innerHTML = `
+    ${bodyHTML}
+    <div style="padding: 0 16px 16px;">
+      <div class="panchak-info-toggle" id="${infoId}_toggle" onclick="
+        var b = document.getElementById('${infoId}');
+        b.style.display = b.style.display === 'none' ? 'block' : 'none';
+        this.textContent = b.style.display === 'none' ? '▶ What is Panchak?' : '▼ What is Panchak?';
+      ">▶ What is Panchak?</div>
+      <div id="${infoId}" class="panchak-info-body" style="display:none;">
+        Panchak (पंचक) is a ~5-day period when the Moon transits through the last five nakshatras:
+        <strong>Dhanishta, Shatabhisha, Purva Bhadrapada, Uttara Bhadrapada,</strong> and <strong>Revati</strong>
+        (Moon sidereal longitude 300°–360°). Traditionally, some families avoid activities like
+        starting construction, collecting wood, travel southward, or major ceremonies during this period.
+        Practices vary across traditions and regions.
+      </div>
+    </div>
+  `;
+}
+
+async function loadPanchak() {
+  const state = getState();
+  const content = document.getElementById('panchakContent');
+  content.innerHTML = '<div class="loading-spinner">Calculating…</div>';
+  renderPanchakDateTabs(panchakState.date);
+
+  if (!state.lat || !state.lon) {
+    content.innerHTML = '<div class="error-msg">Set a location to calculate Panchak.</div>';
+    return;
+  }
+
+  try {
+    const data = await apiFetch('/generate-panchang', 'POST', {
+      date: panchakState.date, lat: state.lat, lon: state.lon, ayanamsa: state.ayanamsa || 'Lahiri'
+    });
+    renderPanchak(data.panchak_kaal);
+  } catch (e) {
+    content.innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+registerPage('panchak', {
+  onEnter(params) {
+    panchakState.date = params.date || todayStr();
+    loadPanchak();
+  }
+});
+
+document.getElementById('panchakBack').addEventListener('click', () => history.back());
+document.getElementById('panchakPrev').addEventListener('click', () => {
+  panchakState.date = chogDateFromOffset(panchakState.date, -1);
+  loadPanchak();
+});
+document.getElementById('panchakNext').addEventListener('click', () => {
+  panchakState.date = chogDateFromOffset(panchakState.date, 1);
+  loadPanchak();
+});
+document.getElementById('panchakCard')?.addEventListener('click', () => navigate('panchak'));
 
 // ── LOCATION ─────────────────────────────────────────────────
 registerPage('location', {

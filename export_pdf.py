@@ -10,6 +10,7 @@ from astronomy import local_time_to_jd, jd_to_local_time_string, get_sunrise, ge
 from export import apply_element_continuity_formatting, format_row_data
 from panchang import (
     calculate_bhadra_kaal,
+    calculate_panchak_kaal,
     calculate_jain_tithi_from_sunrise,
     calculate_rahu_kaal,
     find_chaitra_shukla_1,
@@ -95,6 +96,8 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
             jd_next_day_start = local_time_to_jd(year, month, day, 0.0, tz_offset) + 1.0
             jd_next_sr = get_sunrise(jd_next_day_start, lat, lon)
             bhadra = calculate_bhadra_kaal(jd_sr, jd_next_sr, ayanamsa)
+            panchak_raw = calculate_panchak_kaal(jd_sr, jd_next_sr, ayanamsa)
+            panchak_segs = panchak_raw["windows"]
 
             civil_date_str = f"{year:04d}-{month:02d}-{day:02d}"
             day_fests = date_to_fests.get(civil_date_str, [])
@@ -118,6 +121,7 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
                 vikram_samvat=get_vikram_samvat(civil_date, chaitra_shukla_1),
                 vira_nirvana_samvat=get_vira_nirvana_samvat(civil_date, diwali),
                 bhadra_kaal=bhadra,
+                panchak_segments=panchak_segs,
                 jain_festivals=fests_list,
                 jain_parva_tithis=parva_list,
                 festival_profile=profile,
@@ -132,6 +136,7 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
                 + jd_to_local_time_string(rahu["end_jd"], tz_offset)[:5]
             )
             row["Bhadra_Segments"] = bhadra
+            row["Panchak_Segments"] = panchak_segs
             row["Jain_Fests_PDF"] = day_fests
             all_rows.append(row)
 
@@ -198,7 +203,7 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
             "Date", "Day", "Month", "Tithi",
             "Jain Tithi",
             "Nakshatra", "Yoga", "Karana",
-            "Moon Rashi", "Sun Rashi", "Sunrise", "Sunset", "Rahu Kaal", "Bhadra Kaal"
+            "Moon Rashi", "Sun Rashi", "Sunrise", "Sunset", "Rahu Kaal", "Bhadra Kaal", "Panchak Kaal"
         ]]
 
         month_rows = [
@@ -224,6 +229,20 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
                 bhadra_str = "<br/>".join(bhadra_summaries)
             else:
                 bhadra_str = "None"
+
+            # Format Panchak segments as compact time range
+            panchak_segs = row_data.get("Panchak_Segments", [])
+            if panchak_segs:
+                panchak_parts = []
+                for pw in panchak_segs:
+                    start_t = jd_to_local_time_string(pw["start_jd"], tz_offset)[:5]
+                    end_t   = jd_to_local_time_string(pw["end_jd"],   tz_offset)[:5]
+                    panchak_parts.append(
+                        f"{start_t}–{end_t}<br/><font size='5'>{pw['nakshatra']}</font>"
+                    )
+                panchak_str = "<br/>".join(panchak_parts)
+            else:
+                panchak_str = "None"
 
             # Format Jain Tithi + compact festivals list
             jain_tithi_display = row_data['Jain_Tithi_PDF']
@@ -268,10 +287,11 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
                 Paragraph(row_data['Sunset (PDF)'], cell_style),
                 Paragraph(row_data.get('Rahu_Kaal', ''), cell_style),
                 Paragraph(bhadra_str, cell_style),
+                Paragraph(panchak_str, cell_style),
             ]
             data.append(row)
 
-        t = Table(data, colWidths=[50, 50, 40, 75, 75, 75, 45, 50, 45, 45, 35, 35, 40, 60], repeatRows=1)
+        t = Table(data, colWidths=[50, 50, 40, 75, 75, 75, 45, 50, 45, 45, 35, 35, 40, 60, 55], repeatRows=1)
         t.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2c3e50')),
             ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),

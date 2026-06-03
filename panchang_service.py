@@ -40,6 +40,7 @@ from panchang import (
     NAKSHATRA_NAMES,
     TITHI_NAMES,
     calculate_bhadra_kaal,
+    calculate_panchak_kaal,
     calculate_jain_tithi_from_sunrise,
     calculate_rahu_kaal,
     calculate_tithi_details,
@@ -381,11 +382,44 @@ def generate_location_panchang(
         "windows": serialized_windows
     }
 
+    panchak_raw = calculate_panchak_kaal(events.sunrise_jd, events.next_sunrise_jd, ayanamsa_name)
+    panchak_windows_serialized = []
+    panchak_is_active = False
+    for pw in panchak_raw["windows"]:
+        pw_active = pw["start_jd"] <= jd_now <= pw["end_jd"]
+        if pw_active:
+            panchak_is_active = True
+        panchak_windows_serialized.append({
+            "start": _serialize_event(pw["start_jd"], tz_name),
+            "end": _serialize_event(pw["end_jd"], tz_name),
+            "nakshatra": pw["nakshatra"],
+            "clipped_start": pw["clipped_start"],
+            "clipped_end": pw["clipped_end"],
+            "is_active": pw_active,
+        })
+
+    def _serialize_period(p: dict | None) -> dict | None:
+        if p is None:
+            return None
+        return {
+            "entry": _serialize_event(p["entry_jd"], tz_name),
+            "exit": _serialize_event(p["exit_jd"], tz_name),
+        }
+
+    panchak_payload = {
+        "has_window": len(panchak_raw["windows"]) > 0,
+        "is_active": panchak_is_active,
+        "windows": panchak_windows_serialized,
+        "period": _serialize_period(panchak_raw["period"]),
+        "next_period": _serialize_period(panchak_raw["next_period"]),
+    }
+
     vikram_samvat = get_vikram_samvat(local_date, chaitra_shukla_1)
     vira_nirvana_samvat = get_vira_nirvana_samvat(local_date, diwali)
 
     return {
         "bhadra_kaal": bhadra_payload,
+        "panchak_kaal": panchak_payload,
         "location": location.name,
         "lat": location.lat,
         "lon": location.lon,

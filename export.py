@@ -44,6 +44,7 @@ def format_row_data(
     vikram_samvat: int | None = None,
     vira_nirvana_samvat: int | None = None,
     bhadra_kaal: list[dict] | None = None,
+    panchak_segments: list[dict] | None = None,
     jain_festivals: list[dict] | None = None,
     jain_parva_tithis: list[dict] | None = None,
     festival_profile: str | None = None,
@@ -124,6 +125,17 @@ def format_row_data(
     row['Has_Bhadra'] = has_bhadra
     row['Bhadra_Windows'] = "; ".join(summaries) if summaries else "None"
     row['Bhadra_Max_Risk'] = max_risk
+
+    # ---- Panchak Kaal ----
+    has_panchak = bool(panchak_segments)
+    panchak_summaries = []
+    if panchak_segments:
+        for pw in panchak_segments:
+            start_t = jd_to_local_time_string(pw["start_jd"], tz_offset)[:5]
+            end_t   = jd_to_local_time_string(pw["end_jd"],   tz_offset)[:5]
+            panchak_summaries.append(f"{start_t}–{end_t} ({pw['nakshatra']})")
+    row['Has_Panchak']    = has_panchak
+    row['Panchak_Window'] = "; ".join(panchak_summaries) if panchak_summaries else "None"
 
     # ---- Jain Festivals columns ----
     fests_str = "; ".join(f["name"] for f in jain_festivals) if jain_festivals else ""

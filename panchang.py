@@ -860,3 +860,146 @@ def calculate_bhadra_kaal(
             })
             
     return final_windows
+
+
+# ---------------------------------------------------------------------------
+# Panchak Kaal Engine
+# ---------------------------------------------------------------------------
+
+PANCHAK_START_LON: float = 300.0
+PANCHAK_END_LON: float = 360.0
+
+
+def _in_panchak(lon: float) -> bool:
+    """True when Moon sidereal longitude is in the Panchak zone [300°, 360°)."""
+    return PANCHAK_START_LON <= lon < PANCHAK_END_LON
+
+
+def _find_panchak_crossing_jd(
+    lo_jd: float,
+    hi_jd: float,
+    entering: bool,
+    ayanamsa_name: str,
+) -> float:
+    """Binary search for the JD when Moon crosses a Panchak boundary.
+
+    entering=True : lo_jd is outside panchak, hi_jd is inside  → find entry
+    entering=False: lo_jd is inside panchak,  hi_jd is outside → find exit
+    Converges to < ~1 minute (0.0007 JD).
+    """
+    for _ in range(40):
+        mid = (lo_jd + hi_jd) / 2.0
+        mid_in = _in_panchak(get_planetary_longitude(mid, 'Moon', ayanamsa_name))
+        if entering:
+            if not mid_in:
+                lo_jd = mid
+            else:
+                hi_jd = mid
+        else:
+            if mid_in:
+                lo_jd = mid
+            else:
+                hi_jd = mid
+        if (hi_jd - lo_jd) < 0.0007:
+            break
+    return hi_jd
+
+
+def _find_next_panchak_period(
+    from_jd: float,
+    ayanamsa_name: str,
+) -> dict | None:
+    """Scan forward from from_jd to find the next complete Panchak period."""
+    step = 0.25  # 6-hour steps
+    current = from_jd + step
+
+    for _ in range(30 * 4):  # up to 30 days
+        lon = get_planetary_longitude(current, 'Moon', ayanamsa_name)
+        if _in_panchak(lon):
+            # Walk back to find where it entered
+            search_lo = current - step
+            while _in_panchak(get_planetary_longitude(search_lo, 'Moon', ayanamsa_name)):
+                search_lo -= step
+            entry_jd = _find_panchak_crossing_jd(search_lo, current, entering=True, ayanamsa_name=ayanamsa_name)
+
+            # Walk forward to find where it exits
+            search_hi = current
+            while _in_panchak(get_planetary_longitude(search_hi, 'Moon', ayanamsa_name)):
+                search_hi += step
+            exit_jd = _find_panchak_crossing_jd(current, search_hi, entering=False, ayanamsa_name=ayanamsa_name)
+
+            return {"entry_jd": entry_jd, "exit_jd": exit_jd}
+        current += step
+
+    return None
+
+
+def calculate_panchak_kaal(
+    sunrise_jd: float,
+    next_sunrise_jd: float,
+    ayanamsa_name: str = 'Lahiri',
+) -> dict:
+    """Compute Panchak Kaal overlap with the sunrise day.
+
+    Returns a dict with:
+      windows   – list of 0 or 1 overlap segments (start_jd, end_jd, nakshatra,
+                  clipped_start, clipped_end)
+      period    – full Panchak entry/exit JDs if a window exists, else None
+      next_period – next Panchak entry/exit if no window today, else None
+    """
+    moon_at_sr  = get_planetary_longitude(sunrise_jd,      'Moon', ayanamsa_name)
+    moon_at_nsr = get_planetary_longitude(next_sunrise_jd, 'Moon', ayanamsa_name)
+
+    sr_in  = _in_panchak(moon_at_sr)
+    nsr_in = _in_panchak(moon_at_nsr)
+
+    if not sr_in and not nsr_in:
+        return {
+            "windows": [],
+            "period": None,
+            "next_period": _find_next_panchak_period(next_sunrise_jd, ayanamsa_name),
+        }
+
+    # Determine exact entry JD
+    if sr_in:
+        # Period started before today's sunrise
+        search_lo = sunrise_jd - 6.0
+        while _in_panchak(get_planetary_longitude(search_lo, 'Moon', ayanamsa_name)):
+            search_lo -= 1.0
+        entry_jd = _find_panchak_crossing_jd(search_lo, sunrise_jd, entering=True, ayanamsa_name=ayanamsa_name)
+        clipped_start = True
+    else:
+        entry_jd = _find_panchak_crossing_jd(sunrise_jd, next_sunrise_jd, entering=True, ayanamsa_name=ayanamsa_name)
+        clipped_start = False
+
+    # Determine exact exit JD
+    if nsr_in:
+        # Period continues past next sunrise
+        search_hi = next_sunrise_jd + 6.0
+        while _in_panchak(get_planetary_longitude(search_hi, 'Moon', ayanamsa_name)):
+            search_hi += 1.0
+        exit_jd = _find_panchak_crossing_jd(next_sunrise_jd, search_hi, entering=False, ayanamsa_name=ayanamsa_name)
+        clipped_end = True
+    else:
+        exit_jd = _find_panchak_crossing_jd(sunrise_jd, next_sunrise_jd, entering=False, ayanamsa_name=ayanamsa_name)
+        clipped_end = False
+
+    window_start = sunrise_jd      if clipped_start else entry_jd
+    window_end   = next_sunrise_jd if clipped_end   else exit_jd
+
+    nak_idx  = get_nakshatra_at_jd(window_start, ayanamsa_name)
+    nak_name = NAKSHATRA_NAMES[nak_idx - 1]
+
+    windows = [{
+        "start_jd":      window_start,
+        "end_jd":        window_end,
+        "nakshatra":     nak_name,
+        "clipped_start": clipped_start,
+        "clipped_end":   clipped_end,
+    }]
+
+    return {
+        "windows":     windows,
+        "period":      {"entry_jd": entry_jd, "exit_jd": exit_jd},
+        "next_period": None,
+    }

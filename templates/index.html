@@ -208,6 +208,11 @@
         <div class="card-title">Tarabalam</div>
         <div class="card-desc">for all 27 Nakshatra</div>
       </button>
+      <button class="card" id="panchakCard">
+        <div class="card-icon">🌑</div>
+        <div class="card-title">Panchak Kaal (पंचक काल)</div>
+        <div class="card-desc">5-nakshatra inauspicious period</div>
+      </button>
     </div>
   </div>
 </section>
@@ -250,6 +255,27 @@
 
   <div class="page-content" id="chogContent">
     <div class="loading-spinner">Loading Choghadiya…</div>
+  </div>
+</section>
+
+<!-- ─────────────────── PANCHAK PAGE ─────────────────── -->
+<section class="page" id="page-panchak">
+  <nav class="navbar">
+    <button class="navbar-btn" id="panchakBack">←</button>
+    <span class="navbar-title">Panchak Kaal (पंचक काल)</span>
+    <div class="navbar-right"></div>
+  </nav>
+
+  <div class="chog-date-nav" id="panchakDateNav" style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;">
+    <button class="nav-arrow" id="panchakPrev">‹</button>
+    <div id="panchakDateTabs" style="display:flex;gap:4px;overflow-x:auto;flex:1;justify-content:center;"></div>
+    <button class="nav-arrow" id="panchakNext">›</button>
+  </div>
+
+  <div class="page-content">
+    <div id="panchakContent">
+      <div class="loading-spinner">Calculating…</div>
+    </div>
   </div>
 </section>
 

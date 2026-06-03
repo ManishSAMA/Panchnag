@@ -1054,6 +1054,75 @@ body {
   color: #27ae60;
 }
 
+/* ── Panchak Kaal ── */
+.panchak-kaal-card {
+  border-left: 4px solid #5d4e75;
+  background: rgba(245, 238, 255, 0.95);
+}
+.panchak-kaal-card--inactive {
+  border-left: 4px solid var(--green);
+  background: rgba(235, 247, 241, 0.95);
+}
+.panchak-kaal-title {
+  font-weight: 800;
+  color: #5d4e75;
+  font-size: 1.05em;
+  padding: 8px 0 4px;
+}
+.panchak-badge {
+  display: inline-block;
+  font-size: 11px;
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin-left: 6px;
+  font-weight: 700;
+}
+.panchak-badge--active {
+  background: rgba(93, 78, 117, 0.15);
+  color: #5d4e75;
+}
+.panchak-badge--inactive {
+  background: rgba(217, 238, 229, 0.9);
+  color: var(--green);
+}
+.cal-panchak-marker {
+  font-size: 7px;
+  font-weight: 700;
+  color: #5d4e75;
+  background: rgba(93, 78, 117, 0.12);
+  border-radius: 3px;
+  padding: 1px 4px;
+  margin-top: 2px;
+  cursor: pointer;
+  text-align: center;
+}
+.panchak-table-row {
+  cursor: pointer;
+}
+.panchak-table-row:hover {
+  background: rgba(93, 78, 117, 0.06);
+}
+.panchak-window-card {
+  background: rgba(245, 238, 255, 0.95);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.panchak-info-toggle {
+  color: var(--brand-dark);
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 12px;
+  text-align: center;
+  user-select: none;
+}
+.panchak-info-body {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
 /* ── Aaj Ka Panchang Card ── */
 .aaj-ka-panchang-card {
   background: var(--surface);

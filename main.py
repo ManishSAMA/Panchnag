@@ -39,6 +39,7 @@ from astronomy import (
 )
 from panchang import (
     calculate_bhadra_kaal,
+    calculate_panchak_kaal,
     calculate_jain_tithi_from_sunrise,
     find_chaitra_shukla_1,
     find_diwali,
@@ -130,6 +131,8 @@ def _compute_day(args_tuple) -> dict | None:
         jd_next_day = local_time_to_jd(year, month, day, local_hour=5.5, tz_offset=tz_offset) + 1.0
         jd_next_sr = get_sunrise(jd_next_day, lat, lon)
         bhadra_kaal = calculate_bhadra_kaal(jd_sr, jd_next_sr, ayanamsa)
+        panchak_raw = calculate_panchak_kaal(jd_sr, jd_next_sr, ayanamsa)
+        panchak_segs = panchak_raw["windows"]
 
         date_str = f"{year:04d}-{month:02d}-{day:02d}"
         festival_index = _G.get("festival_index", {})
@@ -151,6 +154,7 @@ def _compute_day(args_tuple) -> dict | None:
             vikram_samvat       = vs,
             vira_nirvana_samvat = vns,
             bhadra_kaal         = bhadra_kaal,
+            panchak_segments    = panchak_segs,
             jain_festivals      = day_fests.get("festivals") or None,
             jain_parva_tithis   = day_fests.get("parva_tithis") or None,
             festival_profile    = _G.get("festival_profile"),
