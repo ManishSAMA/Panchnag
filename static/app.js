@@ -1724,6 +1724,164 @@ registerPage('festivals', {
   }
 });
 
+// ── YOGA MUHURTA ──────────────────────────────────────────────
+const yogaState = { date: todayStr() };
+
+const YOGA_RECOMMENDATION_LABELS = {
+  highly_auspicious: 'Highly Auspicious',
+  auspicious: 'Auspicious',
+  caution: 'Caution',
+  avoid: 'Avoid',
+  neutral: 'No Listed Yoga',
+};
+
+const YOGA_BADGE_COLORS = {
+  highly_auspicious: '#1a7f4e',
+  auspicious: '#1a5276',
+  caution: '#7d6608',
+  avoid: '#922b21',
+  neutral: '#566573',
+};
+
+const YOGA_BADGE_BG = {
+  highly_auspicious: '#c6efce',
+  auspicious: '#daeaf7',
+  caution: '#fff3cd',
+  avoid: '#ffd5d5',
+  neutral: '#f2f2f2',
+};
+
+function yogaOffsetDate(base, offset) {
+  const [y, m, d] = base.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + offset);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+
+async function loadYogaMuhurta() {
+  const content = document.getElementById('yogaMuhurtaContent');
+  const badge = document.getElementById('yogaMuhurtaBadge');
+  const label = document.getElementById('yogaMuhurtaDateLabel');
+  label.textContent = formatDateLabel(yogaState.date);
+  content.innerHTML = '<div class="loading-spinner">Calculating…</div>';
+  badge.innerHTML = '';
+
+  const st = getState();
+  try {
+    const data = await apiFetch('/dainika-muhurta', 'POST', {
+      date: yogaState.date,
+      lat: st.lat,
+      lon: st.lon,
+      ayanamsa: st.ayanamsa || 'Lahiri',
+    });
+
+    const rec = data.recommendation;
+    badge.innerHTML = `
+      <span style="display:inline-block;padding:6px 18px;border-radius:20px;
+        font-size:13px;font-weight:700;
+        background:${YOGA_BADGE_BG[rec] || '#f2f2f2'};
+        color:${YOGA_BADGE_COLORS[rec] || '#333'};">
+        ${YOGA_RECOMMENDATION_LABELS[rec] || rec}
+      </span>
+      <div style="font-size:11px;color:#888;margin-top:4px;">
+        Vara ${data.vara} · Tithi ${data.tithi} · Nakshatra ${data.nakshatra}
+      </div>`;
+
+    const activeYogas = data.yogas.filter(y => !y.cancelled);
+
+    if (activeYogas.length === 0) {
+      content.innerHTML = `
+        <div style="text-align:center;padding:40px 16px;color:#888;font-size:14px;">
+          No listed yoga active for this date.
+        </div>`;
+      return;
+    }
+
+    const shubh = activeYogas.filter(y => y.nature === 'shubh');
+    const ashubh = activeYogas.filter(y => y.nature === 'ashubh');
+
+    function yogaSection(title, yogas, color) {
+      if (!yogas.length) return '';
+      const rows = yogas.map(y => `
+        <tr>
+          <td style="font-weight:600;font-size:13px;">${y.name}${y.diminished ? ' <span style="font-size:10px;color:#e67e22;">(diminished)</span>' : ''}</td>
+          <td style="text-transform:capitalize;font-size:12px;">${y.nature}</td>
+          <td style="font-size:12px;">${y.trigger_kind}</td>
+          <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;
+            background:${y.severity==='highly_inauspicious'?'#ffd5d5':y.severity==='highly_auspicious'?'#c6efce':y.severity==='inauspicious'?'#ffeb9c':'#daeaf7'};
+            color:#333;">${y.severity.replace(/_/g,' ')}</span></td>
+          <td style="font-size:12px;color:#555;">${y.meaning}</td>
+        </tr>`).join('');
+      return `
+        <div style="margin-bottom:16px;">
+          <div style="font-weight:700;font-size:12px;text-transform:uppercase;
+            color:${color};padding:6px 12px;background:${color}18;border-radius:4px 4px 0 0;">${title}</div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+              <thead>
+                <tr style="background:#f5f5f5;">
+                  <th style="text-align:left;padding:6px 10px;font-size:11px;">Yoga</th>
+                  <th style="text-align:left;padding:6px 8px;font-size:11px;">Nature</th>
+                  <th style="text-align:left;padding:6px 8px;font-size:11px;">Trigger</th>
+                  <th style="text-align:left;padding:6px 8px;font-size:11px;">Severity</th>
+                  <th style="text-align:left;padding:6px 8px;font-size:11px;">Meaning</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+
+    content.innerHTML =
+      yogaSection('Auspicious Yogas', shubh, '#1a7f4e') +
+      yogaSection('Inauspicious Yogas', ashubh, '#922b21');
+
+  } catch (err) {
+    content.innerHTML = `<div style="padding:20px;color:#c0392b;">Error: ${err.message}</div>`;
+    badge.innerHTML = '';
+  }
+}
+
+document.getElementById('yogaMuhurtaPrev').addEventListener('click', () => {
+  yogaState.date = yogaOffsetDate(yogaState.date, -1);
+  loadYogaMuhurta();
+});
+document.getElementById('yogaMuhurtaNext').addEventListener('click', () => {
+  yogaState.date = yogaOffsetDate(yogaState.date, 1);
+  loadYogaMuhurta();
+});
+
+document.getElementById('yogaExportBtn').addEventListener('click', async () => {
+  const [y, m] = yogaState.date.split('-').map(Number);
+  const st = getState();
+  const btn = document.getElementById('yogaExportBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating…';
+  try {
+    const data = await apiFetch('/dainika-muhurta-export', 'POST', {
+      year: y, month: m, lat: st.lat, lon: st.lon,
+      ayanamsa: st.ayanamsa || 'Lahiri',
+    });
+    const a = document.createElement('a');
+    a.href = data.download_url;
+    a.download = data.filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (err) {
+    alert('Export failed: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⬇ Export Month Excel';
+  }
+});
+
+registerPage('yoga-muhurta', {
+  onEnter() {
+    loadYogaMuhurta();
+  }
+});
+
 // ── Boot ──────────────────────────────────────────────────────
 initDrawer();
 initNavButtons();

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import calendar
+import io
+import os
 from datetime import date as date_type
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -9,8 +11,10 @@ from uuid import uuid4
 from flask import Flask, abort, jsonify, render_template, request, send_file
 
 from astronomy import get_sunrise, get_sunset, jd_to_zoned_datetime, local_date_anchor_jd
+from dainika_muhurta_service import detect_yogas
 from location_service import geocode_city, get_timezone_name, search_locations
 from pdf_generation_service import generate_pdf_export
+from panchang import get_nakshatra, get_tithi, get_vara_from_date
 from panchang_service import generate_location_panchang, resolve_location
 from range_generation_service import generate_year_range_exports
 from request_parsing import (
@@ -35,6 +39,96 @@ _DAY_START_IDX = [0, 3, 6, 2, 5, 1, 4]
 _NIGHT_START_IDX = [0, 2, 4, 6, 5, 3, 1]
 
 GENERATED_EXPORTS: dict[str, str] = {}
+
+_FILL_HIGHLY_AUSPICIOUS = None
+_FILL_AUSPICIOUS = None
+_FILL_CAUTION = None
+_FILL_AVOID = None
+
+
+def _get_fills():
+    from openpyxl.styles import PatternFill
+    return {
+        "highly_auspicious": PatternFill("solid", fgColor="C6EFCE"),
+        "auspicious": PatternFill("solid", fgColor="DDEBF7"),
+        "caution": PatternFill("solid", fgColor="FFEB9C"),
+        "avoid": PatternFill("solid", fgColor="FFC7CE"),
+        "neutral": PatternFill("solid", fgColor="F2F2F2"),
+    }
+
+
+def _build_muhurta_workbook(summary_rows: list[dict], match_rows: list[dict]):
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    fills = _get_fills()
+    wb = Workbook()
+
+    # ── Summary sheet ──────────────────────────────────────────────────────
+    ws_sum = wb.active
+    ws_sum.title = "Summary"
+    summary_headers = ["Date", "Vara", "Tithi", "Nakshatra", "Recommendation", "Active Yoga Count"]
+    ws_sum.append(summary_headers)
+
+    hdr_font = Font(bold=True, color="FFFFFF")
+    hdr_fill = PatternFill("solid", fgColor="4472C4")
+    for cell in ws_sum[1]:
+        cell.font = hdr_font
+        cell.fill = hdr_fill
+        cell.alignment = Alignment(horizontal="center")
+
+    ws_sum.freeze_panes = "A2"
+    ws_sum.auto_filter.ref = f"A1:{get_column_letter(len(summary_headers))}1"
+
+    for row in summary_rows:
+        ws_sum.append([
+            row["date"], row["vara"], row["tithi"], row["nakshatra"],
+            row["recommendation"], row["active_yoga_count"],
+        ])
+        last = ws_sum.max_row
+        fill = fills.get(row["recommendation"], fills["neutral"])
+        for col in range(1, len(summary_headers) + 1):
+            ws_sum.cell(last, col).fill = fill
+            ws_sum.cell(last, col).alignment = Alignment(horizontal="center")
+
+    for col, width in zip(range(1, 7), [14, 12, 8, 20, 20, 18]):
+        ws_sum.column_dimensions[get_column_letter(col)].width = width
+
+    # ── Matches sheet ──────────────────────────────────────────────────────
+    ws_match = wb.create_sheet("Matches")
+    match_headers = ["Date", "Yoga Name", "Nature", "Severity", "Trigger", "Meaning", "Day Recommendation"]
+    ws_match.append(match_headers)
+
+    for cell in ws_match[1]:
+        cell.font = hdr_font
+        cell.fill = hdr_fill
+        cell.alignment = Alignment(horizontal="center")
+
+    ws_match.freeze_panes = "A2"
+    ws_match.auto_filter.ref = f"A1:{get_column_letter(len(match_headers))}1"
+
+    for row in match_rows:
+        ws_match.append([
+            row["date"], row["yoga_name"], row["nature"], row["severity"],
+            row["trigger_kind"], row["meaning"], row["recommendation"],
+        ])
+        last = ws_match.max_row
+        fill = fills.get(
+            "highly_auspicious" if row["nature"] == "shubh" and row["severity"] == "highly_auspicious"
+            else "auspicious" if row["nature"] == "shubh"
+            else "avoid" if row["severity"] == "highly_inauspicious"
+            else "caution"
+        )
+        for col in range(1, len(match_headers) + 1):
+            c = ws_match.cell(last, col)
+            c.fill = fill
+            c.alignment = Alignment(wrap_text=True)
+
+    for col, width in zip(range(1, 8), [14, 25, 12, 20, 10, 60, 20]):
+        ws_match.column_dimensions[get_column_letter(col)].width = width
+
+    return wb
 
 
 def create_app() -> Flask:
@@ -577,6 +671,152 @@ def create_app() -> Flask:
                 "day_slot_duration_minutes": round(day_slot_duration_minutes, 3),
                 "night_slot_duration_minutes": round(night_slot_duration_minutes, 3),
                 "slots": slots,
+            })
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except Exception as exc:
+            return jsonify({"error": str(exc)}), 500
+
+    @app.post("/dainika-muhurta")
+    def dainika_muhurta():
+        try:
+            body = request.get_json(silent=True) or {}
+            date_str = body.get("date")
+            lat = body.get("lat")
+            lon = body.get("lon")
+            ayanamsa = body.get("ayanamsa", "Lahiri")
+
+            if not date_str:
+                return jsonify({"error": "Missing required field: date"}), 400
+            if lat is None or lon is None:
+                return jsonify({"error": "Missing required fields: lat and lon"}), 400
+
+            try:
+                parsed_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                return jsonify({"error": "date must be in YYYY-MM-DD format"}), 400
+
+            tz_name = get_timezone_name(float(lat), float(lon))
+            anchor_jd = local_date_anchor_jd(parsed_date, tz_name)
+            sunrise_jd = get_sunrise(anchor_jd, float(lat), float(lon))
+
+            if not sunrise_jd:
+                return jsonify({"error": "Sunrise could not be calculated for this location/date."}), 400
+
+            from astronomy import get_ayanamsa, get_planetary_longitude
+            ayanamsa_val = get_ayanamsa(sunrise_jd, ayanamsa)
+            sun_lon = (get_planetary_longitude(sunrise_jd, "Sun") - ayanamsa_val) % 360.0
+            moon_lon = (get_planetary_longitude(sunrise_jd, "Moon") - ayanamsa_val) % 360.0
+
+            vara = get_vara_from_date(parsed_date)
+            tithi = get_tithi(sun_lon, moon_lon)
+            nakshatra = get_nakshatra(moon_lon)
+
+            yoga_result = detect_yogas(vara=vara, tithi=tithi, nakshatra=nakshatra)
+
+            return jsonify({
+                "date": date_str,
+                "vara": vara,
+                "tithi": tithi,
+                "nakshatra": nakshatra,
+                "yogas": yoga_result["yogas"],
+                "recommendation": yoga_result["recommendation"],
+            })
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except Exception as exc:
+            return jsonify({"error": str(exc)}), 500
+
+    @app.post("/dainika-muhurta-export")
+    def dainika_muhurta_export():
+        try:
+            body = request.get_json(silent=True) or {}
+            year = body.get("year")
+            month = body.get("month")
+            lat = body.get("lat")
+            lon = body.get("lon")
+            ayanamsa = body.get("ayanamsa", "Lahiri")
+
+            if year is None:
+                return jsonify({"error": "Missing required field: year"}), 400
+            if month is None:
+                return jsonify({"error": "Missing required field: month"}), 400
+            if lat is None or lon is None:
+                return jsonify({"error": "Missing required fields: lat and lon"}), 400
+
+            year, month = int(year), int(month)
+            if not (1 <= month <= 12):
+                return jsonify({"error": "month must be 1–12"}), 400
+
+            tz_name = get_timezone_name(float(lat), float(lon))
+            days_in_month = calendar.monthrange(year, month)[1]
+
+            from astronomy import get_ayanamsa, get_planetary_longitude
+
+            summary_rows = []
+            match_rows = []
+
+            NAKSHATRA_NAMES = [
+                "", "Ashvini", "Bharani", "Kritika", "Rohini", "Mrigashira",
+                "Ardra", "Punarvasu", "Pushya", "Ashlesha", "Magha",
+                "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati",
+                "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha",
+                "Uttara Ashadha", "Shravana", "Dhanishtha", "Shatabhisha",
+                "Purva Bhadrapada", "Uttara Bhadrapada", "Revati", "Abhijit",
+            ]
+            VARA_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+            for day in range(1, days_in_month + 1):
+                d = date_type(year, month, day)
+                anchor_jd = local_date_anchor_jd(d, tz_name)
+                sunrise_jd = get_sunrise(anchor_jd, float(lat), float(lon))
+                if not sunrise_jd:
+                    continue
+
+                ayanamsa_val = get_ayanamsa(sunrise_jd, ayanamsa)
+                sun_lon = (get_planetary_longitude(sunrise_jd, "Sun") - ayanamsa_val) % 360.0
+                moon_lon = (get_planetary_longitude(sunrise_jd, "Moon") - ayanamsa_val) % 360.0
+
+                vara = get_vara_from_date(d)
+                tithi = get_tithi(sun_lon, moon_lon)
+                nakshatra = get_nakshatra(moon_lon)
+                yoga_result = detect_yogas(vara=vara, tithi=tithi, nakshatra=nakshatra)
+
+                summary_rows.append({
+                    "date": d.strftime("%Y-%m-%d"),
+                    "vara": VARA_NAMES[vara],
+                    "tithi": tithi,
+                    "nakshatra": NAKSHATRA_NAMES[nakshatra] if nakshatra < len(NAKSHATRA_NAMES) else str(nakshatra),
+                    "recommendation": yoga_result["recommendation"],
+                    "active_yoga_count": len([y for y in yoga_result["yogas"] if not y.get("cancelled")]),
+                })
+                for yoga in yoga_result["yogas"]:
+                    if yoga.get("cancelled"):
+                        continue
+                    match_rows.append({
+                        "date": d.strftime("%Y-%m-%d"),
+                        "yoga_name": yoga["name"],
+                        "nature": yoga["nature"],
+                        "severity": yoga["severity"],
+                        "trigger_kind": yoga["trigger_kind"],
+                        "meaning": yoga["meaning"],
+                        "recommendation": yoga_result["recommendation"],
+                    })
+
+            wb = _build_muhurta_workbook(summary_rows, match_rows)
+            filename = f"dainika_muhurta_{year}_{str(month).zfill(2)}.xlsx"
+
+            tmp_dir = Path("output")
+            tmp_dir.mkdir(exist_ok=True)
+            file_path = tmp_dir / filename
+            wb.save(str(file_path))
+
+            token = str(uuid4())
+            GENERATED_EXPORTS[token] = str(file_path)
+
+            return jsonify({
+                "filename": filename,
+                "download_url": f"/downloads/{token}",
             })
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
