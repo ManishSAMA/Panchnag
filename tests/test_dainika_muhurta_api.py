@@ -80,7 +80,8 @@ class TestDainikamuhurtaEndpoint(unittest.TestCase):
         data = resp.get_json()
         if data["yogas"]:
             yoga = data["yogas"][0]
-            for field in ("name", "nature", "trigger_kind", "severity", "meaning"):
+            for field in ("name", "nature", "trigger_kind", "severity", "meaning",
+                          "start_time", "end_time", "start_local", "end_local"):
                 self.assertIn(field, yoga)
 
     def test_missing_date_returns_400(self):
@@ -213,7 +214,12 @@ class TestDainikaExportEndpoint(unittest.TestCase):
         wb = openpyxl.load_workbook(io.BytesIO(dl.data))
         ws = wb["Summary"]
         headers = [c.value for c in ws[1]]
-        for col in ("Date", "Vara", "Tithi", "Nakshatra", "Recommendation", "Active Yoga Count"):
+        for col in ("Date", "Vara", "Tithi", "Nakshatra", "Recommendation", "Active Yoga Count", "Active Yogas",
+                    "Start Time", "End Time"):
+            # Summary sheet has first 7; check only what's present
+            pass  # header checks moved to workbook sheet-specific tests
+        # Summary headers
+        for col in ("Date", "Vara", "Tithi", "Nakshatra", "Recommendation", "Active Yoga Count", "Active Yogas"):
             self.assertIn(col, headers)
 
     def test_matches_sheet_one_row_per_yoga_per_day(self):

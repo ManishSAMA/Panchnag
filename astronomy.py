@@ -364,6 +364,54 @@ def jd_to_ist_string(jd: float) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Eclipse Detection
+# ---------------------------------------------------------------------------
+
+def build_eclipse_date_sets(
+    start_jd: float,
+    end_jd: float,
+    lat: float,
+    lon: float,
+) -> tuple[set[str], set[str]]:
+    """Return (solar_eclipse_dates, lunar_eclipse_dates) as sets of 'YYYY-MM-DD' strings.
+
+    Scans the full JD range for eclipses visible at the given location.  Call once
+    before the generation loop; per-day lookup is then O(1) set membership.
+    """
+    geopos = (lon, lat, 0.0)
+    solar_dates: set[str] = set()
+    lunar_dates: set[str] = set()
+
+    jd = start_jd
+    while jd < end_jd:
+        try:
+            ret, tret, _attr = swe.sol_eclipse_when_loc(jd, swe.FLG_SWIEPH, geopos, False)
+            if ret > 0 and tret[0] > 0:
+                y, m, d, _ = swe.revjul(tret[0], swe.GREG_CAL)
+                solar_dates.add(f"{int(y):04d}-{int(m):02d}-{int(d):02d}")
+                jd = tret[0] + 20.0
+            else:
+                jd += 150.0
+        except Exception:
+            jd += 150.0
+
+    jd = start_jd
+    while jd < end_jd:
+        try:
+            ret, tret, _attr = swe.lun_eclipse_when_loc(jd, swe.FLG_SWIEPH, geopos, False)
+            if ret > 0 and tret[0] > 0:
+                y, m, d, _ = swe.revjul(tret[0], swe.GREG_CAL)
+                lunar_dates.add(f"{int(y):04d}-{int(m):02d}-{int(d):02d}")
+                jd = tret[0] + 20.0
+            else:
+                jd += 25.0
+        except Exception:
+            jd += 25.0
+
+    return solar_dates, lunar_dates
+
+
+# ---------------------------------------------------------------------------
 # Sankranti (solar ingress) detection
 # ---------------------------------------------------------------------------
 

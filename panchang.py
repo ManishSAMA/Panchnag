@@ -1003,3 +1003,96 @@ def calculate_panchak_kaal(
         "period":      {"entry_jd": entry_jd, "exit_jd": exit_jd},
         "next_period": None,
     }
+
+
+# ---------------------------------------------------------------------------
+# DB Generator Helper Functions
+# ---------------------------------------------------------------------------
+
+def get_shaka_samvat(gregorian_date: date, chaitra_shukla_1_date: date) -> int:
+    """Return the Shaka Samvat year for a given Gregorian date.
+
+    Shaka era starts 78 CE; new year on Chaitra Shukla Pratipada.
+    """
+    if gregorian_date >= chaitra_shukla_1_date:
+        return gregorian_date.year - 78
+    return gregorian_date.year - 79
+
+
+def is_kshaya_month(jd: float, ayanamsa: str = 'Lahiri') -> bool:
+    """Return True if jd falls in a Kshaya (lost) lunar month.
+
+    A Kshaya month occurs when the Sun crosses two sign boundaries within a
+    single lunar month (Amavasya to Amavasya).  This is extremely rare (~once
+    every 19 years) and always accompanied by two adjacent Adhika months.
+    """
+    prev_nm = find_new_moon_before(jd, ayanamsa)
+    next_nm = find_new_moon_after(prev_nm + 1.0, ayanamsa)
+    sankrantis = find_sankrantis_in_range(prev_nm, next_nm, ayanamsa)
+    return len(sankrantis) >= 2
+
+
+def get_tithi_start_jd(
+    jd: float,
+    tithi_idx: int,
+    sun_lon: float,
+    moon_lon: float,
+    ayanamsa_name: str = 'Lahiri',
+) -> float:
+    """Return the Julian Date when the current Tithi began."""
+    diff = (moon_lon - sun_lon) % 360.0
+    tithi_elapsed_deg = diff % 12.0
+    prev_tithi_idx = ((tithi_idx - 2) % 30) + 1
+    search_start = jd - (tithi_elapsed_deg / 10.0) - 0.15
+    return _find_exact_end_time(
+        search_start,
+        get_tithi_at_jd,
+        prev_tithi_idx,
+        ayanamsa_name,
+        low_guess=search_start,
+        high_guess=jd + 0.01,
+    )
+
+
+def get_nakshatra_start_jd(
+    jd: float,
+    nak_idx: int,
+    moon_lon: float,
+    ayanamsa_name: str = 'Lahiri',
+) -> float:
+    """Return the Julian Date when the current Nakshatra began."""
+    nak_len = 360.0 / 27.0
+    moon_elapsed = moon_lon % nak_len
+    prev_nak_idx = ((nak_idx - 2) % 27) + 1
+    search_start = jd - (moon_elapsed / 12.0) - 0.15
+    return _find_exact_end_time(
+        search_start,
+        get_nakshatra_at_jd,
+        prev_nak_idx,
+        ayanamsa_name,
+        low_guess=search_start,
+        high_guess=jd + 0.01,
+    )
+
+
+def get_yoga_start_jd(
+    jd: float,
+    yoga_idx: int,
+    sun_lon: float,
+    moon_lon: float,
+    ayanamsa_name: str = 'Lahiri',
+) -> float:
+    """Return the Julian Date when the current Yoga began."""
+    yoga_len = 360.0 / 27.0
+    total = (sun_lon + moon_lon) % 360.0
+    yoga_elapsed = total % yoga_len
+    prev_yoga_idx = ((yoga_idx - 2) % 27) + 1
+    search_start = jd - (yoga_elapsed / 13.0) - 0.15
+    return _find_exact_end_time(
+        search_start,
+        get_yoga_at_jd,
+        prev_yoga_idx,
+        ayanamsa_name,
+        low_guess=search_start,
+        high_guess=jd + 0.01,
+    )

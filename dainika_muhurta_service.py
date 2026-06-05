@@ -11,6 +11,8 @@ Nakshatra: 1–27 (28=Abhijit where applicable)
 
 from __future__ import annotations
 
+from datetime import date as date_type
+
 # ---------------------------------------------------------------------------
 # Rule table — 31 yogas
 # ---------------------------------------------------------------------------
@@ -628,3 +630,178 @@ def _compute_recommendation(yogas: list[dict]) -> str:
 def get_recommendation(yogas: list[dict]) -> str:
     """Public helper — compute recommendation from a list of yoga dicts."""
     return _compute_recommendation(yogas)
+
+
+# ---------------------------------------------------------------------------
+# Timed detection — walks Tithi/Nakshatra segments across the solar day
+# ---------------------------------------------------------------------------
+
+_SEGMENT_SAFETY_CAP = 10  # max number of tithi or nakshatra changes in one day
+
+
+def compute_day_segments(
+    sunrise_jd: float,
+    next_sunrise_jd: float,
+    ayanamsa: str = "Lahiri",
+) -> dict:
+    """Walk all Tithi and Nakshatra transitions between sunrise and next sunrise.
+
+    Returns:
+        {
+          "tithi_segments":     [{"index": int, "start_jd": float, "end_jd": float}, ...],
+          "nakshatra_segments": [{"index": int, "start_jd": float, "end_jd": float}, ...],
+        }
+    The first segment always starts at sunrise_jd and the last always ends at
+    next_sunrise_jd; successive segments are contiguous.
+    """
+    from panchang import (
+        _find_exact_end_time,
+        get_tithi_at_jd,
+        get_nakshatra_at_jd,
+        calculate_tithi_details,
+    )
+    from astronomy import get_planetary_longitude
+
+    # 30-second nudge — matches _collect_all_tithis_in_day in panchang_service.py
+    # and is safely larger than _find_exact_end_time's bisection precision (~0.86 s)
+    _NUDGE = 30.0 / 86400.0
+
+    def _walk_segments(get_index_fn, start_jd: float, end_jd: float, trigger: str) -> list[dict]:
+        segments: list[dict] = []
+        cursor = start_jd
+        prev_raw_end = start_jd  # tracks bisection boundary for display start
+
+        for _ in range(_SEGMENT_SAFETY_CAP):
+            idx = get_index_fn(cursor, ayanamsa)
+
+            if trigger == "tithi":
+                # calculate_tithi_details has proven tight low/high bounds (same as panchang)
+                details = calculate_tithi_details(cursor, ayanamsa)
+                raw_end = details["Tithi_End_JD"]
+            else:
+                # Tight bounds matching generate_daily_panchang in panchang.py
+                moon_lon = get_planetary_longitude(cursor, "Moon", ayanamsa)
+                nak_len = 360.0 / 27.0
+                nak_left_deg = nak_len - (moon_lon % nak_len)
+                nak_low = cursor + (nak_left_deg / 16.0)
+                nak_high = cursor + (nak_left_deg / 11.0) + 0.05
+                raw_end = _find_exact_end_time(
+                    cursor, get_index_fn, idx, ayanamsa, nak_low, nak_high
+                )
+
+            seg_end = min(raw_end, end_jd)
+            # Use prev_raw_end as start for exact contiguity in output
+            seg_start = prev_raw_end
+            segments.append({"index": idx, "start_jd": seg_start, "end_jd": seg_end})
+            if seg_end >= end_jd:
+                break
+            prev_raw_end = raw_end   # next segment starts exactly where this one ended
+            cursor = raw_end + _NUDGE   # nudge cursor past boundary for bisection
+
+        if segments:
+            segments[0]["start_jd"] = start_jd   # first segment starts exactly at sunrise
+            segments[-1]["end_jd"] = end_jd       # last segment ends exactly at next sunrise
+        return segments
+
+    return {
+        "tithi_segments": _walk_segments(
+            get_tithi_at_jd, sunrise_jd, next_sunrise_jd, "tithi"
+        ),
+        "nakshatra_segments": _walk_segments(
+            get_nakshatra_at_jd, sunrise_jd, next_sunrise_jd, "nakshatra"
+        ),
+    }
+
+
+def detect_yogas_for_day(
+    *,
+    date_obj: date_type,
+    sunrise_jd: float,
+    next_sunrise_jd: float,
+    tz_name: str,
+    ayanamsa: str = "Lahiri",
+) -> dict:
+    """Detect all active yogas with precise start/end time windows.
+
+    Each yoga entry includes ``start_time``, ``end_time`` (HH:MM local),
+    ``start_local`` and ``end_local`` (ISO strings) so the UI and Excel export
+    can show exactly when each yoga is active.
+
+    Returns the same shape as ``detect_yogas`` plus per-yoga timing.
+    """
+    from panchang import get_vara_from_date, get_tithi_at_jd, get_nakshatra_at_jd
+    from astronomy import jd_to_zoned_datetime
+
+    segs = compute_day_segments(sunrise_jd, next_sunrise_jd, ayanamsa)
+    vara = get_vara_from_date(date_obj)
+
+    # Use the same functions as panchang generation — no double-ayanamsa correction
+    sunrise_tithi = get_tithi_at_jd(sunrise_jd, ayanamsa)
+    sunrise_nakshatra = get_nakshatra_at_jd(sunrise_jd, ayanamsa)
+
+    def _fmt(jd: float) -> tuple[str, str]:
+        dt = jd_to_zoned_datetime(jd, tz_name)
+        if dt is None:
+            return "", ""
+        return dt.strftime("%H:%M"), dt.isoformat(timespec="seconds")
+
+    # Build raw yoga entries from each segment
+    raw: list[dict] = []
+
+    for rule in YOGA_RULES:
+        vara_values = rule["vara_map"].get(vara, [])
+        if not vara_values:
+            continue
+
+        if rule["trigger"] == "tithi":
+            for seg in segs["tithi_segments"]:
+                if seg["index"] in vara_values:
+                    st_time, st_local = _fmt(seg["start_jd"])
+                    en_time, en_local = _fmt(seg["end_jd"])
+                    raw.append({
+                        "name": rule["name"],
+                        "nature": rule["nature"],
+                        "trigger_kind": "tithi",
+                        "trigger_detail": f"Vara {vara}, Tithi {seg['index']}",
+                        "severity": rule["severity"],
+                        "meaning": rule["meaning"],
+                        "start_time": st_time,
+                        "end_time": en_time,
+                        "start_local": st_local,
+                        "end_local": en_local,
+                    })
+        else:  # nakshatra
+            for seg in segs["nakshatra_segments"]:
+                if seg["index"] in vara_values:
+                    st_time, st_local = _fmt(seg["start_jd"])
+                    en_time, en_local = _fmt(seg["end_jd"])
+                    raw.append({
+                        "name": rule["name"],
+                        "nature": rule["nature"],
+                        "trigger_kind": "nakshatra",
+                        "trigger_detail": f"Vara {vara}, Nakshatra {seg['index']}",
+                        "severity": rule["severity"],
+                        "meaning": rule["meaning"],
+                        "start_time": st_time,
+                        "end_time": en_time,
+                        "start_local": st_local,
+                        "end_local": en_local,
+                    })
+
+    # Apply override rules (same logic as detect_yogas)
+    has_sarvartha = any(y["name"] == "Sarvartha Siddhi" for y in raw)
+    for yoga in raw:
+        if yoga["name"] == "Dusht Tithi" and has_sarvartha:
+            yoga["cancelled"] = True
+        elif yoga["name"] == "Amrit Siddhi" and _has_active_dusht(raw) and not has_sarvartha:
+            yoga["diminished"] = True
+
+    recommendation = _compute_recommendation(raw)
+
+    return {
+        "vara": vara,
+        "tithi": sunrise_tithi,
+        "nakshatra": sunrise_nakshatra,
+        "yogas": raw,
+        "recommendation": recommendation,
+    }

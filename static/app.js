@@ -1801,16 +1801,24 @@ async function loadYogaMuhurta() {
 
     function yogaSection(title, yogas, color) {
       if (!yogas.length) return '';
-      const rows = yogas.map(y => `
+      const rows = yogas.map(y => {
+        const timing = (y.start_time && y.end_time)
+          ? `<span style="font-size:11px;color:#555;white-space:nowrap;">${y.start_time} – ${y.end_time}</span>`
+          : '';
+        return `
         <tr>
-          <td style="font-weight:600;font-size:13px;">${y.name}${y.diminished ? ' <span style="font-size:10px;color:#e67e22;">(diminished)</span>' : ''}</td>
-          <td style="text-transform:capitalize;font-size:12px;">${y.nature}</td>
-          <td style="font-size:12px;">${y.trigger_kind}</td>
-          <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;
+          <td style="font-weight:600;font-size:13px;padding:6px 10px;">
+            ${y.name}${y.diminished ? ' <span style="font-size:10px;color:#e67e22;">(diminished)</span>' : ''}
+            ${timing ? `<div style="margin-top:2px;">${timing}</div>` : ''}
+          </td>
+          <td style="text-transform:capitalize;font-size:12px;padding:6px 8px;">${y.nature}</td>
+          <td style="font-size:12px;padding:6px 8px;">${y.trigger_kind}</td>
+          <td style="padding:6px 8px;"><span style="font-size:11px;padding:2px 8px;border-radius:10px;
             background:${y.severity==='highly_inauspicious'?'#ffd5d5':y.severity==='highly_auspicious'?'#c6efce':y.severity==='inauspicious'?'#ffeb9c':'#daeaf7'};
             color:#333;">${y.severity.replace(/_/g,' ')}</span></td>
-          <td style="font-size:12px;color:#555;">${y.meaning}</td>
-        </tr>`).join('');
+          <td style="font-size:12px;color:#555;padding:6px 8px;">${y.meaning}</td>
+        </tr>`;
+      }).join('');
       return `
         <div style="margin-bottom:16px;">
           <div style="font-weight:700;font-size:12px;text-transform:uppercase;
@@ -1819,7 +1827,7 @@ async function loadYogaMuhurta() {
             <table style="width:100%;border-collapse:collapse;font-size:13px;">
               <thead>
                 <tr style="background:#f5f5f5;">
-                  <th style="text-align:left;padding:6px 10px;font-size:11px;">Yoga</th>
+                  <th style="text-align:left;padding:6px 10px;font-size:11px;">Yoga &amp; Time</th>
                   <th style="text-align:left;padding:6px 8px;font-size:11px;">Nature</th>
                   <th style="text-align:left;padding:6px 8px;font-size:11px;">Trigger</th>
                   <th style="text-align:left;padding:6px 8px;font-size:11px;">Severity</th>

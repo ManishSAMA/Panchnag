@@ -11,10 +11,11 @@ from uuid import uuid4
 from flask import Flask, abort, jsonify, render_template, request, send_file
 
 from astronomy import get_sunrise, get_sunset, jd_to_zoned_datetime, local_date_anchor_jd
-from dainika_muhurta_service import detect_yogas
+from choghadiya_service import calculate_choghadiya_slots
+from dainika_muhurta_service import detect_yogas, detect_yogas_for_day
 from location_service import geocode_city, get_timezone_name, search_locations
 from pdf_generation_service import generate_pdf_export
-from panchang import get_nakshatra, get_tithi, get_vara_from_date
+from panchang import get_vara_from_date
 from panchang_service import generate_location_panchang, resolve_location
 from range_generation_service import generate_year_range_exports
 from request_parsing import (
@@ -68,7 +69,7 @@ def _build_muhurta_workbook(summary_rows: list[dict], match_rows: list[dict]):
     # ── Summary sheet ──────────────────────────────────────────────────────
     ws_sum = wb.active
     ws_sum.title = "Summary"
-    summary_headers = ["Date", "Vara", "Tithi", "Nakshatra", "Recommendation", "Active Yoga Count"]
+    summary_headers = ["Date", "Vara", "Tithi", "Nakshatra", "Recommendation", "Active Yoga Count", "Active Yogas"]
     ws_sum.append(summary_headers)
 
     hdr_font = Font(bold=True, color="FFFFFF")
@@ -85,6 +86,7 @@ def _build_muhurta_workbook(summary_rows: list[dict], match_rows: list[dict]):
         ws_sum.append([
             row["date"], row["vara"], row["tithi"], row["nakshatra"],
             row["recommendation"], row["active_yoga_count"],
+            row.get("active_yoga_names", ""),
         ])
         last = ws_sum.max_row
         fill = fills.get(row["recommendation"], fills["neutral"])
@@ -92,12 +94,15 @@ def _build_muhurta_workbook(summary_rows: list[dict], match_rows: list[dict]):
             ws_sum.cell(last, col).fill = fill
             ws_sum.cell(last, col).alignment = Alignment(horizontal="center")
 
-    for col, width in zip(range(1, 7), [14, 12, 8, 20, 20, 18]):
+    for col, width in zip(range(1, 8), [14, 12, 8, 20, 20, 10, 50]):
         ws_sum.column_dimensions[get_column_letter(col)].width = width
+
+    for row_cells in ws_sum.iter_rows(min_row=2):
+        row_cells[6].alignment = Alignment(wrap_text=True)
 
     # ── Matches sheet ──────────────────────────────────────────────────────
     ws_match = wb.create_sheet("Matches")
-    match_headers = ["Date", "Yoga Name", "Nature", "Severity", "Trigger", "Meaning", "Day Recommendation"]
+    match_headers = ["Date", "Yoga Name", "Nature", "Severity", "Trigger", "Start Time", "End Time", "Meaning", "Day Recommendation"]
     ws_match.append(match_headers)
 
     for cell in ws_match[1]:
@@ -111,7 +116,9 @@ def _build_muhurta_workbook(summary_rows: list[dict], match_rows: list[dict]):
     for row in match_rows:
         ws_match.append([
             row["date"], row["yoga_name"], row["nature"], row["severity"],
-            row["trigger_kind"], row["meaning"], row["recommendation"],
+            row["trigger_kind"],
+            row.get("start_time", ""), row.get("end_time", ""),
+            row["meaning"], row["recommendation"],
         ])
         last = ws_match.max_row
         fill = fills.get(
@@ -125,7 +132,7 @@ def _build_muhurta_workbook(summary_rows: list[dict], match_rows: list[dict]):
             c.fill = fill
             c.alignment = Alignment(wrap_text=True)
 
-    for col, width in zip(range(1, 8), [14, 25, 12, 20, 10, 60, 20]):
+    for col, width in zip(range(1, 10), [14, 25, 12, 20, 10, 10, 10, 60, 20]):
         ws_match.column_dimensions[get_column_letter(col)].width = width
 
     return wb
@@ -600,53 +607,6 @@ def create_app() -> Flask:
                 return jsonify({"error": "Sunrise or sunset could not be calculated for this location/date."}), 400
 
             weekday = (parsed_date.weekday() + 1) % 7
-            day_start = _DAY_START_IDX[weekday]
-            night_start = _NIGHT_START_IDX[weekday]
-
-            def _make_slots(
-                start_jd: float,
-                end_jd: float,
-                choghadiya_order: list[str],
-                start_idx: int,
-                period: str,
-            ) -> list[dict]:
-                slot_duration = (end_jd - start_jd) / 8
-                slot_duration_minutes = slot_duration * 1440
-                slots = []
-                for i in range(8):
-                    name = choghadiya_order[(start_idx + i) % 7]
-                    slot_start = start_jd + i * slot_duration
-                    slot_end = start_jd + (i + 1) * slot_duration
-                    start_dt = jd_to_zoned_datetime(slot_start, tz_name)
-                    end_dt = jd_to_zoned_datetime(slot_end, tz_name)
-                    start_utc = start_dt.astimezone(timezone.utc) if start_dt else None
-                    end_utc = end_dt.astimezone(timezone.utc) if end_dt else None
-
-                    def _label(local_dt: datetime | None) -> str:
-                        if local_dt is None:
-                            return ""
-                        time_label = local_dt.strftime("%I:%M %p").lstrip("0")
-                        if local_dt.date() == parsed_date:
-                            return time_label
-                        return f"{time_label}, {local_dt.strftime('%B')} {local_dt.day}"
-
-                    slots.append({
-                        "name": name,
-                        "meaning": _CHOGHADIYA_MEANINGS[name],
-                        "nature": _CHOGHADIYA_NATURE[name],
-                        "start_time": start_dt.strftime("%H:%M") if start_dt else "",
-                        "end_time": end_dt.strftime("%H:%M") if end_dt else "",
-                        "start_local": start_dt.isoformat(timespec="seconds") if start_dt else "",
-                        "end_local": end_dt.isoformat(timespec="seconds") if end_dt else "",
-                        "start_utc": start_utc.isoformat(timespec="seconds") if start_utc else "",
-                        "end_utc": end_utc.isoformat(timespec="seconds") if end_utc else "",
-                        "start_label": _label(start_dt),
-                        "end_label": _label(end_dt),
-                        "duration_minutes": round(slot_duration_minutes, 3),
-                        "period": period,
-                    })
-                return slots
-
             sunrise_dt = jd_to_zoned_datetime(sunrise_jd, tz_name)
             sunset_dt = jd_to_zoned_datetime(sunset_jd, tz_name)
             sunrise_utc = sunrise_dt.astimezone(timezone.utc) if sunrise_dt else None
@@ -654,9 +614,8 @@ def create_app() -> Flask:
             day_slot_duration_minutes = (sunset_jd - sunrise_jd) * 1440 / 8
             night_slot_duration_minutes = (next_sunrise_jd - sunset_jd) * 1440 / 8
 
-            slots = (
-                _make_slots(sunrise_jd, sunset_jd, _DAY_CHOGHADIYA_ORDER, day_start, "day")
-                + _make_slots(sunset_jd, next_sunrise_jd, _NIGHT_CHOGHADIYA_ORDER, night_start, "night")
+            slots = calculate_choghadiya_slots(
+                sunrise_jd, sunset_jd, next_sunrise_jd, weekday, tz_name, parsed_date
             )
 
             return jsonify({
@@ -698,27 +657,26 @@ def create_app() -> Flask:
 
             tz_name = get_timezone_name(float(lat), float(lon))
             anchor_jd = local_date_anchor_jd(parsed_date, tz_name)
+            next_anchor_jd = local_date_anchor_jd(parsed_date + timedelta(days=1), tz_name)
             sunrise_jd = get_sunrise(anchor_jd, float(lat), float(lon))
+            next_sunrise_jd = get_sunrise(next_anchor_jd, float(lat), float(lon))
 
-            if not sunrise_jd:
+            if not sunrise_jd or not next_sunrise_jd:
                 return jsonify({"error": "Sunrise could not be calculated for this location/date."}), 400
 
-            from astronomy import get_ayanamsa, get_planetary_longitude
-            ayanamsa_val = get_ayanamsa(sunrise_jd, ayanamsa)
-            sun_lon = (get_planetary_longitude(sunrise_jd, "Sun") - ayanamsa_val) % 360.0
-            moon_lon = (get_planetary_longitude(sunrise_jd, "Moon") - ayanamsa_val) % 360.0
-
-            vara = get_vara_from_date(parsed_date)
-            tithi = get_tithi(sun_lon, moon_lon)
-            nakshatra = get_nakshatra(moon_lon)
-
-            yoga_result = detect_yogas(vara=vara, tithi=tithi, nakshatra=nakshatra)
+            yoga_result = detect_yogas_for_day(
+                date_obj=parsed_date,
+                sunrise_jd=sunrise_jd,
+                next_sunrise_jd=next_sunrise_jd,
+                tz_name=tz_name,
+                ayanamsa=ayanamsa,
+            )
 
             return jsonify({
                 "date": date_str,
-                "vara": vara,
-                "tithi": tithi,
-                "nakshatra": nakshatra,
+                "vara": yoga_result["vara"],
+                "tithi": yoga_result["tithi"],
+                "nakshatra": yoga_result["nakshatra"],
                 "yogas": yoga_result["yogas"],
                 "recommendation": yoga_result["recommendation"],
             })
@@ -751,8 +709,6 @@ def create_app() -> Flask:
             tz_name = get_timezone_name(float(lat), float(lon))
             days_in_month = calendar.monthrange(year, month)[1]
 
-            from astronomy import get_ayanamsa, get_planetary_longitude
-
             summary_rows = []
             match_rows = []
 
@@ -769,26 +725,36 @@ def create_app() -> Flask:
             for day in range(1, days_in_month + 1):
                 d = date_type(year, month, day)
                 anchor_jd = local_date_anchor_jd(d, tz_name)
+                next_anchor_jd = local_date_anchor_jd(
+                    date_type(year, month, day + 1) if day < days_in_month
+                    else date_type(year + (month == 12), (month % 12) + 1, 1),
+                    tz_name,
+                )
                 sunrise_jd = get_sunrise(anchor_jd, float(lat), float(lon))
-                if not sunrise_jd:
+                next_sunrise_jd = get_sunrise(next_anchor_jd, float(lat), float(lon))
+                if not sunrise_jd or not next_sunrise_jd:
                     continue
 
-                ayanamsa_val = get_ayanamsa(sunrise_jd, ayanamsa)
-                sun_lon = (get_planetary_longitude(sunrise_jd, "Sun") - ayanamsa_val) % 360.0
-                moon_lon = (get_planetary_longitude(sunrise_jd, "Moon") - ayanamsa_val) % 360.0
+                yoga_result = detect_yogas_for_day(
+                    date_obj=d,
+                    sunrise_jd=sunrise_jd,
+                    next_sunrise_jd=next_sunrise_jd,
+                    tz_name=tz_name,
+                    ayanamsa=ayanamsa,
+                )
 
-                vara = get_vara_from_date(d)
-                tithi = get_tithi(sun_lon, moon_lon)
-                nakshatra = get_nakshatra(moon_lon)
-                yoga_result = detect_yogas(vara=vara, tithi=tithi, nakshatra=nakshatra)
-
+                vara = yoga_result["vara"]
+                tithi = yoga_result["tithi"]
+                nakshatra = yoga_result["nakshatra"]
+                active_yogas = [y for y in yoga_result["yogas"] if not y.get("cancelled")]
                 summary_rows.append({
                     "date": d.strftime("%Y-%m-%d"),
                     "vara": VARA_NAMES[vara],
                     "tithi": tithi,
                     "nakshatra": NAKSHATRA_NAMES[nakshatra] if nakshatra < len(NAKSHATRA_NAMES) else str(nakshatra),
                     "recommendation": yoga_result["recommendation"],
-                    "active_yoga_count": len([y for y in yoga_result["yogas"] if not y.get("cancelled")]),
+                    "active_yoga_count": len(active_yogas),
+                    "active_yoga_names": ", ".join(y["name"] for y in active_yogas),
                 })
                 for yoga in yoga_result["yogas"]:
                     if yoga.get("cancelled"):
@@ -801,6 +767,8 @@ def create_app() -> Flask:
                         "trigger_kind": yoga["trigger_kind"],
                         "meaning": yoga["meaning"],
                         "recommendation": yoga_result["recommendation"],
+                        "start_time": yoga.get("start_time", ""),
+                        "end_time": yoga.get("end_time", ""),
                     })
 
             wb = _build_muhurta_workbook(summary_rows, match_rows)
@@ -834,6 +802,72 @@ def create_app() -> Flask:
             abort(404)
 
         return send_file(path, as_attachment=True, download_name=path.name)
+
+    # ── Panchang DB generation endpoints ────────────────────────────────────
+
+    _DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+    _generation_status: dict[str, dict] = {}
+
+    @app.post("/api/generate-db")
+    def api_generate_db():
+        import threading
+        from db_generator import generate_panchang_db
+
+        body = request.get_json(silent=True) or {}
+        city_name = body.get("city_name")
+        city_slug = body.get("city_slug")
+        latitude = body.get("latitude")
+        longitude = body.get("longitude")
+        tz = body.get("timezone")
+
+        if not all([city_name, city_slug, latitude is not None, longitude is not None, tz]):
+            return jsonify({"error": "Required fields: city_name, city_slug, latitude, longitude, timezone"}), 400
+
+        db_path = os.path.join(_DATA_DIR, f"panchang_{city_slug}.db")
+        _generation_status[city_slug] = {"status": "running", "progress": 0, "message": ""}
+
+        def _run():
+            try:
+                def _progress(done: int, total: int) -> None:
+                    pct = int(done / total * 100) if total else 0
+                    _generation_status[city_slug]["progress"] = pct
+
+                generate_panchang_db(
+                    city_name=city_name,
+                    city_slug=city_slug,
+                    latitude=float(latitude),
+                    longitude=float(longitude),
+                    timezone_str=tz,
+                    db_path=db_path,
+                    progress_callback=_progress,
+                )
+                _generation_status[city_slug] = {"status": "complete", "progress": 100, "message": ""}
+            except Exception as exc:
+                _generation_status[city_slug] = {"status": "error", "progress": 0, "message": str(exc)}
+
+        threading.Thread(target=_run, daemon=True).start()
+        return jsonify({"status": "started", "city_slug": city_slug})
+
+    @app.get("/api/generate-db/progress/<city_slug>")
+    def api_generate_db_progress(city_slug: str):
+        status = _generation_status.get(city_slug)
+        if status is None:
+            db_path = os.path.join(_DATA_DIR, f"panchang_{city_slug}.db")
+            if os.path.isfile(db_path):
+                return jsonify({"status": "complete", "progress": 100, "message": ""})
+            return jsonify({"status": "not_started", "progress": 0, "message": ""}), 404
+        return jsonify(status)
+
+    @app.delete("/api/generate-db/<city_slug>")
+    def api_delete_db(city_slug: str):
+        db_path = os.path.join(_DATA_DIR, f"panchang_{city_slug}.db")
+        _generation_status.pop(city_slug, None)
+        if os.path.isfile(db_path):
+            try:
+                os.remove(db_path)
+            except OSError as exc:
+                return jsonify({"error": str(exc)}), 500
+        return jsonify({"deleted": city_slug})
 
     return app
 
