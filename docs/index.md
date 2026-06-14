@@ -74,6 +74,19 @@ Use [Visualizations](./visualizations.md) for:
 - CSV diff comparisons
 - single-day console dumps
 
+## Feature Coverage
+
+The documentation covers all current product flows:
+
+- daily Panchang lookup
+- month overview (calendar grid data)
+- Choghadiya (auspicious time slots)
+- year-range CSV / Excel / JSON exports
+- PDF calendar generation
+- Jain festival generation (three Shwetambar profiles)
+- Dainika Muhurta (daily Yoga detection)
+- SQLite database pre-computation for fast repeated lookups
+
 ## Scope Note
 
-The project currently documents itself as a sunrise-based Panchang generator with Jain Tithi reference support. It does not claim to be a finalized Agamic or sect-specific Jain rules engine.
+The project documents itself as a sunrise-based Panchang generator with Jain Tithi reference support and sect-specific festival rules for three Shwetambar profiles. It does not claim to fully encode every Agamic or Digambar Jain calendrical rule.

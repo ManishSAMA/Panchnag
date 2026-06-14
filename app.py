@@ -12,6 +12,8 @@ from flask import Flask, abort, jsonify, render_template, request, send_file
 
 from astronomy import get_sunrise, get_sunset, jd_to_zoned_datetime, local_date_anchor_jd
 from choghadiya_service import calculate_choghadiya_slots
+from aanandadi_yoga_service import detect_aanandadi_yogas_for_day
+from special_yoga_service import detect_special_yogas_for_day
 from dainika_muhurta_service import detect_yogas, detect_yogas_for_day
 from location_service import geocode_city, get_timezone_name, search_locations
 from pdf_generation_service import generate_pdf_export
@@ -136,6 +138,105 @@ def _build_muhurta_workbook(summary_rows: list[dict], match_rows: list[dict]):
         ws_match.column_dimensions[get_column_letter(col)].width = width
 
     return wb
+
+
+def _add_aanandadi_sheet(wb, rows: list[dict]) -> None:
+    """Append an 'Aanandadi' sheet to an existing openpyxl workbook."""
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    fills = _get_fills()
+    ws = wb.create_sheet("Aanandadi")
+    headers = [
+        "Date", "Yoga", "Planet", "Nakshatra", "Nature", "Severity", "Fal",
+        "Start", "End", "Varjya (min)", "Varjya Start", "Varjya End",
+        "Meaning", "Day Recommendation",
+    ]
+    ws.append(headers)
+
+    hdr_font = Font(bold=True, color="FFFFFF")
+    hdr_fill = PatternFill("solid", fgColor="4472C4")
+    for cell in ws[1]:
+        cell.font = hdr_font
+        cell.fill = hdr_fill
+        cell.alignment = Alignment(horizontal="center")
+
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}1"
+
+    for row in rows:
+        varjya_val = row.get("varjya_minutes", "")
+        if varjya_val == "full_day":
+            varjya_display = "Full day avoid"
+        elif isinstance(varjya_val, (int, float)):
+            varjya_display = f"{varjya_val:.1f}"
+        else:
+            varjya_display = ""
+
+        ws.append([
+            row["date"], row["yoga_name"], row["planet"], row["nakshatra"],
+            row["nature"], row["severity"], row["fal"],
+            row.get("start_time", ""), row.get("end_time", ""),
+            varjya_display,
+            row.get("varjya_start", ""), row.get("varjya_end", ""),
+            row["meaning"], row["recommendation"],
+        ])
+        last = ws.max_row
+        nature = row.get("nature", "")
+        severity = row.get("severity", "")
+        if nature == "shubh" and severity == "highly_auspicious":
+            fill = fills["highly_auspicious"]
+        elif nature == "shubh":
+            fill = fills["auspicious"]
+        elif severity == "highly_inauspicious":
+            fill = fills["avoid"]
+        else:
+            fill = fills["caution"]
+        for col in range(1, len(headers) + 1):
+            c = ws.cell(last, col)
+            c.fill = fill
+            c.alignment = Alignment(wrap_text=True)
+
+    widths = [14, 20, 12, 20, 10, 20, 10, 8, 8, 12, 12, 12, 60, 20]
+    for col, width in zip(range(1, len(headers) + 1), widths):
+        ws.column_dimensions[get_column_letter(col)].width = width
+
+
+def _add_special_yogas_sheet(wb, rows: list[dict]) -> None:
+    """Append a 'Special Yogas' sheet (Gandmool, Panchak, Jwalamukhi) to the workbook."""
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    fills = _get_fills()
+    ws = wb.create_sheet("Special Yogas")
+    headers = ["Date", "Yoga", "Nature", "Severity", "Start", "End", "Trigger", "Meaning"]
+    ws.append(headers)
+
+    hdr_font = Font(bold=True, color="FFFFFF")
+    hdr_fill = PatternFill("solid", fgColor="4472C4")
+    for cell in ws[1]:
+        cell.font = hdr_font
+        cell.fill = hdr_fill
+        cell.alignment = Alignment(horizontal="center")
+
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}1"
+
+    for row in rows:
+        ws.append([
+            row["date"], row["yoga_name"], row["nature"], row["severity"],
+            row.get("start_time", ""), row.get("end_time", ""),
+            row.get("trigger_detail", ""), row["meaning"],
+        ])
+        last = ws.max_row
+        fill = fills["caution"]  # all special yogas are inauspicious
+        for col in range(1, len(headers) + 1):
+            ws.cell(last, col).fill = fill
+            ws.cell(last, col).alignment = Alignment(wrap_text=True)
+
+    widths = [14, 22, 10, 15, 8, 8, 30, 60]
+    for col, width in zip(range(1, len(headers) + 1), widths):
+        ws.column_dimensions[get_column_letter(col)].width = width
 
 
 def create_app() -> Flask:
@@ -672,6 +773,21 @@ def create_app() -> Flask:
                 ayanamsa=ayanamsa,
             )
 
+            aanandadi_result = detect_aanandadi_yogas_for_day(
+                sunrise_jd=sunrise_jd,
+                next_sunrise_jd=next_sunrise_jd,
+                tz_name=tz_name,
+                ayanamsa=ayanamsa,
+            )
+
+            special_result = detect_special_yogas_for_day(
+                date_obj=parsed_date,
+                sunrise_jd=sunrise_jd,
+                next_sunrise_jd=next_sunrise_jd,
+                tz_name=tz_name,
+                ayanamsa=ayanamsa,
+            )
+
             return jsonify({
                 "date": date_str,
                 "vara": yoga_result["vara"],
@@ -679,6 +795,9 @@ def create_app() -> Flask:
                 "nakshatra": yoga_result["nakshatra"],
                 "yogas": yoga_result["yogas"],
                 "recommendation": yoga_result["recommendation"],
+                "aanandadi_yogas": aanandadi_result["aanandadi_yogas"],
+                "aanandadi_recommendation": aanandadi_result["aanandadi_recommendation"],
+                "special_yogas": special_result["special_yogas"],
             })
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
@@ -711,6 +830,8 @@ def create_app() -> Flask:
 
             summary_rows = []
             match_rows = []
+            aanandadi_rows = []
+            special_rows = []
 
             NAKSHATRA_NAMES = [
                 "", "Ashvini", "Bharani", "Kritika", "Rohini", "Mrigashira",
@@ -771,7 +892,51 @@ def create_app() -> Flask:
                         "end_time": yoga.get("end_time", ""),
                     })
 
+                aanandadi_result = detect_aanandadi_yogas_for_day(
+                    sunrise_jd=sunrise_jd,
+                    next_sunrise_jd=next_sunrise_jd,
+                    tz_name=tz_name,
+                    ayanamsa=ayanamsa,
+                )
+                special_result = detect_special_yogas_for_day(
+                    date_obj=d,
+                    sunrise_jd=sunrise_jd,
+                    next_sunrise_jd=next_sunrise_jd,
+                    tz_name=tz_name,
+                    ayanamsa=ayanamsa,
+                )
+                for yoga in special_result["special_yogas"]:
+                    special_rows.append({
+                        "date": d.strftime("%Y-%m-%d"),
+                        "yoga_name": yoga["name"],
+                        "nature": yoga["nature"],
+                        "severity": yoga["severity"],
+                        "start_time": yoga.get("start_time", ""),
+                        "end_time": yoga.get("end_time", ""),
+                        "meaning": yoga["meaning"],
+                        "trigger_detail": yoga.get("trigger_detail", ""),
+                    })
+                for yoga in aanandadi_result["aanandadi_yogas"]:
+                    aanandadi_rows.append({
+                        "date": d.strftime("%Y-%m-%d"),
+                        "yoga_name": yoga["name"],
+                        "planet": yoga["triggering_planet"],
+                        "nakshatra": yoga["trigger_nakshatra"],
+                        "nature": yoga["nature"],
+                        "severity": yoga["severity"],
+                        "fal": yoga["fal"],
+                        "start_time": yoga.get("start_time", ""),
+                        "end_time": yoga.get("end_time", ""),
+                        "varjya_minutes": yoga.get("varjya_minutes", ""),
+                        "varjya_start": yoga.get("varjya_start_time", ""),
+                        "varjya_end": yoga.get("varjya_end_time", ""),
+                        "meaning": yoga["meaning"],
+                        "recommendation": aanandadi_result["aanandadi_recommendation"],
+                    })
+
             wb = _build_muhurta_workbook(summary_rows, match_rows)
+            _add_aanandadi_sheet(wb, aanandadi_rows)
+            _add_special_yogas_sheet(wb, special_rows)
             filename = f"dainika_muhurta_{year}_{str(month).zfill(2)}.xlsx"
 
             tmp_dir = Path("output")

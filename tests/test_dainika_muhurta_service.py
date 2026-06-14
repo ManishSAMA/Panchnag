@@ -196,8 +196,9 @@ class TestRecommendationLogic(unittest.TestCase):
 
 class TestAllRulesHaveExpectedStructure(unittest.TestCase):
 
-    def test_all_31_rules_loaded(self):
-        self.assertEqual(len(YOGA_RULES), 31)
+    def test_rules_count(self):
+        # Original 31 + 2 Pushya Amrit + 7 Ashubh Tithivar + 2 Tripushkar/Dwipushkar = 42
+        self.assertEqual(len(YOGA_RULES), 42)
 
     def test_every_rule_has_required_keys(self):
         required = {"name", "nature", "trigger", "severity", "meaning"}

@@ -171,3 +171,53 @@ class TestTwoNakshatraEdgeCase(unittest.TestCase):
                 ns[i]["index"], ns[i + 1]["index"],
                 f"Duplicate consecutive nakshatra index at position {i}: {ns[i]['index']}",
             )
+
+
+class TestConsistencyWithPanchangService(unittest.TestCase):
+    """Yoga Muhurta must produce identical Tithi and Nakshatra to the panchang page.
+
+    Both pages share the same sunrise_jd so they MUST agree — any divergence is a bug.
+    These tests enforce structural impossibility of that divergence by having both
+    code paths call the same shared functions.
+    """
+
+    def _run_yoga(self, d: date):
+        sunrise, next_sunrise, tz = _get_day_jds(d, JAIPUR_LAT, JAIPUR_LON)
+        return detect_yogas_for_day(
+            date_obj=d,
+            sunrise_jd=sunrise,
+            next_sunrise_jd=next_sunrise,
+            tz_name=tz,
+            ayanamsa=AYANAMSA,
+        ), sunrise, next_sunrise, tz
+
+    def test_tithi_matches_panchang_service_june7(self):
+        from panchang_service import _collect_all_tithis_in_day
+        d = date(2026, 6, 7)
+        yoga_result, sunrise, next_sunrise, tz = self._run_yoga(d)
+        panchang_tithis = _collect_all_tithis_in_day(sunrise, next_sunrise, AYANAMSA, tz)
+        self.assertEqual(panchang_tithis[0]["index"], yoga_result["tithi"])
+
+    def test_nakshatra_matches_panchang_service_june7(self):
+        from panchang_service import collect_all_nakshatras_in_day
+        d = date(2026, 6, 7)
+        yoga_result, sunrise, next_sunrise, tz = self._run_yoga(d)
+        panchang_naks = collect_all_nakshatras_in_day(sunrise, next_sunrise, AYANAMSA, tz)
+        self.assertEqual(panchang_naks[0]["index"], yoga_result["nakshatra"])
+        self.assertEqual(panchang_naks[0]["index"], 23)  # Dhanishtha regression
+
+    def test_tithi_matches_panchang_service_june4(self):
+        from panchang_service import _collect_all_tithis_in_day
+        d = date(2026, 6, 4)
+        yoga_result, sunrise, next_sunrise, tz = self._run_yoga(d)
+        panchang_tithis = _collect_all_tithis_in_day(sunrise, next_sunrise, AYANAMSA, tz)
+        self.assertEqual(panchang_tithis[0]["index"], yoga_result["tithi"])
+
+    def test_nakshatra_matches_panchang_service_june13_multinak(self):
+        """On a two-nakshatra day, the sunrise nakshatra from yoga must match panchang."""
+        from panchang_service import collect_all_nakshatras_in_day
+        d = date(2026, 6, 13)
+        yoga_result, sunrise, next_sunrise, tz = self._run_yoga(d)
+        panchang_naks = collect_all_nakshatras_in_day(sunrise, next_sunrise, AYANAMSA, tz)
+        self.assertEqual(panchang_naks[0]["index"], yoga_result["nakshatra"])
+        self.assertGreaterEqual(len(panchang_naks), 2)

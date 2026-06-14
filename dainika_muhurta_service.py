@@ -164,7 +164,7 @@ YOGA_RULES: list[dict] = [
             0: [13],   # Sunday: Hasta
             1: [5],    # Monday: Mrigashira
             2: [1],    # Tuesday: Ashvini
-            3: [24],   # Wednesday: Shatabhisha
+            3: [22],   # Wednesday: Shravana
             4: [8],    # Thursday: Pushya
             5: [27],   # Friday: Revati
             6: [4],    # Saturday: Rohini
@@ -178,7 +178,7 @@ YOGA_RULES: list[dict] = [
         "meaning": "Calamity — creates turbulence and unexpected trouble.",
         "vara_map": {
             0: [16],   # Sunday: Vishakha
-            1: [11],   # Monday: Purva Phalguni
+            1: [20],   # Monday: Purva Ashadha
             2: [23],   # Tuesday: Dhanishtha
             3: [27],   # Wednesday: Revati
             4: [4],    # Thursday: Rohini
@@ -315,7 +315,7 @@ YOGA_RULES: list[dict] = [
             3: [9],    # Wednesday: Ashlesha
             4: [13],   # Thursday: Hasta
             5: [17],   # Friday: Anuradha
-            6: [12],   # Saturday: Uttara Phalguni (Uttara Ashadha per source, mapped to 21 alt)
+            6: [21],   # Saturday: Uttara Ashadha
         },
     },
     {
@@ -471,7 +471,7 @@ YOGA_RULES: list[dict] = [
         "vara_map": {
             0: [12],   # Sunday: Uttara Phalguni
             1: [16],   # Monday: Vishakha
-            2: [11],   # Tuesday: Purva Phalguni
+            2: [20],   # Tuesday: Purva Ashadha
             3: [23],   # Wednesday: Dhanishtha
             4: [27],   # Thursday: Revati
             5: [4],    # Friday: Rohini
@@ -517,14 +517,115 @@ YOGA_RULES: list[dict] = [
         "severity": "highly_auspicious",
         "meaning": "Accomplishment of all purposes — extremely powerful. Fulfils any objective.",
         "vara_map": {
-            0: [13, 19, 8, 1],   # Sunday: Hasta, Mula, Pushya, Ashvini
-            1: [22, 4, 5],       # Monday: Shravana, Rohini, Mrigashira
-            2: [1, 8, 26, 17],   # Tuesday: Ashvini, Pushya, Uttara Bhadrapada, Anuradha
-            3: [4, 17, 13],      # Wednesday: Rohini, Anuradha, Hasta
-            4: [27, 17, 1, 7],   # Thursday: Revati, Anuradha, Ashvini, Punarvasu
-            5: [27, 17, 1, 7, 22],  # Friday: Revati, Anuradha, Ashvini, Punarvasu, Shravana
-            6: [4, 22, 15],      # Saturday: Rohini, Shravana, Swati
+            0: [13, 19, 7, 1],          # Sunday: Hasta, Mula, Punarvasu, Ashvini
+            1: [22, 4, 5, 8, 17],       # Monday: Shravana, Rohini, Mrigashira, Pushya, Anuradha
+            2: [1, 26, 3, 9],           # Tuesday: Ashvini, Uttara Bhadrapada, Krittika, Ashlesha
+            3: [4, 3, 5],               # Wednesday: Rohini, Krittika, Mrigashira
+            4: [27, 17, 1, 7, 8],        # Thursday: Revati, Anuradha, Ashvini, Punarvasu, Pushya
+            5: [27, 17, 1, 7, 22],      # Friday: Revati, Anuradha, Ashvini, Punarvasu, Shravana
+            6: [4, 22, 15],             # Saturday: Rohini, Shravana, Swati
         },
+    },
+    # ── SECTION 4: PUSHYA AMRIT YOGAS ─────────────────────────────────────
+    {
+        "name": "Ravi Pushya Amrit",
+        "nature": "shubh",
+        "trigger": "nakshatra",
+        "severity": "highly_auspicious",
+        "meaning": "Sun-Pushya nectar — extremely auspicious conjunction of Sunday and Pushya nakshatra.",
+        "vara_map": {
+            0: [8],   # Sunday + Pushya
+        },
+    },
+    {
+        "name": "Guru Pushya Amrit",
+        "nature": "shubh",
+        "trigger": "nakshatra",
+        "severity": "highly_auspicious",
+        "meaning": "Guru-Pushya nectar — most auspicious conjunction of Thursday and Pushya nakshatra.",
+        "vara_map": {
+            4: [8],   # Thursday + Pushya
+        },
+    },
+    # ── SECTION 5: ASHUBH TITHIVAR (7 inauspicious Vara+Tithi combos) ─────
+    {
+        "name": "Nal Banvas",
+        "nature": "ashubh",
+        "trigger": "tithi",
+        "severity": "inauspicious",
+        "meaning": "Exile of Nala — inauspicious combination associated with exile and hardship.",
+        "vara_map": {2: [2]},   # Tuesday + Tithi 2
+    },
+    {
+        "name": "Pandav Nash",
+        "nature": "ashubh",
+        "trigger": "tithi",
+        "severity": "inauspicious",
+        "meaning": "Destruction of Pandavas — inauspicious; avoid new undertakings.",
+        "vara_map": {5: [3]},   # Friday + Tithi 3
+    },
+    {
+        "name": "Vibhishan Maran",
+        "nature": "ashubh",
+        "trigger": "tithi",
+        "severity": "inauspicious",
+        "meaning": "Death of Vibhishana — inauspicious combination; avoid important events.",
+        "vara_map": {0: [4]},   # Sunday + Tithi 4
+    },
+    {
+        "name": "Sita Haran",
+        "nature": "ashubh",
+        "trigger": "tithi",
+        "severity": "inauspicious",
+        "meaning": "Abduction of Sita — inauspicious; avoid travel, marriage, and new ventures.",
+        "vara_map": {3: [5]},   # Wednesday + Tithi 5
+    },
+    {
+        "name": "Lanka Bhang",
+        "nature": "ashubh",
+        "trigger": "tithi",
+        "severity": "inauspicious",
+        "meaning": "Destruction of Lanka — inauspicious combination; avoid construction and agreements.",
+        "vara_map": {6: [6]},   # Saturday + Tithi 6
+    },
+    {
+        "name": "Pandav Jung",
+        "nature": "ashubh",
+        "trigger": "tithi",
+        "severity": "inauspicious",
+        "meaning": "War of Pandavas — inauspicious; avoid legal matters and disputes.",
+        "vara_map": {1: [7]},   # Monday + Tithi 7
+    },
+    {
+        "name": "Bali Raja Chhal",
+        "nature": "ashubh",
+        "trigger": "tithi",
+        "severity": "inauspicious",
+        "meaning": "Deception of King Bali — inauspicious; avoid financial dealings and trusts.",
+        "vara_map": {4: [8]},   # Thursday + Tithi 8
+    },
+    # ── SECTION 6: TRIPUSHKAR & DWIPUSHKAR (Vara + Tithi + Nakshatra) ──────
+    {
+        "name": "Tripushkar",
+        "nature": "ashubh",
+        "trigger": "tithi_and_nakshatra",
+        "severity": "inauspicious",
+        "meaning": "Triple multiplication — events triple in effect. Losses triple; avoid inauspicious acts.",
+        "vara_map": {0: True, 2: True, 6: True},   # Sunday, Tuesday, Saturday
+        # Dvitiya/Saptami/Dwadashi in both Shukla (2,7,12) and Krishna (17,22,27) paksha
+        "tithi_values": [2, 7, 12, 17, 22, 27],
+        "nakshatra_values": [3, 7, 12, 16, 21, 25],
+    },
+    {
+        "name": "Dwipushkar",
+        "nature": "ashubh",
+        "trigger": "tithi_and_nakshatra",
+        "severity": "inauspicious",
+        "meaning": "Double multiplication — events double in effect. Losses double; avoid inauspicious acts.",
+        "vara_map": {0: True, 3: True, 5: True},   # Sunday, Wednesday, Friday
+        # Dvitiya/Saptami/Dwadashi in both Shukla (2,7,12) and Krishna (17,22,27) paksha
+        "tithi_values": [2, 7, 12, 17, 22, 27],
+        "nakshatra_values": [7, 12, 16, 21, 25],
     },
 ]
 
@@ -559,19 +660,40 @@ def detect_yogas(*, vara: int, tithi: int, nakshatra: int) -> dict:
 
     for rule in YOGA_RULES:
         vara_map: dict = rule["vara_map"]
+        if vara not in vara_map:
+            continue
+
+        trigger = rule["trigger"]
+
+        if trigger == "tithi_and_nakshatra":
+            if tithi not in rule.get("tithi_values", []):
+                continue
+            if nakshatra not in rule.get("nakshatra_values", []):
+                continue
+            entry = {
+                "name": rule["name"],
+                "nature": rule["nature"],
+                "trigger_kind": trigger,
+                "trigger_detail": f"Vara {vara}, Tithi {tithi}, Nakshatra {nakshatra}",
+                "severity": rule["severity"],
+                "meaning": rule["meaning"],
+            }
+            active.append(entry)
+            continue
+
         values = vara_map.get(vara, [])
         if not values:
             continue
 
-        check_value = tithi if rule["trigger"] == "tithi" else nakshatra
+        check_value = tithi if trigger == "tithi" else nakshatra
         if check_value not in values:
             continue
 
         entry = {
             "name": rule["name"],
             "nature": rule["nature"],
-            "trigger_kind": rule["trigger"],
-            "trigger_detail": f"Vara {vara}, {'Tithi' if rule['trigger'] == 'tithi' else 'Nakshatra'} {check_value}",
+            "trigger_kind": trigger,
+            "trigger_detail": f"Vara {vara}, {'Tithi' if trigger == 'tithi' else 'Nakshatra'} {check_value}",
             "severity": rule["severity"],
             "meaning": rule["meaning"],
         }
@@ -643,8 +765,13 @@ def compute_day_segments(
     sunrise_jd: float,
     next_sunrise_jd: float,
     ayanamsa: str = "Lahiri",
+    tz_name: str = "Asia/Kolkata",
 ) -> dict:
     """Walk all Tithi and Nakshatra transitions between sunrise and next sunrise.
+
+    Delegates to the same shared functions used by the panchang page
+    (``_collect_all_tithis_in_day`` and ``collect_all_nakshatras_in_day`` in
+    ``panchang_service``) so both pages are guaranteed to produce identical results.
 
     Returns:
         {
@@ -654,62 +781,30 @@ def compute_day_segments(
     The first segment always starts at sunrise_jd and the last always ends at
     next_sunrise_jd; successive segments are contiguous.
     """
-    from panchang import (
-        _find_exact_end_time,
-        get_tithi_at_jd,
-        get_nakshatra_at_jd,
-        calculate_tithi_details,
-    )
-    from astronomy import get_planetary_longitude
+    from panchang_service import _collect_all_tithis_in_day, collect_all_nakshatras_in_day
 
-    # 30-second nudge — matches _collect_all_tithis_in_day in panchang_service.py
-    # and is safely larger than _find_exact_end_time's bisection precision (~0.86 s)
-    _NUDGE = 30.0 / 86400.0
-
-    def _walk_segments(get_index_fn, start_jd: float, end_jd: float, trigger: str) -> list[dict]:
+    def _to_segments(entries: list[dict]) -> list[dict]:
+        """Convert panchang-format list → {index, start_jd, end_jd} segments."""
         segments: list[dict] = []
-        cursor = start_jd
-        prev_raw_end = start_jd  # tracks bisection boundary for display start
-
-        for _ in range(_SEGMENT_SAFETY_CAP):
-            idx = get_index_fn(cursor, ayanamsa)
-
-            if trigger == "tithi":
-                # calculate_tithi_details has proven tight low/high bounds (same as panchang)
-                details = calculate_tithi_details(cursor, ayanamsa)
-                raw_end = details["Tithi_End_JD"]
-            else:
-                # Tight bounds matching generate_daily_panchang in panchang.py
-                moon_lon = get_planetary_longitude(cursor, "Moon", ayanamsa)
-                nak_len = 360.0 / 27.0
-                nak_left_deg = nak_len - (moon_lon % nak_len)
-                nak_low = cursor + (nak_left_deg / 16.0)
-                nak_high = cursor + (nak_left_deg / 11.0) + 0.05
-                raw_end = _find_exact_end_time(
-                    cursor, get_index_fn, idx, ayanamsa, nak_low, nak_high
-                )
-
-            seg_end = min(raw_end, end_jd)
-            # Use prev_raw_end as start for exact contiguity in output
-            seg_start = prev_raw_end
-            segments.append({"index": idx, "start_jd": seg_start, "end_jd": seg_end})
-            if seg_end >= end_jd:
-                break
-            prev_raw_end = raw_end   # next segment starts exactly where this one ended
-            cursor = raw_end + _NUDGE   # nudge cursor past boundary for bisection
-
+        cursor = sunrise_jd
+        for entry in entries:
+            end_jd = entry["ends"]["jd"] if entry["ends"] else next_sunrise_jd
+            segments.append({
+                "index": entry["index"],
+                "start_jd": cursor,
+                "end_jd": min(end_jd, next_sunrise_jd),
+            })
+            cursor = end_jd
         if segments:
-            segments[0]["start_jd"] = start_jd   # first segment starts exactly at sunrise
-            segments[-1]["end_jd"] = end_jd       # last segment ends exactly at next sunrise
+            segments[-1]["end_jd"] = next_sunrise_jd  # clamp last to exact boundary
         return segments
 
+    tithi_list = _collect_all_tithis_in_day(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name)
+    nak_list = collect_all_nakshatras_in_day(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name)
+
     return {
-        "tithi_segments": _walk_segments(
-            get_tithi_at_jd, sunrise_jd, next_sunrise_jd, "tithi"
-        ),
-        "nakshatra_segments": _walk_segments(
-            get_nakshatra_at_jd, sunrise_jd, next_sunrise_jd, "nakshatra"
-        ),
+        "tithi_segments": _to_segments(tithi_list),
+        "nakshatra_segments": _to_segments(nak_list),
     }
 
 
@@ -729,15 +824,15 @@ def detect_yogas_for_day(
 
     Returns the same shape as ``detect_yogas`` plus per-yoga timing.
     """
-    from panchang import get_vara_from_date, get_tithi_at_jd, get_nakshatra_at_jd
+    from panchang import get_vara_from_date
     from astronomy import jd_to_zoned_datetime
 
-    segs = compute_day_segments(sunrise_jd, next_sunrise_jd, ayanamsa)
+    segs = compute_day_segments(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name)
     vara = get_vara_from_date(date_obj)
 
-    # Use the same functions as panchang generation — no double-ayanamsa correction
-    sunrise_tithi = get_tithi_at_jd(sunrise_jd, ayanamsa)
-    sunrise_nakshatra = get_nakshatra_at_jd(sunrise_jd, ayanamsa)
+    # Derive sunrise tithi/nakshatra from the segments — same source as panchang page
+    sunrise_tithi = segs["tithi_segments"][0]["index"]
+    sunrise_nakshatra = segs["nakshatra_segments"][0]["index"]
 
     def _fmt(jd: float) -> tuple[str, str]:
         dt = jd_to_zoned_datetime(jd, tz_name)
@@ -749,13 +844,45 @@ def detect_yogas_for_day(
     raw: list[dict] = []
 
     for rule in YOGA_RULES:
-        vara_values = rule["vara_map"].get(vara, [])
-        if not vara_values:
+        if vara not in rule["vara_map"]:
             continue
 
-        if rule["trigger"] == "tithi":
+        trigger = rule["trigger"]
+
+        if trigger == "tithi_and_nakshatra":
+            tithi_vals = rule.get("tithi_values", [])
+            nak_vals   = rule.get("nakshatra_values", [])
+            for t_seg in segs["tithi_segments"]:
+                if t_seg["index"] not in tithi_vals:
+                    continue
+                for n_seg in segs["nakshatra_segments"]:
+                    if n_seg["index"] not in nak_vals:
+                        continue
+                    seg_start = max(t_seg["start_jd"], n_seg["start_jd"])
+                    seg_end   = min(t_seg["end_jd"],   n_seg["end_jd"])
+                    if seg_end <= seg_start:
+                        continue
+                    st_time, st_local = _fmt(seg_start)
+                    en_time, en_local = _fmt(seg_end)
+                    raw.append({
+                        "name": rule["name"],
+                        "nature": rule["nature"],
+                        "trigger_kind": "tithi_and_nakshatra",
+                        "trigger_detail": f"Vara {vara}, Tithi {t_seg['index']}, Nakshatra {n_seg['index']}",
+                        "severity": rule["severity"],
+                        "meaning": rule["meaning"],
+                        "start_time": st_time,
+                        "end_time": en_time,
+                        "start_local": st_local,
+                        "end_local": en_local,
+                        "start_jd": seg_start,
+                        "end_jd": seg_end,
+                    })
+            continue
+
+        if trigger == "tithi":
             for seg in segs["tithi_segments"]:
-                if seg["index"] in vara_values:
+                if seg["index"] in rule["vara_map"].get(vara, []):
                     st_time, st_local = _fmt(seg["start_jd"])
                     en_time, en_local = _fmt(seg["end_jd"])
                     raw.append({
@@ -769,10 +896,12 @@ def detect_yogas_for_day(
                         "end_time": en_time,
                         "start_local": st_local,
                         "end_local": en_local,
+                        "start_jd": seg["start_jd"],
+                        "end_jd": seg["end_jd"],
                     })
         else:  # nakshatra
             for seg in segs["nakshatra_segments"]:
-                if seg["index"] in vara_values:
+                if seg["index"] in rule["vara_map"].get(vara, []):
                     st_time, st_local = _fmt(seg["start_jd"])
                     en_time, en_local = _fmt(seg["end_jd"])
                     raw.append({
@@ -786,6 +915,8 @@ def detect_yogas_for_day(
                         "end_time": en_time,
                         "start_local": st_local,
                         "end_local": en_local,
+                        "start_jd": seg["start_jd"],
+                        "end_jd": seg["end_jd"],
                     })
 
     # Apply override rules (same logic as detect_yogas)

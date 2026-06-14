@@ -39,6 +39,7 @@ from panchang import (
     JAIN_TITHI_OFFSET_DAYS,
     NAKSHATRA_NAMES,
     TITHI_NAMES,
+    _find_exact_end_time,
     calculate_bhadra_kaal,
     calculate_panchak_kaal,
     calculate_jain_tithi_from_sunrise,
@@ -49,6 +50,7 @@ from panchang import (
     generate_daily_panchang,
     get_hindu_month,
     get_nakshatra,
+    get_nakshatra_at_jd,
     get_tithi,
     get_vikram_samvat,
     get_vira_nirvana_samvat,
@@ -208,6 +210,55 @@ def _collect_all_tithis_in_day(
             break
         current_jd = end_jd + 30.0 / 86400.0  # 30 seconds past tithi end
     return tithis
+
+
+_NAKSHATRA_LOOP_LIMIT = 10  # safety cap; at most ~3 nakshatras span a solar day
+
+
+def collect_all_nakshatras_in_day(
+    sunrise_jd: float,
+    next_sunrise_jd: float,
+    ayanamsa_name: str,
+    tz_name: str,
+) -> list[dict]:
+    """Walk all Nakshatra transitions between sunrise and next sunrise.
+
+    Mirrors ``_collect_all_tithis_in_day`` exactly (same 30-second nudge,
+    same safety cap), using tight bisection bounds that match
+    ``generate_daily_panchang`` in panchang.py.
+
+    Returns:
+        [{"index": int, "name": str,
+          "ends": {"jd": float, "local": str, "time": str} | None,
+          "continues_past_next_sunrise": bool}, ...]
+    """
+    nakshatras: list[dict] = []
+    current_jd = sunrise_jd
+
+    for _ in range(_NAKSHATRA_LOOP_LIMIT):
+        idx = get_nakshatra_at_jd(current_jd, ayanamsa_name)
+        # Tight bounds matching generate_daily_panchang in panchang.py
+        moon_lon = get_planetary_longitude(current_jd, "Moon", ayanamsa_name)
+        nak_len = 360.0 / 27.0
+        nak_left_deg = nak_len - (moon_lon % nak_len)
+        nak_low = current_jd + (nak_left_deg / 16.0)
+        nak_high = current_jd + (nak_left_deg / 11.0) + 0.05
+        end_jd = _find_exact_end_time(
+            current_jd, get_nakshatra_at_jd, idx, ayanamsa_name, nak_low, nak_high
+        )
+
+        continues = end_jd >= next_sunrise_jd
+        nakshatras.append({
+            "index": idx,
+            "name": NAKSHATRA_NAMES[idx - 1],
+            "ends": None if continues else _serialize_event(end_jd, tz_name),
+            "continues_past_next_sunrise": continues,
+        })
+        if continues:
+            break
+        current_jd = end_jd + 30.0 / 86400.0  # 30-second nudge — same as tithi walk
+
+    return nakshatras
 
 
 def _element_payload(

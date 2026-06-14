@@ -1787,17 +1787,13 @@ async function loadYogaMuhurta() {
       </div>`;
 
     const activeYogas = data.yogas.filter(y => !y.cancelled);
-
-    if (activeYogas.length === 0) {
-      content.innerHTML = `
-        <div style="text-align:center;padding:40px 16px;color:#888;font-size:14px;">
-          No listed yoga active for this date.
-        </div>`;
-      return;
-    }
-
     const shubh = activeYogas.filter(y => y.nature === 'shubh');
     const ashubh = activeYogas.filter(y => y.nature === 'ashubh');
+
+    function severityBadge(sev) {
+      const bg = sev==='highly_inauspicious'?'#ffd5d5':sev==='highly_auspicious'?'#c6efce':sev==='inauspicious'?'#ffeb9c':'#daeaf7';
+      return `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${bg};color:#333;">${sev.replace(/_/g,' ')}</span>`;
+    }
 
     function yogaSection(title, yogas, color) {
       if (!yogas.length) return '';
@@ -1813,9 +1809,7 @@ async function loadYogaMuhurta() {
           </td>
           <td style="text-transform:capitalize;font-size:12px;padding:6px 8px;">${y.nature}</td>
           <td style="font-size:12px;padding:6px 8px;">${y.trigger_kind}</td>
-          <td style="padding:6px 8px;"><span style="font-size:11px;padding:2px 8px;border-radius:10px;
-            background:${y.severity==='highly_inauspicious'?'#ffd5d5':y.severity==='highly_auspicious'?'#c6efce':y.severity==='inauspicious'?'#ffeb9c':'#daeaf7'};
-            color:#333;">${y.severity.replace(/_/g,' ')}</span></td>
+          <td style="padding:6px 8px;">${severityBadge(y.severity)}</td>
           <td style="font-size:12px;color:#555;padding:6px 8px;">${y.meaning}</td>
         </tr>`;
       }).join('');
@@ -1840,9 +1834,106 @@ async function loadYogaMuhurta() {
         </div>`;
     }
 
-    content.innerHTML =
-      yogaSection('Auspicious Yogas', shubh, '#1a7f4e') +
-      yogaSection('Inauspicious Yogas', ashubh, '#922b21');
+    function aanandadiSection(yogas) {
+      if (!yogas || !yogas.length) return '';
+      const rec = data.aanandadi_recommendation || 'neutral';
+      const recLabel = YOGA_RECOMMENDATION_LABELS[rec] || rec;
+      const recBadge = `<span style="display:inline-block;padding:3px 12px;border-radius:12px;font-size:12px;font-weight:700;
+        background:${YOGA_BADGE_BG[rec]||'#f2f2f2'};color:${YOGA_BADGE_COLORS[rec]||'#333'};">${recLabel}</span>`;
+
+      const aShubh = yogas.filter(y => y.nature === 'ashubh');
+      const aShubhYogas = yogas.filter(y => y.nature === 'shubh');
+
+      function aanandadiSubTable(title, list, color) {
+        if (!list.length) return '';
+        const rows = list.map(y => {
+          const timing = (y.start_time && y.end_time)
+            ? `<div style="font-size:10px;color:#666;">${y.start_time} – ${y.end_time}</div>` : '';
+          let varjyaHtml;
+          if (y.varjya_minutes === 'full_day') {
+            varjyaHtml = `<span style="color:#c0392b;font-weight:700;font-size:11px;">Entire period</span>`;
+          } else if (y.varjya_minutes) {
+            varjyaHtml = `<span style="font-size:11px;">${y.varjya_start_time}–${y.varjya_end_time}<br><span style="color:#888;">${y.varjya_minutes.toFixed(1)} min</span></span>`;
+          } else {
+            varjyaHtml = `<span style="color:#888;font-size:11px;">–</span>`;
+          }
+          return `
+          <tr>
+            <td style="font-weight:600;font-size:13px;padding:6px 10px;">${y.name}${timing}</td>
+            <td style="font-size:12px;padding:6px 8px;">${y.triggering_planet}</td>
+            <td style="font-size:12px;padding:6px 8px;">${y.trigger_nakshatra}</td>
+            <td style="padding:6px 8px;">${severityBadge(y.severity)}</td>
+            <td style="font-size:12px;padding:6px 8px;color:#555;">${y.fal}</td>
+            <td style="padding:6px 8px;">${varjyaHtml}</td>
+            <td style="font-size:11px;color:#666;padding:6px 8px;max-width:220px;">${y.meaning}</td>
+          </tr>`;
+        }).join('');
+        return `
+          <div style="margin-bottom:10px;">
+            <div style="font-weight:600;font-size:11px;text-transform:uppercase;
+              color:${color};padding:4px 10px;background:${color}18;">${title}</div>
+            <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead>
+                  <tr style="background:#f5f5f5;">
+                    <th style="text-align:left;padding:5px 10px;font-size:11px;">Yoga &amp; Time</th>
+                    <th style="text-align:left;padding:5px 8px;font-size:11px;">Planet</th>
+                    <th style="text-align:left;padding:5px 8px;font-size:11px;">Nakshatra</th>
+                    <th style="text-align:left;padding:5px 8px;font-size:11px;">Severity</th>
+                    <th style="text-align:left;padding:5px 8px;font-size:11px;">Fal</th>
+                    <th style="text-align:left;padding:5px 8px;font-size:11px;">Varjya</th>
+                    <th style="text-align:left;padding:5px 8px;font-size:11px;">Meaning</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>`;
+      }
+
+      return `
+        <div style="margin-top:20px;border-top:2px solid #e8e8e8;padding-top:14px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <span style="font-weight:700;font-size:13px;color:#5d4037;">Aanandadi Yogas (आनन्दादि योग)</span>
+            ${recBadge}
+          </div>
+          ${aanandadiSubTable('Auspicious', aShubhYogas, '#1a7f4e')}
+          ${aanandadiSubTable('Inauspicious', aShubh, '#922b21')}
+        </div>`;
+    }
+
+    function specialYogasSection(yogas) {
+      if (!yogas || yogas.length === 0) return '';
+      const rows = yogas.map(y => {
+        const timing = y.start_time && y.end_time ? `${y.start_time}–${y.end_time}` : 'All day';
+        const clipped = (y.clipped_start ? '◀ ' : '') + timing + (y.clipped_end ? ' ▶' : '');
+        return `<tr>
+          <td style="font-weight:600">${y.name}</td>
+          <td style="font-size:11px;color:#666">${clipped}</td>
+          <td style="font-size:11px;color:#666">${y.trigger_detail || ''}</td>
+          <td style="font-size:12px">${y.meaning}</td>
+        </tr>`;
+      }).join('');
+      return `
+        <div style="margin-top:20px;border-top:2px solid #e8e8e8;padding-top:14px;">
+          <div style="font-weight:700;font-size:13px;color:#7b2d00;margin-bottom:8px;">Special Yogas (Panchak / Gandmool / Jwalamukhi)</div>
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead><tr style="background:#f5e6d0;font-size:12px;">
+              <th style="text-align:left;padding:5px 8px">Yoga</th>
+              <th style="text-align:left;padding:5px 8px">Window</th>
+              <th style="text-align:left;padding:5px 8px">Trigger</th>
+              <th style="text-align:left;padding:5px 8px">Meaning</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    const traditionalHtml = activeYogas.length === 0
+      ? `<div style="text-align:center;padding:24px 16px;color:#888;font-size:14px;">No traditional yoga active for this date.</div>`
+      : yogaSection('Auspicious Yogas', shubh, '#1a7f4e') + yogaSection('Inauspicious Yogas', ashubh, '#922b21');
+
+    content.innerHTML = traditionalHtml + aanandadiSection(data.aanandadi_yogas) + specialYogasSection(data.special_yogas);
 
   } catch (err) {
     content.innerHTML = `<div style="padding:20px;color:#c0392b;">Error: ${err.message}</div>`;

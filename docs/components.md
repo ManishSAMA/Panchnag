@@ -23,6 +23,12 @@ Current endpoints:
 - `POST /choghadiya`
 - `POST /generate-range-panchang`
 - `POST /generate-pdf-panchang`
+- `POST /generate-jain-festivals`
+- `POST /generate-jain-festival-exports`
+- `POST /dainika-muhurta`
+- `POST /dainika-muhurta-export`
+- `POST /api/generate-db`
+- `GET /api/generate-db/progress/<city_slug>`
 - `GET /downloads/<token>`
 
 Why it matters:
@@ -246,6 +252,103 @@ Why it matters:
 
 - it is presentation-heavy and intentionally separate from flat-file export
 - PDF layout concerns do not belong in the general export layer
+
+## `choghadiya_service.py`
+
+This module calculates Choghadiya (auspicious time) slots for a day.
+
+It provides:
+
+- `calculate_choghadiya_slots()` — divides daytime and nighttime into 8 slots each
+- Slot names: Udveg, Char, Labh, Amrit, Kaal, Shubh, Rog
+- Nature classification: auspicious or inauspicious
+- Starting slot determination from the weekday (Vara)
+- Time output in both local and UTC formats
+
+Why it matters:
+
+- Choghadiya is one of the most-used tools for auspicious time selection in Jain and Hindu practice
+- keeping it as a separate service isolates the slot-math from Flask route code
+
+## `dainika_muhurta_service.py`
+
+This module detects active Dainika (daily) Yogas and produces a day-level recommendation.
+
+It provides:
+
+- `detect_yogas_for_day()` — given Vara, Tithi, Nakshatra, and event times, returns all active yogas and a composite recommendation
+- a built-in yoga registry with trigger mappings (Vara → Tithi list or Vara → Nakshatra list)
+- cancellation logic: auspicious yogas can cancel inauspicious ones
+- severity levels: `highly_auspicious`, `auspicious`, `inauspicious`, `highly_inauspicious`
+- overall recommendation derived from the highest-impact uncancelled yoga
+
+Why it matters:
+
+- Dainika Muhurta is a Jain-specific daily practice tool
+- centralizing the yoga rules here makes it easy to add or correct yoga entries without touching Flask routes or astronomy code
+
+## `jain_festival_service.py`
+
+This module generates Jain festival occurrences for a year and sectarian profile.
+
+It provides:
+
+- `generate_jain_festivals()` — main entry point; produces a dated list of festival entries for any year between 1900 and 2100
+- vriddhi (extra day) and kshaya (skipped day) handling for festivals that fall on astronomically compressed or doubled Tithis
+- profile-specific festival filtering across three Shwetambar profiles
+
+Why it matters:
+
+- Jain festival dates shift year to year because they follow the lunar calendar
+- the service computes dates from astronomical first principles rather than a static lookup table
+- it is the only place where sect-specific profile logic should live
+
+## `jain_festival_rules.py`
+
+This module is the static registry of Jain festival rules.
+
+It contains:
+
+- the list of all known festivals with their canonical Jain month, paksha, and Tithi
+- metadata per festival: English name, Hindi name, category, meaning, observance notes, sources
+- profile membership: which profiles observe which festivals
+- vriddhi and kshaya handling markers per festival
+
+Why it matters:
+
+- separating the static rule data from the dynamic occurrence computation keeps `jain_festival_service.py` focused on calculation logic
+- when a new festival needs to be added or corrected, this is the only file that needs updating
+
+## `db_generator.py`
+
+This module pre-computes a SQLite database of Panchang data for a single location.
+
+It provides:
+
+- `generate_db()` — generates daily rows for 1950-01-01 through 2075-12-31 and writes them to a SQLite file
+- multi-table storage: `panchang_days`, `panchang_daily_events`, `panchang_transits`, and others
+- background-thread execution invoked through the `/api/generate-db` endpoint
+- progress tracking accessible via `/api/generate-db/progress/<city_slug>`
+
+Why it matters:
+
+- pre-computed databases let the web app serve daily lookups without live Swiss Ephemeris calls
+- the generation is slow but runs once per location and then acts as a fast cache
+
+## `db_reader.py`
+
+This module provides query utilities for pre-computed SQLite databases.
+
+It provides:
+
+- `read_day()` — fetch a single day's Panchang from the database
+- helper functions for reading month or year ranges
+- graceful fallback when the database file does not exist for a location
+
+Why it matters:
+
+- it gives the rest of the app a clean interface to the pre-computed data layer
+- the daily service can check for a database hit before falling back to live calculation
 
 ## `visualize.py`
 

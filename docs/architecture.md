@@ -144,7 +144,53 @@ flowchart TD
     Flask --> Browser
 ```
 
-## 6. Month Overview and Choghadiya Flows
+## 6. Jain Festival Flow
+
+```mermaid
+flowchart TD
+    Browser[Browser Form] --> Flask[app.py /generate-jain-festivals]
+    Flask --> Parsing[request_parsing.py]
+    Parsing --> FestivalService[jain_festival_service.py]
+    FestivalService --> Rules[jain_festival_rules.py]
+    FestivalService --> Astro[astronomy.py]
+    Astro --> Panchang[panchang.py]
+    FestivalService --> Payload[Festival JSON Payload]
+    Payload --> Browser
+```
+
+The festival flow computes Tithi-based festival dates from astronomical first principles. The static rules registry (`jain_festival_rules.py`) defines which festivals belong to which profiles and their canonical Tithi anchors. The service layer applies vriddhi and kshaya adjustments for compressed or doubled Tithis, then returns dated entries.
+
+Export behavior mirrors the range export path: the export endpoint resolves the location once, iterates across the requested year range, and writes files to a temporary directory for download.
+
+## 6b. Dainika Muhurta Flow
+
+```mermaid
+flowchart TD
+    Browser[Browser Form] --> Flask[app.py /dainika-muhurta]
+    Flask --> Astro[astronomy.py]
+    Astro --> Panchang[panchang.py]
+    Panchang --> MuhurtaService[dainika_muhurta_service.py]
+    MuhurtaService --> Payload[Muhurta JSON Payload]
+    Payload --> Browser
+```
+
+The Dainika Muhurta flow computes the active Yogas for a day by matching Vara, Tithi, and Nakshatra against the built-in yoga rule registry. The service applies cancellation logic (auspicious yogas cancel inauspicious ones) and derives a composite `recommendation` field. The export path generates a workbook covering all days in a requested year range.
+
+## 6c. Database Pre-computation Flow
+
+```mermaid
+flowchart TD
+    Browser[Browser Trigger] --> Flask[app.py /api/generate-db]
+    Flask --> DbGen[db_generator.py]
+    DbGen --> Astro[astronomy.py]
+    Astro --> Panchang[panchang.py]
+    DbGen --> SQLite[data/panchang_{slug}.db]
+    Flask --> Progress[/api/generate-db/progress/<slug>]
+```
+
+Database generation runs in a background thread triggered by the web API. It covers 1950–2075 for a single location and writes results to a SQLite file. Subsequent daily lookups can query `db_reader.py` against this file instead of invoking Swiss Ephemeris, which is faster for repeated queries on the same location.
+
+## 7. Month Overview and Choghadiya Flows
 
 The month overview path is a lightweight API flow in `app.py`. It validates the requested year and month, resolves the location, then calls `generate_location_panchang()` once per day in the month. The response is intentionally compact so the frontend can render a month grid without needing the full daily payload for every day.
 
