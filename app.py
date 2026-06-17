@@ -12,9 +12,7 @@ from flask import Flask, abort, jsonify, render_template, request, send_file
 
 from astronomy import get_sunrise, get_sunset, jd_to_zoned_datetime, local_date_anchor_jd
 from choghadiya_service import calculate_choghadiya_slots
-from aanandadi_yoga_service import detect_aanandadi_yogas_for_day
-from special_yoga_service import detect_special_yogas_for_day
-from dainika_muhurta_service import detect_yogas, detect_yogas_for_day
+from yoga_service import detect_all_yogas_for_day
 from location_service import geocode_city, get_timezone_name, search_locations
 from pdf_generation_service import generate_pdf_export
 from panchang import get_vara_from_date
@@ -765,40 +763,14 @@ def create_app() -> Flask:
             if not sunrise_jd or not next_sunrise_jd:
                 return jsonify({"error": "Sunrise could not be calculated for this location/date."}), 400
 
-            yoga_result = detect_yogas_for_day(
+            result = detect_all_yogas_for_day(
                 date_obj=parsed_date,
                 sunrise_jd=sunrise_jd,
                 next_sunrise_jd=next_sunrise_jd,
                 tz_name=tz_name,
                 ayanamsa=ayanamsa,
             )
-
-            aanandadi_result = detect_aanandadi_yogas_for_day(
-                sunrise_jd=sunrise_jd,
-                next_sunrise_jd=next_sunrise_jd,
-                tz_name=tz_name,
-                ayanamsa=ayanamsa,
-            )
-
-            special_result = detect_special_yogas_for_day(
-                date_obj=parsed_date,
-                sunrise_jd=sunrise_jd,
-                next_sunrise_jd=next_sunrise_jd,
-                tz_name=tz_name,
-                ayanamsa=ayanamsa,
-            )
-
-            return jsonify({
-                "date": date_str,
-                "vara": yoga_result["vara"],
-                "tithi": yoga_result["tithi"],
-                "nakshatra": yoga_result["nakshatra"],
-                "yogas": yoga_result["yogas"],
-                "recommendation": yoga_result["recommendation"],
-                "aanandadi_yogas": aanandadi_result["aanandadi_yogas"],
-                "aanandadi_recommendation": aanandadi_result["aanandadi_recommendation"],
-                "special_yogas": special_result["special_yogas"],
-            })
+            return jsonify({"date": date_str, **result})
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
         except Exception as exc:
@@ -856,7 +828,7 @@ def create_app() -> Flask:
                 if not sunrise_jd or not next_sunrise_jd:
                     continue
 
-                yoga_result = detect_yogas_for_day(
+                day_result = detect_all_yogas_for_day(
                     date_obj=d,
                     sunrise_jd=sunrise_jd,
                     next_sunrise_jd=next_sunrise_jd,
@@ -864,20 +836,20 @@ def create_app() -> Flask:
                     ayanamsa=ayanamsa,
                 )
 
-                vara = yoga_result["vara"]
-                tithi = yoga_result["tithi"]
-                nakshatra = yoga_result["nakshatra"]
-                active_yogas = [y for y in yoga_result["yogas"] if not y.get("cancelled")]
+                vara = day_result["vara"]
+                tithi = day_result["tithi"]
+                nakshatra = day_result["nakshatra"]
+                active_yogas = [y for y in day_result["yogas"] if not y.get("cancelled")]
                 summary_rows.append({
                     "date": d.strftime("%Y-%m-%d"),
                     "vara": VARA_NAMES[vara],
                     "tithi": tithi,
                     "nakshatra": NAKSHATRA_NAMES[nakshatra] if nakshatra < len(NAKSHATRA_NAMES) else str(nakshatra),
-                    "recommendation": yoga_result["recommendation"],
+                    "recommendation": day_result["recommendation"],
                     "active_yoga_count": len(active_yogas),
                     "active_yoga_names": ", ".join(y["name"] for y in active_yogas),
                 })
-                for yoga in yoga_result["yogas"]:
+                for yoga in day_result["yogas"]:
                     if yoga.get("cancelled"):
                         continue
                     match_rows.append({
@@ -887,25 +859,11 @@ def create_app() -> Flask:
                         "severity": yoga["severity"],
                         "trigger_kind": yoga["trigger_kind"],
                         "meaning": yoga["meaning"],
-                        "recommendation": yoga_result["recommendation"],
+                        "recommendation": day_result["recommendation"],
                         "start_time": yoga.get("start_time", ""),
                         "end_time": yoga.get("end_time", ""),
                     })
-
-                aanandadi_result = detect_aanandadi_yogas_for_day(
-                    sunrise_jd=sunrise_jd,
-                    next_sunrise_jd=next_sunrise_jd,
-                    tz_name=tz_name,
-                    ayanamsa=ayanamsa,
-                )
-                special_result = detect_special_yogas_for_day(
-                    date_obj=d,
-                    sunrise_jd=sunrise_jd,
-                    next_sunrise_jd=next_sunrise_jd,
-                    tz_name=tz_name,
-                    ayanamsa=ayanamsa,
-                )
-                for yoga in special_result["special_yogas"]:
+                for yoga in day_result["special_yogas"]:
                     special_rows.append({
                         "date": d.strftime("%Y-%m-%d"),
                         "yoga_name": yoga["name"],
@@ -916,7 +874,7 @@ def create_app() -> Flask:
                         "meaning": yoga["meaning"],
                         "trigger_detail": yoga.get("trigger_detail", ""),
                     })
-                for yoga in aanandadi_result["aanandadi_yogas"]:
+                for yoga in day_result["aanandadi_yogas"]:
                     aanandadi_rows.append({
                         "date": d.strftime("%Y-%m-%d"),
                         "yoga_name": yoga["name"],
@@ -931,7 +889,7 @@ def create_app() -> Flask:
                         "varjya_start": yoga.get("varjya_start_time", ""),
                         "varjya_end": yoga.get("varjya_end_time", ""),
                         "meaning": yoga["meaning"],
-                        "recommendation": aanandadi_result["aanandadi_recommendation"],
+                        "recommendation": day_result["aanandadi_recommendation"],
                     })
 
             wb = _build_muhurta_workbook(summary_rows, match_rows)
