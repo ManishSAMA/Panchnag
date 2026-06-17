@@ -56,14 +56,16 @@ def match_aanandadi(
     planet_nakshatras: dict[str, int],
     moon_segments: list[dict],
     day_window: tuple[float, float],
+    planet_windows: dict[str, tuple[float, float]] | None = None,
 ) -> list[dict]:
     """Return one YogaMatch per planet-yoga pairing active on this day.
 
     Each of the 7 planets is always in exactly one nakshatra, so this
     always returns exactly 7 matches (one per planet).
 
-    Slow planets (non-Moon) span the full day_window.
-    Moon uses moon_segments for precise timing.
+    Slow planets (non-Moon) use planet_windows when provided, otherwise
+    fall back to day_window (sunrise → next sunrise).
+    Moon uses moon_segments for precise intra-day timing.
     """
     sunrise_jd, next_sunrise_jd = day_window
     moon_seg_by_nak: dict[int, list[dict]] = {}
@@ -83,6 +85,8 @@ def match_aanandadi(
                     continue
                 start_jd = segs[0]["start_jd"]
                 end_jd = segs[-1]["end_jd"]
+            elif planet_windows and planet in planet_windows:
+                start_jd, end_jd = planet_windows[planet]
             else:
                 start_jd = sunrise_jd
                 end_jd = next_sunrise_jd
@@ -250,20 +254,25 @@ def compute_recommendation(matches: list[dict]) -> str:
     """Derive a recommendation string from a list of yoga matches.
 
     Cancelled matches are excluded. Priority order:
-      avoid > highly_auspicious > auspicious > caution > neutral
+      mixed > avoid > caution > highly_auspicious > auspicious > neutral
+
+    "mixed" is returned when a severe (highly_inauspicious) yoga coexists with a
+    highly_auspicious yoga — real danger and real opportunity are both present.
+    "avoid" is returned when a severe yoga has no highly_auspicious counterbalance.
     """
     effective = [m for m in matches if not m.get("cancelled", False)]
     if not effective:
         return "neutral"
 
-    if any(m["severe"] for m in effective):
-        return "avoid"
-
-    ashubh = [m for m in effective if m["nature"] == "ashubh"]
+    severe = [m for m in effective if m["severe"]]
     shubh = [m for m in effective if m["nature"] == "shubh"]
+    ashubh = [m for m in effective if m["nature"] == "ashubh" and not m["severe"]]
+    highly = [m for m in shubh if m["severity"] == "highly_auspicious"]
+
+    if severe:
+        return "mixed" if highly else "avoid"
 
     if ashubh:
         return "caution"
 
-    highly = [m for m in shubh if m["severity"] == "highly_auspicious"]
     return "highly_auspicious" if highly else "auspicious"

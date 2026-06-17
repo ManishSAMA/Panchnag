@@ -145,10 +145,11 @@ class TestKnownDatnikaDates:
         assert _has_yoga(result, "yogas", "Sarvartha Siddhi"), \
             "Sarvartha Siddhi must fire on June 18 (Thursday + Pushya in vara_map[4])"
 
-    def test_june18_recommendation_is_avoid(self):
-        # Mrityu Yoga Tithi fires (Thursday + Tithi 4) alongside Guru Pushya → avoid wins
+    def test_june18_recommendation_is_mixed(self):
+        # Mrityu Yoga Tithi (severe) alongside Guru Pushya + Amrit Siddhi (highly_auspicious)
+        # → mixed signal: real danger but also real opportunity
         result = _detect(date(2026, 6, 18))
-        assert result["recommendation"] == "avoid"
+        assert result["recommendation"] == "mixed"
         assert _has_yoga(result, "yogas", "Mrityu Yoga Tithi")
 
     def test_guru_pushya_amrit_april23_2026(self):
@@ -253,6 +254,30 @@ class TestKnownAanandadiDates:
         result = _detect(date(2026, 6, 12))
         planets = [y["triggering_planet"] for y in result["aanandadi_yogas"]]
         assert len(planets) == len(set(planets)), "Each planet must trigger exactly one yoga per day"
+
+    def test_slow_planet_window_exceeds_two_days(self):
+        # Slow planets spend at least 7 days in a nakshatra (Sun ~14d, Mars ~7d,
+        # Mercury/Venus ~5-14d, Jupiter ~18d, Saturn months).
+        # A 2-day threshold clearly distinguishes real nak windows from the
+        # sunrise→next_sunrise fallback (~1.00012 days).
+        result = _detect(date(2026, 6, 18))
+        for y in result["aanandadi_yogas"]:
+            if y["triggering_planet"] != "Moon":
+                duration_days = y["end_jd"] - y["start_jd"]
+                assert duration_days > 2.0, (
+                    f"{y['triggering_planet']} ({y['name']}) window is only "
+                    f"{duration_days:.2f} days — expected nakshatra transition times, not sunrise window"
+                )
+
+    def test_slow_planet_start_end_times_differ(self):
+        # The 05:33–05:33 bug: start_time == end_time for slow planets because
+        # sunrise times barely change day-to-day. After the fix, times must differ.
+        result = _detect(date(2026, 6, 18))
+        for y in result["aanandadi_yogas"]:
+            if y["triggering_planet"] != "Moon":
+                assert y["start_time"] != y["end_time"], (
+                    f"{y['triggering_planet']} shows same start/end time: {y['start_time']}"
+                )
 
 
 # ---------------------------------------------------------------------------

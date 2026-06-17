@@ -325,9 +325,18 @@ class TestComputeRecommendation:
     def test_severe_returns_avoid(self):
         assert compute_recommendation([_match("ashubh", "highly_inauspicious", severe=True)]) == "avoid"
 
-    def test_severe_overrides_highly_auspicious(self):
+    def test_severe_with_highly_auspicious_returns_mixed(self):
+        # Severe danger + top auspicious opportunity → mixed signal, not blanket avoid
         yogas = [
             _match("shubh", "highly_auspicious"),
+            _match("ashubh", "highly_inauspicious", severe=True),
+        ]
+        assert compute_recommendation(yogas) == "mixed"
+
+    def test_severe_with_only_auspicious_returns_avoid(self):
+        # Regular auspicious does not balance out a severe yoga
+        yogas = [
+            _match("shubh", "auspicious"),
             _match("ashubh", "highly_inauspicious", severe=True),
         ]
         assert compute_recommendation(yogas) == "avoid"
@@ -400,13 +409,24 @@ class TestMatchAanandadi:
         matches = match_aanandadi(AANANDADI_RULES, planet_naks, moon_segs, (0.0, 1.0))
         assert len(matches) == 7
 
-    def test_slow_planet_match_spans_full_day(self):
+    def test_slow_planet_match_spans_full_day_by_default(self):
+        # When no planet_windows provided, slow planets fall back to day_window
         planet_naks = self._planet_naks(Sun=1)
         day = (5.0, 6.0)
         matches = match_aanandadi(AANANDADI_RULES, planet_naks, [], day)
         aanand = next(m for m in matches if m["name"] == "Aanand")
         assert aanand["start_jd"] == pytest.approx(5.0)
         assert aanand["end_jd"] == pytest.approx(6.0)
+
+    def test_planet_windows_override_day_window_for_slow_planet(self):
+        # Explicit planet_windows → slow planet uses that window, not day_window
+        planet_naks = self._planet_naks(Sun=1)
+        day = (5.0, 6.0)
+        planet_windows = {"Sun": (3.5, 8.5)}
+        matches = match_aanandadi(AANANDADI_RULES, planet_naks, [], day, planet_windows)
+        aanand = next(m for m in matches if m["name"] == "Aanand")
+        assert aanand["start_jd"] == pytest.approx(3.5)
+        assert aanand["end_jd"] == pytest.approx(8.5)
 
     def test_moon_match_uses_segment_timing(self):
         # Aanand: Moon=5 (Mrigashira)

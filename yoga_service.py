@@ -95,8 +95,12 @@ def detect_all_yogas_for_day(
     # ── Aanandadi (planet-nakshatra) ─────────────────────────────────────
     planet_naks = _get_planet_nakshatras(sunrise_jd, ayanamsa)
     moon_segs = _moon_segments(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name)
+    planet_windows = {
+        p: _planet_nak_window(p, planet_naks[p], sunrise_jd, ayanamsa)
+        for p in _SLOW_PLANETS
+    }
     raw_aanandadi = match_aanandadi(
-        AANANDADI_RULES, planet_naks, moon_segs, (sunrise_jd, next_sunrise_jd)
+        AANANDADI_RULES, planet_naks, moon_segs, (sunrise_jd, next_sunrise_jd), planet_windows
     )
     aanandadi_formatted = [_fmt_aanandadi(m, tz_name) for m in raw_aanandadi]
     aanandadi_rec = compute_recommendation(raw_aanandadi)
@@ -167,8 +171,16 @@ def _moon_segments(
 
 
 # ---------------------------------------------------------------------------
-# Planet nakshatra helper
+# Planet nakshatra helpers
 # ---------------------------------------------------------------------------
+
+_SLOW_PLANETS: tuple[str, ...] = ("Sun", "Mars", "Mercury", "Jupiter", "Venus", "Saturn")
+
+# Maximum days to search backward/forward for nakshatra entry/exit.
+# Saturn (slowest) spends ~3-4 months per nakshatra, so 180 days covers it.
+_NAK_SEARCH_DAYS: float = 180.0
+_NAK_SEARCH_TOL: float = 1.0 / 1440.0  # 1-minute precision
+
 
 def _get_planet_nakshatras(jd: float, ayanamsa: str) -> dict[str, int]:
     return {p: _lon_to_nak(get_planetary_longitude(jd, p, ayanamsa)) for p in _PLANETS}
@@ -179,6 +191,44 @@ def _lon_to_nak(lon: float) -> int:
     if ABHIJIT_START <= normalized < ABHIJIT_END:
         return 28
     return get_nakshatra(normalized)
+
+
+def _planet_nak_window(planet: str, nak_index: int, sunrise_jd: float, ayanamsa: str) -> tuple[float, float]:
+    """Binary-search for when `planet` entered and will exit `nak_index`.
+
+    Returns (entry_jd, exit_jd). When the boundary is outside the search
+    window, returns the window edge rather than raising.
+    """
+    def in_nak(jd: float) -> bool:
+        return _lon_to_nak(get_planetary_longitude(jd, planet, ayanamsa)) == nak_index
+
+    # Entry: search backward for transition False→True
+    lo, hi = sunrise_jd - _NAK_SEARCH_DAYS, sunrise_jd
+    if not in_nak(lo):
+        while hi - lo > _NAK_SEARCH_TOL:
+            mid = (lo + hi) / 2
+            if in_nak(mid):
+                hi = mid
+            else:
+                lo = mid
+        entry_jd = hi
+    else:
+        entry_jd = lo  # entered before search window; use window edge
+
+    # Exit: search forward for transition True→False
+    lo, hi = sunrise_jd, sunrise_jd + _NAK_SEARCH_DAYS
+    if not in_nak(hi):
+        while hi - lo > _NAK_SEARCH_TOL:
+            mid = (lo + hi) / 2
+            if in_nak(mid):
+                lo = mid
+            else:
+                hi = mid
+        exit_jd = lo
+    else:
+        exit_jd = hi  # exits after search window; use window edge
+
+    return entry_jd, exit_jd
 
 
 # ---------------------------------------------------------------------------
