@@ -192,7 +192,8 @@ class TestDainikaRules:
         assert rule["trigger"] == "tithi_and_nakshatra"
         assert set(rule["vara_map"].keys()) == {0, 3, 5}
         assert set(rule["tithi_values"]) == {2, 7, 12, 17, 22, 27}
-        assert set(rule["nakshatra_values"]) == {7, 12, 16, 21, 25}
+        # Mrigashira(5), Chitra(14), Dhanishtha(23) — 2-to-2 rashi split creates double effect
+        assert set(rule["nakshatra_values"]) == {5, 14, 23}
 
     def test_amrit_siddhi_rule(self):
         rule = next(r for r in DAINIKA_RULES if r["name"] == "Amrit Siddhi")

@@ -99,7 +99,7 @@ class TestResponseStructure:
             for field in ("name", "nature", "severity", "fal", "meaning", "severe",
                           "triggering_planet", "trigger_nakshatra_index",
                           "start_time", "end_time", "start_local", "end_local",
-                          "varjya_minutes"):
+                          "varjya_minutes", "is_nullified", "nullified_by"):
                 assert field in y, f"Aanandadi yoga missing field '{field}'"
 
     def test_special_yoga_has_required_fields(self):
@@ -177,10 +177,26 @@ class TestKnownDatnikaDates:
         assert _has_yoga(result, "yogas", "Tripushkar"), \
             "Tripushkar must fire on June 21 2026"
 
-    def test_dwipushkar_june21_2026(self):
+    def test_no_dwipushkar_june21_2026(self):
+        # June 21 Moon is in Uttara Phalguni (12) which is a Tripushkar nakshatra,
+        # not a Dwipushkar nakshatra (Mrigashira/Chitra/Dhanishtha only)
         result = _detect(date(2026, 6, 21))
+        assert not _has_yoga(result, "yogas", "Dwipushkar"), \
+            "Dwipushkar must NOT fire on June 21 2026 (nak 12 is Tripushkar, not Dwipushkar)"
+
+    def test_dwipushkar_march25_2026(self):
+        # Wednesday (vara=3) + Mrigashira (nak=5) + Tithi 7 → Dwipushkar
+        result = _detect(date(2026, 3, 25))
         assert _has_yoga(result, "yogas", "Dwipushkar"), \
-            "Dwipushkar must fire on June 21 2026"
+            "Dwipushkar must fire on March 25 2026 (Wednesday + Mrigashira + Tithi 7)"
+
+    def test_tripushkar_and_dwipushkar_never_fire_same_day(self):
+        # Sanity check: their nakshatra sets are mutually exclusive, so they can never coexist
+        result = _detect(date(2026, 6, 21))
+        has_trip = _has_yoga(result, "yogas", "Tripushkar")
+        has_dwi = _has_yoga(result, "yogas", "Dwipushkar")
+        assert not (has_trip and has_dwi), \
+            "Tripushkar and Dwipushkar cannot both fire on the same day"
 
     def test_tripushkar_fires_april19_2026(self):
         result = _detect(date(2026, 4, 19))
@@ -289,6 +305,53 @@ class TestKnownSpecialDates:
         result = _detect(date(2026, 3, 20))
         assert _has_yoga(result, "special_yogas", "Gandmool Nakshatra"), \
             "Gandmool must fire on March 20 2026"
+
+    def test_gandmool_march20_is_split_per_nakshatra(self):
+        # March 20: Moon passes through Revati (27) then Ashvini (1) — both Gandmool.
+        # The Gandanta transition between them is the rashi junction Cancer→Leo.
+        # Each nakshatra must produce its own separate entry, never merged.
+        result = _detect(date(2026, 3, 20))
+        gandmool_entries = [y for y in result["special_yogas"] if y["name"] == "Gandmool Nakshatra"]
+        assert len(gandmool_entries) == 2, (
+            f"Expected 2 separate Gandmool entries (Revati + Ashvini) on March 20, "
+            f"got {len(gandmool_entries)}"
+        )
+        # Each entry must cover only one nakshatra
+        for entry in gandmool_entries:
+            naks_in_entry = entry["trigger_detail"]
+            assert "Revati" in naks_in_entry or "Ashvini" in naks_in_entry, \
+                f"Unexpected trigger_detail: {naks_in_entry}"
+        # They must not both mention the same nakshatra
+        detail_set = {e["trigger_detail"] for e in gandmool_entries}
+        assert len(detail_set) == 2, "Each Gandmool entry must describe a different nakshatra"
+
+    def test_aanandadi_ashubh_nullified_by_supreme_yoga(self):
+        # Any inauspicious Aanandadi yoga that overlaps in time with a supreme Dainika yoga
+        # (Guru Pushya, Ravi Pushya, Sarvartha Siddhi, Amrit Siddhi) must be nullified.
+        # June 18 has Guru Pushya Amrit active → check that nullification is applied.
+        result = _detect(date(2026, 6, 18))
+        supreme_dainika = {y["name"] for y in result["yogas"]
+                           if y["name"] in {"Guru Pushya Amrit", "Ravi Pushya Amrit",
+                                            "Sarvartha Siddhi", "Amrit Siddhi"}
+                           and not y.get("cancelled", False)}
+        if not supreme_dainika:
+            pytest.skip("No supreme Dainika yoga active on this date")
+        ashubh_aanandadi = [y for y in result["aanandadi_yogas"] if y["nature"] == "ashubh"]
+        if not ashubh_aanandadi:
+            pytest.skip("No inauspicious Aanandadi yoga on this date")
+        # At least one must be nullified if time overlap exists
+        nullified = [y for y in ashubh_aanandadi if y.get("is_nullified")]
+        non_nullified = [y for y in ashubh_aanandadi if not y.get("is_nullified")]
+        # All non-nullified ashubh yogas must have no time overlap with any supreme yoga
+        supreme_windows = [(y["start_jd"], y["end_jd"]) for y in result["yogas"]
+                           if y["name"] in supreme_dainika]
+        for yoga in non_nullified:
+            for sw_start, sw_end in supreme_windows:
+                overlaps = yoga["start_jd"] < sw_end and sw_start < yoga["end_jd"]
+                assert not overlaps, (
+                    f"Ashubh yoga '{yoga['name']}' overlaps supreme yoga window "
+                    f"but is not nullified (is_nullified={yoga.get('is_nullified')})"
+                )
 
     def test_panchak_june8_2026(self):
         result = _detect(date(2026, 6, 8))

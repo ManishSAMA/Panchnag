@@ -103,6 +103,7 @@ def detect_all_yogas_for_day(
         AANANDADI_RULES, planet_naks, moon_segs, (sunrise_jd, next_sunrise_jd), planet_windows
     )
     aanandadi_formatted = [_fmt_aanandadi(m, tz_name) for m in raw_aanandadi]
+    aanandadi_with_nullification = _apply_supreme_nullification(dainika_formatted, aanandadi_formatted)
     aanandadi_rec = compute_recommendation(raw_aanandadi)
 
     # ── Special (Moon-position based) ────────────────────────────────────
@@ -117,7 +118,7 @@ def detect_all_yogas_for_day(
         "nakshatra": sunrise_nakshatra,
         "yogas": dainika_formatted,
         "recommendation": dainika_rec,
-        "aanandadi_yogas": aanandadi_formatted,
+        "aanandadi_yogas": aanandadi_with_nullification,
         "aanandadi_recommendation": aanandadi_rec,
         "special_yogas": special,
     }
@@ -232,6 +233,49 @@ def _planet_nak_window(planet: str, nak_index: int, sunrise_jd: float, ayanamsa:
 
 
 # ---------------------------------------------------------------------------
+# Supreme-yoga nullification
+# ---------------------------------------------------------------------------
+
+_SUPREME_OVERRIDERS: frozenset[str] = frozenset({
+    "Guru Pushya Amrit",
+    "Ravi Pushya Amrit",
+    "Sarvartha Siddhi",
+    "Amrit Siddhi",
+})
+
+
+def _apply_supreme_nullification(
+    dainika: list[dict],
+    aanandadi: list[dict],
+) -> list[dict]:
+    """Mark inauspicious Aanandadi yogas as nullified when they time-overlap
+    with an active supreme Dainika overrider.
+
+    Returns a copy — originals not mutated.
+    Adds is_nullified (bool) and nullified_by (str | None) to every entry.
+    """
+    supreme_windows = [
+        m for m in dainika
+        if m["name"] in _SUPREME_OVERRIDERS and not m.get("cancelled", False)
+    ]
+
+    result: list[dict] = []
+    for yoga in aanandadi:
+        if yoga["nature"] == "ashubh":
+            nullifier = next(
+                (s for s in supreme_windows
+                 if yoga["start_jd"] < s["end_jd"] and s["start_jd"] < yoga["end_jd"]),
+                None,
+            )
+            result.append({**yoga, "is_nullified": nullifier is not None,
+                            "nullified_by": nullifier["name"] if nullifier else None})
+        else:
+            result.append({**yoga, "is_nullified": False, "nullified_by": None})
+
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Time formatting helpers
 # ---------------------------------------------------------------------------
 
@@ -321,12 +365,13 @@ def _gandmool(
     if not gandmool_segs:
         return []
 
-    windows: list[tuple[float, float, list[int]]] = []
-    for seg in gandmool_segs:
-        if windows and abs(seg["start_jd"] - windows[-1][1]) < 30.0 / 86400.0:
-            windows[-1] = (windows[-1][0], seg["end_jd"], windows[-1][2] + [seg["index"]])
-        else:
-            windows.append((seg["start_jd"], seg["end_jd"], [seg["index"]]))
+    # Each Gandmool nakshatra gets its own separate entry.
+    # Adjacent Gandmool nakshatras (Gandanta junctions) must NOT be merged —
+    # the transition moment between them (e.g. Ashlesha→Magha at the Cancer/Leo cusp)
+    # is itself an astrologically significant Gandanta point.
+    windows: list[tuple[float, float, list[int]]] = [
+        (seg["start_jd"], seg["end_jd"], [seg["index"]]) for seg in gandmool_segs
+    ]
 
     results: list[dict] = []
     for w_start, w_end, nak_indices in windows:

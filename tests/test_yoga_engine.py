@@ -158,14 +158,31 @@ class TestMatchDainika:
     def test_tripushkar_absent_wrong_nakshatra(self):
         assert self._single_match_by_name("Tripushkar", vara=0, tithi=7, nak=1) is None
 
-    def test_dwipushkar_fires_wednesday_tithi12_nak12(self):
-        assert self._single_match_by_name("Dwipushkar", vara=3, tithi=12, nak=12) is not None
+    def test_dwipushkar_fires_wednesday_tithi12_chitra(self):
+        # Chitra (14) is a correct Dwipushkar nakshatra
+        assert self._single_match_by_name("Dwipushkar", vara=3, tithi=12, nak=14) is not None
 
-    def test_dwipushkar_fires_friday_tithi27_nak25(self):
-        assert self._single_match_by_name("Dwipushkar", vara=5, tithi=27, nak=25) is not None
+    def test_dwipushkar_fires_friday_tithi27_dhanishtha(self):
+        # Dhanishtha (23) is a correct Dwipushkar nakshatra
+        assert self._single_match_by_name("Dwipushkar", vara=5, tithi=27, nak=23) is not None
+
+    def test_dwipushkar_fires_sunday_tithi7_mrigashira(self):
+        # Mrigashira (5) is a correct Dwipushkar nakshatra
+        assert self._single_match_by_name("Dwipushkar", vara=0, tithi=7, nak=5) is not None
 
     def test_dwipushkar_absent_tuesday(self):
-        assert self._single_match_by_name("Dwipushkar", vara=2, tithi=7, nak=12) is None
+        assert self._single_match_by_name("Dwipushkar", vara=2, tithi=7, nak=5) is None
+
+    def test_dwipushkar_absent_wrong_nakshatra(self):
+        # Uttara Phalguni (12) is a Tripushkar nakshatra, not Dwipushkar
+        assert self._single_match_by_name("Dwipushkar", vara=3, tithi=12, nak=12) is None
+
+    def test_tripushkar_and_dwipushkar_nakshatras_are_mutually_exclusive(self):
+        from yoga_rules import DAINIKA_RULES
+        trip = next(r for r in DAINIKA_RULES if r["name"] == "Tripushkar")
+        dwi = next(r for r in DAINIKA_RULES if r["name"] == "Dwipushkar")
+        overlap = set(trip["nakshatra_values"]) & set(dwi["nakshatra_values"])
+        assert overlap == set(), f"Nakshatra overlap found: {overlap} — yogas must be mutually exclusive"
 
     # Timing: intersection window
     def test_tripushkar_window_is_tithi_nak_intersection(self):

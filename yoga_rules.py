@@ -908,7 +908,7 @@ DAINIKA_RULES: list[dict] = [
         "meaning": "Double multiplication — events double in effect. Losses double; avoid inauspicious acts.",
         "vara_map": {0: True, 3: True, 5: True},   # Sunday, Wednesday, Friday
         "tithi_values": [2, 7, 12, 17, 22, 27],
-        "nakshatra_values": [7, 12, 16, 21, 25],
+        "nakshatra_values": [5, 14, 23],   # Mrigashira, Chitra, Dhanishtha — 2-to-2 rashi split
     },
 ]
 
