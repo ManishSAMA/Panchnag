@@ -8,12 +8,14 @@ import pytest
 from yoga_engine import (
     overlap,
     varjya_minutes,
+    _to_28_nak,
+    aanandadi_yoga_index,
     match_aanandadi,
     match_dainika,
     apply_dainika_overrides,
     compute_recommendation,
 )
-from yoga_rules import AANANDADI_RULES, DAINIKA_RULES
+from yoga_rules import AANANDADI_YOGAS, DAINIKA_RULES
 
 
 def seg(index: int, start: float, end: float) -> dict:
@@ -394,103 +396,154 @@ class TestComputeRecommendation:
 
 
 # ---------------------------------------------------------------------------
+# _to_28_nak() and aanandadi_yoga_index()
+# ---------------------------------------------------------------------------
+
+class TestTo28Nak:
+    def test_naks_1_to_21_unchanged(self):
+        for i in range(1, 22):
+            assert _to_28_nak(i) == i
+
+    def test_abhijit_28_maps_to_22(self):
+        assert _to_28_nak(28) == 22
+
+    def test_shravana_22_maps_to_23(self):
+        assert _to_28_nak(22) == 23
+
+    def test_dhanishtha_23_maps_to_24(self):
+        assert _to_28_nak(23) == 24
+
+    def test_revati_27_maps_to_28(self):
+        assert _to_28_nak(27) == 28
+
+
+class TestAanandadiYogaIndex:
+    def test_sunday_ashwini_gives_anand(self):
+        # V=1 (Sun), N=1 (Ashwini): Y=(1-0)%28=1 → Anand
+        assert aanandadi_yoga_index(1, vara=0) == 1
+
+    def test_thursday_pushya_gives_shubha(self):
+        # V=5 (Thu), N=8 (Pushya): Y=(8-16)%28=20 → Shubha
+        assert aanandadi_yoga_index(8, vara=4) == 20
+
+    def test_thursday_ashlesha_gives_amrut(self):
+        # V=5 (Thu), N=9 (Ashlesha): Y=(9-16)%28=21 → Amrut
+        assert aanandadi_yoga_index(9, vara=4) == 21
+
+    def test_friday_pushya_gives_utpat(self):
+        # V=6 (Fri), N=8 (Pushya): Y=(8-20)%28=16 → Utpat (from reference doc)
+        assert aanandadi_yoga_index(8, vara=5) == 16
+
+    def test_wednesday_mrigashira_gives_amrut(self):
+        # V=4 (Wed), N=5: Y=(5-12)%28=21 → Amrut
+        assert aanandadi_yoga_index(5, vara=3) == 21
+
+    def test_tuesday_mrigashira_gives_rakshasa(self):
+        # V=3 (Tue), N=5: Y=(5-8)%28=25 → Rakshasa (severe)
+        assert aanandadi_yoga_index(5, vara=2) == 25
+
+    def test_result_zero_maps_to_28(self):
+        # Sunday (V=1) + 28-nak=28 (Revati std=27): Y=(28-0)%28=0 → should be 28 (Vriddhi)
+        assert aanandadi_yoga_index(27, vara=0) == 28
+
+    def test_dhanishtha_std23_treated_as_28nak24(self):
+        # Dhanishtha std=23 → 28-nak=24
+        # Sunday: Y=(24-0)%28=24 → Matanga
+        assert aanandadi_yoga_index(23, vara=0) == 24
+
+
+# ---------------------------------------------------------------------------
 # match_aanandadi()
 # ---------------------------------------------------------------------------
 
 class TestMatchAanandadi:
-    def _planet_naks(self, **overrides: int) -> dict[str, int]:
-        base = {
-            "Sun": 2, "Moon": 6, "Mars": 10, "Mercury": 14,
-            "Jupiter": 18, "Venus": 22, "Saturn": 25,
-        }
-        return {**base, **overrides}
+    def test_sunday_ashwini_gives_anand(self):
+        matches = match_aanandadi(AANANDADI_YOGAS, vara=0, moon_segments=[seg(1, 0.0, 1.0)])
+        assert len(matches) == 1
+        assert matches[0]["name"] == "Anand"
+        assert matches[0]["yoga_index"] == 1
 
-    def test_aanand_fires_when_sun_in_ashvini(self):
-        planet_naks = self._planet_naks(Sun=1)
-        matches = match_aanandadi(AANANDADI_RULES, planet_naks, [], (0.0, 1.0))
-        aanand = next((m for m in matches if m["name"] == "Aanand"), None)
-        assert aanand is not None
-        assert aanand["triggering_planet"] == "Sun"
+    def test_thursday_pushya_gives_shubha(self):
+        matches = match_aanandadi(AANANDADI_YOGAS, vara=4, moon_segments=[seg(8, 0.0, 1.0)])
+        assert matches[0]["name"] == "Shubha"
+        assert matches[0]["yoga_index"] == 20
 
-    def test_amrit_fires_when_saturn_in_anuradha(self):
-        planet_naks = self._planet_naks(Saturn=17)
-        matches = match_aanandadi(AANANDADI_RULES, planet_naks, [], (0.0, 1.0))
-        amrit = next((m for m in matches if m["name"] == "Amrit"), None)
-        assert amrit is not None
-        assert amrit["triggering_planet"] == "Saturn"
+    def test_friday_pushya_gives_utpat(self):
+        matches = match_aanandadi(AANANDADI_YOGAS, vara=5, moon_segments=[seg(8, 0.0, 1.0)])
+        assert matches[0]["name"] == "Utpat"
+        assert matches[0]["severe"] is True
 
-    def test_always_seven_matches_one_per_planet(self):
-        # Moon must have a segment for its nakshatra (6=Ardra → Kaladand)
-        planet_naks = self._planet_naks()
-        moon_segs = [seg(6, 0.0, 1.0)]
-        matches = match_aanandadi(AANANDADI_RULES, planet_naks, moon_segs, (0.0, 1.0))
-        assert len(matches) == 7
+    def test_tuesday_mrigashira_gives_rakshasa(self):
+        matches = match_aanandadi(AANANDADI_YOGAS, vara=2, moon_segments=[seg(5, 0.0, 1.0)])
+        assert matches[0]["name"] == "Rakshasa"
+        assert matches[0]["severe"] is True
 
-    def test_slow_planet_match_spans_full_day_by_default(self):
-        # When no planet_windows provided, slow planets fall back to day_window
-        planet_naks = self._planet_naks(Sun=1)
-        day = (5.0, 6.0)
-        matches = match_aanandadi(AANANDADI_RULES, planet_naks, [], day)
-        aanand = next(m for m in matches if m["name"] == "Aanand")
-        assert aanand["start_jd"] == pytest.approx(5.0)
-        assert aanand["end_jd"] == pytest.approx(6.0)
+    def test_moon_transition_produces_two_matches(self):
+        # Thursday: Pushya → Shubha, Ashlesha → Amrut
+        segs = [seg(8, 0.0, 0.5), seg(9, 0.5, 1.0)]
+        matches = match_aanandadi(AANANDADI_YOGAS, vara=4, moon_segments=segs)
+        assert len(matches) == 2
+        assert matches[0]["name"] == "Shubha"
+        assert matches[1]["name"] == "Amrut"
 
-    def test_planet_windows_override_day_window_for_slow_planet(self):
-        # Explicit planet_windows → slow planet uses that window, not day_window
-        planet_naks = self._planet_naks(Sun=1)
-        day = (5.0, 6.0)
-        planet_windows = {"Sun": (3.5, 8.5)}
-        matches = match_aanandadi(AANANDADI_RULES, planet_naks, [], day, planet_windows)
-        aanand = next(m for m in matches if m["name"] == "Aanand")
-        assert aanand["start_jd"] == pytest.approx(3.5)
-        assert aanand["end_jd"] == pytest.approx(8.5)
+    def test_match_count_equals_segment_count(self):
+        segs = [seg(1, 0.0, 0.3), seg(2, 0.3, 0.7), seg(3, 0.7, 1.0)]
+        matches = match_aanandadi(AANANDADI_YOGAS, vara=0, moon_segments=segs)
+        assert len(matches) == 3
 
-    def test_moon_match_uses_segment_timing(self):
-        # Aanand: Moon=5 (Mrigashira)
-        planet_naks = self._planet_naks(Moon=5)
-        moon_segs = [seg(5, 0.25, 0.75)]
-        matches = match_aanandadi(AANANDADI_RULES, planet_naks, moon_segs, (0.0, 1.0))
-        aanand = next(m for m in matches if m["name"] == "Aanand")
-        assert aanand["triggering_planet"] == "Moon"
-        assert aanand["start_jd"] == pytest.approx(0.25)
-        assert aanand["end_jd"] == pytest.approx(0.75)
+    def test_segment_timing_preserved(self):
+        segs = [seg(8, 0.2, 0.7)]
+        matches = match_aanandadi(AANANDADI_YOGAS, vara=4, moon_segments=segs)
+        assert matches[0]["start_jd"] == pytest.approx(0.2)
+        assert matches[0]["end_jd"] == pytest.approx(0.7)
 
-    def test_severe_yoga_has_severe_true(self):
-        planet_naks = self._planet_naks(Sun=17)  # Mrityu: Sun=17
-        matches = match_aanandadi(AANANDADI_RULES, planet_naks, [], (0.0, 1.0))
-        mrityu = next((m for m in matches if m["name"] == "Mrityu"), None)
-        assert mrityu is not None
-        assert mrityu["severe"] is True
+    def test_trigger_nakshatra_index_is_moon_nak(self):
+        segs = [seg(8, 0.0, 1.0)]   # Pushya
+        matches = match_aanandadi(AANANDADI_YOGAS, vara=4, moon_segments=segs)
+        assert matches[0]["trigger_nakshatra_index"] == 8
+
+    def test_empty_segments_returns_empty(self):
+        assert match_aanandadi(AANANDADI_YOGAS, vara=0, moon_segments=[]) == []
 
     def test_result_has_required_fields(self):
-        planet_naks = self._planet_naks(Sun=1)
-        matches = match_aanandadi(AANANDADI_RULES, planet_naks, [], (0.0, 1.0))
-        aanand = next(m for m in matches if m["name"] == "Aanand")
-        required = {"name", "nature", "severity", "fal", "meaning", "severe",
-                    "triggering_planet", "trigger_nakshatra_index",
-                    "start_jd", "end_jd", "varjya_start_jd", "varjya_end_jd", "varjya_minutes"}
-        for field in required:
-            assert field in aanand, f"Missing field '{field}'"
+        matches = match_aanandadi(AANANDADI_YOGAS, vara=0, moon_segments=[seg(1, 0.0, 1.0)])
+        m = matches[0]
+        for field in ("name", "nature", "severity", "fal", "meaning", "severe",
+                      "yoga_index", "trigger_nakshatra_index",
+                      "start_jd", "end_jd", "varjya_minutes",
+                      "varjya_start_jd", "varjya_end_jd"):
+            assert field in m, f"Missing field '{field}'"
 
-    def test_varjya_is_none_for_shubh_aanand(self):
-        planet_naks = self._planet_naks(Sun=1)
-        matches = match_aanandadi(AANANDADI_RULES, planet_naks, [], (0.0, 1.0))
-        aanand = next(m for m in matches if m["name"] == "Aanand")
-        assert aanand["varjya_minutes"] is None
-        assert aanand["varjya_start_jd"] is None
-        assert aanand["varjya_end_jd"] is None
+    def test_no_triggering_planet_field(self):
+        # Planet attribution is astrologically invalid for Aanandadi yogas
+        matches = match_aanandadi(AANANDADI_YOGAS, vara=0, moon_segments=[seg(1, 0.0, 1.0)])
+        assert "triggering_planet" not in matches[0]
 
-    def test_varjya_minutes_set_for_ashubh_with_tuple_varjya(self):
-        # Dhwanksh: Sun=6, varjya=(2,0) → 48 min
-        planet_naks = self._planet_naks(Sun=6)
-        matches = match_aanandadi(AANANDADI_RULES, planet_naks, [], (0.0, 1.0))
-        dhwanksh = next(m for m in matches if m["name"] == "Dhwanksh")
-        assert dhwanksh["varjya_minutes"] == pytest.approx(48.0)
-        assert dhwanksh["varjya_start_jd"] is not None
-        assert dhwanksh["varjya_end_jd"] is not None
+    def test_shubh_yoga_has_no_varjya(self):
+        # Anand (Y=1) is shubh with no varjya
+        matches = match_aanandadi(AANANDADI_YOGAS, vara=0, moon_segments=[seg(1, 0.0, 1.0)])
+        assert matches[0]["varjya_minutes"] is None
+        assert matches[0]["varjya_start_jd"] is None
+        assert matches[0]["varjya_end_jd"] is None
 
-    def test_varjya_full_day_for_severe_yoga(self):
-        planet_naks = self._planet_naks(Sun=17)  # Mrityu: Sun=17
-        matches = match_aanandadi(AANANDADI_RULES, planet_naks, [], (0.0, 1.0))
-        mrityu = next(m for m in matches if m["name"] == "Mrityu")
-        assert mrityu["varjya_minutes"] == "full_day"
+    def test_ashubh_yoga_with_tuple_varjya(self):
+        # Dhwanksha (Y=6) has varjya=(2,0)=48 min
+        # Friday (vara=5), N=? → Y=6 when N=(6+(6-1)*4)%28=26 → 28-nak=26=std_nak=25
+        matches = match_aanandadi(AANANDADI_YOGAS, vara=5, moon_segments=[seg(25, 0.0, 1.0)])
+        assert matches[0]["name"] == "Dhwanksha"
+        assert matches[0]["varjya_minutes"] == pytest.approx(48.0)
+        assert matches[0]["varjya_start_jd"] is not None
+        assert matches[0]["varjya_end_jd"] is not None
+
+    def test_severe_yoga_has_full_day_varjya(self):
+        # Friday + Pushya → Utpat (severe)
+        matches = match_aanandadi(AANANDADI_YOGAS, vara=5, moon_segments=[seg(8, 0.0, 1.0)])
+        assert matches[0]["name"] == "Utpat"
+        assert matches[0]["varjya_minutes"] == "full_day"
+        assert matches[0]["varjya_start_jd"] is None
+
+    def test_abhijit_nak_28_handled_correctly(self):
+        # Abhijit (std=28) → 28-nak=22; Sunday: Y=(22-0)%28=22 → Musal
+        matches = match_aanandadi(AANANDADI_YOGAS, vara=0, moon_segments=[seg(28, 0.0, 1.0)])
+        assert matches[0]["yoga_index"] == 22
+        assert matches[0]["name"] == "Musal"

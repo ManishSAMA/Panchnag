@@ -17,11 +17,6 @@ if TYPE_CHECKING:
 # YogaMatch = {"name": ..., "start_jd": float, "end_jd": float, ...}
 # ---------------------------------------------------------------------------
 
-_PLANETS: tuple[str, ...] = ("Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn")
-
-# Abhijit sidereal bounds — used by consumers, exposed for convenience
-ABHIJIT_START: float = 276 + 40 / 60
-ABHIJIT_END: float = 280 + 53 / 60 + 20 / 3600
 
 
 # ---------------------------------------------------------------------------
@@ -48,90 +43,84 @@ def varjya_minutes(spec: tuple[int, int]) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Aanandadi matching
+# Aanandadi matching — formula-based, Moon nakshatra + Vara only
 # ---------------------------------------------------------------------------
 
-def match_aanandadi(
-    rules: list[dict],
-    planet_nakshatras: dict[str, int],
-    moon_segments: list[dict],
-    day_window: tuple[float, float],
-    planet_windows: dict[str, tuple[float, float]] | None = None,
-) -> list[dict]:
-    """Return one YogaMatch per planet-yoga pairing active on this day.
+def _to_28_nak(std_nak: int) -> int:
+    """Convert standard nakshatra index (1–27, or 28=Abhijit) to 28-nak system.
 
-    Each of the 7 planets is always in exactly one nakshatra, so this
-    always returns exactly 7 matches (one per planet).
-
-    Slow planets (non-Moon) use planet_windows when provided, otherwise
-    fall back to day_window (sunrise → next sunrise).
-    Moon uses moon_segments for precise intra-day timing.
+    In the 28-nakshatra system Abhijit is inserted at position 22, shifting
+    Shravana (22)→23, Dhanishtha (23)→24, …, Revati (27)→28.
     """
-    sunrise_jd, next_sunrise_jd = day_window
-    moon_seg_by_nak: dict[int, list[dict]] = {}
-    for s in moon_segments:
-        moon_seg_by_nak.setdefault(s["index"], []).append(s)
+    if std_nak == 28:   # Abhijit
+        return 22
+    if std_nak <= 21:   # Ashvini … Uttara Ashadha — unchanged
+        return std_nak
+    return std_nak + 1  # Shravana(22)→23 … Revati(27)→28
 
+
+def aanandadi_yoga_index(std_nak: int, vara: int) -> int:
+    """Return the Aanandadi yoga index (1–28) for a Moon nakshatra on a given weekday.
+
+    Formula: Y = (N_idx − (V_idx − 1) × 4) mod 28
+    Where N_idx uses the 28-nakshatra system and V_idx = vara + 1.
+    Result 0 maps to index 28 (Vriddhi).
+    """
+    n_idx = _to_28_nak(std_nak)
+    v_idx = vara + 1
+    y = (n_idx - (v_idx - 1) * 4) % 28
+    return y if y != 0 else 28
+
+
+def match_aanandadi(
+    yogas: list[dict],
+    vara: int,
+    moon_segments: list[dict],
+) -> list[dict]:
+    """Return one Aanandadi yoga match per Moon nakshatra window during the day.
+
+    When Moon transitions nakshatras mid-day each segment produces its own yoga.
+    The yoga is determined exclusively by the weekday (vara) and Moon's nakshatra
+    using the Aanandadi formula — no planetary positions involved.
+    """
     matches: list[dict] = []
-    for rule in rules:
-        for planet in _PLANETS:
-            expected_nak = rule["planet_map"][planet]
-            if planet_nakshatras.get(planet) != expected_nak:
-                continue
+    for seg in moon_segments:
+        y = aanandadi_yoga_index(seg["index"], vara)
+        yoga_def = yogas[y - 1]
+        start_jd = seg["start_jd"]
+        end_jd = seg["end_jd"]
 
-            if planet == "Moon":
-                segs = moon_seg_by_nak.get(expected_nak, [])
-                if not segs:
-                    continue
-                start_jd = segs[0]["start_jd"]
-                end_jd = segs[-1]["end_jd"]
-            elif planet_windows and planet in planet_windows:
-                start_jd, end_jd = planet_windows[planet]
-            else:
-                start_jd = sunrise_jd
-                end_jd = next_sunrise_jd
+        varjya_spec = yoga_def["varjya"]
+        if varjya_spec is None:
+            v_minutes = None
+            v_start_jd = None
+            v_end_jd = None
+        elif varjya_spec == "full_day":
+            v_minutes = "full_day"
+            v_start_jd = None
+            v_end_jd = None
+        else:
+            v_minutes = varjya_minutes(varjya_spec)
+            v_start_jd = start_jd
+            v_end_jd = start_jd + v_minutes / 1440.0
 
-            matches.append(_build_aanandadi_match(rule, planet, expected_nak, start_jd, end_jd))
+        matches.append({
+            "name": yoga_def["name"],
+            "nature": yoga_def["nature"],
+            "severity": yoga_def["severity"],
+            "fal": yoga_def["fal"],
+            "meaning": yoga_def["meaning"],
+            "severe": yoga_def["severe"],
+            "yoga_index": y,
+            "trigger_nakshatra_index": seg["index"],
+            "start_jd": start_jd,
+            "end_jd": end_jd,
+            "varjya_minutes": v_minutes,
+            "varjya_start_jd": v_start_jd,
+            "varjya_end_jd": v_end_jd,
+        })
 
     return matches
-
-
-def _build_aanandadi_match(
-    rule: dict,
-    planet: str,
-    nak_index: int,
-    start_jd: float,
-    end_jd: float,
-) -> dict:
-    varjya_spec = rule["varjya"]
-    if varjya_spec is None:
-        v_minutes = None
-        v_start_jd = None
-        v_end_jd = None
-    elif varjya_spec == "full_day":
-        v_minutes = "full_day"
-        v_start_jd = None
-        v_end_jd = None
-    else:
-        v_minutes = varjya_minutes(varjya_spec)
-        v_start_jd = start_jd
-        v_end_jd = start_jd + v_minutes / 1440.0
-
-    return {
-        "name": rule["name"],
-        "nature": rule["nature"],
-        "severity": rule["severity"],
-        "fal": rule["fal"],
-        "meaning": rule["meaning"],
-        "severe": rule["severe"],
-        "triggering_planet": planet,
-        "trigger_nakshatra_index": nak_index,
-        "start_jd": start_jd,
-        "end_jd": end_jd,
-        "varjya_minutes": v_minutes,
-        "varjya_start_jd": v_start_jd,
-        "varjya_end_jd": v_end_jd,
-    }
 
 
 # ---------------------------------------------------------------------------

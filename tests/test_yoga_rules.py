@@ -5,9 +5,8 @@ Run these before creating yoga_rules.py; they should fail (RED) until GREEN.
 """
 
 import pytest
-from yoga_rules import AANANDADI_RULES, DAINIKA_RULES, SPECIAL_RULES
+from yoga_rules import AANANDADI_YOGAS, DAINIKA_RULES, SPECIAL_RULES
 
-_PLANETS = frozenset({"Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"})
 _NATURES = frozenset({"shubh", "ashubh"})
 _SEVERITIES = frozenset({"highly_auspicious", "auspicious", "inauspicious", "highly_inauspicious"})
 _DAINIKA_TRIGGERS = frozenset({"tithi", "nakshatra", "tithi_and_nakshatra"})
@@ -15,117 +14,101 @@ _SPECIAL_TRIGGERS = frozenset({"gandmool", "panchak", "bhadra", "jwalamukhi"})
 
 
 # ---------------------------------------------------------------------------
-# Aanandadi Rules
+# Aanandadi Yogas (ordered list, formula-based — no planet_map)
 # ---------------------------------------------------------------------------
 
 class TestAanandadiRules:
-    def test_exactly_28_rules(self):
-        assert len(AANANDADI_RULES) == 28
+    def test_exactly_28_yogas(self):
+        assert len(AANANDADI_YOGAS) == 28
 
     def test_all_names_unique(self):
-        names = [r["name"] for r in AANANDADI_RULES]
+        names = [y["name"] for y in AANANDADI_YOGAS]
         assert len(names) == len(set(names))
 
     def test_required_keys_present(self):
-        required = {"name", "nature", "severe", "severity", "fal", "varjya", "meaning", "planet_map"}
-        for rule in AANANDADI_RULES:
-            missing = required - rule.keys()
-            assert not missing, f"Rule '{rule.get('name')}' missing keys: {missing}"
+        # No planet_map — yogas are determined by formula, not planet positions
+        required = {"name", "nature", "severe", "severity", "fal", "varjya", "meaning"}
+        for yoga in AANANDADI_YOGAS:
+            missing = required - yoga.keys()
+            assert not missing, f"Yoga '{yoga.get('name')}' missing keys: {missing}"
+
+    def test_no_planet_map_field(self):
+        for yoga in AANANDADI_YOGAS:
+            assert "planet_map" not in yoga, f"Yoga '{yoga['name']}' must not have planet_map"
 
     def test_nature_values_valid(self):
-        for rule in AANANDADI_RULES:
-            assert rule["nature"] in _NATURES, f"Rule '{rule['name']}': invalid nature '{rule['nature']}'"
+        for yoga in AANANDADI_YOGAS:
+            assert yoga["nature"] in _NATURES, f"Yoga '{yoga['name']}': invalid nature '{yoga['nature']}'"
 
     def test_severity_values_valid(self):
-        for rule in AANANDADI_RULES:
-            assert rule["severity"] in _SEVERITIES, f"Rule '{rule['name']}': invalid severity"
+        for yoga in AANANDADI_YOGAS:
+            assert yoga["severity"] in _SEVERITIES, f"Yoga '{yoga['name']}': invalid severity"
 
-    def test_shubh_rules_never_severe(self):
-        for rule in AANANDADI_RULES:
-            if rule["nature"] == "shubh":
-                assert rule["severe"] is False, f"Shubh rule '{rule['name']}' has severe=True"
+    def test_shubh_yogas_never_severe(self):
+        for yoga in AANANDADI_YOGAS:
+            if yoga["nature"] == "shubh":
+                assert yoga["severe"] is False, f"Shubh yoga '{yoga['name']}' has severe=True"
 
-    def test_ashubh_severely_rules_have_bool_severe(self):
-        for rule in AANANDADI_RULES:
-            assert isinstance(rule["severe"], bool), f"Rule '{rule['name']}': severe must be bool"
+    def test_severe_field_is_bool(self):
+        for yoga in AANANDADI_YOGAS:
+            assert isinstance(yoga["severe"], bool), f"Yoga '{yoga['name']}': severe must be bool"
 
-    def test_exactly_four_severe_rules(self):
-        severe = {r["name"] for r in AANANDADI_RULES if r["severe"]}
-        assert severe == {"Kaladand", "Utpat", "Mrityu", "Rakshas"}
+    def test_exactly_four_severe_yogas(self):
+        severe = {y["name"] for y in AANANDADI_YOGAS if y["severe"]}
+        assert severe == {"Kaal", "Utpat", "Mrityu", "Rakshasa"}
 
-    def test_severe_rules_have_full_day_varjya(self):
-        for rule in AANANDADI_RULES:
-            if rule["severe"]:
-                assert rule["varjya"] == "full_day", f"Severe rule '{rule['name']}' must have full_day varjya"
+    def test_severe_yogas_have_full_day_varjya(self):
+        for yoga in AANANDADI_YOGAS:
+            if yoga["severe"]:
+                assert yoga["varjya"] == "full_day", \
+                    f"Severe yoga '{yoga['name']}' must have full_day varjya"
 
-    def test_exactly_three_highly_auspicious(self):
-        ha = {r["name"] for r in AANANDADI_RULES if r["severity"] == "highly_auspicious"}
-        assert ha == {"Aanand", "Amrit", "Vardhamaan"}
-
-    def test_planet_map_has_all_seven_planets(self):
-        for rule in AANANDADI_RULES:
-            assert set(rule["planet_map"].keys()) == _PLANETS, f"Rule '{rule['name']}' planet_map wrong planets"
-
-    def test_planet_map_nakshatra_indices_in_range(self):
-        for rule in AANANDADI_RULES:
-            for planet, nak in rule["planet_map"].items():
-                assert 1 <= nak <= 28, f"Rule '{rule['name']}', {planet}: nak {nak} out of 1–28"
-
-    def test_each_planet_covers_all_28_nakshatras_across_rules(self):
-        for planet in _PLANETS:
-            assigned = {r["planet_map"][planet] for r in AANANDADI_RULES}
-            assert assigned == set(range(1, 29)), f"Planet {planet} doesn't cover all 28 nakshatras"
+    def test_exactly_five_highly_auspicious(self):
+        ha = {y["name"] for y in AANANDADI_YOGAS if y["severity"] == "highly_auspicious"}
+        assert ha == {"Anand", "Shreevatsa", "Padma", "Siddhi", "Amrut"}
 
     def test_varjya_is_valid_type(self):
-        for rule in AANANDADI_RULES:
-            v = rule["varjya"]
+        for yoga in AANANDADI_YOGAS:
+            v = yoga["varjya"]
             assert v is None or v == "full_day" or (isinstance(v, tuple) and len(v) == 2), \
-                f"Rule '{rule['name']}': invalid varjya {v!r}"
+                f"Yoga '{yoga['name']}': invalid varjya {v!r}"
 
     def test_varjya_tuple_values_are_non_negative(self):
-        for rule in AANANDADI_RULES:
-            if isinstance(rule["varjya"], tuple):
-                ghati, pala = rule["varjya"]
-                assert ghati >= 0 and pala >= 0, f"Rule '{rule['name']}' varjya has negative values"
+        for yoga in AANANDADI_YOGAS:
+            if isinstance(yoga["varjya"], tuple):
+                ghati, pala = yoga["varjya"]
+                assert ghati >= 0 and pala >= 0, f"Yoga '{yoga['name']}' varjya has negative values"
 
-    def test_aanand_planet_map(self):
-        rule = next(r for r in AANANDADI_RULES if r["name"] == "Aanand")
-        assert rule["planet_map"] == {
-            "Sun": 1, "Moon": 5, "Mars": 9, "Mercury": 13,
-            "Jupiter": 17, "Venus": 21, "Saturn": 24,
-        }
+    def test_anand_is_index_1_and_highly_auspicious(self):
+        assert AANANDADI_YOGAS[0]["name"] == "Anand"
+        assert AANANDADI_YOGAS[0]["nature"] == "shubh"
+        assert AANANDADI_YOGAS[0]["severity"] == "highly_auspicious"
 
-    def test_mrityu_planet_map(self):
-        rule = next(r for r in AANANDADI_RULES if r["name"] == "Mrityu")
-        assert rule["planet_map"] == {
-            "Sun": 17, "Moon": 21, "Mars": 24, "Mercury": 1,
-            "Jupiter": 5, "Venus": 9, "Saturn": 13,
-        }
+    def test_kaal_is_index_2_and_severe(self):
+        assert AANANDADI_YOGAS[1]["name"] == "Kaal"
+        assert AANANDADI_YOGAS[1]["severe"] is True
+        assert AANANDADI_YOGAS[1]["varjya"] == "full_day"
 
-    def test_rakshas_planet_map(self):
-        rule = next(r for r in AANANDADI_RULES if r["name"] == "Rakshas")
-        assert rule["planet_map"] == {
-            "Sun": 24, "Moon": 1, "Mars": 5, "Mercury": 9,
-            "Jupiter": 13, "Venus": 17, "Saturn": 21,
-        }
+    def test_utpat_is_index_16_and_severe(self):
+        assert AANANDADI_YOGAS[15]["name"] == "Utpat"
+        assert AANANDADI_YOGAS[15]["severe"] is True
 
-    def test_kaladand_venus_is_abhijit(self):
-        rule = next(r for r in AANANDADI_RULES if r["name"] == "Kaladand")
-        assert rule["planet_map"]["Venus"] == 28
+    def test_mrityu_is_index_17_and_severe(self):
+        assert AANANDADI_YOGAS[16]["name"] == "Mrityu"
+        assert AANANDADI_YOGAS[16]["severe"] is True
 
-    def test_amrit_planet_map(self):
-        rule = next(r for r in AANANDADI_RULES if r["name"] == "Amrit")
-        assert rule["planet_map"] == {
-            "Sun": 21, "Moon": 24, "Mars": 1, "Mercury": 5,
-            "Jupiter": 9, "Venus": 13, "Saturn": 17,
-        }
+    def test_amrut_is_index_21_and_highly_auspicious(self):
+        assert AANANDADI_YOGAS[20]["name"] == "Amrut"
+        assert AANANDADI_YOGAS[20]["severity"] == "highly_auspicious"
+        assert AANANDADI_YOGAS[20]["varjya"] is None
 
-    def test_vardhamaan_planet_map(self):
-        rule = next(r for r in AANANDADI_RULES if r["name"] == "Vardhamaan")
-        assert rule["planet_map"] == {
-            "Sun": 27, "Moon": 4, "Mars": 8, "Mercury": 12,
-            "Jupiter": 16, "Venus": 20, "Saturn": 23,
-        }
+    def test_rakshasa_is_index_25_and_severe(self):
+        assert AANANDADI_YOGAS[24]["name"] == "Rakshasa"
+        assert AANANDADI_YOGAS[24]["severe"] is True
+
+    def test_vriddhi_is_index_28(self):
+        assert AANANDADI_YOGAS[27]["name"] == "Vriddhi"
+        assert AANANDADI_YOGAS[27]["nature"] == "shubh"
 
 
 # ---------------------------------------------------------------------------

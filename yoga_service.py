@@ -15,16 +15,15 @@ from __future__ import annotations
 
 from datetime import date as date_type
 
-from astronomy import get_planetary_longitude, jd_to_zoned_datetime
-from panchang import get_nakshatra, get_vara_from_date, calculate_bhadra_kaal, calculate_panchak_kaal
+from astronomy import jd_to_zoned_datetime
+from panchang import get_vara_from_date, calculate_bhadra_kaal, calculate_panchak_kaal
 from panchang_service import _collect_all_tithis_in_day, collect_all_nakshatras_in_day
 
 from yoga_engine import (
-    ABHIJIT_START, ABHIJIT_END,
     match_aanandadi, match_dainika, apply_dainika_overrides, compute_recommendation,
     varjya_minutes,
 )
-from yoga_rules import AANANDADI_RULES, DAINIKA_RULES
+from yoga_rules import AANANDADI_YOGAS, DAINIKA_RULES
 
 # Nakshatra names (1-indexed via [idx - 1])
 _NAK_NAMES: tuple[str, ...] = (
@@ -35,8 +34,6 @@ _NAK_NAMES: tuple[str, ...] = (
     "Dhanishtha", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada",
     "Revati", "Abhijit",
 )
-
-_PLANETS: tuple[str, ...] = ("Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn")
 
 # Gandmool nakshatras (Moon at a rashi junction)
 _GANDMOOL_NAKSHATRAS: frozenset[int] = frozenset({1, 9, 10, 18, 19, 27})
@@ -92,16 +89,9 @@ def detect_all_yogas_for_day(
     dainika_formatted = [_fmt_dainika(m, tz_name) for m in dainika_with_overrides]
     dainika_rec = compute_recommendation(dainika_with_overrides)
 
-    # ── Aanandadi (planet-nakshatra) ─────────────────────────────────────
-    planet_naks = _get_planet_nakshatras(sunrise_jd, ayanamsa)
+    # ── Aanandadi (Vara + Moon nakshatra formula) ────────────────────────
     moon_segs = _moon_segments(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name)
-    planet_windows = {
-        p: _planet_nak_window(p, planet_naks[p], sunrise_jd, ayanamsa)
-        for p in _SLOW_PLANETS
-    }
-    raw_aanandadi = match_aanandadi(
-        AANANDADI_RULES, planet_naks, moon_segs, (sunrise_jd, next_sunrise_jd), planet_windows
-    )
+    raw_aanandadi = match_aanandadi(AANANDADI_YOGAS, vara, moon_segs)
     aanandadi_formatted = [_fmt_aanandadi(m, tz_name) for m in raw_aanandadi]
     aanandadi_with_nullification = _apply_supreme_nullification(dainika_formatted, aanandadi_formatted)
     aanandadi_rec = compute_recommendation(raw_aanandadi)
@@ -172,67 +162,6 @@ def _moon_segments(
 
 
 # ---------------------------------------------------------------------------
-# Planet nakshatra helpers
-# ---------------------------------------------------------------------------
-
-_SLOW_PLANETS: tuple[str, ...] = ("Sun", "Mars", "Mercury", "Jupiter", "Venus", "Saturn")
-
-# Maximum days to search backward/forward for nakshatra entry/exit.
-# Saturn (slowest) spends ~3-4 months per nakshatra, so 180 days covers it.
-_NAK_SEARCH_DAYS: float = 180.0
-_NAK_SEARCH_TOL: float = 1.0 / 1440.0  # 1-minute precision
-
-
-def _get_planet_nakshatras(jd: float, ayanamsa: str) -> dict[str, int]:
-    return {p: _lon_to_nak(get_planetary_longitude(jd, p, ayanamsa)) for p in _PLANETS}
-
-
-def _lon_to_nak(lon: float) -> int:
-    normalized = lon % 360.0
-    if ABHIJIT_START <= normalized < ABHIJIT_END:
-        return 28
-    return get_nakshatra(normalized)
-
-
-def _planet_nak_window(planet: str, nak_index: int, sunrise_jd: float, ayanamsa: str) -> tuple[float, float]:
-    """Binary-search for when `planet` entered and will exit `nak_index`.
-
-    Returns (entry_jd, exit_jd). When the boundary is outside the search
-    window, returns the window edge rather than raising.
-    """
-    def in_nak(jd: float) -> bool:
-        return _lon_to_nak(get_planetary_longitude(jd, planet, ayanamsa)) == nak_index
-
-    # Entry: search backward for transition False→True
-    lo, hi = sunrise_jd - _NAK_SEARCH_DAYS, sunrise_jd
-    if not in_nak(lo):
-        while hi - lo > _NAK_SEARCH_TOL:
-            mid = (lo + hi) / 2
-            if in_nak(mid):
-                hi = mid
-            else:
-                lo = mid
-        entry_jd = hi
-    else:
-        entry_jd = lo  # entered before search window; use window edge
-
-    # Exit: search forward for transition True→False
-    lo, hi = sunrise_jd, sunrise_jd + _NAK_SEARCH_DAYS
-    if not in_nak(hi):
-        while hi - lo > _NAK_SEARCH_TOL:
-            mid = (lo + hi) / 2
-            if in_nak(mid):
-                lo = mid
-            else:
-                hi = mid
-        exit_jd = lo
-    else:
-        exit_jd = hi  # exits after search window; use window edge
-
-    return entry_jd, exit_jd
-
-
-# ---------------------------------------------------------------------------
 # Supreme-yoga nullification
 # ---------------------------------------------------------------------------
 
@@ -296,6 +225,7 @@ def _fmt_dainika(match: dict, tz_name: str) -> dict:
 def _fmt_aanandadi(match: dict, tz_name: str) -> dict:
     st, sl = _fmt(match["start_jd"], tz_name)
     et, el = _fmt(match["end_jd"], tz_name)
+    # trigger_nakshatra_index uses standard 1-27 (or 28=Abhijit) — same offset for name lookup
     nak_name = _NAK_NAMES[match["trigger_nakshatra_index"] - 1]
 
     v_start_time: str | None = None

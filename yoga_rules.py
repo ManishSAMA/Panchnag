@@ -1,7 +1,7 @@
 """yoga_rules.py — Pure rule data for all yoga systems.
 
 Three rule sets:
-  AANANDADI_RULES  — 28 planet-nakshatra based yogas
+  AANANDADI_YOGAS  — 28 Vara+Moon yogas (ordered 1–28 for formula lookup)
   DAINIKA_RULES    — 42 vara-tithi/nakshatra based yogas
   SPECIAL_RULES    — 4 Moon-position based yogas (no vara dependency)
 
@@ -11,46 +11,53 @@ No logic, no imports beyond typing.
 from __future__ import annotations
 
 # ---------------------------------------------------------------------------
-# Aanandadi Rules — 28 yogas triggered by planet in designated nakshatra
-# Source: Aanandadi Yoga Bodhak Koshthaк, Ruchika Publications, Delhi, p.110
+# Aanandadi Yogas — 28 yogas determined exclusively by Vara (weekday) and
+# the Moon's nakshatra using the formula:
 #
-# planet_map: {planet → nakshatra_index (1–28)}
+#   Y = (N_idx − (V_idx − 1) × 4) mod 28   [add 28 if result ≤ 0]
+#
+# where:
+#   N_idx  = Moon's nakshatra in the 28-nakshatra system (Abhijit at position 22)
+#             Naks 1–21 keep their index; naks 22–27 shift to 23–28; Abhijit=28→22
+#   V_idx  = weekday index: Sunday=1, Monday=2, ..., Saturday=7
+#
+# List index 0 = yoga Y=1 (Anand) … index 27 = yoga Y=28 (Vriddhi).
 # varjya: None | "full_day" | (ghati, pala)
 #   1 ghati = 24 min, 1 pala = 24 sec (0.4 min)
-#   total_minutes = ghati * 24 + pala * 0.4
 # ---------------------------------------------------------------------------
 
-AANANDADI_RULES: list[dict] = [
+AANANDADI_YOGAS: list[dict] = [
+    # Y=1
     {
-        "name": "Aanand",
+        "name": "Anand",
         "nature": "shubh",
         "severe": False,
         "severity": "highly_auspicious",
-        "fal": "Siddhi",
+        "fal": "Sarva Siddhi",
         "varjya": None,
-        "meaning": "Joy and accomplishment; brings success and positive outcomes in all endeavors.",
-        "planet_map": {"Sun": 1, "Moon": 5, "Mars": 9, "Mercury": 13, "Jupiter": 17, "Venus": 21, "Saturn": 24},
+        "meaning": "Joy and bliss — all undertakings succeed; highly auspicious for any new start.",
     },
+    # Y=2
     {
-        "name": "Kaladand",
+        "name": "Kaal",
         "nature": "ashubh",
         "severe": True,
         "severity": "highly_inauspicious",
         "fal": "Haani",
         "varjya": "full_day",
-        "meaning": "Staff of Time; entire period is forbidden — signifies severe loss and destruction.",
-        "planet_map": {"Sun": 2, "Moon": 6, "Mars": 10, "Mercury": 14, "Jupiter": 18, "Venus": 28, "Saturn": 25},
+        "meaning": "Time of doom — entire period is forbidden; avoid all auspicious and new undertakings.",
     },
+    # Y=3
     {
-        "name": "Dhumraksh",
+        "name": "Dhumra",
         "nature": "ashubh",
         "severe": False,
-        "severity": "highly_inauspicious",
+        "severity": "inauspicious",
         "fal": "Dukh",
-        "varjya": (0, 24),
-        "meaning": "Smoky-eyed; brings sorrow and suffering; avoid commencement during varjya.",
-        "planet_map": {"Sun": 3, "Moon": 7, "Mars": 11, "Mercury": 15, "Jupiter": 19, "Venus": 22, "Saturn": 26},
+        "varjya": (1, 0),
+        "meaning": "Smoke and confusion — creates obstacles, delays, and unclear outcomes.",
     },
+    # Y=4
     {
         "name": "Prajapati",
         "nature": "shubh",
@@ -58,129 +65,129 @@ AANANDADI_RULES: list[dict] = [
         "severity": "auspicious",
         "fal": "Laabh",
         "varjya": None,
-        "meaning": "Lord of Creatures; favorable for new ventures; brings gain and prosperity.",
-        "planet_map": {"Sun": 4, "Moon": 8, "Mars": 12, "Mercury": 16, "Jupiter": 20, "Venus": 23, "Saturn": 27},
+        "meaning": "Lord of Beings — creative energy; auspicious for new beginnings and growth.",
     },
+    # Y=5
     {
-        "name": "Saumya",
-        "nature": "shubh",
-        "severe": False,
-        "severity": "auspicious",
-        "fal": "Shubh",
-        "varjya": None,
-        "meaning": "Gentle and benefic; bestows general well-being and auspiciousness.",
-        "planet_map": {"Sun": 5, "Moon": 9, "Mars": 13, "Mercury": 17, "Jupiter": 21, "Venus": 24, "Saturn": 1},
-    },
-    {
-        "name": "Dhwanksh",
-        "nature": "ashubh",
-        "severe": False,
-        "severity": "inauspicious",
-        "fal": "Kshati",
-        "varjya": (2, 0),
-        "meaning": "Crow; ominous sign indicating loss and injury; avoid the varjya period.",
-        "planet_map": {"Sun": 6, "Moon": 10, "Mars": 14, "Mercury": 18, "Jupiter": 28, "Venus": 25, "Saturn": 2},
-    },
-    {
-        "name": "Dhwaj",
-        "nature": "shubh",
-        "severe": False,
-        "severity": "auspicious",
-        "fal": "Shubh",
-        "varjya": None,
-        "meaning": "Flag of victory; auspicious for undertakings; brings success and recognition.",
-        "planet_map": {"Sun": 7, "Moon": 11, "Mars": 15, "Mercury": 19, "Jupiter": 22, "Venus": 26, "Saturn": 3},
-    },
-    {
-        "name": "Shrivatsa",
+        "name": "Soumya",
         "nature": "shubh",
         "severe": False,
         "severity": "auspicious",
         "fal": "Sukh",
         "varjya": None,
-        "meaning": "Auspicious mark of Vishnu; brings happiness, comfort, and domestic harmony.",
-        "planet_map": {"Sun": 8, "Moon": 12, "Mars": 16, "Mercury": 20, "Jupiter": 23, "Venus": 27, "Saturn": 4},
+        "meaning": "Gentle and benevolent — peaceful energy; favourable for social and family activities.",
     },
+    # Y=6
     {
-        "name": "Vajra",
+        "name": "Dhwanksha",
         "nature": "ashubh",
         "severe": False,
         "severity": "inauspicious",
         "fal": "Kshati",
         "varjya": (2, 0),
-        "meaning": "Thunderbolt; harsh destructive energy; avoid important starts during varjya.",
-        "planet_map": {"Sun": 9, "Moon": 13, "Mars": 17, "Mercury": 21, "Jupiter": 24, "Venus": 1, "Saturn": 5},
+        "meaning": "Crow omen — inauspicious; avoid travel, new agreements, and auspicious ceremonies.",
     },
+    # Y=7
+    {
+        "name": "Dhwaja",
+        "nature": "shubh",
+        "severe": False,
+        "severity": "auspicious",
+        "fal": "Vijay",
+        "varjya": None,
+        "meaning": "Victory flag — success in endeavours; especially favourable for competitive activities.",
+    },
+    # Y=8
+    {
+        "name": "Shreevatsa",
+        "nature": "shubh",
+        "severe": False,
+        "severity": "highly_auspicious",
+        "fal": "Dhana Laabh",
+        "varjya": None,
+        "meaning": "Mark of Vishnu — wealth and prosperity; highly auspicious for financial transactions.",
+    },
+    # Y=9
+    {
+        "name": "Vajra",
+        "nature": "ashubh",
+        "severe": False,
+        "severity": "inauspicious",
+        "fal": "Peeda",
+        "varjya": (2, 0),
+        "meaning": "Thunderbolt — sudden disruptions and sharp reversals; avoid risky ventures.",
+    },
+    # Y=10
     {
         "name": "Mudgar",
         "nature": "ashubh",
         "severe": False,
         "severity": "inauspicious",
-        "fal": "Haani",
+        "fal": "Kasht",
         "varjya": (2, 0),
-        "meaning": "Mace of suffering; brings hardship and harm; indicates a difficult period.",
-        "planet_map": {"Sun": 10, "Moon": 14, "Mars": 18, "Mercury": 28, "Jupiter": 25, "Venus": 2, "Saturn": 6},
+        "meaning": "Hammer — forceful obstacles; projects require extra effort and face resistance.",
     },
+    # Y=11
     {
-        "name": "Chatra",
+        "name": "Chhatra",
         "nature": "shubh",
         "severe": False,
         "severity": "auspicious",
         "fal": "Samman",
         "varjya": None,
-        "meaning": "Royal umbrella; brings honor, respect, and protection; good for official matters.",
-        "planet_map": {"Sun": 11, "Moon": 15, "Mars": 19, "Mercury": 22, "Jupiter": 26, "Venus": 3, "Saturn": 7},
+        "meaning": "Royal umbrella — protection and prestige; auspicious for authority and leadership.",
     },
+    # Y=12
     {
         "name": "Mitra",
         "nature": "shubh",
         "severe": False,
         "severity": "auspicious",
-        "fal": "Laabh",
+        "fal": "Maitri",
         "varjya": None,
-        "meaning": "Friend; brings beneficial relationships, profit, and cooperative success.",
-        "planet_map": {"Sun": 12, "Moon": 16, "Mars": 20, "Mercury": 23, "Jupiter": 27, "Venus": 4, "Saturn": 8},
+        "meaning": "Friendship — supportive social energy; excellent for alliances and partnerships.",
     },
+    # Y=13
     {
         "name": "Manas",
         "nature": "shubh",
         "severe": False,
         "severity": "auspicious",
-        "fal": "Shubh",
+        "fal": "Siddhi",
         "varjya": None,
-        "meaning": "Mind; bestows clarity, wisdom, and mental well-being; auspicious for study.",
-        "planet_map": {"Sun": 13, "Moon": 17, "Mars": 21, "Mercury": 24, "Jupiter": 1, "Venus": 5, "Saturn": 9},
+        "meaning": "Mind — clarity and focus; favourable for intellectual and mental work.",
     },
+    # Y=14
     {
-        "name": "Padmaksh",
-        "nature": "ashubh",
+        "name": "Padma",
+        "nature": "shubh",
         "severe": False,
-        "severity": "highly_inauspicious",
-        "fal": "Dhannash",
-        "varjya": (1, 36),
-        "meaning": "Lotus-eyed destroyer; indicates serious financial loss and destruction of wealth.",
-        "planet_map": {"Sun": 14, "Moon": 18, "Mars": 28, "Mercury": 25, "Jupiter": 2, "Venus": 6, "Saturn": 10},
+        "severity": "highly_auspicious",
+        "fal": "Shree Laabh",
+        "varjya": None,
+        "meaning": "Lotus — beauty, wealth, and Lakshmi's grace; highly auspicious for prosperity.",
     },
+    # Y=15
     {
         "name": "Lumbak",
         "nature": "ashubh",
         "severe": False,
-        "severity": "highly_inauspicious",
+        "severity": "inauspicious",
         "fal": "Kshay",
         "varjya": (1, 36),
-        "meaning": "Decay and decline; causes diminishment of resources and lasting deterioration.",
-        "planet_map": {"Sun": 15, "Moon": 19, "Mars": 22, "Mercury": 26, "Jupiter": 3, "Venus": 7, "Saturn": 11},
+        "meaning": "Decay and suspension — delays and deterioration; avoid finalising contracts.",
     },
+    # Y=16
     {
         "name": "Utpat",
         "nature": "ashubh",
         "severe": True,
         "severity": "highly_inauspicious",
-        "fal": "Kasht",
+        "fal": "Sarva Nashta",
         "varjya": "full_day",
-        "meaning": "Calamity; entire period forbidden — portends trouble, upheaval, and hardship.",
-        "planet_map": {"Sun": 16, "Moon": 20, "Mars": 23, "Mercury": 27, "Jupiter": 4, "Venus": 8, "Saturn": 12},
+        "meaning": "Calamity — entire period is forbidden; avoid all auspicious or important acts.",
     },
+    # Y=17
     {
         "name": "Mrityu",
         "nature": "ashubh",
@@ -188,49 +195,49 @@ AANANDADI_RULES: list[dict] = [
         "severity": "highly_inauspicious",
         "fal": "Maran",
         "varjya": "full_day",
-        "meaning": "Death; entire period strictly forbidden — the most inauspicious yoga; avoid all auspicious work.",
-        "planet_map": {"Sun": 17, "Moon": 21, "Mars": 24, "Mercury": 1, "Jupiter": 5, "Venus": 9, "Saturn": 13},
+        "meaning": "Death — entire period is forbidden; avoid all new undertakings without exception.",
     },
+    # Y=18
     {
         "name": "Kaan",
         "nature": "ashubh",
         "severe": False,
         "severity": "inauspicious",
-        "fal": "Kasht",
+        "fal": "Kaan Peeda",
         "varjya": (0, 48),
-        "meaning": "Ear; brings difficulty and trouble; avoid undertakings during the varjya window.",
-        "planet_map": {"Sun": 18, "Moon": 28, "Mars": 25, "Mercury": 2, "Jupiter": 6, "Venus": 10, "Saturn": 14},
+        "meaning": "Loss — deficits and troubles; avoid financial decisions and new commitments.",
     },
+    # Y=19
     {
         "name": "Siddhi",
         "nature": "shubh",
         "severe": False,
-        "severity": "auspicious",
+        "severity": "highly_auspicious",
         "fal": "Siddhi",
         "varjya": None,
-        "meaning": "Achievement; ensures accomplishment of goals; excellent for starting important work.",
-        "planet_map": {"Sun": 19, "Moon": 22, "Mars": 26, "Mercury": 3, "Jupiter": 7, "Venus": 11, "Saturn": 15},
+        "meaning": "Achievement — success guaranteed; highly favourable for completing important work.",
     },
+    # Y=20
     {
-        "name": "Shubh",
+        "name": "Shubha",
         "nature": "shubh",
         "severe": False,
         "severity": "auspicious",
         "fal": "Shubh",
         "varjya": None,
-        "meaning": "Auspicious; bestows general good fortune and positive outcomes.",
-        "planet_map": {"Sun": 20, "Moon": 23, "Mars": 27, "Mercury": 4, "Jupiter": 8, "Venus": 12, "Saturn": 16},
+        "meaning": "Auspicious — generally favourable energy; good for most activities.",
     },
+    # Y=21
     {
-        "name": "Amrit",
+        "name": "Amrut",
         "nature": "shubh",
         "severe": False,
         "severity": "highly_auspicious",
-        "fal": "Bhog",
+        "fal": "Amrut Phal",
         "varjya": None,
-        "meaning": "Nectar of immortality; highly auspicious; brings joy, abundance, and excellent results.",
-        "planet_map": {"Sun": 21, "Moon": 24, "Mars": 1, "Mercury": 5, "Jupiter": 9, "Venus": 13, "Saturn": 17},
+        "meaning": "Nectar — the finest Aanandadi yoga; actions taken here yield exceptional lasting results.",
     },
+    # Y=22
     {
         "name": "Musal",
         "nature": "ashubh",
@@ -238,68 +245,67 @@ AANANDADI_RULES: list[dict] = [
         "severity": "inauspicious",
         "fal": "Kshati",
         "varjya": (0, 48),
-        "meaning": "Pestle; causes damage and loss; inauspicious for new ventures.",
-        "planet_map": {"Sun": 28, "Moon": 25, "Mars": 2, "Mercury": 6, "Jupiter": 10, "Venus": 14, "Saturn": 18},
+        "meaning": "Pestle — grinding difficulties; hard work yields poor results; avoid major decisions.",
     },
+    # Y=23
     {
-        "name": "Gad",
+        "name": "Gada",
         "nature": "ashubh",
         "severe": False,
-        "severity": "highly_inauspicious",
+        "severity": "inauspicious",
         "fal": "Rog",
         "varjya": (2, 48),
-        "meaning": "Club; brings disease and ill health; particularly inauspicious for health-related matters.",
-        "planet_map": {"Sun": 22, "Moon": 26, "Mars": 3, "Mercury": 7, "Jupiter": 11, "Venus": 15, "Saturn": 19},
+        "meaning": "Mace — health challenges and confrontations; avoid surgery and physical risks.",
     },
+    # Y=24
     {
-        "name": "Matang",
+        "name": "Matanga",
         "nature": "shubh",
         "severe": False,
         "severity": "auspicious",
         "fal": "Vriddhi",
         "varjya": None,
-        "meaning": "Elephant; brings growth, abundance, and increase; auspicious for wealth and expansion.",
-        "planet_map": {"Sun": 23, "Moon": 27, "Mars": 4, "Mercury": 8, "Jupiter": 12, "Venus": 16, "Saturn": 20},
+        "meaning": "Elephant — powerful and steady energy; auspicious for important decisions.",
     },
+    # Y=25
     {
-        "name": "Rakshas",
+        "name": "Rakshasa",
         "nature": "ashubh",
         "severe": True,
         "severity": "highly_inauspicious",
-        "fal": "Kasht",
+        "fal": "Sarva Kasht",
         "varjya": "full_day",
-        "meaning": "Demon; entire period strictly forbidden — brings great suffering and inauspiciousness.",
-        "planet_map": {"Sun": 24, "Moon": 1, "Mars": 5, "Mercury": 9, "Jupiter": 13, "Venus": 17, "Saturn": 21},
+        "meaning": "Demon — entire period is forbidden; avoid all auspicious acts without exception.",
     },
+    # Y=26
     {
-        "name": "Char",
+        "name": "Chara",
         "nature": "shubh",
         "severe": False,
         "severity": "auspicious",
-        "fal": "Laabh",
+        "fal": "Safar Laabh",
         "varjya": None,
-        "meaning": "Movement; brings profitable motion and change; auspicious for travel and transitions.",
-        "planet_map": {"Sun": 25, "Moon": 2, "Mars": 6, "Mercury": 10, "Jupiter": 14, "Venus": 18, "Saturn": 28},
+        "meaning": "Dynamic movement — favourable for travel, change, and transition activities.",
     },
+    # Y=27
     {
-        "name": "Sthir",
+        "name": "Sthira",
         "nature": "shubh",
         "severe": False,
         "severity": "auspicious",
-        "fal": "Sukh",
+        "fal": "Sthirta",
         "varjya": None,
-        "meaning": "Stability; brings lasting happiness and enduring results; excellent for permanent matters.",
-        "planet_map": {"Sun": 26, "Moon": 3, "Mars": 7, "Mercury": 11, "Jupiter": 15, "Venus": 19, "Saturn": 22},
+        "meaning": "Stability — excellent for laying foundations, construction, and long-term commitments.",
     },
+    # Y=28
     {
-        "name": "Vardhamaan",
+        "name": "Vriddhi",
         "nature": "shubh",
         "severe": False,
-        "severity": "highly_auspicious",
+        "severity": "auspicious",
         "fal": "Vriddhi",
         "varjya": None,
-        "meaning": "Ever-increasing; the most auspicious of Aanandadi yogas; brings great growth and prosperity.",
-        "planet_map": {"Sun": 27, "Moon": 4, "Mars": 8, "Mercury": 12, "Jupiter": 16, "Venus": 20, "Saturn": 23},
+        "meaning": "Growth and increase — favourable for business expansion and accumulation.",
     },
 ]
 

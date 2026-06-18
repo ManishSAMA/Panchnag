@@ -74,14 +74,15 @@ class TestResponseStructure:
         assert 1 <= result["nakshatra"] <= 28
 
     def test_recommendation_is_valid_string(self):
-        valid = {"highly_auspicious", "auspicious", "caution", "avoid", "neutral"}
+        valid = {"highly_auspicious", "auspicious", "caution", "avoid", "neutral", "mixed"}
         result = _detect(date(2026, 6, 7))
         assert result["recommendation"] in valid
         assert result["aanandadi_recommendation"] in valid
 
-    def test_aanandadi_always_returns_seven_matches(self):
+    def test_aanandadi_returns_at_least_one_match(self):
+        # One yoga per Moon nakshatra window — at least 1, usually 1–2 per day
         result = _detect(date(2026, 6, 7))
-        assert len(result["aanandadi_yogas"]) == 7
+        assert len(result["aanandadi_yogas"]) >= 1
 
     def test_dainika_yoga_has_required_fields(self):
         result = _detect(date(2026, 6, 18))
@@ -97,7 +98,7 @@ class TestResponseStructure:
         result = _detect(date(2026, 6, 7))
         for y in result["aanandadi_yogas"]:
             for field in ("name", "nature", "severity", "fal", "meaning", "severe",
-                          "triggering_planet", "trigger_nakshatra_index",
+                          "yoga_index", "trigger_nakshatra_index",
                           "start_time", "end_time", "start_local", "end_local",
                           "varjya_minutes", "is_nullified", "nullified_by"):
                 assert field in y, f"Aanandadi yoga missing field '{field}'"
@@ -229,71 +230,76 @@ class TestKnownDatnikaDates:
 # ---------------------------------------------------------------------------
 
 class TestKnownAanandadiDates:
-    def test_june7_moon_in_dhanishtha(self):
-        # Regression: Moon must be in Dhanishtha (23) at sunrise on June 7 2026
+    def test_june7_sunday_dhanishtha_gives_matanga(self):
+        # June 7 2026 is Sunday (vara=0). Moon in Dhanishtha (std=23, 28-nak=24).
+        # Y = (24 − 0) % 28 = 24 → Matanga
         result = _detect(date(2026, 6, 7))
-        moon_match = next(
-            (y for y in result["aanandadi_yogas"] if y["triggering_planet"] == "Moon"),
-            None,
-        )
-        assert moon_match is not None
-        assert moon_match["trigger_nakshatra_index"] == 23, \
-            f"Moon should be in Dhanishtha (23), got {moon_match['trigger_nakshatra_index']}"
+        yogas = result["aanandadi_yogas"]
+        assert any(y["trigger_nakshatra_index"] == 23 for y in yogas), \
+            "Moon should be in Dhanishtha (23) on June 7"
+        matanga = next((y for y in yogas if y["name"] == "Matanga"), None)
+        assert matanga is not None, f"Expected Matanga on Sunday+Dhanishtha, got {[y['name'] for y in yogas]}"
+        assert matanga["yoga_index"] == 24
+
+    def test_june18_thursday_pushya_gives_shubha(self):
+        # Thursday (vara=4) + Pushya (8): Y=(8-16)%28=20 → Shubha
+        result = _detect(date(2026, 6, 18))
+        yogas = result["aanandadi_yogas"]
+        assert any(y["trigger_nakshatra_index"] == 8 for y in yogas), \
+            "Moon should transit Pushya (8) on June 18"
+        shubha = next((y for y in yogas if y["name"] == "Shubha"), None)
+        assert shubha is not None, f"Expected Shubha (Thursday+Pushya), got {[y['name'] for y in yogas]}"
+
+    def test_june18_thursday_ashlesha_gives_amrut(self):
+        # Thursday (vara=4) + Ashlesha (9): Y=(9-16)%28=21 → Amrut
+        result = _detect(date(2026, 6, 18))
+        amrut = next((y for y in result["aanandadi_yogas"] if y["name"] == "Amrut"), None)
+        assert amrut is not None, "Amrut expected when Moon enters Ashlesha on Thursday"
+        assert amrut["yoga_index"] == 21
+
+    def test_june18_returns_two_aanandadi_yogas(self):
+        # Moon transitions Pushya→Ashlesha on June 18 → two yogas
+        result = _detect(date(2026, 6, 18))
+        assert len(result["aanandadi_yogas"]) == 2, \
+            f"Expected 2 Aanandadi yogas on June 18 (Moon transits Pushya then Ashlesha), " \
+            f"got {len(result['aanandadi_yogas'])}"
 
     def test_aanandadi_yoga_names_are_valid(self):
-        from yoga_rules import AANANDADI_RULES
-        valid_names = {r["name"] for r in AANANDADI_RULES}
+        from yoga_rules import AANANDADI_YOGAS
+        valid_names = {y["name"] for y in AANANDADI_YOGAS}
         result = _detect(date(2026, 6, 7))
         for y in result["aanandadi_yogas"]:
             assert y["name"] in valid_names, f"Invalid Aanandadi yoga name: {y['name']}"
 
-    def test_aanandadi_severe_yoga_forces_avoid(self):
-        from yoga_rules import AANANDADI_RULES
-        severe_names = {r["name"] for r in AANANDADI_RULES if r["severe"]}
-        # Find a date where a severe yoga fires and check recommendation
+    def test_yoga_index_in_range(self):
         result = _detect(date(2026, 6, 7))
-        for yoga in result["aanandadi_yogas"]:
-            if yoga["name"] in severe_names:
-                assert result["aanandadi_recommendation"] == "avoid"
-                break
+        for y in result["aanandadi_yogas"]:
+            assert 1 <= y["yoga_index"] <= 28, f"yoga_index {y['yoga_index']} out of 1–28"
+
+    def test_aanandadi_severe_yoga_implies_avoid_or_mixed_recommendation(self):
+        # Tuesday (vara=2) + Moon in Mrigashira (std=5): Y=(5-8)%28=25 → Rakshasa (severe)
+        # Around June 16, 2026.
+        from yoga_rules import AANANDADI_YOGAS
+        severe_names = {y["name"] for y in AANANDADI_YOGAS if y["severe"]}
+        result = _detect(date(2026, 6, 16))
+        severe_matches = [y for y in result["aanandadi_yogas"] if y["name"] in severe_names]
+        if not severe_matches:
+            pytest.skip("No severe Aanandadi yoga on June 16 — Moon may not be in Mrigashira")
+        assert result["aanandadi_recommendation"] in {"avoid", "mixed"}, \
+            f"Severe Aanandadi yoga present but recommendation is '{result['aanandadi_recommendation']}'"
 
     def test_aanandadi_varjya_end_after_start(self):
-        result = _detect(date(2026, 6, 12))
-        for y in result["aanandadi_yogas"]:
-            if y["varjya_minutes"] is not None and y["varjya_minutes"] != "full_day":
-                assert y.get("varjya_start_jd") is not None
-                assert y.get("varjya_end_jd") is not None
-                # varjya must end after it starts
-                assert y["varjya_end_jd"] > y["varjya_start_jd"]
-
-    def test_triggering_planets_are_unique(self):
-        result = _detect(date(2026, 6, 12))
-        planets = [y["triggering_planet"] for y in result["aanandadi_yogas"]]
-        assert len(planets) == len(set(planets)), "Each planet must trigger exactly one yoga per day"
-
-    def test_slow_planet_window_exceeds_two_days(self):
-        # Slow planets spend at least 7 days in a nakshatra (Sun ~14d, Mars ~7d,
-        # Mercury/Venus ~5-14d, Jupiter ~18d, Saturn months).
-        # A 2-day threshold clearly distinguishes real nak windows from the
-        # sunrise→next_sunrise fallback (~1.00012 days).
-        result = _detect(date(2026, 6, 18))
-        for y in result["aanandadi_yogas"]:
-            if y["triggering_planet"] != "Moon":
-                duration_days = y["end_jd"] - y["start_jd"]
-                assert duration_days > 2.0, (
-                    f"{y['triggering_planet']} ({y['name']}) window is only "
-                    f"{duration_days:.2f} days — expected nakshatra transition times, not sunrise window"
-                )
-
-    def test_slow_planet_start_end_times_differ(self):
-        # The 05:33–05:33 bug: start_time == end_time for slow planets because
-        # sunrise times barely change day-to-day. After the fix, times must differ.
-        result = _detect(date(2026, 6, 18))
-        for y in result["aanandadi_yogas"]:
-            if y["triggering_planet"] != "Moon":
-                assert y["start_time"] != y["end_time"], (
-                    f"{y['triggering_planet']} shows same start/end time: {y['start_time']}"
-                )
+        # Try several dates until we find one with a tuple varjya (non-severe ashubh yoga)
+        for d in (date(2026, 6, d) for d in range(7, 22)):
+            result = _detect(d)
+            for y in result["aanandadi_yogas"]:
+                if y["varjya_minutes"] is not None and y["varjya_minutes"] != "full_day":
+                    assert y.get("varjya_start_jd") is not None
+                    assert y.get("varjya_end_jd") is not None
+                    assert y["varjya_end_jd"] > y["varjya_start_jd"], \
+                        f"varjya end must be after start for '{y['name']}'"
+                    return  # found and tested — done
+        pytest.skip("No non-severe ashubh Aanandadi yoga found in Jun 7–21")
 
 
 # ---------------------------------------------------------------------------
