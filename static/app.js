@@ -1786,7 +1786,31 @@ async function loadYogaMuhurta() {
         Vara ${data.vara} · Tithi ${data.tithi} · Nakshatra ${data.nakshatra}
       </div>`;
 
-    const activeYogas = data.yogas.filter(y => !y.cancelled);
+    // Normalize a yoga name for deduplication comparison:
+    // strip trailing " Yoga"/" Nakshatra", lowercase, unify u→i (Sanskrit transliteration variants).
+    function normYogaName(s) {
+      return s.toLowerCase()
+        .replace(/\s+yoga$/i, '')
+        .replace(/\s+nakshatra$/i, '')
+        .replace(/u/g, 'i');
+    }
+    // Aanandadi yoga base-names, pre-normalized.
+    const aanandadiBaseNames = (data.aanandadi_yogas || []).map(y => normYogaName(y.name));
+
+    // Returns true if a Dainika yoga name is conceptually covered by an active Aanandadi yoga:
+    // exact normalized match (e.g. Amrit/Amrut → both "amrit"), or prefix match when the names
+    // differ by at most 2 characters (e.g. "rakshas" ⊂ "rakshasa", diff=1).
+    function shadowedByAanandadi(yogaName) {
+      const base = normYogaName(yogaName);
+      return aanandadiBaseNames.some(an => {
+        if (an === base) return true;
+        const longer  = an.length > base.length ? an : base;
+        const shorter = an.length <= base.length ? an : base;
+        return longer.startsWith(shorter) && (longer.length - shorter.length) <= 2;
+      });
+    }
+
+    const activeYogas = data.yogas.filter(y => !y.cancelled && !shadowedByAanandadi(y.name));
     const shubh = activeYogas.filter(y => y.nature === 'shubh');
     const ashubh = activeYogas.filter(y => y.nature === 'ashubh');
 
@@ -1795,17 +1819,43 @@ async function loadYogaMuhurta() {
       return `<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${bg};color:#333;">${sev.replace(/_/g,' ')}</span>`;
     }
 
+    // Group yogas that share the exact same time window into a single table row.
+    // The first yoga in each group becomes the primary (drives all columns);
+    // extras appear as compact sub-tags beneath the primary name.
+    function groupByWindow(yogas) {
+      const map = new Map();
+      for (const y of yogas) {
+        const key = `${y.start_time}|${y.end_time}`;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(y);
+      }
+      return [...map.values()];
+    }
+
     function yogaSection(title, yogas, color) {
       if (!yogas.length) return '';
-      const rows = yogas.map(y => {
+      const groups = groupByWindow(yogas);
+      const rows = groups.map(group => {
+        const y = group[0];  // primary yoga drives all columns
+        const isNullified = y.is_nullified;
+        const rowOpacity = isNullified ? 'opacity:0.4;' : '';
         const timing = (y.start_time && y.end_time)
           ? `<span style="font-size:11px;color:#555;white-space:nowrap;">${y.start_time} – ${y.end_time}</span>`
           : '';
+        const nullBadge = isNullified
+          ? `<div style="font-size:10px;color:#888;margin-top:2px;">Nullified by ${y.nullified_by}</div>`
+          : '';
+        const extraTags = group.slice(1).map(extra =>
+          `<span style="display:inline-block;margin-top:4px;margin-right:4px;font-size:10px;
+            padding:1px 7px;border-radius:8px;background:#f0f0f0;color:#555;">${extra.name}</span>`
+        ).join('');
         return `
-        <tr>
+        <tr style="${rowOpacity}">
           <td style="font-weight:600;font-size:13px;padding:6px 10px;">
             ${y.name}${y.diminished ? ' <span style="font-size:10px;color:#e67e22;">(diminished)</span>' : ''}
             ${timing ? `<div style="margin-top:2px;">${timing}</div>` : ''}
+            ${extraTags ? `<div style="margin-top:3px;">${extraTags}</div>` : ''}
+            ${nullBadge}
           </td>
           <td style="text-transform:capitalize;font-size:12px;padding:6px 8px;">${y.nature}</td>
           <td style="font-size:12px;padding:6px 8px;">${y.trigger_kind}</td>

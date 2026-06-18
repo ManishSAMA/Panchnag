@@ -86,7 +86,8 @@ def detect_all_yogas_for_day(
     # ── Dainika (vara-based) ─────────────────────────────────────────────
     raw_dainika = match_dainika(DAINIKA_RULES, vara, tithi_segments, nakshatra_segments)
     dainika_with_overrides = apply_dainika_overrides(raw_dainika)
-    dainika_formatted = [_fmt_dainika(m, tz_name) for m in dainika_with_overrides]
+    dainika_with_dosha_bhanga = _apply_dainika_dosha_bhanga(dainika_with_overrides)
+    dainika_formatted = [_fmt_dainika(m, tz_name) for m in dainika_with_dosha_bhanga]
     dainika_rec = compute_recommendation(dainika_with_overrides)
 
     # ── Aanandadi (Vara + Moon nakshatra formula) ────────────────────────
@@ -173,6 +174,33 @@ _SUPREME_OVERRIDERS: frozenset[str] = frozenset({
 })
 
 
+def _apply_dainika_dosha_bhanga(matches: list[dict]) -> list[dict]:
+    """Mark inauspicious Dainika yogas as nullified when they time-overlap a supreme yoga.
+
+    Uses _SUPREME_OVERRIDERS (same set as Aanandadi nullification).
+    Cancelled yogas are excluded from the supreme-window pool.
+    Every entry receives is_nullified (bool) and nullified_by (str | None).
+    """
+    supreme_windows = [
+        m for m in matches
+        if m["name"] in _SUPREME_OVERRIDERS and not m.get("cancelled", False)
+    ]
+    result: list[dict] = []
+    for yoga in matches:
+        if yoga["nature"] == "ashubh" and not yoga.get("cancelled", False):
+            nullifier = next(
+                (s for s in supreme_windows
+                 if yoga["start_jd"] < s["end_jd"] and s["start_jd"] < yoga["end_jd"]),
+                None,
+            )
+            result.append({**yoga,
+                           "is_nullified": nullifier is not None,
+                           "nullified_by": nullifier["name"] if nullifier else None})
+        else:
+            result.append({**yoga, "is_nullified": False, "nullified_by": None})
+    return result
+
+
 def _apply_supreme_nullification(
     dainika: list[dict],
     aanandadi: list[dict],
@@ -238,6 +266,7 @@ def _fmt_aanandadi(match: dict, tz_name: str) -> dict:
     return {
         **match,
         "trigger_nakshatra": nak_name,
+        "triggering_planet": "Moon",
         "start_time": st,
         "start_local": sl,
         "end_time": et,

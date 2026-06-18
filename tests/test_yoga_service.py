@@ -91,7 +91,8 @@ class TestResponseStructure:
         for y in yogas:
             for field in ("name", "nature", "severity", "severe", "meaning",
                           "trigger_kind", "trigger_detail", "start_time", "end_time",
-                          "start_local", "end_local", "start_jd", "end_jd"):
+                          "start_local", "end_local", "start_jd", "end_jd",
+                          "is_nullified", "nullified_by"):
                 assert field in y, f"Dainika yoga missing field '{field}'"
 
     def test_aanandadi_yoga_has_required_fields(self):
@@ -385,3 +386,48 @@ class TestKnownSpecialDates:
         result = _detect(date(2026, 4, 23))
         assert not _has_yoga(result, "special_yogas", "Gandmool Nakshatra"), \
             "Gandmool must NOT fire when Moon is in Pushya"
+
+
+# ---------------------------------------------------------------------------
+# Dainika Dosha Bhanga (cancellation hierarchy)
+# ---------------------------------------------------------------------------
+
+class TestDaiknikaDosha_Bhanga:
+    def test_dainika_yoga_has_is_nullified_field(self):
+        result = _detect(date(2026, 6, 18))
+        for y in result["yogas"]:
+            assert "is_nullified" in y, f"Dainika yoga '{y['name']}' missing is_nullified"
+            assert "nullified_by" in y, f"Dainika yoga '{y['name']}' missing nullified_by"
+
+    def test_dainika_ashubh_not_nullified_without_supreme(self):
+        # June 7 is Sunday — no Guru/Ravi Pushya Amrit fires; any ashubh yogas should not be nullified
+        result = _detect(date(2026, 6, 7))
+        for y in result["yogas"]:
+            if y["nature"] == "ashubh" and not y.get("cancelled"):
+                assert y["is_nullified"] is False, \
+                    f"'{y['name']}' should not be nullified when no supreme yoga is active"
+
+    def test_dainika_ashubh_nullified_when_supreme_overlaps_june18(self):
+        # June 18: Guru Pushya Amrit + Amrit Siddhi + Sarvartha Siddhi are active (05:23–11:32).
+        # Any inauspicious Dainika yoga whose window overlaps that range must have is_nullified=True.
+        result = _detect(date(2026, 6, 18))
+        _SUPREME = {"Guru Pushya Amrit", "Ravi Pushya Amrit", "Sarvartha Siddhi", "Amrit Siddhi"}
+        supreme = {y["name"]: (y["start_jd"], y["end_jd"])
+                   for y in result["yogas"]
+                   if y["name"] in _SUPREME and not y.get("cancelled")}
+        if not supreme:
+            pytest.skip("No supreme yoga found on June 18 — check ephemeris")
+        for y in result["yogas"]:
+            if y["nature"] != "ashubh" or y.get("cancelled"):
+                continue
+            overlaps_supreme = any(
+                y["start_jd"] < end_jd and start_jd < y["end_jd"]
+                for start_jd, end_jd in supreme.values()
+            )
+            if overlaps_supreme:
+                assert y["is_nullified"] is True, (
+                    f"'{y['name']}' overlaps a supreme Dainika yoga window "
+                    f"but is_nullified={y.get('is_nullified')}"
+                )
+                assert y["nullified_by"] in supreme, \
+                    f"nullified_by='{y['nullified_by']}' is not a known supreme yoga"
