@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from datetime import date as date_type
 
-from astronomy import jd_to_zoned_datetime
+from astronomy import jd_to_zoned_datetime, get_planetary_longitude
 from panchang import get_vara_from_date, calculate_bhadra_kaal, calculate_panchak_kaal
 from panchang_service import _collect_all_tithis_in_day, collect_all_nakshatras_in_day
 
@@ -42,9 +42,20 @@ _GANDMOOL_NAK_NAMES: dict[int, str] = {
     18: "Jyeshtha", 19: "Mula", 27: "Revati",
 }
 
+# Tithi names (Shukla 1–15); index 0 = Pratipada
+_TITHI_NAMES: tuple[str, ...] = (
+    "Pratipada", "Dwitiya", "Tritiya", "Chaturthi", "Panchami",
+    "Shashthi", "Saptami", "Ashtami", "Navami", "Dashami",
+    "Ekadashi", "Dwadashi", "Trayodashi", "Chaturdashi", "Purnima",
+)
+
 # Jwalamukhi (tithi, nakshatra) pairs — no vara constraint
 _JWALAMUKHI_PAIRS: frozenset[tuple[int, int]] = frozenset({
-    (1, 19), (5, 2), (9, 4), (9, 3), (10, 9),
+    (1, 19),   # Pratipada  + Moola
+    (5, 2),    # Panchami   + Bharani
+    (8, 3),    # Ashtami    + Kritika
+    (9, 4),    # Navami     + Rohini
+    (10, 9),   # Dashami    + Ashlesha
 })
 
 
@@ -97,6 +108,9 @@ def detect_all_yogas_for_day(
     aanandadi_with_nullification = _apply_supreme_nullification(dainika_formatted, aanandadi_formatted)
     aanandadi_rec = compute_recommendation(raw_aanandadi)
 
+    # ── Ravi Yoga (Sun + Moon nakshatra distance formula) ────────────────
+    ravi_yogas = _detect_ravi_yoga(sunrise_jd, moon_segs, ayanamsa, tz_name, dainika_formatted)
+
     # ── Special (Moon-position based) ────────────────────────────────────
     special = _detect_special(
         tithi_segments, nakshatra_segments,
@@ -111,6 +125,7 @@ def detect_all_yogas_for_day(
         "recommendation": dainika_rec,
         "aanandadi_yogas": aanandadi_with_nullification,
         "aanandadi_recommendation": aanandadi_rec,
+        "ravi_yogas": ravi_yogas,
         "special_yogas": special,
     }
 
@@ -172,6 +187,91 @@ _SUPREME_OVERRIDERS: frozenset[str] = frozenset({
     "Sarvartha Siddhi",
     "Amrit Siddhi",
 })
+
+# Ravi Yoga: Sun-Moon nakshatra distance formula (27-nakshatra system, Abhijit excluded).
+# distance = ((moon_nak - sun_nak) % 27) + 1.  Active when distance ∈ {4,6,9,10,13,20}.
+# Source: Ruchika Publications, Delhi, Page 112.
+_RAVI_YOGA_DISTANCES: frozenset[int] = frozenset({4, 6, 9, 10, 13, 20})
+_RAVI_YOGA_MEANING = (
+    "Sun-Moon nakshatra yoga — nullifies the positive effects of other auspicious yogas "
+    "active simultaneously. Avoid for all auspicious muhurtas. "
+    "Source: Ruchika Publications, Delhi, p. 112."
+)
+
+
+def _lon_to_27_nakshatra(lon: float) -> int:
+    """Convert sidereal longitude [0, 360) to 27-nakshatra index 1–27 (Abhijit excluded)."""
+    return int(lon * 27 / 360) % 27 + 1
+
+
+def _detect_ravi_yoga(
+    sunrise_jd: float,
+    moon_segs: list[dict],
+    ayanamsa: str,
+    tz_name: str,
+    dainika_yogas: list[dict],
+) -> list[dict]:
+    """Detect Ravi Yoga windows for the day using the Sun-Moon nakshatra distance formula.
+
+    The Sun stays in one nakshatra for ~13 days, so its position at sunrise is stable
+    for the entire day. The Moon's segments (already computed) are iterated; each segment
+    where the distance falls in _RAVI_YOGA_DISTANCES produces one yoga entry.
+
+    Distances 9 and 10 are consecutive: when Moon crosses from the dist-9 to the dist-10
+    nakshatra the windows are back-to-back with no gap. They are emitted as two separate
+    entries (one per Moon nakshatra segment) — contiguous in time but not merged.
+
+    Ravi Yoga is never nullified by supreme overriders (unlike inauspicious Dainika yogas).
+    Instead, when it overlaps a supreme yoga it gets flagged `is_conflict=True` so the
+    user sees the tension explicitly.
+    """
+    sun_lon = get_planetary_longitude(sunrise_jd, "Sun", ayanamsa)
+    sun_nak = _lon_to_27_nakshatra(sun_lon)
+
+    supreme_windows = [
+        m for m in dainika_yogas
+        if m["name"] in _SUPREME_OVERRIDERS and not m.get("cancelled", False)
+    ]
+
+    results: list[dict] = []
+    for seg in moon_segs:
+        moon_nak = seg["index"]
+        if moon_nak > 27:
+            continue  # Abhijit (28) — excluded from the 27-nakshatra formula
+        distance = ((moon_nak - sun_nak) % 27) + 1
+        if distance not in _RAVI_YOGA_DISTANCES:
+            continue
+
+        start_jd, end_jd = seg["start_jd"], seg["end_jd"]
+        conflicting = [
+            s["name"] for s in supreme_windows
+            if start_jd < s["end_jd"] and s["start_jd"] < end_jd
+        ]
+        st, sl = _fmt(start_jd, tz_name)
+        et, el = _fmt(end_jd, tz_name)
+        results.append({
+            "name": "Ravi Yoga",
+            "nature": "ashubh",
+            "severity": "inauspicious",
+            "meaning": _RAVI_YOGA_MEANING,
+            "trigger_kind": "sun_moon_nakshatra",
+            "trigger_detail": (
+                f"Sun in {_NAK_NAMES[sun_nak - 1]}, "
+                f"Moon in {_NAK_NAMES[moon_nak - 1]} (distance: {distance})"
+            ),
+            "start_jd": start_jd,
+            "end_jd": end_jd,
+            "start_time": st,
+            "start_local": sl,
+            "end_time": et,
+            "end_local": el,
+            "is_nullified": False,
+            "nullified_by": None,
+            "is_conflict": bool(conflicting),
+            "conflicts_with": conflicting,
+            "cancelled": False,
+        })
+    return results
 
 
 def _apply_dainika_dosha_bhanga(matches: list[dict]) -> list[dict]:
@@ -293,8 +393,9 @@ _BHADRA_MEANING = (
     "Avoid all new undertakings, travel, and auspicious ceremonies."
 )
 _JWALAMUKHI_MEANING = (
-    "Flame-mouth — combustive energy; avoid fire-related activities, surgery, "
-    "and auspicious starts."
+    "Volcano — any work started here faces major obstacles and goes to waste. "
+    "Avoid all auspicious muhurtas, marriages, construction, and agriculture. "
+    "Exception: auspicious only for defeating enemies or hostile acts."
 )
 
 
@@ -431,6 +532,9 @@ def _jwalamukhi(
                 continue
             st, sl = _fmt(start_jd, tz_name)
             et, el = _fmt(end_jd, tz_name)
+            t_idx, n_idx = t_seg["index"], n_seg["index"]
+            tithi_name = _TITHI_NAMES[t_idx - 1] if 1 <= t_idx <= 15 else f"Tithi {t_idx}"
+            nak_name = _NAK_NAMES[n_idx - 1]
             results.append({
                 "name": "Jwalamukhi",
                 "nature": "ashubh",
@@ -444,6 +548,6 @@ def _jwalamukhi(
                 "end_jd": end_jd,
                 "clipped_start": False,
                 "clipped_end": False,
-                "trigger_detail": f"Tithi {t_seg['index']} + Nakshatra {n_seg['index']}",
+                "trigger_detail": f"{tithi_name} + {nak_name}",
             })
     return results

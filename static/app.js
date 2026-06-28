@@ -1813,6 +1813,9 @@ async function loadYogaMuhurta() {
     const activeYogas = data.yogas.filter(y => !y.cancelled && !shadowedByAanandadi(y.name));
     const shubh = activeYogas.filter(y => y.nature === 'shubh');
     const ashubh = activeYogas.filter(y => y.nature === 'ashubh');
+    // Ravi Yoga (Sun-Moon distance formula) renders in the inauspicious Dainika table.
+    const raviYogas = data.ravi_yogas || [];
+    const ashubhWithRavi = [...ashubh, ...raviYogas];
 
     function severityBadge(sev) {
       const bg = sev==='highly_inauspicious'?'#ffd5d5':sev==='highly_auspicious'?'#c6efce':sev==='inauspicious'?'#ffeb9c':'#daeaf7';
@@ -1845,6 +1848,9 @@ async function loadYogaMuhurta() {
         const nullBadge = isNullified
           ? `<div style="font-size:10px;color:#888;margin-top:2px;">Nullified by ${y.nullified_by}</div>`
           : '';
+        const conflictBadge = y.is_conflict
+          ? `<div style="font-size:10px;color:#e67e22;margin-top:2px;">⚠ Conflicts with: ${(y.conflicts_with||[]).join(', ')}</div>`
+          : '';
         const extraTags = group.slice(1).map(extra =>
           `<span style="display:inline-block;margin-top:4px;margin-right:4px;font-size:10px;
             padding:1px 7px;border-radius:8px;background:#f0f0f0;color:#555;">${extra.name}</span>`
@@ -1856,6 +1862,7 @@ async function loadYogaMuhurta() {
             ${timing ? `<div style="margin-top:2px;">${timing}</div>` : ''}
             ${extraTags ? `<div style="margin-top:3px;">${extraTags}</div>` : ''}
             ${nullBadge}
+            ${conflictBadge}
           </td>
           <td style="text-transform:capitalize;font-size:12px;padding:6px 8px;">${y.nature}</td>
           <td style="font-size:12px;padding:6px 8px;">${y.trigger_kind}</td>
@@ -1954,11 +1961,15 @@ async function loadYogaMuhurta() {
 
     function specialYogasSection(yogas) {
       if (!yogas || yogas.length === 0) return '';
+      const _GANDMOOL_ALL = 'Ashwini · Ashlesha · Magha · Jyeshtha · Moola · Revati';
       const rows = yogas.map(y => {
         const timing = y.start_time && y.end_time ? `${y.start_time}–${y.end_time}` : 'All day';
         const clipped = (y.clipped_start ? '◀ ' : '') + timing + (y.clipped_end ? ' ▶' : '');
+        const nameCell = y.name === 'Gandmool Nakshatra'
+          ? `${y.name}<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;">${_GANDMOOL_ALL}</div>`
+          : y.name;
         return `<tr>
-          <td style="font-weight:600">${y.name}</td>
+          <td style="font-weight:600">${nameCell}</td>
           <td style="font-size:11px;color:#666">${clipped}</td>
           <td style="font-size:11px;color:#666">${y.trigger_detail || ''}</td>
           <td style="font-size:12px">${y.meaning}</td>
@@ -1979,9 +1990,9 @@ async function loadYogaMuhurta() {
         </div>`;
     }
 
-    const traditionalHtml = activeYogas.length === 0
+    const traditionalHtml = (activeYogas.length === 0 && raviYogas.length === 0)
       ? `<div style="text-align:center;padding:24px 16px;color:#888;font-size:14px;">No traditional yoga active for this date.</div>`
-      : yogaSection('Auspicious Yogas', shubh, '#1a7f4e') + yogaSection('Inauspicious Yogas', ashubh, '#922b21');
+      : yogaSection('Auspicious Yogas', shubh, '#1a7f4e') + yogaSection('Inauspicious Yogas', ashubhWithRavi, '#922b21');
 
     content.innerHTML = traditionalHtml + aanandadiSection(data.aanandadi_yogas) + specialYogasSection(data.special_yogas);
 

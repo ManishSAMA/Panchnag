@@ -448,64 +448,8 @@ DAINIKA_RULES: list[dict] = [
             6: list(range(11, 14)), # Saturday: 11–13
         },
     },
-    # ── SECTION 2: ASHUBH TITHIVAR (7 named Vara+Tithi combos) ──────────
-    {
-        "name": "Nal Banvas",
-        "nature": "ashubh",
-        "trigger": "tithi",
-        "severity": "inauspicious",
-        "meaning": "Exile of Nala — inauspicious combination associated with exile and hardship.",
-        "vara_map": {2: [2]},   # Tuesday + Tithi 2
-    },
-    {
-        "name": "Pandav Nash",
-        "nature": "ashubh",
-        "trigger": "tithi",
-        "severity": "inauspicious",
-        "meaning": "Destruction of Pandavas — inauspicious; avoid new undertakings.",
-        "vara_map": {5: [3]},   # Friday + Tithi 3
-    },
-    {
-        "name": "Vibhishan Maran",
-        "nature": "ashubh",
-        "trigger": "tithi",
-        "severity": "inauspicious",
-        "meaning": "Death of Vibhishana — inauspicious combination; avoid important events.",
-        "vara_map": {0: [4]},   # Sunday + Tithi 4
-    },
-    {
-        "name": "Sita Haran",
-        "nature": "ashubh",
-        "trigger": "tithi",
-        "severity": "inauspicious",
-        "meaning": "Abduction of Sita — inauspicious; avoid travel, marriage, and new ventures.",
-        "vara_map": {3: [5]},   # Wednesday + Tithi 5
-    },
-    {
-        "name": "Lanka Bhang",
-        "nature": "ashubh",
-        "trigger": "tithi",
-        "severity": "inauspicious",
-        "meaning": "Destruction of Lanka — inauspicious combination; avoid construction and agreements.",
-        "vara_map": {6: [6]},   # Saturday + Tithi 6
-    },
-    {
-        "name": "Pandav Jung",
-        "nature": "ashubh",
-        "trigger": "tithi",
-        "severity": "inauspicious",
-        "meaning": "War of Pandavas — inauspicious; avoid legal matters and disputes.",
-        "vara_map": {1: [7]},   # Monday + Tithi 7
-    },
-    {
-        "name": "Bali Raja Chhal",
-        "nature": "ashubh",
-        "trigger": "tithi",
-        "severity": "inauspicious",
-        "meaning": "Deception of King Bali — inauspicious; avoid financial dealings and trusts.",
-        "vara_map": {4: [8]},   # Thursday + Tithi 8
-    },
-    # ── SECTION 3: NAKSHATRA-BASED ASHUBH ────────────────────────────────
+   
+    # ── SECTION 2: NAKSHATRA-BASED ASHUBH ────────────────────────────────
     {
         "name": "Varjit Tithi Nakshatra",
         "nature": "ashubh",
@@ -831,7 +775,7 @@ DAINIKA_RULES: list[dict] = [
         },
     },
     {
-        "name": "Siddha Yoga",
+        "name": "Siddhi Yoga",
         "nature": "shubh",
         "trigger": "nakshatra",
         "severity": "auspicious",
@@ -916,6 +860,103 @@ DAINIKA_RULES: list[dict] = [
         "tithi_values": [2, 7, 12, 17, 22, 27],
         "nakshatra_values": [5, 14, 23],   # Mrigashira, Chitra, Dhanishtha — 2-to-2 rashi split
     },
+    # ── SECTION 7: KUMAR YOG, RAJ YOG, STHIR YOG ────────────────────────────
+    # Source: Jyotishsaar Sangrah — Dr. Surendra Kumar, pages 12–13
+    {
+        "name": "Kumar Yog",
+        "nature": "shubh",
+        "trigger": "tithi_and_nakshatra",
+        "severity": "auspicious",
+        "meaning": "Youthful energy — auspicious for education, new learning, and children-related activities.",
+        "vara_map": {1: True, 2: True, 3: True, 4: True},   # Mon–Thu
+        "tithi_values": [1, 5, 6, 10, 11],
+        "nakshatra_values": [1, 4, 7, 10, 13, 16, 19, 22, 25],
+        # Ashvini, Rohini, Punarvasu, Magha, Hasta, Vishakha, Mula, Shravana, PurvaBhadrapada
+    },
+    # Kumar Yog (Tyajya) — each vara has its own unique tithi+nakshatra pair; split into 4 rules
+    {
+        "name": "Kumar Yog (Tyajya)",
+        "nature": "ashubh",
+        "trigger": "tithi_and_nakshatra",
+        "severity": "inauspicious",
+        "meaning": "Forbidden Kumar Yoga — causes obstacles in education and children-related matters. Avoid.",
+        "vara_map": {1: True},   # Monday
+        "tithi_values": [11],
+        "nakshatra_values": [16],   # Vishakha
+    },
+    {
+        "name": "Kumar Yog (Tyajya)",
+        "nature": "ashubh",
+        "trigger": "tithi_and_nakshatra",
+        "severity": "inauspicious",
+        "meaning": "Forbidden Kumar Yoga — causes obstacles in education and children-related matters. Avoid.",
+        "vara_map": {2: True},   # Tuesday
+        "tithi_values": [10],
+        "nakshatra_values": [25],   # Purva Bhadrapada
+    },
+    {
+        "name": "Kumar Yog (Tyajya)",
+        "nature": "ashubh",
+        "trigger": "tithi_and_nakshatra",
+        "severity": "inauspicious",
+        "meaning": "Forbidden Kumar Yoga — causes obstacles in education and children-related matters. Avoid.",
+        "vara_map": {3: True},   # Wednesday
+        "tithi_values": [9],
+        "nakshatra_values": [1, 19],   # Ashvini, Mula
+    },
+    {
+        "name": "Kumar Yog (Tyajya)",
+        "nature": "ashubh",
+        "trigger": "tithi_and_nakshatra",
+        "severity": "inauspicious",
+        "meaning": "Forbidden Kumar Yoga — causes obstacles in education and children-related matters. Avoid.",
+        "vara_map": {4: True},   # Thursday
+        "tithi_values": [10],
+        "nakshatra_values": [4],   # Rohini
+    },
+    # Raj Yog — two independent rules per source (both named Raj Yog)
+    {
+        "name": "Raj Yog",
+        "nature": "shubh",
+        "trigger": "tithi_and_nakshatra",
+        "severity": "highly_auspicious",
+        "meaning": "Royal alignment — excellent for career, authority, and government work.",
+        "vara_map": {2: True, 4: True},   # Tuesday, Thursday
+        "tithi_values": [2, 7, 12],
+        "nakshatra_values": [5, 14, 23],   # Mrigashira, Chitra, Dhanishtha
+    },
+    {
+        "name": "Raj Yog",
+        "nature": "shubh",
+        "trigger": "tithi_and_nakshatra",
+        "severity": "highly_auspicious",
+        "meaning": "Royal alignment — excellent for career, authority, and government work.",
+        "vara_map": {0: True, 1: True, 2: True, 3: True},   # Sun–Wed
+        "tithi_values": [2, 3, 7, 12, 15],
+        "nakshatra_values": [2, 5, 8, 11, 14, 17, 20, 23, 26],
+        # Bharani, Mrigashira, Pushya, PurvaPhalguni, Chitra, Anuradha, PurvaAshadha, Dhanishtha, UttaraBhadrapada
+    },
+    {
+        "name": "Raj Yog",
+        "nature": "shubh",
+        "trigger": "tithi_and_nakshatra",
+        "severity": "highly_auspicious",
+        "meaning": "Royal alignment — excellent for career, authority, and government work.",
+        "vara_map": {4: True},   # Thursday — uses PurvaBhadrapada(25) not UttaraBhadrapada(26)
+        "tithi_values": [2, 3, 7, 12, 15],
+        "nakshatra_values": [2, 5, 8, 11, 14, 17, 20, 23, 25],
+    },
+    {
+        "name": "Sthir Yog",
+        "nature": "shubh",
+        "trigger": "tithi_and_nakshatra",
+        "severity": "auspicious",
+        "meaning": "Stability — excellent for long-term investments, construction, and foundational work.",
+        "vara_map": {4: True, 6: True},   # Thursday, Saturday
+        "tithi_values": [4, 8, 9, 13, 14],
+        "nakshatra_values": [1, 3, 6, 12, 15, 18, 21, 24, 27],
+        # Ashvini, Kritika, Ardra, UttaraPhalguni, Swati, Jyeshtha, UttaraAshadha, Shatabhisha, Revati
+    },
 ]
 
 
@@ -950,6 +991,6 @@ SPECIAL_RULES: list[dict] = [
         "nature": "ashubh",
         "trigger": "jwalamukhi",
         "severity": "inauspicious",
-        "meaning": "Flame-mouth — combustive energy; avoid fire-related activities, surgery, and auspicious starts.",
+        "meaning": "Volcano — any work started here faces major obstacles and goes to waste. Avoid all auspicious muhurtas, marriages, construction, and agriculture. Exception: auspicious only for defeating enemies or hostile acts.",
     },
 ]

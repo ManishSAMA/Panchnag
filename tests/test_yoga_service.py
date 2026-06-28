@@ -58,7 +58,8 @@ class TestResponseStructure:
     def test_required_top_level_keys(self):
         result = _detect(date(2026, 6, 7))
         for key in ("vara", "tithi", "nakshatra", "yogas", "recommendation",
-                    "aanandadi_yogas", "aanandadi_recommendation", "special_yogas"):
+                    "aanandadi_yogas", "aanandadi_recommendation", "special_yogas",
+                    "ravi_yogas"):
             assert key in result, f"Missing top-level key: '{key}'"
 
     def test_vara_in_range(self):
@@ -365,11 +366,25 @@ class TestKnownSpecialDates:
         assert _has_yoga(result, "special_yogas", "Panchak"), \
             "Panchak must fire on June 8 2026"
 
-    def test_jwalamukhi_jan27_2026(self):
-        # Tithi 9 + Nakshatra 3 (Navami + Kritika)
-        result = _detect(date(2026, 1, 27))
+    def test_jwalamukhi_pairs_are_canonical(self):
+        # The canonical 5 pairs per source (Ruchika Publications, Delhi).
+        # Kritika must be paired with Ashtami (8), NOT Navami (9).
+        from yoga_service import _JWALAMUKHI_PAIRS
+        assert (8, 3) in _JWALAMUKHI_PAIRS, "Ashtami+Kritika (8,3) must be a Jwalamukhi pair"
+        assert (9, 3) not in _JWALAMUKHI_PAIRS, "Navami+Kritika (9,3) is NOT a canonical pair"
+        assert (1, 19) in _JWALAMUKHI_PAIRS, "Pratipada+Moola (1,19) must be a Jwalamukhi pair"
+        assert (5, 2) in _JWALAMUKHI_PAIRS, "Panchami+Bharani (5,2) must be a Jwalamukhi pair"
+        assert (9, 4) in _JWALAMUKHI_PAIRS, "Navami+Rohini (9,4) must be a Jwalamukhi pair"
+        assert (10, 9) in _JWALAMUKHI_PAIRS, "Dashami+Ashlesha (10,9) must be a Jwalamukhi pair"
+
+    def test_jwalamukhi_ashtami_kritika_feb05_2025(self):
+        # 2025-02-05: Shukla Ashtami coincides with Kritika — canonical (8,3) pair fires
+        result = _detect(date(2025, 2, 5))
         assert _has_yoga(result, "special_yogas", "Jwalamukhi"), \
-            "Jwalamukhi must fire on Jan 27 2026"
+            "Jwalamukhi must fire on 2025-02-05 (Ashtami + Kritika)"
+        jw = [y for y in result["special_yogas"] if y["name"] == "Jwalamukhi"]
+        assert any("Ashtami" in y.get("trigger_detail", "") and "Kritika" in y.get("trigger_detail", "")
+                   for y in jw), "trigger_detail must say 'Ashtami + Kritika'"
 
     def test_bhadra_fires_on_some_days(self):
         # Bhadra fires every ~7 days; June 18 was confirmed in prior tests
@@ -431,3 +446,126 @@ class TestDaiknikaDosha_Bhanga:
                 )
                 assert y["nullified_by"] in supreme, \
                     f"nullified_by='{y['nullified_by']}' is not a known supreme yoga"
+
+
+# ---------------------------------------------------------------------------
+# Ravi Yoga — formula correctness (pure unit, no ephemeris)
+# ---------------------------------------------------------------------------
+
+class TestRaviYogaDistanceFormula:
+    _ACTIVE = frozenset({4, 6, 9, 10, 13, 20})
+
+    def test_source_verified_sun_ashvini_active_moons(self):
+        # Spec example: Sun=Ashvini(1). Distance formula must match the book table.
+        sun = 1
+        expected = {4: "Rohini", 6: "Ardra", 9: "Ashlesha", 10: "Magha",
+                    13: "Hasta", 20: "Purva Ashadha"}
+        for moon, name in expected.items():
+            d = ((moon - sun) % 27) + 1
+            assert d in self._ACTIVE, (
+                f"Sun=Ashvini Moon={name}(idx {moon}) → distance {d} should be active"
+            )
+
+    def test_inactive_distances_excluded_sun_ashvini(self):
+        sun = 1
+        active_moons = {((sun + dist - 2) % 27) + 1 for dist in self._ACTIVE}
+        for moon in range(1, 28):
+            if moon in active_moons:
+                continue
+            d = ((moon - sun) % 27) + 1
+            assert d not in self._ACTIVE, (
+                f"Sun=Ashvini Moon idx {moon}: distance {d} should be inactive"
+            )
+
+    def test_each_sun_nakshatra_yields_exactly_6_active_moons(self):
+        for sun in range(1, 28):
+            hits = sum(1 for moon in range(1, 28) if ((moon - sun) % 27) + 1 in self._ACTIVE)
+            assert hits == 6, f"Sun={sun}: expected 6 active Moon nakshatras, got {hits}"
+
+    def test_wrap_around_revati_sun_mrigashira_moon_gives_distance_6(self):
+        # Sun=Revati(27), Moon=Mrigashira(5): (5-27)%27+1 = 5+1 = 6 → active
+        d = ((5 - 27) % 27) + 1
+        assert d == 6
+        assert d in self._ACTIVE
+
+    def test_consecutive_distances_9_and_10_are_adjacent_nakshatras(self):
+        # Distances 9 and 10 from the same Sun produce adjacent Moon nakshatras.
+        # When Moon transits from dist-9 to dist-10 nakshatra, Ravi Yoga windows
+        # are back-to-back — treated as separate contiguous events (never merged).
+        sun = 5  # Mrigashira
+        dist9_moons  = [m for m in range(1, 28) if ((m - sun) % 27) + 1 == 9]
+        dist10_moons = [m for m in range(1, 28) if ((m - sun) % 27) + 1 == 10]
+        assert len(dist9_moons) == 1 and len(dist10_moons) == 1
+        assert (dist10_moons[0] - dist9_moons[0]) % 27 == 1
+
+
+# ---------------------------------------------------------------------------
+# Ravi Yoga — integration (real ephemeris)
+# ---------------------------------------------------------------------------
+
+class TestRaviYogaStructure:
+    _REQUIRED_FIELDS = (
+        "name", "nature", "severity", "meaning", "trigger_kind", "trigger_detail",
+        "start_time", "end_time", "start_jd", "end_jd",
+        "is_nullified", "nullified_by", "is_conflict", "conflicts_with",
+    )
+
+    def test_ravi_yogas_key_present_and_list(self):
+        result = _detect(date(2026, 6, 7))
+        assert "ravi_yogas" in result
+        assert isinstance(result["ravi_yogas"], list)
+
+    def test_ravi_yoga_entry_fields_when_active(self):
+        # Scan June 2026 to find at least one day Ravi Yoga fires, then verify schema
+        for day in range(1, 30):
+            result = _detect(date(2026, 6, day))
+            for y in result["ravi_yogas"]:
+                for field in self._REQUIRED_FIELDS:
+                    assert field in y, f"Ravi Yoga entry missing '{field}' (date=2026-06-{day:02d})"
+                return
+        pytest.skip("Ravi Yoga did not fire on any day in June 2026 — check ephemeris")
+
+    def test_ravi_yoga_is_always_ashubh_when_present(self):
+        for day in range(1, 30):
+            result = _detect(date(2026, 6, day))
+            for y in result["ravi_yogas"]:
+                assert y["name"] == "Ravi Yoga"
+                assert y["nature"] == "ashubh"
+                assert y["severity"] == "inauspicious"
+
+    def test_ravi_yoga_never_nullified(self):
+        # Ravi Yoga is not nullified by supreme overriders — it conflicts, not gets suppressed
+        result = _detect(date(2026, 6, 18))
+        for y in result["ravi_yogas"]:
+            assert y["is_nullified"] is False
+            assert y["nullified_by"] is None
+
+    def test_ravi_yoga_conflict_flag_when_overlaps_supreme(self):
+        # Any Ravi Yoga window that time-overlaps a supreme yoga must have is_conflict=True
+        _SUPREME = {"Guru Pushya Amrit", "Ravi Pushya Amrit", "Sarvartha Siddhi", "Amrit Siddhi"}
+        result = _detect(date(2026, 6, 18))
+        supreme_windows = [
+            (y["start_jd"], y["end_jd"])
+            for y in result["yogas"] if y["name"] in _SUPREME and not y.get("cancelled")
+        ]
+        for ravi in result["ravi_yogas"]:
+            overlaps = any(
+                ravi["start_jd"] < sw_end and sw_start < ravi["end_jd"]
+                for sw_start, sw_end in supreme_windows
+            )
+            if overlaps:
+                assert ravi["is_conflict"] is True, (
+                    "Ravi Yoga overlapping a supreme yoga must have is_conflict=True"
+                )
+                assert ravi["conflicts_with"], "conflicts_with must be non-empty when is_conflict=True"
+
+    def test_ravi_yoga_no_conflict_flag_without_supreme(self):
+        # On days without any supreme yoga, all Ravi Yoga entries must have is_conflict=False
+        _SUPREME = {"Guru Pushya Amrit", "Ravi Pushya Amrit", "Sarvartha Siddhi", "Amrit Siddhi"}
+        result = _detect(date(2026, 6, 7))  # Sunday, no Pushya
+        has_supreme = any(y["name"] in _SUPREME for y in result["yogas"])
+        if has_supreme:
+            pytest.skip("A supreme yoga is active on June 7 — pick a different date")
+        for ravi in result["ravi_yogas"]:
+            assert ravi["is_conflict"] is False
+            assert ravi["conflicts_with"] == []

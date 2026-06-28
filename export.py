@@ -153,19 +153,38 @@ def format_row_data(
     row[f'Moonrise ({tz_label})'] = moonrise_str
     row[f'Moonset ({tz_label})']  = moonset_str
 
-    # ---- Planetary Longitudes (decimal & DMS) ----
+    # ---- Planetary Longitudes (Traditional: Rashi / Ansha / Kala / Vikala) ----
     planet_order = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter',
                     'Venus', 'Saturn', 'Rahu', 'Ketu']
     for planet in planet_order:
         dec = planets.get(planet, 0.0)
-        row[f'{planet}_Dec']  = round(dec, 6)
-        row[f'{planet}_DMS']  = format_dms(dec)
+        rashi, ansha, kala, vikala = _decimal_to_traditional(dec)
+        row[f'{planet}_Rashi']  = rashi
+        row[f'{planet}_Ansha']  = ansha
+        row[f'{planet}_Kala']   = kala
+        row[f'{planet}_Vikala'] = vikala
 
     # ---- Ayanamsa ----
     row['Ayanamsa_Dec'] = round(ayanamsa_dec, 6)
     row['Ayanamsa_DMS'] = format_dms(ayanamsa_dec)
 
     return row
+
+
+def _decimal_to_traditional(decimal_degrees: float) -> tuple[int, int, int, int]:
+    """Convert sidereal decimal degrees to Rashi (1–12), Ansha (0–29°), Kala (0–59'), Vikala (0–59'')."""
+    rashi = int(decimal_degrees / 30) + 1
+    ansha = int(decimal_degrees % 30)
+    remaining_min = (decimal_degrees % 30 - ansha) * 60
+    kala = int(remaining_min)
+    vikala = round((remaining_min - kala) * 60)
+    if vikala == 60:
+        vikala = 0
+        kala += 1
+    if kala == 60:
+        kala = 0
+        ansha += 1
+    return rashi, ansha, kala, vikala
 
 
 def _format_element_value(name: str, end_jd: float, show_end_info: bool, tz_offset: float) -> str:

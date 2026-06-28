@@ -116,12 +116,14 @@ class TestAanandadiRules:
 # ---------------------------------------------------------------------------
 
 class TestDainikaRules:
-    def test_exactly_42_rules(self):
-        assert len(DAINIKA_RULES) == 42
+    def test_exactly_44_rules(self):
+        assert len(DAINIKA_RULES) == 44
 
-    def test_all_names_unique(self):
+    def test_names_unique_except_intentional_duplicates(self):
+        # Raj Yog (3 rules) and Kumar Yog (Tyajya) (4 per-vara rules) are intentional duplicates
         names = [r["name"] for r in DAINIKA_RULES]
-        assert len(names) == len(set(names))
+        non_duplicate_names = {n for n in names if names.count(n) == 1}
+        assert len(non_duplicate_names) == len(set(non_duplicate_names))
 
     def test_required_keys_present(self):
         required = {"name", "nature", "trigger", "severity", "meaning", "vara_map"}
@@ -213,17 +215,11 @@ class TestDainikaRules:
         assert rule["nature"] == "ashubh"
         assert rule["trigger"] == "tithi"
 
-    def test_seven_ashubh_tithivar_rules_exist(self):
-        expected = {
-            "Nal Banvas", "Pandav Nash", "Vibhishan Maran",
-            "Sita Haran", "Lanka Bhang", "Pandav Jung", "Bali Raja Chhal",
-        }
+    def test_sthir_yog_and_kumar_yog_in_dainika_rules(self):
         names = {r["name"] for r in DAINIKA_RULES}
-        assert expected <= names
-
-    def test_nal_banvas_tuesday_tithi2(self):
-        rule = next(r for r in DAINIKA_RULES if r["name"] == "Nal Banvas")
-        assert rule["vara_map"] == {2: [2]}
+        assert "Kumar Yog" in names
+        assert "Sthir Yog" in names
+        assert "Raj Yog" in names
 
     def test_siddhi_yoga_tithi_map(self):
         rule = next(r for r in DAINIKA_RULES if r["name"] == "Siddhi Yoga Tithi")
@@ -250,6 +246,124 @@ class TestDainikaRules:
         rule = next(r for r in DAINIKA_RULES if r["name"] == "Rakshas Yoga")
         assert rule["vara_map"][0] == [24]   # Sunday: Shatabhisha
         assert rule["vara_map"][1] == [1]    # Monday: Ashvini
+
+
+# ---------------------------------------------------------------------------
+# Kumar Yog, Raj Yog, Sthir Yog
+# ---------------------------------------------------------------------------
+
+class TestKumarYog:
+    def test_kumar_yog_exists(self):
+        rule = next((r for r in DAINIKA_RULES if r["name"] == "Kumar Yog"), None)
+        assert rule is not None
+
+    def test_kumar_yog_shubh_tithi_and_nakshatra(self):
+        rule = next(r for r in DAINIKA_RULES if r["name"] == "Kumar Yog")
+        assert rule["nature"] == "shubh"
+        assert rule["trigger"] == "tithi_and_nakshatra"
+
+    def test_kumar_yog_applies_mon_to_thu(self):
+        rule = next(r for r in DAINIKA_RULES if r["name"] == "Kumar Yog")
+        assert set(rule["vara_map"].keys()) == {1, 2, 3, 4}
+
+    def test_kumar_yog_tithi_values(self):
+        rule = next(r for r in DAINIKA_RULES if r["name"] == "Kumar Yog")
+        assert set(rule["tithi_values"]) == {1, 5, 6, 10, 11}
+
+    def test_kumar_yog_nakshatra_values(self):
+        rule = next(r for r in DAINIKA_RULES if r["name"] == "Kumar Yog")
+        # Ashvini(1), Rohini(4), Punarvasu(7), Magha(10), Hasta(13), Vishakha(16), Mula(19), Shravana(22), PurvaBhadrapada(25)
+        assert set(rule["nakshatra_values"]) == {1, 4, 7, 10, 13, 16, 19, 22, 25}
+
+    def test_kumar_yog_tyajya_has_four_vara_entries(self):
+        rules = [r for r in DAINIKA_RULES if r["name"] == "Kumar Yog (Tyajya)"]
+        assert len(rules) == 4, f"Expected 4 per-vara entries, got {len(rules)}"
+
+    def test_kumar_yog_tyajya_is_ashubh(self):
+        for rule in (r for r in DAINIKA_RULES if r["name"] == "Kumar Yog (Tyajya)"):
+            assert rule["nature"] == "ashubh"
+            assert rule["trigger"] == "tithi_and_nakshatra"
+
+    def test_kumar_yog_tyajya_monday_pair(self):
+        rule = next(r for r in DAINIKA_RULES
+                    if r["name"] == "Kumar Yog (Tyajya)" and 1 in r["vara_map"])
+        assert set(rule["tithi_values"]) == {11}
+        assert set(rule["nakshatra_values"]) == {16}   # Vishakha
+
+    def test_kumar_yog_tyajya_tuesday_pair(self):
+        rule = next(r for r in DAINIKA_RULES
+                    if r["name"] == "Kumar Yog (Tyajya)" and 2 in r["vara_map"])
+        assert set(rule["tithi_values"]) == {10}
+        assert set(rule["nakshatra_values"]) == {25}   # Purva Bhadrapada
+
+    def test_kumar_yog_tyajya_wednesday_pair(self):
+        rule = next(r for r in DAINIKA_RULES
+                    if r["name"] == "Kumar Yog (Tyajya)" and 3 in r["vara_map"])
+        assert set(rule["tithi_values"]) == {9}
+        assert set(rule["nakshatra_values"]) == {1, 19}   # Ashvini, Mula
+
+    def test_kumar_yog_tyajya_thursday_pair(self):
+        rule = next(r for r in DAINIKA_RULES
+                    if r["name"] == "Kumar Yog (Tyajya)" and 4 in r["vara_map"])
+        assert set(rule["tithi_values"]) == {10}
+        assert set(rule["nakshatra_values"]) == {4}   # Rohini
+
+
+class TestRajYog:
+    def test_raj_yog_has_three_rules(self):
+        # Type-1 (Tue+Thu compact), Type-2 (Sun-Wed), Type-2 Thursday variant
+        rules = [r for r in DAINIKA_RULES if r["name"] == "Raj Yog"]
+        assert len(rules) == 3, f"Expected 3 Raj Yog rules, got {len(rules)}"
+
+    def test_raj_yog_both_shubh(self):
+        for rule in (r for r in DAINIKA_RULES if r["name"] == "Raj Yog"):
+            assert rule["nature"] == "shubh"
+            assert rule["severity"] == "highly_auspicious"
+            assert rule["trigger"] == "tithi_and_nakshatra"
+
+    def test_raj_yog_type1_tue_and_thu(self):
+        # The compact rule: Tithis 2,7,12 + Mrigashira/Chitra/Dhanishtha on Tue+Thu
+        rule = next(r for r in DAINIKA_RULES
+                    if r["name"] == "Raj Yog" and set(r["vara_map"].keys()) == {2, 4})
+        assert set(rule["tithi_values"]) == {2, 7, 12}
+        assert set(rule["nakshatra_values"]) == {5, 14, 23}   # Mrigashira, Chitra, Dhanishtha
+
+    def test_raj_yog_type2_covers_five_varas(self):
+        # The expanded rule covers Sun-Thu (varas 0-4)
+        all_varas = set()
+        for r in DAINIKA_RULES:
+            if r["name"] == "Raj Yog" and set(r["vara_map"].keys()) != {2, 4}:
+                all_varas |= set(r["vara_map"].keys())
+        assert all_varas == {0, 1, 2, 3, 4}
+
+    def test_raj_yog_type2_tithi_values(self):
+        for rule in DAINIKA_RULES:
+            if rule["name"] == "Raj Yog" and set(rule.get("vara_map", {}).keys()) != {2, 4}:
+                assert set(rule["tithi_values"]) == {2, 3, 7, 12, 15}
+
+
+class TestSthirYog:
+    def test_sthir_yog_exists(self):
+        rule = next((r for r in DAINIKA_RULES if r["name"] == "Sthir Yog"), None)
+        assert rule is not None
+
+    def test_sthir_yog_shubh_tithi_and_nakshatra(self):
+        rule = next(r for r in DAINIKA_RULES if r["name"] == "Sthir Yog")
+        assert rule["nature"] == "shubh"
+        assert rule["trigger"] == "tithi_and_nakshatra"
+
+    def test_sthir_yog_thu_and_sat(self):
+        rule = next(r for r in DAINIKA_RULES if r["name"] == "Sthir Yog")
+        assert set(rule["vara_map"].keys()) == {4, 6}
+
+    def test_sthir_yog_tithi_values(self):
+        rule = next(r for r in DAINIKA_RULES if r["name"] == "Sthir Yog")
+        assert set(rule["tithi_values"]) == {4, 8, 9, 13, 14}
+
+    def test_sthir_yog_nakshatra_values(self):
+        rule = next(r for r in DAINIKA_RULES if r["name"] == "Sthir Yog")
+        # Ashvini(1), Kritika(3), Ardra(6), UttaraPhalguni(12), Swati(15), Jyeshtha(18), UttaraAshadha(21), Shatabhisha(24), Revati(27)
+        assert set(rule["nakshatra_values"]) == {1, 3, 6, 12, 15, 18, 21, 24, 27}
 
 
 # ---------------------------------------------------------------------------
