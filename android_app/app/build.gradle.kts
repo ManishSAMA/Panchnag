@@ -13,8 +13,8 @@ android {
         applicationId = "com.example.jainpanchang"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "0.1"
     }
 
     buildTypes {
@@ -64,6 +64,7 @@ dependencies {
   implementation(libs.androidx.compose.ui)
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.compose.material3)
+  implementation(libs.androidx.compose.material.icons.extended)
   // Tooling
   debugImplementation(libs.androidx.compose.ui.tooling)
   // Instrumented tests
@@ -89,4 +90,7 @@ dependencies {
   implementation(libs.room.runtime)
   implementation(libs.room.ktx)
   ksp(libs.room.compiler)
+
+  // DataStore
+  implementation(libs.androidx.datastore.preferences)
 }

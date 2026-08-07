@@ -110,7 +110,12 @@ function navigate(page, params = {}) {
   const query = Object.keys(params).length
     ? '?' + Object.entries(params).map(([k,v]) => `${k}=${encodeURIComponent(v)}`).join('&')
     : '';
-  location.hash = page + query;
+  const targetHash = page + query;
+  if (location.hash === '#' + targetHash) {
+    route();
+  } else {
+    location.hash = targetHash;
+  }
 }
 
 function route() {
@@ -132,7 +137,24 @@ function route() {
   window.scrollTo(0, 0);
 }
 
-window.addEventListener('hashchange', route);
+// ── Theme ─────────────────────────────────────────────────────
+const THEME_KEY = 'jain_panchang_theme';
+
+function initTheme() {
+  const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+
+  const toggleButtons = document.querySelectorAll('#themeToggleHome, #themeToggleDrawer, .theme-toggle-btn');
+  toggleButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem(THEME_KEY, next);
+    });
+  });
+}
 
 // ── Drawer ────────────────────────────────────────────────────
 function initDrawer() {
@@ -140,30 +162,53 @@ function initDrawer() {
   const drawer  = document.getElementById('drawer');
 
   function open() {
-    overlay.classList.add('open');
-    drawer.classList.add('open');
+    if (overlay) {
+      overlay.classList.add('open');
+      overlay.classList.add('active');
+    }
+    if (drawer) {
+      drawer.classList.add('open');
+      drawer.classList.add('active');
+    }
   }
   function close() {
-    overlay.classList.remove('open');
-    drawer.classList.remove('open');
+    if (overlay) {
+      overlay.classList.remove('open');
+      overlay.classList.remove('active');
+    }
+    if (drawer) {
+      drawer.classList.remove('open');
+      drawer.classList.remove('active');
+    }
   }
 
-  overlay.addEventListener('click', close);
+  if (overlay) overlay.addEventListener('click', close);
 
   document.querySelectorAll('[id$="MenuBtn"]').forEach(btn => {
     btn.addEventListener('click', open);
   });
-  document.getElementById('homeMenuBtn').addEventListener('click', open);
 
-  drawer.querySelectorAll('[data-nav]').forEach(btn => {
-    btn.addEventListener('click', () => { navigate(btn.dataset.nav); close(); });
-  });
+  if (drawer) {
+    drawer.querySelectorAll('[data-nav]').forEach(btn => {
+      btn.addEventListener('click', () => { navigate(btn.dataset.nav); close(); });
+    });
+  }
 }
 
-// ── Shared: data-nav buttons ──────────────────────────────────
+// ── Shared: data-nav buttons (Event Delegation) ─────────────────
 function initNavButtons() {
-  document.querySelectorAll('[data-nav]').forEach(el => {
-    el.addEventListener('click', () => navigate(el.dataset.nav));
+  document.addEventListener('click', (e) => {
+    const navBtn = e.target.closest('[data-nav]');
+    if (navBtn) {
+      const page = navBtn.dataset.nav;
+      if (page) {
+        navigate(page);
+        const overlay = document.getElementById('drawerOverlay');
+        const drawer  = document.getElementById('drawer');
+        if (overlay) { overlay.classList.remove('open'); overlay.classList.remove('active'); }
+        if (drawer)  { drawer.classList.remove('open');  drawer.classList.remove('active'); }
+      }
+    }
   });
 }
 
@@ -244,8 +289,8 @@ registerPage('home', {
       gregorian.textContent = dt.toLocaleDateString('en-IN', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
       });
-      details.textContent = 'Set a location for Panchang data';
-      daily.innerHTML = '<div class="home-daily-empty">Set a location to calculate today’s Jain Tithi.</div>';
+      details.innerHTML = '<span data-nav="location" style="cursor:pointer;">📍 Set a location for Panchang data</span>';
+      daily.innerHTML = '<div class="home-daily-empty" data-nav="location" style="cursor:pointer;">📍 Set a location to calculate today’s Jain Tithi.</div>';
       return;
     }
 
@@ -1415,7 +1460,34 @@ const modalOverlay = document.getElementById('festModalOverlay');
 const modal = document.getElementById('festModal');
 const modalClose = document.getElementById('festModalClose');
 
+function formatJainTithiLabel(f) {
+  if (!f) return '—';
+  const month  = (f.jain_month && f.jain_month !== 'undefined' && f.jain_month !== 'null') ? f.jain_month : '';
+  const paksha = (f.paksha && f.paksha !== 'undefined' && f.paksha !== 'null') ? f.paksha : '';
+  let tithiName = '';
+
+  if (typeof f.tithi === 'string' && f.tithi !== 'undefined' && f.tithi !== 'null') {
+    tithiName = f.tithi;
+  } else if (typeof f.tithi === 'number') {
+    tithiName = `Tithi ${f.tithi}`;
+  } else if (f.tithi && typeof f.tithi === 'object') {
+    const tM = f.tithi.masa || f.tithi.month || '';
+    const tP = f.tithi.paksha || '';
+    const tN = f.tithi.name || f.tithi.number || f.tithi.tithi || '';
+    const combined = [tM, tP, tN].filter(Boolean).join(' ');
+    if (combined) return combined;
+  }
+
+  const parts = [month, paksha, tithiName].filter(Boolean);
+  return parts.length ? parts.join(' ') : '—';
+}
+
 function openFestivalModal(f) {
+  if (typeof f === 'string') {
+    f = (festState.festivals || []).find(x => x.occurrence_id === f || x.id === f);
+  }
+  if (!f) return;
+
   const modalBody = document.getElementById('festModalBody');
   const modalTitle = document.getElementById('festModalTitle');
   if (!modalBody) return;
@@ -1424,37 +1496,85 @@ function openFestivalModal(f) {
 
   const statusBadge = f.status === 'review_needed'
     ? `<span class="fest-badge fest-badge--review">⚠️ Review Needed</span>`
-    : `<span class="fest-badge fest-badge--${f.category}">${f.category}</span>`;
+    : getCategoryPill(f); // Use our new pill function!
 
-  modalBody.innerHTML = `
-    <div style="margin-bottom:10px;">${statusBadge}</div>
+  const getDaysCount = (s, e) => {
+    if (!s || !e || s === e) return 1;
+    const d1 = new Date(s);
+    const d2 = new Date(e);
+    return Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+  };
+
+  const rangeDisplay = f.start_date === f.end_date
+    ? f.start_date
+    : `${f.start_date} to ${f.end_date} <span style="font-weight:normal; font-size:12px; color:#8E44AD; margin-left:4px;">(${getDaysCount(f.start_date, f.end_date)} Days)</span>`;
+
+  // Daily Schedule Progress Tracker
+  let dailyProgressHTML = '';
+  if (f.daily_schedule && f.daily_schedule.length > 0) {
+    dailyProgressHTML = `
+      <div class="modal-detail-row">
+        <div class="modal-detail-label">Multi-Day Progress Tracker</div>
+        <div class="modal-detail-value" style="display:flex; flex-direction:column; gap:6px;">
+          ${f.daily_schedule.map((d, i) => `
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <input type="checkbox" style="accent-color:#8E44AD;">
+              <span style="font-size:13px; color:#2C3E50;"><strong>Day ${i+1} (${d.date.slice(5)}):</strong> ${d.virtue}</span>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Tithi & Timing Breakdown
+  const timingBreakdown = `
     <div class="modal-detail-row">
-      <div class="modal-detail-label">Hindi Name</div>
-      <div class="modal-detail-value" style="font-family: 'Noto Sans Devanagari', sans-serif; font-size:15px; font-weight:bold; color:#8E44AD;">${f.name_hindi}</div>
-    </div>
-    <div class="modal-detail-row">
-      <div class="modal-detail-label">Date / Range</div>
-      <div class="modal-detail-value">${f.start_date === f.end_date ? f.start_date : `${f.start_date} to ${f.end_date}`}</div>
-    </div>
-    <div class="modal-detail-row">
-      <div class="modal-detail-label">Jain Month / Paksha / Tithi</div>
-      <div class="modal-detail-value">${f.jain_month} ${f.paksha} ${f.tithi}</div>
-    </div>
-    <div class="modal-detail-row">
-      <div class="modal-detail-label">Short Meaning</div>
-      <div class="modal-detail-value">${f.meaning}</div>
-    </div>
-    <div class="modal-detail-row">
-      <div class="modal-detail-label">Observance Note</div>
-      <div class="modal-detail-value">${f.observance}</div>
-    </div>
-    <div class="modal-detail-row">
-      <div class="modal-detail-label">Sources</div>
-      <div class="modal-detail-value">
-        ${f.sources.map(s => `<a href="${s}" target="_blank" style="color:#3498DB; text-decoration:underline; font-size:11px; display:block; margin-bottom:2px;">${s}</a>`).join('')}
+      <div class="modal-detail-label">Tithi & Astronomical Timing Breakdown</div>
+      <div class="modal-detail-value" style="background:#F9F9F9; padding:8px; border-radius:6px; border:1px solid #EEEEEE; font-size:12px; color:#34495E;">
+        <div><strong>Tithi/Nakshatra:</strong> ${formatJainTithiLabel(f)}</div>
+        <div style="margin-top:4px;"><strong>Jain Astronomical Cutoff:</strong> <span style="color:#E67E22; font-family:monospace;">t<sub>sunrise</sub> + 84 mins</span></div>
+        <div style="margin-top:2px; font-size:11px; color:#7F8C8D;">Vrats generally commence 84 minutes after local sunrise.</div>
       </div>
     </div>
   `;
+
+  // Notification Button
+  const remindBtnHTML = `
+    <button class="btn-primary" style="width:100%; margin-top:16px; display:flex; align-items:center; justify-content:center; gap:8px; background:#8E44AD;" onclick="alert('Notification scheduled for ${f.name.replace(/'/g, "\\'")}!')">
+      🔔 Remind Me
+    </button>
+  `;
+
+  modalBody.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+      <div>${statusBadge}</div>
+    </div>
+    
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Event Description & Significance</div>
+      <div class="modal-detail-value" style="font-size:14px; line-height:1.4;">
+        ${f.meaning || 'No description available.'}
+      </div>
+    </div>
+    
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Date & Span</div>
+      <div class="modal-detail-value">${rangeDisplay}</div>
+    </div>
+    
+    <div class="modal-detail-row">
+      <div class="modal-detail-label">Fasting / Vrat Guidelines</div>
+      <div class="modal-detail-value" style="color:#27AE60; font-weight:500;">
+        ${f.observance || 'Standard Vrat rules apply. (Ekasana, Upvas, Ayambil, etc.)'}
+      </div>
+    </div>
+    
+    ${timingBreakdown}
+    ${dailyProgressHTML}
+    ${remindBtnHTML}
+  `;
+  
   
   modalOverlay.classList.remove('hidden');
   modal.classList.remove('hidden');
@@ -1507,6 +1627,7 @@ async function loadJainFestivals() {
     
     festState.festivals = data.festivals || [];
     festState.upcoming  = data.upcoming || [];
+    festState.panchang_tithi_map = data.panchang_tithi_map || {};
     
     // Render upcoming
     if (upcoming) {
@@ -1545,10 +1666,16 @@ function getFilteredFestivals() {
     // Category filter
     let matchesFilter = true;
     if (festState.filter !== 'all') {
-      if (festState.filter === 'review') {
+      const cat = f.category ? f.category.toLowerCase() : '';
+      const name = f.name ? f.name.toLowerCase() : '';
+      if (festState.filter === 'vrats') {
+        matchesFilter = (cat === 'fast' || cat === 'parva' || cat === 'mahaparv' || name.includes('vrat')) && !name.includes('parva tithi') && !name.includes('pakhi');
+      } else if (festState.filter === 'kalyanaks') {
+        matchesFilter = cat === 'kalyanak' || name.includes('kalyanak');
+      } else if (festState.filter === 'parva') {
+        matchesFilter = cat === 'parva_tithi' || name.includes('parva tithi') || name.includes('pakhi');
+      } else if (festState.filter === 'review') {
         matchesFilter = f.status === 'review_needed';
-      } else {
-        matchesFilter = f.category === festState.filter;
       }
     }
     
@@ -1662,6 +1789,22 @@ function renderJainGrid(filteredList) {
   }
 }
 
+function getCategoryPill(f) {
+  let cat = f.category ? f.category.toLowerCase() : '';
+  let name = f.name ? f.name.toLowerCase() : '';
+  
+  if (cat === 'mahaparv' || name.includes('daslakshan') || name.includes('raksha bandhan')) {
+    return `<span class="fest-badge" style="background:#3498DB; color:#FFF; font-size:10px; font-weight:600; padding:3px 6px; border-radius:10px;">🔵 Mahaparv</span>`;
+  }
+  if (cat === 'kalyanak' || name.includes('kalyanak') || name.includes('janma') || name.includes('moksha')) {
+    return `<span class="fest-badge" style="background:#2ECC71; color:#FFF; font-size:10px; font-weight:600; padding:3px 6px; border-radius:10px;">🟢 Kalyanak</span>`;
+  }
+  if (name.includes('parva tithi') || cat === 'parva_tithi' || name.includes('pakhi')) {
+    return `<span class="fest-badge" style="background:#E67E22; color:#FFF; font-size:10px; font-weight:600; padding:3px 6px; border-radius:10px;">🟠 Parva Tithi</span>`;
+  }
+  return `<span class="fest-badge" style="background:#9B59B6; color:#FFF; font-size:10px; font-weight:600; padding:3px 6px; border-radius:10px;">🟣 Parva / Vrat</span>`;
+}
+
 function renderJainList(filteredList) {
   const listContainer = document.getElementById('festList');
   if (!listContainer) return;
@@ -1672,49 +1815,79 @@ function renderJainList(filteredList) {
     return;
   }
   
-  // Group list by Gregorian Month
-  const monthGroups = {};
+  // Group by Date
+  const dateGroups = {};
   filteredList.forEach(f => {
-    const mNum = parseInt(f.start_date.split('-')[1], 10);
-    const mName = MONTH_NAMES[mNum - 1];
-    if (!monthGroups[mName]) monthGroups[mName] = [];
-    monthGroups[mName].push(f);
+    // 1. Add to start date
+    if (f.start_date.startsWith(String(festState.year))) {
+      if (!dateGroups[f.start_date]) dateGroups[f.start_date] = [];
+      if (!dateGroups[f.start_date].some(x => x.occurrence_id === f.occurrence_id)) {
+        dateGroups[f.start_date].push(f);
+      }
+    }
+    
+    // 2. For Bhaktambar Vrat, also add to end date (so it appears on both 8 and 14)
+    const isBhaktambar = f.name && f.name.toLowerCase().includes("bhaktambar");
+    if (isBhaktambar && f.end_date && f.end_date !== f.start_date) {
+      if (f.end_date.startsWith(String(festState.year))) {
+        if (!dateGroups[f.end_date]) dateGroups[f.end_date] = [];
+        if (!dateGroups[f.end_date].some(x => x.occurrence_id === f.occurrence_id)) {
+          dateGroups[f.end_date].push(f);
+        }
+      }
+    }
   });
   
-  for (const mName in monthGroups) {
-    const groupDiv = document.createElement('div');
-    groupDiv.className = 'settings-section';
-    groupDiv.innerHTML = `
-      <div class="settings-section-title" style="color:#8E44AD; font-weight:bold; font-size:13px; border-bottom:1.5px solid rgba(142,68,173,0.2); padding-bottom:4px; margin-bottom:8px;">${mName}</div>
-      <div class="settings-card" style="gap:4px; margin-bottom:16px;"></div>
-    `;
-    const card = groupDiv.querySelector('.settings-card');
+  const sortedDates = Object.keys(dateGroups).sort();
+  
+  sortedDates.forEach(dateStr => {
+    const dayEvents = dateGroups[dateStr];
+    const dateTitle = formatDateLabel(dateStr).split(',')[0];
     
-    monthGroups[mName].forEach(f => {
-      const item = document.createElement('div');
-      item.className = 'panchang-row';
-      item.style.padding = '8px 0';
-      item.style.cursor = 'pointer';
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'settings-card';
+    groupDiv.style.marginBottom = '12px';
+    groupDiv.style.padding = '12px';
+    
+    const tithiDisplay = (festState.panchang_tithi_map && festState.panchang_tithi_map[dateStr]) 
+      ? festState.panchang_tithi_map[dateStr] 
+      : `${dayEvents[0].jain_month} ${dayEvents[0].paksha} ${dayEvents[0].tithi}`;
       
-      const badge = f.status === 'review_needed'
-        ? `<span class="fest-badge fest-badge--review" style="font-size:7px; padding:1px 3px;">⚠️ Review</span>`
-        : `<span class="fest-badge fest-badge--${f.category}" style="font-size:7px; padding:1px 3px;">${f.category}</span>`;
+    let html = `<div style="font-size:13px; font-weight:bold; color:#2C3E50; margin-bottom:8px; border-bottom:1px solid #ECF0F1; padding-bottom:6px;">
+      [ ${dateStr.slice(5)} | ${dateTitle} ] ─── ${tithiDisplay}
+    </div>`;
+    
+    dayEvents.forEach((f, idx) => {
+      const isLast = idx === dayEvents.length - 1;
+      const branch = isLast ? '└──' : '├──';
+      const isMultiDay = f.start_date && f.end_date && f.start_date !== f.end_date;
+      const rangeTag = isMultiDay 
+        ? `<span style="font-size:10px; background:rgba(142,68,173,0.12); color:#8E44AD; padding:2px 6px; border-radius:4px; margin-left:6px;">Span: ${f.start_date.slice(5)} – ${f.end_date.slice(5)}</span>`
+        : '';
         
-      item.innerHTML = `
-        <div class="panchang-label" style="min-width:70px; color:#8E44AD; font-size:12px;">${f.start_date.slice(5)}</div>
-        <div class="panchang-value" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-          <div>
-            <strong style="color:#2C3E50; font-size:13px;">${f.name}</strong>
-            <div style="font-size:10px; color:#7F8C8D; margin-top:2px;">Tithi: ${f.jain_month} ${f.paksha} ${f.tithi}</div>
-          </div>
-          ${badge}
+      let progressHTML = '';
+      if (f.daily_schedule && f.daily_schedule.length > 0) {
+        progressHTML = `<div style="margin-top:6px; margin-left:24px; display:flex; flex-wrap:wrap; gap:4px; font-size:10px;">`;
+        f.daily_schedule.forEach((d, i) => {
+           let v = d.virtue.includes('(') ? d.virtue.split('(')[0] : d.virtue;
+           progressHTML += `<span style="background:#F0F3F4; padding:3px 6px; border-radius:4px; color:#34495E; border:1px solid #E5E8E8;">Day ${i+1}: ${v}</span>`;
+        });
+        progressHTML += `</div>`;
+      }
+      
+      html += `
+      <div style="display:flex; align-items:flex-start; margin-bottom:10px; cursor:pointer;" onclick="openFestivalModal('${f.occurrence_id}')">
+        <div style="color:#BDC3C7; font-family:monospace; margin-right:8px; font-size:14px; user-select:none;">${branch}</div>
+        <div style="flex:1;">
+          ${getCategoryPill(f)} <strong style="color:#2C3E50; margin-left:6px; font-size:14px;">${f.name}</strong> ${rangeTag}
+          ${progressHTML}
         </div>
-      `;
-      item.addEventListener('click', () => openFestivalModal(f));
-      card.appendChild(item);
+      </div>`;
     });
+    
+    groupDiv.innerHTML = html;
     listContainer.appendChild(groupDiv);
-  }
+  });
 }
 
 registerPage('festivals', {
@@ -2046,6 +2219,7 @@ registerPage('yoga-muhurta', {
 });
 
 // ── Boot ──────────────────────────────────────────────────────
+initTheme();
 initDrawer();
 initNavButtons();
 route();

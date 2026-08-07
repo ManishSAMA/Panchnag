@@ -59,7 +59,7 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
     chaitra_shukla_1 = find_chaitra_shukla_1(year, lat, lon, tz_offset, ayanamsa)
     diwali = find_diwali(year, lat, lon, tz_offset, ayanamsa)
 
-    from jain_festival_service import generate_jain_festivals
+    from jain_observances.festival_service import generate_jain_festivals
     jain_fest_data = generate_jain_festivals(year, lat, lon, ayanamsa, profile)
     date_to_fests = {}
     for f in jain_fest_data.get("festivals", []):

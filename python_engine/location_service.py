@@ -9,12 +9,19 @@ from __future__ import annotations
 from functools import lru_cache
 
 import requests
-from timezonefinder import TimezoneFinder
-
 NOMINATIM_BASE_URL = "https://nominatim.openstreetmap.org"
 USER_AGENT = "jain-panchang-app/1.0 (local development)"
 
-_TZ_FINDER = TimezoneFinder()
+try:
+    from timezonefinder import TimezoneFinder
+    _TZ_FINDER = TimezoneFinder()
+except ImportError:
+    import logging
+    logging.warning("timezonefinder failed to load due to environment restrictions. Defaulting to 'Asia/Kolkata'.")
+    class DummyTZ:
+        def timezone_at(self, *args, **kwargs):
+            return "Asia/Kolkata"
+    _TZ_FINDER = DummyTZ()
 
 
 def _nominatim_get(path: str, params: dict) -> list[dict]:

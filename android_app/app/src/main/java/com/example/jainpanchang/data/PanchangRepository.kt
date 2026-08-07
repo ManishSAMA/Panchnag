@@ -74,4 +74,32 @@ class PanchangRepository(private val panchangDao: PanchangDao) {
     fun getPanchangForDateRange(startDate: LocalDate, endDate: LocalDate): Flow<List<DailyPanchangEntity>> {
         return panchangDao.getPanchangForDateRange(startDate.toString(), endDate.toString())
     }
+
+    suspend fun getChoghadiyaSlots(
+        date: LocalDate,
+        lat: Double,
+        lon: Double,
+        tzOffset: Double = 5.5
+    ): List<com.example.jainpanchang.domain.ChoghadiyaSlot> {
+        return withContext(Dispatchers.Default) {
+            val jd = astronomy.localTimeToJd(date.year, date.monthValue, date.dayOfMonth, 0.0, tzOffset)
+            val nextJd = astronomy.localTimeToJd(date.year, date.monthValue, date.dayOfMonth + 1, 0.0, tzOffset)
+            
+            val sunriseJd = astronomy.getSunrise(jd, lat, lon)
+            val sunsetJd = astronomy.getSunset(jd, lat, lon)
+            val nextSunriseJd = astronomy.getSunrise(nextJd, lat, lon)
+            
+            val weekdayIndex = astronomy.getJulianDate(date.year, date.monthValue, date.dayOfMonth, 0.0).let {
+                // simple weekday logic from date
+                date.dayOfWeek.value % 7
+            }
+
+            com.example.jainpanchang.domain.Choghadiya().calculateChoghadiyaSlots(
+                sunriseJd = sunriseJd,
+                sunsetJd = sunsetJd,
+                nextSunriseJd = nextSunriseJd,
+                weekdayIndex = weekdayIndex
+            )
+        }
+    }
 }

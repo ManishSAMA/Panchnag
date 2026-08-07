@@ -109,7 +109,7 @@ def detect_all_yogas_for_day(
     aanandadi_rec = compute_recommendation(raw_aanandadi)
 
     # ── Ravi Yoga (Sun + Moon nakshatra distance formula) ────────────────
-    ravi_yogas = _detect_ravi_yoga(sunrise_jd, moon_segs, ayanamsa, tz_name, dainika_formatted)
+    ravi_yogas = _detect_ravi_yoga(sunrise_jd, moon_segs, ayanamsa, tz_name, dainika_formatted, vara)
 
     # ── Special (Moon-position based) ────────────────────────────────────
     special = _detect_special(
@@ -193,9 +193,9 @@ _SUPREME_OVERRIDERS: frozenset[str] = frozenset({
 # Source: Ruchika Publications, Delhi, Page 112.
 _RAVI_YOGA_DISTANCES: frozenset[int] = frozenset({4, 6, 9, 10, 13, 20})
 _RAVI_YOGA_MEANING = (
-    "Sun-Moon nakshatra yoga — nullifies the positive effects of other auspicious yogas "
-    "active simultaneously. Avoid for all auspicious muhurtas. "
-    "Source: Ruchika Publications, Delhi, p. 112."
+    "Dosha Nashak (Solar Shield) — highly auspicious Sun-Moon nakshatra yoga. "
+    "Neutralizes minor negative effects and flaws (like unfavorable Tithi or Karan). "
+    "Ideal for high-value purchases, business actions, and official decisions."
 )
 
 
@@ -210,6 +210,7 @@ def _detect_ravi_yoga(
     ayanamsa: str,
     tz_name: str,
     dainika_yogas: list[dict],
+    vara: int,
 ) -> list[dict]:
     """Detect Ravi Yoga windows for the day using the Sun-Moon nakshatra distance formula.
 
@@ -247,13 +248,35 @@ def _detect_ravi_yoga(
             s["name"] for s in supreme_windows
             if start_jd < s["end_jd"] and s["start_jd"] < end_jd
         ]
+
+        is_exception = False
+        exception_name = ""
+        if vara == 0:
+            if moon_nak == 9:  # Ashlesha
+                is_exception = True
+                exception_name = "Vajra Yog"
+            elif moon_nak == 10:  # Magha
+                is_exception = True
+                exception_name = "Mudgar Yog"
+
+        if is_exception:
+            name = f"Ravi Yoga ({exception_name})"
+            nature = "ashubh"
+            severity = "inauspicious"
+            meaning = f"Sunday exception: {exception_name} forms, compromising the positive effects."
+        else:
+            name = "Ravi Yoga"
+            nature = "shubh"
+            severity = "auspicious"
+            meaning = _RAVI_YOGA_MEANING
+
         st, sl = _fmt(start_jd, tz_name)
         et, el = _fmt(end_jd, tz_name)
         results.append({
-            "name": "Ravi Yoga",
-            "nature": "ashubh",
-            "severity": "inauspicious",
-            "meaning": _RAVI_YOGA_MEANING,
+            "name": name,
+            "nature": nature,
+            "severity": severity,
+            "meaning": meaning,
             "trigger_kind": "sun_moon_nakshatra",
             "trigger_detail": (
                 f"Sun in {_NAK_NAMES[sun_nak - 1]}, "

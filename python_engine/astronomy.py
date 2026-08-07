@@ -1,3 +1,4 @@
+from functools import lru_cache
 """
 astronomy.py — Core Swiss Ephemeris wrapper for the Panchang Generator.
 
@@ -274,6 +275,7 @@ def _rise_set(julian_date: float, body: int,
     return 0.0
 
 
+@lru_cache(maxsize=365)
 def get_sunrise(julian_date: float, lat: float, lon: float) -> float:
     """Return Julian Day of sunrise for the given date and location."""
     return _rise_set(julian_date, swe.SUN, lat, lon, is_rise=True)

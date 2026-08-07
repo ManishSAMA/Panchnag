@@ -26,7 +26,7 @@ def _build_festival_date_index(
     ayanamsa_name: str,
     profile: str,
 ) -> dict[str, dict]:
-    from jain_festival_service import generate_jain_festivals
+    from jain_observances.festival_service import generate_jain_festivals
     index: dict[str, dict] = {}
     for year in range(start_year, end_year + 1):
         fest_data = generate_jain_festivals(year, lat, lon, ayanamsa_name, profile)

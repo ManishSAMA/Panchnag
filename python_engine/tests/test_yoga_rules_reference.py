@@ -18,7 +18,7 @@ Vara: 0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturd
 
 import unittest
 
-from dainika_muhurta_service import detect_yogas
+from yoga_engine import detect_yogas
 
 # --------------------------------------------------------------------------
 # Helper: neutral tithi/nakshatra values that don't appear in the rules table,
@@ -309,7 +309,7 @@ TestChatraReference = _make_nakshatra_reference_tests("Chatra", _REF_CHATRA)
 TestShubhReference = _make_nakshatra_reference_tests("Shubh", _REF_SHUBH)
 TestAmritReference = _make_nakshatra_reference_tests("Amrit", _REF_AMRIT)
 TestMitraReference = _make_nakshatra_reference_tests("Mitra", _REF_MITRA)
-TestSiddhaYogaReference = _make_nakshatra_reference_tests("Siddha Yoga", _REF_SIDDHA)
+TestSiddhaYogaReference = _make_nakshatra_reference_tests("Siddhi Yoga", _REF_SIDDHA)
 TestAmritSiddhiReference = _make_nakshatra_reference_tests(
     "Amrit Siddhi", _REF_AMRIT_SIDDHI
 )

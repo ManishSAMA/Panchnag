@@ -289,3 +289,17 @@ def compute_recommendation(matches: list[dict]) -> str:
         return "caution"
 
     return "highly_auspicious" if highly else "auspicious"
+
+
+def detect_yogas(*, vara: int, tithi: int, nakshatra: int) -> dict:
+    """Helper for legacy tests to verify rules matching."""
+    from yoga_rules import DAINIKA_RULES
+    tithi_segs = [{"index": tithi, "start_jd": 0.0, "end_jd": 1.0}]
+    nak_segs = [{"index": nakshatra, "start_jd": 0.0, "end_jd": 1.0}]
+    matches = match_dainika(DAINIKA_RULES, vara, tithi_segs, nak_segs)
+    overridden = apply_dainika_overrides(matches)
+    recommendation = compute_recommendation(overridden)
+    return {
+        "yogas": overridden,
+        "recommendation": recommendation,
+    }

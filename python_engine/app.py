@@ -283,7 +283,7 @@ def create_app() -> Flask:
                 ayanamsa_name=parsed.ayanamsa_name,
             )
             if profile:
-                from jain_festival_service import generate_jain_festivals
+                from jain_observances.festival_service import generate_jain_festivals
                 d_obj = datetime.strptime(parsed.input_date, "%Y-%m-%d").date()
                 fest_data = generate_jain_festivals(d_obj.year, result["lat"], result["lon"], parsed.ayanamsa_name, profile)
                 day_festivals = []
@@ -415,7 +415,7 @@ def create_app() -> Flask:
             profile = request.args.get("profile")
             date_to_festivals = {}
             if profile:
-                from jain_festival_service import generate_jain_festivals
+                from jain_observances.festival_service import generate_jain_festivals
                 fest_data = generate_jain_festivals(year, location.lat, location.lon, ayanamsa, profile)
                 for f in fest_data.get("festivals", []):
                     start_d = datetime.strptime(f["start_date"], "%Y-%m-%d").date()
@@ -501,7 +501,7 @@ def create_app() -> Flask:
         try:
             body = request.get_json(silent=True) or {}
             parsed = parse_jain_festivals_request(body)
-            from jain_festival_service import generate_jain_festivals
+            from jain_observances.festival_service import generate_jain_festivals
             result = generate_jain_festivals(
                 year=parsed.year,
                 lat=parsed.lat,
@@ -524,7 +524,7 @@ def create_app() -> Flask:
             if fmt not in {"csv", "excel", "json", "pdf", "all"}:
                 return jsonify({"error": "format must be one of: csv, excel, json, pdf, all"}), 400
                 
-            from jain_festival_service import generate_jain_festivals
+            from jain_observances.festival_service import generate_jain_festivals
             result = generate_jain_festivals(
                 year=parsed.year,
                 lat=parsed.lat,
@@ -535,21 +535,23 @@ def create_app() -> Flask:
             
             flat_rows = []
             for f in result.get("festivals", []):
+                sources_val = f.get("sources", [])
+                sources_str = "; ".join(sources_val) if isinstance(sources_val, list) else str(sources_val)
                 flat_rows.append({
-                    "Festival_ID": f["id"],
-                    "Name_English": f["name"],
-                    "Name_Hindi": f["name_hindi"],
-                    "Category": f["category"],
-                    "Start_Date": f["start_date"],
-                    "End_Date": f["end_date"],
-                    "Jain_Month": f["jain_month"],
-                    "Paksha": f["paksha"],
-                    "Tithi": f["tithi"],
-                    "Profile": f["profile"],
-                    "Status": f["status"],
-                    "Meaning": f["meaning"],
-                    "Observance": f["observance"],
-                    "Sources": "; ".join(f["sources"])
+                    "Festival_ID": f.get("id", f.get("occurrence_id", "")),
+                    "Name_English": f.get("name", ""),
+                    "Name_Hindi": f.get("name_hindi", f.get("name", "")),
+                    "Category": f.get("category", "parva"),
+                    "Start_Date": f.get("start_date", ""),
+                    "End_Date": f.get("end_date", ""),
+                    "Jain_Month": f.get("jain_month", ""),
+                    "Paksha": f.get("paksha", ""),
+                    "Tithi": str(f.get("tithi", "")),
+                    "Profile": f.get("profile", "all"),
+                    "Status": f.get("status", "confirmed"),
+                    "Meaning": f.get("meaning", ""),
+                    "Observance": f.get("observance", ""),
+                    "Sources": sources_str
                 })
                 
             import tempfile
