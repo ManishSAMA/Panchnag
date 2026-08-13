@@ -10,8 +10,8 @@ class TithiProvider(Protocol):
     def get_tithi_at_time(self, time: datetime.datetime, lat: float, lon: float) -> int:
         ...
         
-    def get_month_name(self, time: datetime.datetime, lat: float, lon: float) -> str:
-        """Returns the Jain/Lunar month name at the given datetime."""
+    def get_hindu_month_name(self, date: datetime.date, lat: float, lon: float) -> str:
+        """Returns the Jain/Lunar month name at the given date."""
         ...
 
 @dataclass
@@ -58,7 +58,7 @@ def calculate_ravivara_vrat(
         # We only care about Sundays
         # In Python, Monday is 0 and Sunday is 6
         if curr.weekday() == 6:
-            month_name = provider.get_month_name(jain_cutoff, lat, lon)
+            month_name = provider.get_hindu_month_name(jain_cutoff.date(), lat, lon)
             tithi_idx = provider.get_tithi_at_time(jain_cutoff, lat, lon)
             
             # Check if it's Ashadha (ignoring Adhik/Nija prefix for simplicity, 
@@ -87,7 +87,7 @@ def calculate_ravivara_vrat(
         # Calculate the governing month for this specific Sunday for schedule display
         sunrise = provider.get_sunrise(current_sunday, lat, lon)
         jain_cutoff = sunrise + datetime.timedelta(minutes=84)
-        month_at_date = provider.get_month_name(jain_cutoff, lat, lon)
+        month_at_date = provider.get_hindu_month_name(jain_cutoff.date(), lat, lon)
         
         vrat_dates.append(DailySchedule(
             vrat_number=i + 1,

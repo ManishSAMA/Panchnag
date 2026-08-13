@@ -94,7 +94,7 @@ index 9b207c5..c9378a0 100644
 +  overflow: hidden;
  }
  
- /* ÔöÇÔöÇ Pages ÔöÇÔöÇ */
+   /*  Pages  */
 @@ -61,51 +75,51 @@ body { display: flex; flex-direction: column; align-items: center; }
    position: sticky;
    top: 0;

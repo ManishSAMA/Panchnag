@@ -295,7 +295,11 @@ def create_app() -> Flask:
                             "occurrence_id": f["occurrence_id"],
                             "name": f["name"],
                             "category": f["category"],
-                            "status": f["status"]
+                            "status": f["status"],
+                            "title": f.get("title", f["name"]),
+                            "badge": f.get("badge", ""),
+                            "badge_color": f.get("badge_color", ""),
+                            "is_span": f.get("is_span", False)
                         })
                 result["panchang"]["jain_festivals"] = day_festivals
             return jsonify(result)
@@ -431,7 +435,11 @@ def create_app() -> Flask:
                                     "occurrence_id": f["occurrence_id"],
                                     "name": f["name"],
                                     "category": f["category"],
-                                    "status": f["status"]
+                                    "status": f["status"],
+                                    "title": f.get("title", f["name"]),
+                                    "badge": f.get("badge", ""),
+                                    "badge_color": f.get("badge_color", ""),
+                                    "is_span": f.get("is_span", False)
                                 })
                         curr_d += timedelta(days=1)
 
@@ -533,8 +541,21 @@ def create_app() -> Flask:
                 profile=parsed.profile
             )
             
+            source = body.get("source", "all")
+            
             flat_rows = []
             for f in result.get("festivals", []):
+                if source and source != "all":
+                    sources_val = f.get("sources", [])
+                    source_lower = source.lower()
+                    has_selected_source = any(source_lower in s.lower() for s in sources_val)
+                    specific_schools = ["vrindavan", "uttarapurana", "ashadhara"]
+                    has_other_specific_school = any(
+                        any(sch in s.lower() for sch in specific_schools if sch != source_lower)
+                        for s in sources_val
+                    )
+                    if not has_selected_source and has_other_specific_school:
+                        continue
                 sources_val = f.get("sources", [])
                 sources_str = "; ".join(sources_val) if isinstance(sources_val, list) else str(sources_val)
                 flat_rows.append({

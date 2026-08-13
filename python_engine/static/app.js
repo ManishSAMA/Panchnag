@@ -517,7 +517,16 @@ registerPage('panchang', {
   onEnter(params) {
     panchangFmt = getState().timeFormat || '12h';
     const date = params.date || todayStr();
+    this.currentDate = date;
     this._updateToggleUI();
+
+    const labelDate = new Date(date + 'T12:00:00');
+    const labelEl = document.getElementById('panchangDateLabel');
+    if (labelEl) {
+      labelEl.textContent = labelDate.toLocaleDateString('en-IN', {
+        weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+      });
+    }
 
     const moonEl   = document.getElementById('panchangMoon');
     const gregEl   = document.getElementById('panchangGregorianDate');
@@ -769,6 +778,26 @@ document.querySelectorAll('[data-fmt]').forEach(btn => {
 });
 
 document.getElementById('panchangBack').addEventListener('click', () => history.back());
+
+function shiftDateStr(dateStr, offset) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + offset);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+
+document.getElementById('panchangPrev').addEventListener('click', () => {
+  const ctrl = pages['panchang'];
+  if (ctrl.currentDate) {
+    navigate('panchang', { date: shiftDateStr(ctrl.currentDate, -1) });
+  }
+});
+
+document.getElementById('panchangNext').addEventListener('click', () => {
+  const ctrl = pages['panchang'];
+  if (ctrl.currentDate) {
+    navigate('panchang', { date: shiftDateStr(ctrl.currentDate, 1) });
+  }
+});
 
 // ── MUHURTA ──────────────────────────────────────────────────
 registerPage('muhurta', { onEnter() {} });
@@ -1364,6 +1393,7 @@ const festState = {
   profile: getState().jainProfile || 'shwetambar_murtipujak_tapagachchha',
   view: 'calendar', // 'calendar' | 'list'
   filter: 'all', // 'all' | 'kalyanak' | 'festival' | 'fast' | 'parva' | 'review'
+  selectedSource: 'all',
   searchQuery: '',
   festivals: [],
   upcoming: [],
@@ -1377,6 +1407,15 @@ if (profileSelect) {
     festState.profile = e.target.value;
     saveState({ jainProfile: festState.profile });
     loadJainFestivals();
+  });
+}
+
+const sourceSelect = document.getElementById('festSourceSelect');
+if (sourceSelect) {
+  sourceSelect.value = festState.selectedSource;
+  sourceSelect.addEventListener('change', (e) => {
+    festState.selectedSource = e.target.value;
+    renderJainFestivalsView();
   });
 }
 
@@ -1442,6 +1481,7 @@ exportDrawer?.querySelectorAll('[data-expfmt]').forEach(btn => {
         lon: state.lon,
         ayanamsa: state.ayanamsa || 'Lahiri',
         profile: festState.profile,
+        source: festState.selectedSource,
         format
       });
       if (resultEl) {
@@ -1518,8 +1558,8 @@ function openFestivalModal(f) {
         <div class="modal-detail-value" style="display:flex; flex-direction:column; gap:6px;">
           ${f.daily_schedule.map((d, i) => `
             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-              <input type="checkbox" style="accent-color:#8E44AD;">
-              <span style="font-size:13px; color:#2C3E50;"><strong>Day ${i+1} (${d.date.slice(5)}):</strong> ${d.virtue}</span>
+              <input type="checkbox" style="accent-color: var(--brand);">
+              <span style="font-size:13px; color: var(--text-primary);"><strong>Day ${i+1} (${d.date.slice(5)}):</strong> ${d.virtue}</span>
             </label>
           `).join('')}
         </div>
@@ -1531,17 +1571,17 @@ function openFestivalModal(f) {
   const timingBreakdown = `
     <div class="modal-detail-row">
       <div class="modal-detail-label">Tithi & Astronomical Timing Breakdown</div>
-      <div class="modal-detail-value" style="background:#F9F9F9; padding:8px; border-radius:6px; border:1px solid #EEEEEE; font-size:12px; color:#34495E;">
+      <div class="modal-detail-value" style="background: var(--surface-soft); padding:8px; border-radius:6px; border:1px solid var(--border); font-size:12px; color: var(--text-primary);">
         <div><strong>Tithi/Nakshatra:</strong> ${formatJainTithiLabel(f)}</div>
-        <div style="margin-top:4px;"><strong>Jain Astronomical Cutoff:</strong> <span style="color:#E67E22; font-family:monospace;">t<sub>sunrise</sub> + 84 mins</span></div>
-        <div style="margin-top:2px; font-size:11px; color:#7F8C8D;">Vrats generally commence 84 minutes after local sunrise.</div>
+        <div style="margin-top:4px;"><strong>Jain Astronomical Cutoff:</strong> <span style="color: var(--accent); font-family:monospace;">t<sub>sunrise</sub> + 144 mins</span></div>
+        <div style="margin-top:2px; font-size:11px; color: var(--text-secondary);">Vrats generally commence 144 minutes after local sunrise.</div>
       </div>
     </div>
   `;
 
   // Notification Button
   const remindBtnHTML = `
-    <button class="btn-primary" style="width:100%; margin-top:16px; display:flex; align-items:center; justify-content:center; gap:8px; background:#8E44AD;" onclick="alert('Notification scheduled for ${f.name.replace(/'/g, "\\'")}!')">
+    <button class="btn-primary" style="width:100%; margin-top:16px; display:flex; align-items:center; justify-content:center; gap:8px; background: var(--brand);" onclick="alert('Notification scheduled for ${f.name.replace(/'/g, "\\'")}!')">
       🔔 Remind Me
     </button>
   `;
@@ -1553,19 +1593,19 @@ function openFestivalModal(f) {
     
     <div class="modal-detail-row">
       <div class="modal-detail-label">Event Description & Significance</div>
-      <div class="modal-detail-value" style="font-size:14px; line-height:1.4;">
+      <div class="modal-detail-value" style="font-size:14px; line-height:1.4; color: var(--text-primary);">
         ${f.meaning || 'No description available.'}
       </div>
     </div>
     
     <div class="modal-detail-row">
       <div class="modal-detail-label">Date & Span</div>
-      <div class="modal-detail-value">${rangeDisplay}</div>
+      <div class="modal-detail-value" style="color: var(--text-primary);">${rangeDisplay}</div>
     </div>
     
     <div class="modal-detail-row">
       <div class="modal-detail-label">Fasting / Vrat Guidelines</div>
-      <div class="modal-detail-value" style="color:#27AE60; font-weight:500;">
+      <div class="modal-detail-value" style="color: var(--green); font-weight:600;">
         ${f.observance || 'Standard Vrat rules apply. (Ekasana, Upvas, Ayambil, etc.)'}
       </div>
     </div>
@@ -1679,7 +1719,23 @@ function getFilteredFestivals() {
       }
     }
     
-    return matchesSearch && matchesFilter;
+    // School / Source filter
+    let matchesSource = true;
+    if (festState.selectedSource && festState.selectedSource !== 'all') {
+      const sourceQuery = festState.selectedSource.toLowerCase();
+      const sourcesList = f.sources || [];
+      const hasSelectedSource = sourcesList.some(s => s.toLowerCase().includes(sourceQuery));
+      
+      const specificSchools = ["vrindavan", "uttarapurana", "ashadhara"];
+      const hasOtherSpecificSchool = sourcesList.some(s => {
+        const val = s.toLowerCase();
+        return specificSchools.some(sch => sch !== sourceQuery && val.includes(sch));
+      });
+      
+      matchesSource = hasSelectedSource || !hasOtherSpecificSchool;
+    }
+    
+    return matchesSearch && matchesFilter && matchesSource;
   });
 }
 
@@ -1829,12 +1885,29 @@ function renderJainList(filteredList) {
     // 2. For Bhaktambar Vrat, also add to end date (so it appears on both 8 and 14)
     const isBhaktambar = f.name && f.name.toLowerCase().includes("bhaktambar");
     if (isBhaktambar && f.end_date && f.end_date !== f.start_date) {
-      if (f.end_date.startsWith(String(festState.year))) {
-        if (!dateGroups[f.end_date]) dateGroups[f.end_date] = [];
-        if (!dateGroups[f.end_date].some(x => x.occurrence_id === f.occurrence_id)) {
-          dateGroups[f.end_date].push(f);
+      const endDates = [f.end_date];
+      
+      // If the end date's tithi is repeated, add the adjacent days with the same tithi
+      const endTithi = festState.panchang_tithi_map?.[f.end_date];
+      if (endTithi) {
+        const prevDay = shiftDateStr(f.end_date, -1);
+        if (festState.panchang_tithi_map?.[prevDay] === endTithi) {
+          endDates.push(prevDay);
+        }
+        const nextDay = shiftDateStr(f.end_date, 1);
+        if (festState.panchang_tithi_map?.[nextDay] === endTithi) {
+          endDates.push(nextDay);
         }
       }
+
+      endDates.forEach(dStr => {
+        if (dStr.startsWith(String(festState.year))) {
+          if (!dateGroups[dStr]) dateGroups[dStr] = [];
+          if (!dateGroups[dStr].some(x => x.occurrence_id === f.occurrence_id)) {
+            dateGroups[dStr].push(f);
+          }
+        }
+      });
     }
   });
   
@@ -2222,4 +2295,5 @@ registerPage('yoga-muhurta', {
 initTheme();
 initDrawer();
 initNavButtons();
+window.addEventListener('hashchange', route);
 route();
