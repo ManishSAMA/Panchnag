@@ -2,6 +2,14 @@ import unittest
 from datetime import date
 from unittest.mock import patch
 
+def setUpModule():
+    try:
+        from jain_observances.festival_service import generate_jain_festivals
+        generate_jain_festivals.cache_clear()
+    except Exception:
+        pass
+
+
 class JainFestivalsRegistryTest(unittest.TestCase):
     def test_registry_integrity(self):
         """Test that jain_festival_rules loads and has valid festival schemas."""
@@ -21,11 +29,11 @@ class JainFestivalsRegistryTest(unittest.TestCase):
             for key in required_keys:
                 self.assertIn(key, fest, f"Missing key '{key}' in festival registry entry")
                 
-            self.assertIn(fest["category"], ["kalyanak", "festival", "fast", "parva", "mahaparv", "parva_vrat", "monthly_vrat"])
+            self.assertIn(fest["category"], ["kalyanak", "festival", "fast", "parva", "mahaparv", "parva_vrat", "monthly_vrat", "jayanti", "vrat", "poojan", "parv_vidhi", "mahaparv_vrat", "punyatithi", "punya_tithi", "tap_vrat", "auspicious", "shastra", "utsav"])
             self.assertIsInstance(fest["profiles"], list)
             self.assertTrue(len(fest["profiles"]) > 0)
             for p in fest["profiles"]:
-                self.assertIn(p, ["all", "shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"])
+                self.assertIn(p, ["all", "digambar", "shwetambar_murtipujak_tapagachchha", "shwetambar_sthanakvasi", "shwetambar_terapanthi"])
                 
             # Verify OOP wrapping works
             rule_obj = rules.RuleFactory.create(fest)
@@ -60,7 +68,28 @@ class JainFestivalServiceTest(unittest.TestCase):
         self.assertEqual(event["paksha"], "Shukla")
         self.assertEqual(event["tithi"], "Trayodashi (13)")
         self.assertEqual(event["status"], "confirmed")
- 
+
+    def test_sumatinath_kalyanaks_on_ekadashi(self):
+        """Verify March 29, 2026 resolves to Chaitra Shukla Ekadashi (11) and Sumatinath Kalyanaks map to 2026-03-29."""
+        from jain_observances.festival_service import generate_jain_festivals
+
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+        self.assertEqual(res["panchang_tithi_map"]["2026-03-29"], "Chaitra Shukla Ekadashi (11)")
+
+        sumati_fests = [f for f in res["festivals"] if "sumatinath" in f["id"] and f.get("jain_month") == "Chaitra"]
+        self.assertEqual(len(sumati_fests), 3)
+        for sf in sumati_fests:
+            self.assertEqual(sf["start_date"], "2026-03-29")
+            self.assertEqual(sf["tithi"], "Ekadashi (11)")
+            self.assertEqual(sf["paksha"], "Shukla")
+            self.assertEqual(sf["jain_month"], "Chaitra")
+
     def test_ayambil_oli_ranges(self):
         """Verify Chaitra and Ashvin Ayambil Oli start dates."""
         from jain_observances.festival_service import generate_jain_festivals
@@ -86,6 +115,25 @@ class JainFestivalServiceTest(unittest.TestCase):
         ashvin_oli.sort(key=lambda x: x["start_date"])
         self.assertEqual(ashvin_oli[0]["start_date"], "2026-10-17")
         self.assertEqual(ashvin_oli[-1]["start_date"], "2026-10-26")
+
+    def test_parshvanath_conception_kalyanak_on_april_4(self):
+        """Verify Shri Parshvanath Ji Conception Kalyanak falls on 2026-04-04 (Vaishakha Krishna Dwitiya / 2)."""
+        from jain_observances.festival_service import generate_jain_festivals
+
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+        parshva_garbh = [f for f in res["festivals"] if f["id"].startswith("shri_parshvanath_ji___conception")]
+        self.assertEqual(len(parshva_garbh), 1)
+        self.assertEqual(parshva_garbh[0]["start_date"], "2026-04-04")
+        self.assertEqual(parshva_garbh[0]["name"], "Shri Parshvanath Ji - Conception Kalyanak")
+        self.assertEqual(parshva_garbh[0]["tithi"], "Dwitiya (2)")
+        self.assertEqual(parshva_garbh[0]["paksha"], "Krishna")
+        self.assertEqual(parshva_garbh[0]["jain_month"], "Vaishakha")
  
     def test_paryushan_profile_specific_dates(self):
         """Verify Samvatsari and Paryushan start differ between Tapagachchha (Shukla 4) and Sthanakvasi/Terapanthi (Shukla 5)."""
@@ -194,7 +242,7 @@ class KrishnaPakshaFestivalsTest(unittest.TestCase):
         self.assertIn("parshvanath_jayanti", self.ids)
 
     def test_pakhi_chaudas_appears(self):
-        self.assertIn("pakhi_chaudas_bhadrapada", self.ids)
+        self.assertTrue("pakhi_chaudas_shukla" in self.ids or "pakhi_chaudas_bhadrapada" in self.ids)
 
     def test_parva_tithi_ashtami_krishna_appears(self):
         self.assertIn("parva_tithi_ashtami_krishna", self.ids)
@@ -224,8 +272,8 @@ class RecurringParvaCountTest(unittest.TestCase):
     def _count(self, festival_id):
         return sum(1 for f in self.res["festivals"] if f["id"] == festival_id)
 
-    def test_pakhi_chaudas_bhadrapada_at_least_1(self):
-        self.assertGreaterEqual(self._count("pakhi_chaudas_bhadrapada"), 1)
+    def test_pakhi_chaudas_at_least_10(self):
+        self.assertGreaterEqual(self._count("pakhi_chaudas_shukla") + self._count("pakhi_chaudas_bhadrapada"), 10)
 
     def test_ashtami_shukla_at_least_12(self):
         self.assertGreaterEqual(self._count("parva_tithi_ashtami_shukla"), 10)
@@ -319,7 +367,7 @@ class AshtahnikaMahaparvTest(unittest.TestCase):
         )
         
         # Look for ashtahnika occurrences
-        events = [f for f in res["festivals"] if "ashtahnika" in f["id"]]
+        events = [f for f in res["festivals"] if f["id"].startswith("ashtahnika_")]
         self.assertEqual(len(events), 3)
         
         # Phalguna, Ashadha, Kartika
@@ -546,6 +594,1290 @@ class DiwaliChaturmasNishthapanTest(unittest.TestCase):
         self.assertEqual(n["description"], "Formal conclusion and completion of holy Chaturmas")
         
         self.assertEqual(d["start_date"], n["start_date"])
+
+
+class VeerShasanJayantiTest(unittest.TestCase):
+    def test_veer_shasan_jayanti_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        vsj = [f for f in res["festivals"] if f["id"] == "veer_shasan_jayanti_2026"]
+        sud = [f for f in res["festivals"] if f["id"] == "shrut_udbhav_divas_2026"]
+
+        self.assertEqual(len(vsj), 1)
+        self.assertEqual(len(sud), 1)
+
+        v = vsj[0]
+        s = sud[0]
+
+        self.assertEqual(v["title"], "Veer Shasan Jayanti")
+        self.assertEqual(v["category"], "jayanti")
+        self.assertEqual(v["badge"], "Veer Shasan")
+        self.assertEqual(v["badge_color"], "green")
+        self.assertEqual(v["description"], "Commencement of Bhagwan Mahavir's Shasan and his first divine discourse")
+
+        self.assertEqual(s["title"], "Shrut Udbhav Divas")
+        self.assertEqual(s["category"], "mahaparv")
+        self.assertEqual(s["badge"], "Shrut Udbhav")
+        self.assertEqual(s["badge_color"], "green")
+        self.assertEqual(s["description"], "Origin of Jain Agamic knowledge and scriptural tradition")
+
+        # Both events must share the same solar date
+        self.assertEqual(v["start_date"], s["start_date"])
+
+
+class SaptaRishiVratTest(unittest.TestCase):
+    def test_sapta_rishi_vrat_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        p = [f for f in res["festivals"] if f["id"] == "sapta_rishi_vrat_prarambh_2026"]
+        n = [f for f in res["festivals"] if f["id"] == "sapta_rishi_vrat_nishthapan_2026"]
+
+        self.assertEqual(len(p), 1)
+        self.assertEqual(len(n), 1)
+
+        p_evt = p[0]
+        n_evt = n[0]
+
+        self.assertEqual(p_evt["title"], "Sapta Rishi Vrat Prarambh")
+        self.assertEqual(p_evt["category"], "vrat")
+        self.assertEqual(p_evt["badge"], "Vrat Start")
+        self.assertEqual(p_evt["badge_color"], "pink")
+        self.assertTrue(p_evt["is_span"])
+
+        self.assertEqual(n_evt["title"], "Sapta Rishi Vrat Nishthapan")
+        self.assertEqual(n_evt["category"], "vrat")
+        self.assertEqual(n_evt["badge"], "Vrat End")
+        self.assertEqual(n_evt["badge_color"], "pink")
+        self.assertTrue(n_evt["is_span"])
+        self.assertEqual(p_evt["span_label"], n_evt["span_label"])
+
+
+class SaptaParamsthanVratTest(unittest.TestCase):
+    def test_sapta_paramsthan_vrat_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        p = [f for f in res["festivals"] if f["id"] == "sapta_paramsthan_vrat_prarambh_2026"]
+        e = [f for f in res["festivals"] if f["id"] == "sapta_paramsthan_vrat_purna_2026"]
+
+        self.assertEqual(len(p), 1)
+        self.assertEqual(len(e), 1)
+
+        p_evt = p[0]
+        e_evt = e[0]
+
+        self.assertEqual(p_evt["title"], "Sapta Paramsthan Vrat Prarambh")
+        self.assertEqual(p_evt["category"], "vrat")
+        self.assertEqual(p_evt["badge"], "Vrat Start")
+        self.assertEqual(p_evt["badge_color"], "pink")
+        self.assertEqual(p_evt["boundary_type"], "START")
+        self.assertTrue(p_evt["is_span"])
+
+        self.assertEqual(e_evt["title"], "Sapta Paramsthan Vrat Purna")
+        self.assertEqual(e_evt["category"], "vrat")
+        self.assertEqual(e_evt["badge"], "Vrat End")
+        self.assertEqual(e_evt["badge_color"], "pink")
+        self.assertEqual(e_evt["boundary_type"], "END")
+        self.assertTrue(e_evt["is_span"])
+        self.assertEqual(p_evt["span_label"], e_evt["span_label"])
+
+
+class RakshabandhanVratTest(unittest.TestCase):
+    def test_rakshabandhan_vrat_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        p = [f for f in res["festivals"] if f["id"] == "rakshabandhan_vrat_prarambh_2026"]
+        e = [f for f in res["festivals"] if f["id"] == "rakshabandhan_vrat_purna_2026"]
+
+        self.assertEqual(len(p), 1)
+        self.assertEqual(len(e), 1)
+
+        p_evt = p[0]
+        e_evt = e[0]
+
+        self.assertEqual(p_evt["title"], "Rakshabandhan Vrat Prarambh")
+        self.assertEqual(p_evt["category"], "vrat")
+        self.assertEqual(p_evt["badge"], "Vrat Start")
+        self.assertEqual(p_evt["badge_color"], "pink")
+        self.assertEqual(p_evt["boundary_type"], "START")
+        self.assertTrue(p_evt["is_span"])
+
+        self.assertEqual(e_evt["title"], "Rakshabandhan Vrat Purna (Rakshabandhan Mahaparv)")
+        self.assertEqual(e_evt["category"], "mahaparv")
+        self.assertEqual(e_evt["badge"], "Vrat End")
+        self.assertEqual(e_evt["badge_color"], "pink")
+        self.assertEqual(e_evt["boundary_type"], "END")
+        self.assertTrue(e_evt["is_span"])
+        self.assertEqual(p_evt["span_label"], e_evt["span_label"])
+
+
+class ShravanaPurnimaRakshabandhanTest(unittest.TestCase):
+    def test_shravana_purnima_rakshabandhan_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        r = [f for f in res["festivals"] if f["id"] == "rakshabandhan_700_muni_raksha_divas_2026"]
+        m = [f for f in res["festivals"] if f["id"] == "muni_vishnukumar_akampanacharya_pujan_2026"]
+        s = [f for f in res["festivals"] if f["id"] == "sorana_pujan_2026"]
+
+        self.assertEqual(len(r), 1)
+        self.assertEqual(len(m), 1)
+        self.assertEqual(len(s), 1)
+
+        r_evt = r[0]
+        m_evt = m[0]
+        s_evt = s[0]
+
+        self.assertEqual(r_evt["title"], "Rakshabandhan (700 Muni Raksha Divas)")
+        self.assertEqual(r_evt["category"], "mahaparv")
+        self.assertEqual(r_evt["badge"], "Mahaparv")
+        self.assertEqual(r_evt["badge_color"], "pink")
+
+        self.assertEqual(m_evt["title"], "Muni Vishnukumar avem Akampanacharya Pujan")
+        self.assertEqual(m_evt["category"], "poojan")
+        self.assertEqual(m_evt["badge"], "Pujan")
+        self.assertEqual(m_evt["badge_color"], "pink")
+
+        self.assertEqual(s_evt["title"], "Sorana Pujan (Raksha Sutra Bandhan)")
+        self.assertEqual(s_evt["category"], "parv_vidhi")
+        self.assertEqual(s_evt["badge"], "Sorana Pujan")
+        self.assertEqual(s_evt["badge_color"], "pink")
+
+        self.assertEqual(r_evt["start_date"], m_evt["start_date"])
+        self.assertEqual(r_evt["start_date"], s_evt["start_date"])
+
+
+class BhadrapadaKrishnaEkamMultiVratTest(unittest.TestCase):
+    def test_multi_vrat_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        s_karan = [f for f in res["festivals"] if f["id"] == "solah_karan_vrat_prarambh_2026"]
+        j_mukh = [f for f in res["festivals"] if f["id"] == "shri_jin_mukhavlokan_vrat_prarambh_2026"]
+        s_skandha = [f for f in res["festivals"] if f["id"] == "shrut_skandha_vrat_prarambh_2026"]
+        m_vidhan = [f for f in res["festivals"] if f["id"] == "mushti_vidhan_vrat_prarambh_2026"]
+        d_kalash = [f for f in res["festivals"] if f["id"] == "dhanda_kalash_vrat_prarambh_2026"]
+        m_mala = [f for f in res["festivals"] if f["id"] == "megh_mala_vrat_prarambh_2026"]
+
+        self.assertEqual(len(s_karan), 1)
+        self.assertEqual(len(j_mukh), 1)
+        self.assertEqual(len(s_skandha), 1)
+        self.assertEqual(len(m_vidhan), 1)
+        self.assertEqual(len(d_kalash), 1)
+        self.assertEqual(len(m_mala), 1)
+
+        self.assertEqual(s_karan[0]["title"], "Solah Karan Vrat Prarambh")
+        self.assertEqual(s_karan[0]["category"], "mahaparv_vrat")
+        self.assertEqual(s_karan[0]["badge"], "Vrat Start")
+        self.assertEqual(s_karan[0]["badge_color"], "pink")
+        self.assertTrue(s_karan[0]["is_span"])
+
+        self.assertEqual(j_mukh[0]["title"], "Shri Jin Mukhavlokan Vrat Prarambh")
+        self.assertEqual(j_mukh[0]["category"], "vrat")
+        self.assertEqual(j_mukh[0]["badge"], "Vrat Start")
+        self.assertEqual(j_mukh[0]["badge_color"], "pink")
+        self.assertTrue(j_mukh[0]["is_span"])
+
+        self.assertEqual(s_skandha[0]["title"], "Shrut Skandha Vrat Prarambh")
+        self.assertEqual(m_vidhan[0]["title"], "Mushti Vidhan Vrat Prarambh")
+        self.assertEqual(d_kalash[0]["title"], "Dhanda Kalash Vrat Prarambh")
+        self.assertEqual(m_mala[0]["title"], "Megh Mala Vrat Prarambh")
+
+        # All 6 events must fall on the same date
+        d_target = s_karan[0]["start_date"]
+        for ev in [j_mukh[0], s_skandha[0], m_vidhan[0], d_kalash[0], m_mala[0]]:
+            self.assertEqual(ev["start_date"], d_target)
+
+
+class TeenChaubisiVratTest(unittest.TestCase):
+    def test_teen_chaubisi_vrat_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        tc = [f for f in res["festivals"] if f["id"] == "teen_chaubisi_vrat_prarambh_2026"]
+        self.assertEqual(len(tc), 1)
+
+        evt = tc[0]
+        self.assertEqual(evt["title"], "Teen Chaubisi Vrat Prarambh")
+        self.assertEqual(evt["category"], "vrat")
+        self.assertEqual(evt["badge"], "Vrat Start")
+        self.assertEqual(evt["badge_color"], "pink")
+        self.assertTrue(evt["is_span"])
+        self.assertEqual(evt["boundary_type"], "START")
+
+
+class AkshayaNidhiVratTest(unittest.TestCase):
+    def test_akshaya_nidhi_vrat_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        p = [f for f in res["festivals"] if f["id"] == "akshaya_nidhi_vrat_prarambh_2026"]
+        e = [f for f in res["festivals"] if f["id"] == "akshaya_nidhi_vrat_purna_2026"]
+
+        self.assertEqual(len(p), 1)
+        self.assertEqual(len(e), 1)
+
+        p_evt = p[0]
+        e_evt = e[0]
+
+        self.assertEqual(p_evt["title"], "Akshaya Nidhi Vrat Prarambh")
+        self.assertEqual(p_evt["category"], "vrat")
+        self.assertEqual(p_evt["badge"], "Vrat Start")
+        self.assertEqual(p_evt["badge_color"], "pink")
+        self.assertEqual(p_evt["boundary_type"], "START")
+        self.assertTrue(p_evt["is_span"])
+
+        self.assertEqual(e_evt["title"], "Akshaya Nidhi Vrat Purna")
+        self.assertEqual(e_evt["category"], "vrat")
+        self.assertEqual(e_evt["badge"], "Vrat End")
+        self.assertEqual(e_evt["badge_color"], "pink")
+        self.assertEqual(e_evt["boundary_type"], "END")
+        self.assertTrue(e_evt["is_span"])
+        self.assertEqual(p_evt["span_label"], e_evt["span_label"])
+
+
+class ShvetambaraParyushan50DayTest(unittest.TestCase):
+    def test_paryushan_50_day_cycle_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="shwetambar_murtipujak_tapagachchha"
+        )
+
+        d1 = [f for f in res["festivals"] if f["id"] == "shvetambara_chaturmas_prarambh_2026"]
+        d50 = [f for f in res["festivals"] if f["id"] == "samvatsari_mahaparv_2026"]
+
+        self.assertEqual(len(d1), 1)
+        self.assertEqual(len(d50), 1)
+
+        d1_evt = d1[0]
+        d50_evt = d50[0]
+
+        self.assertEqual(d1_evt["title"], "Chaturmas Prarambh (50-Day Paryushan Cycle Start)")
+        self.assertEqual(d1_evt["badge"], "Cycle Start")
+        self.assertEqual(d1_evt["boundary_type"], "START")
+        self.assertEqual(d1_evt["day_index"], 1)
+
+        self.assertEqual(d50_evt["title"], "Samvatsari Mahaparv (Kshamavani Divas)")
+        self.assertEqual(d50_evt["badge"], "Samvatsari")
+        self.assertEqual(d50_evt["boundary_type"], "END")
+
+        # Verify exact 50-day solar interval: Day 50 date is Day 1 date + 49 days
+        from datetime import date, timedelta
+        dt1 = date.fromisoformat(d1_evt["start_date"])
+        dt50 = date.fromisoformat(d50_evt["start_date"])
+        self.assertEqual(dt50, dt1 + timedelta(days=49))
+
+
+class BhayaHaranVratTest(unittest.TestCase):
+    def test_bhaya_haran_vrat_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        bh = [f for f in res["festivals"] if f["id"] == "bhaya_haran_vrat_2026"]
+        self.assertEqual(len(bh), 1)
+
+        evt = bh[0]
+        self.assertEqual(evt["title"], "Bhaya Haran Vrat")
+        self.assertEqual(evt["category"], "vrat")
+        self.assertEqual(evt["badge"], "Vrat")
+        self.assertEqual(evt["badge_color"], "green")
+
+
+class LabdhiVidhanVratTest(unittest.TestCase):
+    def test_labdhi_vidhan_vrat_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        p = [f for f in res["festivals"] if f["id"] == "labdhi_vidhan_vrat_prarambh_2026"]
+        e = [f for f in res["festivals"] if f["id"] == "labdhi_vidhan_vrat_purna_2026"]
+
+        self.assertEqual(len(p), 1)
+        self.assertEqual(len(e), 1)
+
+        p_evt = p[0]
+        e_evt = e[0]
+
+        self.assertEqual(p_evt["title"], "Labdhi Vidhan Vrat Prarambh")
+        self.assertEqual(p_evt["category"], "vrat")
+        self.assertEqual(p_evt["badge"], "Vrat Start")
+        self.assertEqual(p_evt["badge_color"], "pink")
+        self.assertEqual(p_evt["boundary_type"], "START")
+        self.assertTrue(p_evt["is_span"])
+
+        self.assertEqual(e_evt["title"], "Labdhi Vidhan Vrat Purna")
+        self.assertEqual(e_evt["category"], "vrat")
+        self.assertEqual(e_evt["badge"], "Vrat End")
+        self.assertEqual(e_evt["badge_color"], "pink")
+        self.assertEqual(e_evt["boundary_type"], "END")
+        self.assertTrue(e_evt["is_span"])
+        self.assertEqual(p_evt["span_label"], e_evt["span_label"])
+
+
+class TalaDharTapShantisagarPunyatithiTest(unittest.TestCase):
+    def test_tala_dhar_tap_shantisagar_punyatithi_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        p = [f for f in res["festivals"] if f["id"] == "acharya_shantisagar_punyatithi_2026"]
+        t = [f for f in res["festivals"] if f["id"] == "tala_dhar_tap_2026"]
+
+        self.assertEqual(len(p), 1)
+        self.assertEqual(len(t), 1)
+
+        p_evt = p[0]
+        t_evt = t[0]
+
+        self.assertEqual(p_evt["title"], "Acharya Shantisagar Punyatithi (Samadhi Divas)")
+        self.assertEqual(p_evt["category"], "punyatithi")
+        self.assertEqual(p_evt["badge"], "Samadhi Divas")
+        self.assertEqual(p_evt["badge_color"], "pink")
+
+        self.assertEqual(t_evt["title"], "Tala Dhar Tap")
+        self.assertEqual(t_evt["category"], "tap_vrat")
+        self.assertEqual(t_evt["badge"], "Tap")
+        self.assertEqual(t_evt["badge_color"], "pink")
+
+        self.assertEqual(p_evt["start_date"], t_evt["start_date"])
+
+
+class BadiPanchamiMeruSthapanaTest(unittest.TestCase):
+    def test_badi_panchami_meru_sthapana_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        b = [f for f in res["festivals"] if f["id"] == "badi_panchami_2026"]
+        m = [f for f in res["festivals"] if f["id"] == "meru_sthapana_2026"]
+
+        self.assertEqual(len(b), 1)
+        self.assertEqual(len(m), 1)
+
+        b_evt = b[0]
+        m_evt = m[0]
+
+        self.assertEqual(b_evt["title"], "Badi Panchami")
+        self.assertEqual(b_evt["category"], "mahaparv")
+        self.assertEqual(b_evt["badge"], "Badi Panchami")
+        self.assertEqual(b_evt["badge_color"], "pink")
+
+        self.assertEqual(m_evt["title"], "Meru Sthapana (Sudarshan Meru Pujan)")
+        self.assertEqual(m_evt["category"], "parv_vidhi")
+        self.assertEqual(m_evt["badge"], "Meru Sthapana")
+        self.assertEqual(m_evt["badge_color"], "pink")
+
+        self.assertEqual(b_evt["start_date"], m_evt["start_date"])
+
+
+class NihshalyaAshtamiManchinTithiTest(unittest.TestCase):
+    def test_nihshalya_ashtami_manchin_tithi_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        n = [f for f in res["festivals"] if f["id"] == "nihshalya_ashtami_vrat_2026"]
+        m = [f for f in res["festivals"] if f["id"] == "manchin_tithi_ashtami_2026"]
+
+        self.assertEqual(len(n), 1)
+        self.assertEqual(len(m), 1)
+
+        n_evt = n[0]
+        m_evt = m[0]
+
+        self.assertEqual(n_evt["title"], "Nihshalya Ashtami Vrat")
+        self.assertEqual(n_evt["category"], "vrat")
+        self.assertEqual(n_evt["badge"], "Vrat")
+        self.assertEqual(n_evt["badge_color"], "pink")
+
+        self.assertEqual(m_evt["title"], "Manchin Tithi Ashtami")
+        self.assertEqual(m_evt["category"], "parv_vidhi")
+        self.assertEqual(m_evt["badge"], "Manchin Tithi")
+        self.assertEqual(m_evt["badge_color"], "pink")
+
+        self.assertEqual(n_evt["start_date"], m_evt["start_date"])
+
+
+class SugandhDashamiTest(unittest.TestCase):
+    def test_sugandh_dashami_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        m = [f for f in res["festivals"] if f["id"] == "sugandh_dashami_mahaparv_2026"]
+        v = [f for f in res["festivals"] if f["id"] == "sugandh_dashami_vrat_2026"]
+
+        self.assertEqual(len(m), 1)
+        self.assertEqual(len(v), 1)
+
+        m_evt = m[0]
+        v_evt = v[0]
+
+        self.assertEqual(m_evt["title"], "Sugandh Dashami (Dhoop Dashami Mahaparv)")
+        self.assertEqual(m_evt["category"], "mahaparv")
+        self.assertEqual(m_evt["badge"], "Sugandh Dashami")
+        self.assertEqual(m_evt["badge_color"], "pink")
+
+        self.assertEqual(v_evt["title"], "Sugandh Dashami Vrat")
+        self.assertEqual(v_evt["category"], "vrat")
+        self.assertEqual(v_evt["badge"], "Vrat")
+        self.assertEqual(v_evt["badge_color"], "pink")
+
+        self.assertEqual(m_evt["start_date"], v_evt["start_date"])
+
+
+class AnantChaturdashiVratTest(unittest.TestCase):
+    def test_anant_chaturdashi_vrat_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        p = [f for f in res["festivals"] if f["id"] == "anant_vrat_prarambh_2026"]
+        e = [f for f in res["festivals"] if f["id"] == "anant_chaturdashi_purna_2026"]
+
+        self.assertEqual(len(p), 1)
+        self.assertEqual(len(e), 1)
+
+        p_evt = p[0]
+        e_evt = e[0]
+
+        self.assertEqual(p_evt["title"], "Anant Vrat Prarambh")
+        self.assertEqual(p_evt["category"], "vrat")
+        self.assertEqual(p_evt["badge"], "Vrat Start")
+        self.assertEqual(p_evt["badge_color"], "pink")
+        self.assertEqual(p_evt["boundary_type"], "START")
+        self.assertTrue(p_evt["is_span"])
+
+        self.assertEqual(e_evt["title"], "Anant Chaturdashi (Anant Vrat Purna)")
+        self.assertEqual(e_evt["category"], "mahaparv")
+        self.assertEqual(e_evt["badge"], "Mahaparv")
+        self.assertEqual(e_evt["badge_color"], "pink")
+        self.assertEqual(e_evt["boundary_type"], "END")
+        self.assertTrue(e_evt["is_span"])
+        self.assertEqual(p_evt["span_label"], e_evt["span_label"])
+
+
+class RatnatrayaSankatHaranVratTest(unittest.TestCase):
+    def test_ratnatraya_sankat_haran_vrat_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        rp = [f for f in res["festivals"] if f["id"] == "ratnatraya_vrat_prarambh_2026"]
+        sp = [f for f in res["festivals"] if f["id"] == "sankat_haran_vrat_prarambh_2026"]
+        re = [f for f in res["festivals"] if f["id"] == "ratnatraya_vrat_purna_2026"]
+        se = [f for f in res["festivals"] if f["id"] == "sankat_haran_vrat_purna_2026"]
+
+        self.assertEqual(len(rp), 1)
+        self.assertEqual(len(sp), 1)
+        self.assertEqual(len(re), 1)
+        self.assertEqual(len(se), 1)
+
+        rp_evt = rp[0]
+        sp_evt = sp[0]
+        re_evt = re[0]
+        se_evt = se[0]
+
+        self.assertEqual(rp_evt["title"], "Ratnatraya Vrat Prarambh")
+        self.assertEqual(rp_evt["category"], "mahaparv_vrat")
+        self.assertEqual(rp_evt["badge"], "Vrat Start")
+
+        self.assertEqual(sp_evt["title"], "Sankat Haran Vrat Prarambh")
+        self.assertEqual(sp_evt["category"], "vrat")
+        self.assertEqual(sp_evt["badge"], "Vrat Start")
+
+        self.assertEqual(re_evt["title"], "Ratnatraya Vrat Purna")
+        self.assertEqual(re_evt["category"], "mahaparv_vrat")
+        self.assertEqual(re_evt["badge"], "Vrat End")
+
+        self.assertEqual(se_evt["title"], "Sankat Haran Vrat Purna")
+        self.assertEqual(se_evt["category"], "vrat")
+        self.assertEqual(se_evt["badge"], "Vrat End")
+
+        self.assertEqual(rp_evt["start_date"], sp_evt["start_date"])
+        self.assertEqual(re_evt["start_date"], se_evt["start_date"])
+
+
+class KshamavaniMahaparvTest(unittest.TestCase):
+    def test_kshamavani_mahaparv_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="digambar"
+        )
+
+        k = [f for f in res["festivals"] if f["id"] == "kshamavani_mahaparv_2026"]
+        self.assertEqual(len(k), 1)
+
+        evt = k[0]
+        self.assertEqual(evt["title"], "Kshamavani Mahaparv (Kshamadwani Divas)")
+        self.assertEqual(evt["category"], "mahaparv")
+        self.assertEqual(evt["badge"], "Kshamavani")
+        self.assertEqual(evt["badge_color"], "pink")
+
+
+class ShraddhaVratTest(unittest.TestCase):
+    def test_shraddha_vrat_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        p = [f for f in res["festivals"] if f["id"] == "shraddha_vrat_prarambh_2026"]
+        e = [f for f in res["festivals"] if f["id"] == "shraddha_vrat_purna_2026"]
+
+        self.assertEqual(len(p), 1)
+        self.assertEqual(len(e), 1)
+
+        p_evt = p[0]
+        e_evt = e[0]
+
+        self.assertEqual(p_evt["title"], "Shraddha Vrat Prarambh")
+        self.assertEqual(p_evt["category"], "vrat")
+        self.assertEqual(p_evt["badge"], "Vrat Start")
+        self.assertEqual(p_evt["badge_color"], "pink")
+        self.assertEqual(p_evt["boundary_type"], "START")
+        self.assertTrue(p_evt["is_span"])
+
+        self.assertEqual(e_evt["title"], "Shraddha Vrat Purna")
+        self.assertEqual(e_evt["category"], "vrat")
+        self.assertEqual(e_evt["badge"], "Vrat End")
+        self.assertEqual(e_evt["badge_color"], "pink")
+        self.assertEqual(e_evt["boundary_type"], "END")
+        self.assertTrue(e_evt["is_span"])
+        self.assertEqual(p_evt["span_label"], e_evt["span_label"])
+
+
+class NavapadOliVratTest(unittest.TestCase):
+    def test_navapad_oli_vrat_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        cp = [f for f in res["festivals"] if f["id"] == "navapad_oli_vrat_prarambh_chaitra_2026"]
+        ce = [f for f in res["festivals"] if f["id"] == "navapad_oli_vrat_purna_chaitra_2026"]
+        ap = [f for f in res["festivals"] if f["id"] == "navapad_oli_vrat_prarambh_ashwin_2026"]
+        ae = [f for f in res["festivals"] if f["id"] == "navapad_oli_vrat_purna_ashwin_2026"]
+
+        self.assertEqual(len(cp), 1)
+        self.assertEqual(len(ce), 1)
+        self.assertEqual(len(ap), 1)
+        self.assertEqual(len(ae), 1)
+
+        cp_evt = cp[0]
+        ce_evt = ce[0]
+
+        self.assertEqual(cp_evt["title"], "Navapad Oli Prarambh (Ayambil Oli Start)")
+        self.assertEqual(cp_evt["category"], "mahaparv_vrat")
+        self.assertEqual(cp_evt["badge"], "Vrat Start")
+        self.assertEqual(cp_evt["badge_color"], "pink")
+        self.assertEqual(cp_evt["boundary_type"], "START")
+        self.assertTrue(cp_evt["is_span"])
+
+        self.assertEqual(ce_evt["title"], "Navapad Oli Purna (Ayambil Oli Nishthapan)")
+        self.assertEqual(ce_evt["category"], "mahaparv_vrat")
+        self.assertEqual(ce_evt["badge"], "Vrat End")
+        self.assertEqual(ce_evt["badge_color"], "pink")
+        self.assertEqual(ce_evt["boundary_type"], "END")
+        self.assertTrue(ce_evt["is_span"])
+        self.assertEqual(cp_evt["span_label"], ce_evt["span_label"])
+
+
+class JeevDayaAshtamiTest(unittest.TestCase):
+    def test_jeev_daya_ashtami_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        jda = [f for f in res["festivals"] if f["id"] == "jeev_daya_ashtami_2026"]
+        self.assertEqual(len(jda), 1)
+
+        evt = jda[0]
+        self.assertEqual(evt["title"], "Jeev Daya Ashtami")
+        self.assertEqual(evt["category"], "mahaparv_vrat")
+        self.assertEqual(evt["badge"], "Jeev Daya")
+        self.assertEqual(evt["badge_color"], "pink")
+
+
+class SharadPurnimaJayantisTest(unittest.TestCase):
+    def test_sharad_purnima_jayantis_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="digambar"
+        )
+
+        v = [f for f in res["festivals"] if f["id"] == "acharya_vidyasagar_jayanti_2026"]
+        g = [f for f in res["festivals"] if f["id"] == "ganini_gyanmati_mataji_jayanti_2026"]
+        s = [f for f in res["festivals"] if f["id"] == "sharad_purnima_2026"]
+
+        self.assertEqual(len(v), 1)
+        self.assertEqual(len(g), 1)
+        self.assertEqual(len(s), 1)
+
+        v_evt = v[0]
+        g_evt = g[0]
+        s_evt = s[0]
+
+        self.assertEqual(v_evt["title"], "Acharya Vidyasagar Ji Maharaj Janma Jayanti")
+        self.assertEqual(v_evt["category"], "jayanti")
+        self.assertEqual(v_evt["badge"], "Janma Jayanti")
+
+        self.assertEqual(g_evt["title"], "Ganini Aryika Gyanmati Mataji Janma Jayanti")
+        self.assertEqual(g_evt["category"], "jayanti")
+        self.assertEqual(g_evt["badge"], "Janma Jayanti")
+
+        self.assertEqual(s_evt["title"], "Sharad Purnima (Kojagiri Purnima)")
+        self.assertEqual(s_evt["category"], "mahaparv")
+        self.assertEqual(s_evt["badge"], "Sharad Purnima")
+
+        self.assertEqual(v_evt["start_date"], g_evt["start_date"])
+        self.assertEqual(g_evt["start_date"], s_evt["start_date"])
+
+
+class SplitDayAhoiKarwaDampatyaTest(unittest.TestCase):
+    def test_split_day_ahoi_karwa_dampatya_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        kc = [f for f in res["festivals"] if f["id"] == "karwa_chauth_2026"]
+        aa = [f for f in res["festivals"] if f["id"] == "ahoi_ashtami_2026"]
+        da = [f for f in res["festivals"] if f["id"] == "dampatya_ashtami_2026"]
+
+        self.assertEqual(len(kc), 1)
+        self.assertEqual(len(aa), 1)
+        self.assertEqual(len(da), 1)
+
+        kc_evt = kc[0]
+        aa_evt = aa[0]
+        da_evt = da[0]
+
+        self.assertEqual(kc_evt["title"], "Karwa Chauth (Kark Chaturthi)")
+        self.assertEqual(kc_evt["category"], "vrat")
+        self.assertEqual(kc_evt["badge"], "Karwa Chauth")
+
+        self.assertEqual(aa_evt["title"], "Ahoi Ashtami")
+        self.assertEqual(aa_evt["category"], "vrat")
+        self.assertEqual(aa_evt["badge"], "Ahoi Ashtami")
+
+        self.assertEqual(da_evt["title"], "Dampatya Ashtami")
+        self.assertEqual(da_evt["category"], "vrat")
+        self.assertEqual(da_evt["badge"], "Dampatya Ashtami")
+
+
+class GyanDhanTrayodashiTest(unittest.TestCase):
+    def test_gyan_dhan_trayodashi_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        gt = [f for f in res["festivals"] if f["id"] == "gyan_trayodashi_2026"]
+        dt = [f for f in res["festivals"] if f["id"] == "dhan_teras_2026"]
+
+        self.assertEqual(len(gt), 1)
+        self.assertEqual(len(dt), 1)
+
+        gt_evt = gt[0]
+        dt_evt = dt[0]
+
+        self.assertEqual(gt_evt["title"], "Gyan Trayodashi (Jnana Trayodashi)")
+        self.assertEqual(gt_evt["category"], "mahaparv_vrat")
+        self.assertEqual(gt_evt["badge"], "Gyan Trayodashi")
+
+        self.assertEqual(dt_evt["title"], "Dhan Trayodashi (Dhanteras)")
+        self.assertEqual(dt_evt["category"], "mahaparv")
+        self.assertEqual(dt_evt["badge"], "Dhanteras")
+
+        self.assertEqual(gt_evt["start_date"], dt_evt["start_date"])
+
+
+class KartikaAmavasyaMahaviraNirvanaTest(unittest.TestCase):
+    def test_kartika_amavasya_mahavira_nirvana_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        mnk = [f for f in res["festivals"] if f["id"] == "mahavira_nirvana_kalyanak_2026"]
+        vyn = [f for f in res["festivals"] if f["id"] == "varsha_yog_nishthapan_2026"]
+        ggk = [f for f in res["festivals"] if f["id"] == "gautam_gandhar_kevalgyan_2026"]
+
+        self.assertEqual(len(mnk), 1)
+        self.assertEqual(len(vyn), 1)
+        self.assertEqual(len(ggk), 1)
+
+        m_evt = mnk[0]
+        v_evt = vyn[0]
+        g_evt = ggk[0]
+
+        self.assertEqual(m_evt["title"], "Bhagwan Mahavira Nirvana Kalyanak (Diwali)")
+        self.assertEqual(m_evt["category"], "mahaparv")
+        self.assertEqual(m_evt["badge"], "Moksha Kalyanak")
+
+        self.assertEqual(v_evt["title"], "Varsha Yog Nishthapan (Chaturmas Conclusion)")
+        self.assertEqual(v_evt["category"], "mahaparv")
+        self.assertEqual(v_evt["badge"], "Nishthapan")
+
+        self.assertEqual(g_evt["title"], "Gautam Gandhar Kevalgyan Mahotsav")
+        self.assertEqual(g_evt["category"], "mahaparv")
+        self.assertEqual(g_evt["badge"], "Kevalgyan")
+
+        self.assertEqual(m_evt["start_date"], v_evt["start_date"])
+        self.assertEqual(v_evt["start_date"], g_evt["start_date"])
+
+
+class KartikaShuklaEkamNewYearTest(unittest.TestCase):
+    def test_kartika_shukla_ekam_new_year_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        ny = [f for f in res["festivals"] if f["id"] == "jain_new_year_2026"]
+        gp = [f for f in res["festivals"] if f["id"] == "gautam_swami_kevalgyan_pujan_2026"]
+
+        self.assertEqual(len(ny), 1)
+        self.assertEqual(len(gp), 1)
+
+        ny_evt = ny[0]
+        gp_evt = gp[0]
+
+        self.assertEqual(ny_evt["title"], "Navina Vira Nirvana Samvat Prarambh (Jain New Year)")
+        self.assertEqual(ny_evt["category"], "mahaparv")
+        self.assertEqual(ny_evt["badge"], "New Year")
+
+        self.assertEqual(gp_evt["title"], "Gautam Swami Kevalgyan Pujan")
+        self.assertEqual(gp_evt["category"], "mahaparv")
+        self.assertEqual(gp_evt["badge"], "Kevalgyan")
+
+        self.assertEqual(ny_evt["start_date"], gp_evt["start_date"])
+
+
+class BhaiDoojTest(unittest.TestCase):
+    def test_bhai_dooj_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        bd = [f for f in res["festivals"] if f["id"] == "bhai_dooj_2026"]
+
+        self.assertEqual(len(bd), 1)
+
+        b_evt = bd[0]
+
+        self.assertEqual(b_evt["title"], "Bhaiya Dooj (Bhratri Dvitiya)")
+        self.assertEqual(b_evt["category"], "mahaparv")
+        self.assertEqual(b_evt["badge"], "Bhai Dooj")
+
+
+class KartikaShuklaPanchamiTest(unittest.TestCase):
+    def test_kartika_shukla_panchami_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        gp = [f for f in res["festivals"] if f["id"] == "gyan_panchami_2026"]
+        lp = [f for f in res["festivals"] if f["id"] == "labh_panchami_2026"]
+
+        self.assertEqual(len(gp), 1)
+        self.assertEqual(len(lp), 1)
+
+        gp_evt = gp[0]
+        lp_evt = lp[0]
+
+        self.assertEqual(gp_evt["title"], "Gyan Panchami (Jnana Panchami)")
+        self.assertEqual(gp_evt["category"], "mahaparv_vrat")
+        self.assertEqual(gp_evt["badge"], "Gyan Panchami")
+
+        self.assertEqual(lp_evt["title"], "Labh Panchami (Saubhagya Panchami)")
+        self.assertEqual(lp_evt["category"], "mahaparv")
+        self.assertEqual(lp_evt["badge"], "Labh Panchami")
+
+        self.assertEqual(gp_evt["start_date"], lp_evt["start_date"])
+
+
+class KartikaNandishwarAshtamiTest(unittest.TestCase):
+    def test_kartika_nandishwar_ashtami_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        na = [f for f in res["festivals"] if f["id"] == "nandishwar_ashtami_kartika_2026"]
+
+        self.assertEqual(len(na), 1)
+
+        n_evt = na[0]
+
+        self.assertEqual(n_evt["title"], "Nandishwar Ashtami (Ashtahnika Parv Prarambh)")
+        self.assertEqual(n_evt["category"], "mahaparv_vrat")
+        self.assertEqual(n_evt["badge"], "Vrat Start")
+        self.assertTrue(n_evt["is_span"])
+        self.assertEqual(n_evt["boundary_type"], "START")
+
+
+class PanditJainiJiyalalPunyatithiTest(unittest.TestCase):
+    def test_pandit_jaini_jiyalal_punyatithi_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="digambar"
+        )
+
+        pj = [f for f in res["festivals"] if f["id"] == "pandit_jaini_jiyalal_punyatithi_2026"]
+
+        self.assertEqual(len(pj), 1)
+
+        p_evt = pj[0]
+
+        self.assertEqual(p_evt["title"], "Pandit Jaini Jiyalal Ji Chaudhary Punya Divas")
+        self.assertEqual(p_evt["category"], "punya_tithi")
+        self.assertEqual(p_evt["badge"], "Punya Tithi")
+        self.assertEqual(p_evt["badge_color"], "Goldern")
+
+
+class KartikaPurnimaAshtahnikaPurnaTest(unittest.TestCase):
+    def test_kartika_purnima_ashtahnika_purna_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        ap = [f for f in res["festivals"] if f["id"] == "kartika_ashtahnika_purna_2026"]
+        kp = [f for f in res["festivals"] if f["id"] == "kartika_purnima_dev_deepavali_2026"]
+
+        self.assertEqual(len(ap), 1)
+        self.assertEqual(len(kp), 1)
+
+        a_evt = ap[0]
+        k_evt = kp[0]
+
+        self.assertEqual(a_evt["title"], "Kartika Ashtahnika Mahaparv Purna")
+        self.assertEqual(a_evt["category"], "mahaparv_vrat")
+        self.assertEqual(a_evt["badge"], "Vrat End")
+        self.assertTrue(a_evt["is_span"])
+        self.assertEqual(a_evt["boundary_type"], "END")
+
+        self.assertEqual(k_evt["title"], "Kartika Purnima (Dev Deepavali)")
+        self.assertEqual(k_evt["category"], "mahaparv")
+        self.assertEqual(k_evt["badge"], "Kartika Purnima")
+
+        self.assertEqual(a_evt["start_date"], k_evt["start_date"])
+
+
+class MargashirshaSheetalnathStotramTest(unittest.TestCase):
+    def test_margashirsha_sheetalnath_stotram_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        ss = [f for f in res["festivals"] if f["id"] == "sheetalnath_stotram_rachna_2026"]
+
+        self.assertEqual(len(ss), 1)
+
+        s_evt = ss[0]
+
+        self.assertEqual(s_evt["title"], "Bhagwan Sheetalnath Stotram Rachna Divas")
+        self.assertEqual(s_evt["category"], "mahaparv")
+        self.assertEqual(s_evt["badge"], "Stotram Rachna")
+        self.assertEqual(s_evt["badge_color"], "pink")
+
+
+class MaghaLabdhiVidhanTest(unittest.TestCase):
+    def test_magha_labdhi_vidhan_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        st = [f for f in res["festivals"] if f["id"] == "labdhi_vidhan_start_magha_2026"]
+        pu = [f for f in res["festivals"] if f["id"] == "labdhi_vidhan_purna_magha_2026"]
+
+        self.assertEqual(len(st), 1)
+        self.assertEqual(len(pu), 1)
+
+        s_evt = st[0]
+        p_evt = pu[0]
+
+        self.assertEqual(s_evt["title"], "Labdhi Vidhan Vrat Prarambh")
+        self.assertEqual(s_evt["category"], "mahaparv_vrat")
+        self.assertEqual(s_evt["badge"], "Vrat Start")
+        self.assertEqual(s_evt["badge_color"], "orange")
+        self.assertTrue(s_evt["is_span"])
+        self.assertEqual(s_evt["boundary_type"], "START")
+
+        self.assertEqual(p_evt["title"], "Labdhi Vidhan Vrat Purna")
+        self.assertEqual(p_evt["category"], "mahaparv_vrat")
+        self.assertEqual(p_evt["badge"], "Vrat End")
+        self.assertEqual(p_evt["badge_color"], "orange")
+        self.assertTrue(p_evt["is_span"])
+        self.assertEqual(p_evt["boundary_type"], "END")
+
+
+class PanditJainiJiyalalJanmaDivasTest(unittest.TestCase):
+    def test_pandit_jaini_jiyalal_janma_divas_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="digambar"
+        )
+
+        jd = [f for f in res["festivals"] if f["id"] == "pandit_jaini_jiyalal_janma_divas_2026"]
+
+        self.assertEqual(len(jd), 1)
+
+        j_evt = jd[0]
+
+        self.assertEqual(j_evt["title"], "Pandit Jaini Jiyalal Ji Chaudhary Janma Divas")
+        self.assertEqual(j_evt["category"], "jayanti")
+        self.assertEqual(j_evt["badge"], "Janma Jayanti")
+        self.assertEqual(j_evt["badge_color"], "purple")
+
+
+class MaghaShuklaPanchamiTriTest(unittest.TestCase):
+    def test_magha_shukla_panchami_tri_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        kj = [f for f in res["festivals"] if f["id"] == "acharya_kundakunda_jayanti_2026"]
+        ms = [f for f in res["festivals"] if f["id"] == "jina_murti_sthapna_2026"]
+        vp = [f for f in res["festivals"] if f["id"] == "vasant_panchami_shrut_2026"]
+
+        self.assertEqual(len(kj), 1)
+        self.assertEqual(len(ms), 1)
+        self.assertEqual(len(vp), 1)
+
+        k_evt = kj[0]
+        m_evt = ms[0]
+        v_evt = vp[0]
+
+        self.assertEqual(k_evt["title"], "Acharya Kundakunda Swami Janma Jayanti")
+        self.assertEqual(k_evt["category"], "jayanti")
+        self.assertEqual(k_evt["badge"], "Janma Jayanti")
+        self.assertEqual(k_evt["badge_color"], "purple")
+
+        self.assertEqual(m_evt["title"], "Jina Murti Sthapna Divas")
+        self.assertEqual(m_evt["category"], "auspicious")
+        self.assertEqual(m_evt["badge"], "Murti Sthapna")
+        self.assertEqual(m_evt["badge_color"], "emerald")
+
+        self.assertEqual(v_evt["title"], "Vasant Panchami (Shrut Vasant)")
+        self.assertEqual(v_evt["category"], "shastra")
+        self.assertEqual(v_evt["badge"], "Jinavani Pujan")
+        self.assertEqual(v_evt["badge_color"], "indigo")
+
+        self.assertEqual(k_evt["start_date"], m_evt["start_date"])
+        self.assertEqual(m_evt["start_date"], v_evt["start_date"])
+
+
+class PhalgunaPurnimaAshtahnikaPurnaTest(unittest.TestCase):
+    def test_phalguna_purnima_ashtahnika_purna_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        ap = [f for f in res["festivals"] if f["id"] == "phalguna_ashtahnika_purna_2026"]
+        hd = [f for f in res["festivals"] if f["id"] == "holika_dahan_2026"]
+        vp = [f for f in res["festivals"] if f["id"] == "phalguna_purnima_vasantotsav_2026"]
+
+        self.assertEqual(len(ap), 1)
+        self.assertEqual(len(hd), 1)
+        self.assertEqual(len(vp), 1)
+
+        a_evt = ap[0]
+        h_evt = hd[0]
+        v_evt = vp[0]
+
+        self.assertEqual(a_evt["title"], "Phalguna Ashtahnika Mahaparv Purna")
+        self.assertEqual(a_evt["category"], "mahaparv_vrat")
+        self.assertEqual(a_evt["badge"], "Vrat End")
+        self.assertEqual(a_evt["badge_color"], "orange")
+        self.assertTrue(a_evt["is_span"])
+        self.assertEqual(a_evt["boundary_type"], "END")
+
+        self.assertEqual(h_evt["title"], "Holika Dahan (Holi Parv)")
+        self.assertEqual(h_evt["category"], "utsav")
+        self.assertEqual(h_evt["badge"], "Holika Dahan")
+        self.assertEqual(h_evt["badge_color"], "emerald")
+
+        self.assertEqual(v_evt["title"], "Phalguna Purnima (Vasantotsav)")
+        self.assertEqual(v_evt["category"], "mahaparv")
+        self.assertEqual(v_evt["badge"], "Sharadotsav")
+        self.assertEqual(v_evt["badge_color"], "red")
+
+        self.assertEqual(a_evt["start_date"], h_evt["start_date"])
+        self.assertEqual(h_evt["start_date"], v_evt["start_date"])
+
+
+class ChaitraAmavasyaKalyanakVarshantTest(unittest.TestCase):
+    def test_chaitra_amavasya_kalyanak_varshant_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        an = [f for f in res["festivals"] if f["id"] == "ananthnath_moksha_2026"]
+        ar = [f for f in res["festivals"] if f["id"] == "aranath_moksha_2026"]
+        ls = [f for f in res["festivals"] if f["id"] == "labdhi_vidhan_start_chaitra_2026"]
+        vs = [f for f in res["festivals"] if f["id"] == "vikram_samvat_varshant_2026"]
+
+        self.assertEqual(len(an), 1)
+        self.assertEqual(len(ar), 1)
+        self.assertEqual(len(ls), 1)
+        self.assertEqual(len(vs), 1)
+
+        an_evt = an[0]
+        ar_evt = ar[0]
+        ls_evt = ls[0]
+        vs_evt = vs[0]
+
+        self.assertEqual(an_evt["title"], "Bhagwan Ananthnath Ji Moksha Kalyanak")
+        self.assertEqual(an_evt["category"], "kalyanak")
+        self.assertEqual(an_evt["badge"], "Moksha Kalyanak")
+        self.assertEqual(an_evt["badge_color"], "red")
+
+        self.assertEqual(ar_evt["title"], "Bhagwan Aranath Ji Moksha Kalyanak")
+        self.assertEqual(ar_evt["category"], "kalyanak")
+
+        self.assertEqual(ls_evt["title"], "Labdhi Vidhan Vrat Prarambh")
+        self.assertEqual(ls_evt["category"], "mahaparv_vrat")
+        self.assertEqual(ls_evt["badge"], "Vrat Start")
+        self.assertTrue(ls_evt["is_span"])
+        self.assertEqual(ls_evt["boundary_type"], "START")
+
+        self.assertEqual(vs_evt["title"], "Vikram Samvat Varsha-Ant Divas")
+        self.assertEqual(vs_evt["category"], "auspicious")
+        self.assertEqual(vs_evt["badge"], "Year End")
+        self.assertEqual(vs_evt["badge_color"], "emerald")
+
+        self.assertEqual(an_evt["start_date"], ar_evt["start_date"])
+        self.assertEqual(ar_evt["start_date"], ls_evt["start_date"])
+
+
+class Namokar35VratTest(unittest.TestCase):
+    def test_namokar_35_vrat_resolution_2026(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="all"
+        )
+
+        n_steps = [f for f in res["festivals"] if f["id"].startswith("namokar_vrat_step_")]
+
+        # In a single calendar year (e.g. 2026), multiple steps from the sequence fire
+        self.assertTrue(len(n_steps) > 0)
+
+        step_1 = [f for f in n_steps if f["step_index"] == 1]
+        if step_1:
+            s1 = step_1[0]
+            self.assertEqual(s1["title"], "Namokar Mahamantra Vrat (Prarambh - 1/35)")
+            self.assertEqual(s1["boundary_type"], "START")
+            self.assertEqual(s1["badge"], "Namokar Vrat #1")
+            self.assertEqual(s1["mantra_pada"], "Ṇamō Arihantāṇaṁ")
+            self.assertEqual(s1["badge_color"], "orange")
+            self.assertTrue(s1["is_span"])
+
+        step_9 = [f for f in n_steps if f["step_index"] == 9]
+        if step_9:
+            s9 = step_9[0]
+            self.assertEqual(s9["title"], "Namokar Mahamantra Vrat (9/35)")
+            self.assertEqual(s9["boundary_type"], "INTERMEDIATE")
+            self.assertEqual(s9["badge"], "Namokar Vrat #9")
+            self.assertEqual(s9["mantra_pada"], "Ṇamō Siddhāṇaṁ")
+
+        step_35 = [f for f in n_steps if f["step_index"] == 35]
+        if step_35:
+            s35 = step_35[0]
+            self.assertEqual(s35["title"], "Namokar Mahamantra Vrat (Udyapan / Purna - 35/35)")
+            self.assertEqual(s35["boundary_type"], "END")
+            self.assertEqual(s35["badge"], "Namokar Vrat Purna")
+            self.assertEqual(s35["mantra_pada"], "Ṇamō Lōē Savvasāhūṇaṁ")
 
 
 if __name__ == "__main__":

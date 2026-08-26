@@ -864,8 +864,86 @@ def calculate_bhadra_kaal(
 
 
 # ---------------------------------------------------------------------------
+# Agni Vaas Engine
+# ---------------------------------------------------------------------------
+
+def calculate_agni_vaas(tithi_index: int, vara_index: int) -> dict:
+    """Compute Agni Vaas (अग्नि-वास) for Havan/Yajna suitability.
+
+    Formula from Panchang:
+    1. Absolute Tithi count (1..30):
+       - Shukla Paksha: 1 to 15
+       - Krishna Paksha: 16 to 30 (Tithi Number + 15)
+       Note: `tithi_index` (1 to 30) is already the continuous Absolute Tithi count.
+    2. Vaar Number (1..7):
+       - Sunday = 1, Monday = 2, ..., Saturday = 7 (vara_index + 1)
+    3. Formula:
+       - Total Sum = Absolute Tithi + Vaar Number + 1
+       - Remainder = Total Sum % 4
+
+    Mapping:
+    - Remainder 0 or 3 -> Prithvi (Earth / पृथ्वीलोक): Auspicious (शुभ). Favorable for Havan.
+    - Remainder 1      -> Aakash (Sky / आकाशलोक): Inauspicious / Fatal (प्राणनाशक / अशुभ). Havan prohibited.
+    - Remainder 2      -> Patal (Underworld / पाताललोक): Inauspicious / Loss of Wealth (धन-ऐश्वर्य की हानि / अशुभ). Havan prohibited.
+    """
+    absolute_tithi = int(tithi_index)
+    if absolute_tithi < 1 or absolute_tithi > 30:
+        absolute_tithi = ((absolute_tithi - 1) % 30) + 1
+
+    vara_num = (int(vara_index) % 7) + 1
+    total_sum = absolute_tithi + vara_num + 1
+    remainder = total_sum % 4
+
+    if remainder in (0, 3):
+        residence = "Prithvi"
+        residence_hindi = "पृथ्वी"
+        residence_full = "Prithvi (पृथ्वीलोक)"
+        status = "Auspicious (शुभ)"
+        status_hindi = "शुभ"
+        is_auspicious = True
+        description_hindi = "हवनादि कार्य के लिए शुभ (सुखकारक)"
+        description = "Favorable for Havan and sacred rituals."
+    elif remainder == 1:
+        residence = "Aakash"
+        residence_hindi = "आकाश"
+        residence_full = "Aakash (आकाशलोक)"
+        status = "Inauspicious / Fatal (अशुभ / प्राणनाशक)"
+        status_hindi = "अशुभ (प्राणनाशक)"
+        is_auspicious = False
+        description_hindi = "हवन से प्राणनाश का भय (अशुभ)"
+        description = "Havan is strictly prohibited (Risk of severe harm)."
+    else:  # remainder == 2
+        residence = "Patal"
+        residence_hindi = "पाताल"
+        residence_full = "Patal (पाताललोक)"
+        status = "Inauspicious / Loss of Wealth (अशुभ / धन-ऐश्वर्य की हानि)"
+        status_hindi = "अशुभ (धन-ऐश्वर्य की हानि)"
+        is_auspicious = False
+        description_hindi = "हवन से धन-ऐश्वर्य की हानि (अशुभ)"
+        description = "Loss of wealth and prosperity. Havan strictly prohibited."
+
+    return {
+        "tithi_index": absolute_tithi,
+        "absolute_tithi": absolute_tithi,
+        "vara_index": int(vara_index) % 7,
+        "vara_number": vara_num,
+        "total_sum": total_sum,
+        "remainder": remainder,
+        "residence": residence,
+        "residence_hindi": residence_hindi,
+        "residence_full": residence_full,
+        "status": status,
+        "status_hindi": status_hindi,
+        "is_auspicious": is_auspicious,
+        "description": description,
+        "description_hindi": description_hindi,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Panchak Kaal Engine
 # ---------------------------------------------------------------------------
+
 
 PANCHAK_START_LON: float = 300.0
 PANCHAK_END_LON: float = 360.0

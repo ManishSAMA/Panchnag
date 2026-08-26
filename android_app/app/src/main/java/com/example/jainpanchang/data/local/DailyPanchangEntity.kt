@@ -3,10 +3,14 @@ package com.example.jainpanchang.data.local
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "daily_panchang")
+@Entity(
+    tableName = "daily_panchang",
+    primaryKeys = ["dateString", "latitude", "longitude"]
+)
 data class DailyPanchangEntity(
-    @PrimaryKey
     val dateString: String, // Format: YYYY-MM-DD
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0,
     val julianDate: Double,
     val sunriseJd: Double,
     val sunsetJd: Double,

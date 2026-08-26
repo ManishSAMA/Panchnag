@@ -454,18 +454,25 @@ def create_app() -> Flask:
                 if first_result is None:
                     first_result = result
 
-                udaya_tithi = result["panchang"]["tithi"][0]
-                tithi_index = udaya_tithi["index"]
+                jain_tithi = result["panchang"].get("jain_tithi")
+                if jain_tithi:
+                    tithi_index = jain_tithi["index"]
+                    tithi_name = jain_tithi["name"]
+                    tithi_end_raw = jain_tithi["ends"]["time"] if jain_tithi.get("ends") else ""
+                else:
+                    udaya_tithi = result["panchang"]["tithi"][0]
+                    tithi_index = udaya_tithi["index"]
+                    tithi_name = udaya_tithi["name"]
+                    tithi_end_raw = udaya_tithi["ends"]["time"] if udaya_tithi["ends"] else ""
+
                 nakshatra_index = result["panchang"]["nakshatra"]["index"]
                 vara_index = result["panchang"]["vara"]["index"]
-
-                tithi_end_raw = udaya_tithi["ends"]["time"] if udaya_tithi["ends"] else ""
                 nakshatra_end_raw = result["panchang"]["nakshatra"]["ends"]["time"]
                 
                 day_payload = {
                     "date": date_str,
                     "tithi_index": tithi_index,
-                    "tithi_name": udaya_tithi["name"],
+                    "tithi_name": tithi_name,
                     "tithi_end_time": tithi_end_raw[:5] if tithi_end_raw else "",
                     "nakshatra_index": nakshatra_index,
                     "nakshatra_name": result["panchang"]["nakshatra"]["name"],
@@ -954,6 +961,16 @@ def create_app() -> Flask:
     _DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
     _generation_status: dict[str, dict] = {}
 
+    def _get_safe_db_path(slug: str) -> str:
+        import re
+        if not re.match(r"^[a-zA-Z0-9_-]+$", slug):
+            raise ValueError("Invalid city_slug. Only alphanumeric characters, dashes, and underscores are allowed.")
+        db_dir = Path(_DATA_DIR).resolve()
+        target_path = (db_dir / f"panchang_{slug}.db").resolve()
+        if target_path.parent != db_dir:
+            raise ValueError("Invalid city_slug path traversal detected.")
+        return str(target_path)
+
     @app.post("/api/generate-db")
     def api_generate_db():
         import threading
@@ -969,7 +986,11 @@ def create_app() -> Flask:
         if not all([city_name, city_slug, latitude is not None, longitude is not None, tz]):
             return jsonify({"error": "Required fields: city_name, city_slug, latitude, longitude, timezone"}), 400
 
-        db_path = os.path.join(_DATA_DIR, f"panchang_{city_slug}.db")
+        try:
+            db_path = _get_safe_db_path(city_slug)
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+
         _generation_status[city_slug] = {"status": "running", "progress": 0, "message": ""}
 
         def _run():
@@ -996,9 +1017,13 @@ def create_app() -> Flask:
 
     @app.get("/api/generate-db/progress/<city_slug>")
     def api_generate_db_progress(city_slug: str):
+        try:
+            db_path = _get_safe_db_path(city_slug)
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+
         status = _generation_status.get(city_slug)
         if status is None:
-            db_path = os.path.join(_DATA_DIR, f"panchang_{city_slug}.db")
             if os.path.isfile(db_path):
                 return jsonify({"status": "complete", "progress": 100, "message": ""})
             return jsonify({"status": "not_started", "progress": 0, "message": ""}), 404
@@ -1006,7 +1031,11 @@ def create_app() -> Flask:
 
     @app.delete("/api/generate-db/<city_slug>")
     def api_delete_db(city_slug: str):
-        db_path = os.path.join(_DATA_DIR, f"panchang_{city_slug}.db")
+        try:
+            db_path = _get_safe_db_path(city_slug)
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+
         _generation_status.pop(city_slug, None)
         if os.path.isfile(db_path):
             try:

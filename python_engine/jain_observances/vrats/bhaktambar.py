@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Tuple, Protocol, Dict, Optional, Set
+from typing import List, Tuple, Protocol, Dict, Optional, Any
 from dataclasses import dataclass
 
 class TithiProvider(Protocol):
@@ -18,127 +18,115 @@ class TithiProvider(Protocol):
         """
         ...
 
-@dataclass
-class DayTithiInfo:
-    date: datetime.date
-    tithi_at_sunrise: int
-    tithi_at_cutoff: int  # Tithi at Sunrise + 144 mins
-    active_tithis: Set[int]  # Set of all tithis touching the morning window
 
-@dataclass
+@dataclass(frozen=True)
 class VratSchedule:
     start_date: str
     end_date: str
     total_fasting_days: int
     has_kshaya: bool
     has_vriddhi: bool
-    daily_details: Optional[List[str]] = None
 
 
 def calculate_bhaktambar_vrat(
     year: int,
     month: int,
-    paksha: str,  # "SHUKLA" or "KRISHNA"
+    paksha: str,
     lat: float,
     lon: float,
     provider: TithiProvider
 ) -> Optional[VratSchedule]:
     """
-    Calculates Bhaktambar Vrat anchored by 8th (Ashtami) start and 14th (Chaturdashi) end,
-    evaluating Tithi state between Sunrise and Sunrise + 144 minutes.
+    Calculates the Bhaktambar Vrat (Ashtami to Chaturdashi) for a specific month and paksha,
+    enforcing Jain Day +144 minute boundaries, Kshaya (min 7 days) and Vriddhi rules.
+    Accepts case-insensitive paksha strings ('SHUKLA', 'shukla', 'Krishna', etc.).
     """
-    is_shukla = paksha.upper() == "SHUKLA"
-    
-    # Target Tithi indices for the Paksha
-    # Shukla: Ashtami=8, ..., Chaturdashi=14
-    # Krishna: Ashtami=23, ..., Chaturdashi=29
-    ashtami_idx = 8 if is_shukla else 23
-    chaturdashi_idx = 14 if is_shukla else 29
-    
-    # Scan window (~35 days around target month)
-    search_start = datetime.date(year, month, 1) - datetime.timedelta(days=5)
-    
-    daily_records: Dict[datetime.date, DayTithiInfo] = {}
+    norm_paksha = paksha.strip().upper() if isinstance(paksha, str) else ""
+    if norm_paksha not in ["SHUKLA", "KRISHNA"]:
+        raise ValueError(f"Invalid paksha '{paksha}'. Must be 'SHUKLA' or 'KRISHNA'.")
 
-    # Step 1: Scan dates and capture Sunrise + 144 min window
-    for day_offset in range(40):
-        current_date = search_start + datetime.timedelta(days=day_offset)
-        sunrise = provider.get_sunrise(current_date, lat, lon)
-        cutoff_time = sunrise + datetime.timedelta(minutes=144)
-        
-        t_sunrise = provider.get_tithi_at_time(sunrise, lat, lon)
-        t_cutoff = provider.get_tithi_at_time(cutoff_time, lat, lon)
-        
-        # Combine both Tithis into a set to detect overlap/touching
-        active_set = {t_sunrise, t_cutoff}
-        
-        daily_records[current_date] = DayTithiInfo(
-            date=current_date,
-            tithi_at_sunrise=t_sunrise,
-            tithi_at_cutoff=t_cutoff,
-            active_tithis=active_set
-        )
+    # Define search window from 1st of month to 10th of next month
+    start_date = datetime.date(year, month, 1)
+    next_month_year = year + (month // 12)
+    next_month = (month % 12) + 1
+    end_date = datetime.date(next_month_year, next_month, 10)
 
-    # Step 2: Find Start Trigger (Day containing Ashtami / 8th)
-    start_date: Optional[datetime.date] = None
-    for d in sorted(daily_records.keys()):
-        # Ensure we anchor in the right month scope
-        if d.month == month or (d.month == (month % 12) + 1 and d.day <= 10):
-            if ashtami_idx in daily_records[d].active_tithis:
-                start_date = d
-                break
+    # Target Tithis based on Paksha
+    # Shukla Paksha = 1 to 15. Target: 8 to 14
+    # Krishna Paksha = 16 to 30. Target: 23 to 29 (which is Krishna 8 to Krishna 14)
+    if norm_paksha == "SHUKLA":
+        target_tithi_range = range(8, 15)
+        saptami_idx = 7
+    else:
+        target_tithi_range = range(23, 30)
+        saptami_idx = 22
 
-    if not start_date:
-        return None  # Could not anchor Ashtami trigger
-
-    # Step 3: Find End Trigger (Day containing Chaturdashi / 14th)
-    end_date: Optional[datetime.date] = None
-    curr = start_date
-    while curr <= start_date + datetime.timedelta(days=12):
-        if curr in daily_records:
-            rec = daily_records[curr]
-            if chaturdashi_idx in rec.active_tithis:
-                end_date = curr
-                # If 14th continues onto the next solar day (Vriddhi), extend to include it
-                next_day = curr + datetime.timedelta(days=1)
-                if next_day in daily_records and chaturdashi_idx in daily_records[next_day].active_tithis:
-                    end_date = next_day
-                break
-        curr += datetime.timedelta(days=1)
-
-    if not end_date:
-        return None
-
-    # Step 4: Extract all fasting days between start_date and end_date
-    fasting_days: List[DayTithiInfo] = []
+    # Step 1: Calculate Calendar Days for Target Tithis
+    date_to_tithi: Dict[datetime.date, int] = {}
     curr = start_date
     while curr <= end_date:
-        fasting_days.append(daily_records[curr])
+        sunrise = provider.get_sunrise(curr, lat, lon)
+        jain_cutoff = sunrise + datetime.timedelta(minutes=144)
+        tithi_idx = provider.get_tithi_at_time(jain_cutoff, lat, lon)
+        date_to_tithi[curr] = tithi_idx
         curr += datetime.timedelta(days=1)
 
-    total_days = len(fasting_days)
+    # Extract cluster dates for the target paksha
+    cluster_dates: List[datetime.date] = []
+    for d in sorted(date_to_tithi.keys()):
+        t = date_to_tithi[d]
+        if t in target_tithi_range or t == saptami_idx:
+            if not cluster_dates or (d - cluster_dates[-1]).days == 1:
+                cluster_dates.append(d)
+            elif (d - cluster_dates[-1]).days > 1 and len(cluster_dates) >= 5:
+                break
+            else:
+                cluster_dates = [d]
 
-    # Step 5: Check Kshaya & Vriddhi flags
-    # Standard Vrat span is usually 7-8 calendar days
-    has_kshaya = total_days < 7
-    has_vriddhi = total_days > 8
+    if not cluster_dates:
+        return None
 
-    # Formulate human-readable daily summary
-    details = []
-    for info in fasting_days:
-        if info.tithi_at_sunrise == info.tithi_at_cutoff:
-            t_str = f"Tithi {info.tithi_at_sunrise}"
+    # Step 2: Determine start and end days
+    ashtami_dates = [d for d in cluster_dates if date_to_tithi[d] == target_tithi_range[0]]
+    if not ashtami_dates:
+        saptami_dates = [d for d in cluster_dates if date_to_tithi[d] == saptami_idx]
+        start_day = saptami_dates[0] if saptami_dates else cluster_dates[0]
+    else:
+        start_day = ashtami_dates[0]
+
+    chaturdashi_dates = [d for d in cluster_dates if date_to_tithi[d] == target_tithi_range[-1]]
+    if not chaturdashi_dates:
+        target_dates = [d for d in cluster_dates if date_to_tithi[d] in target_tithi_range]
+        end_day = max(target_dates) if target_dates else cluster_dates[-1]
+    else:
+        end_day = chaturdashi_dates[-1]
+
+    total_days = (end_day - start_day).days + 1
+
+    # Step 3: Apply Kshaya Rule (Min 7 Days Guarantee)
+    has_kshaya = False
+    if total_days < 7:
+        has_kshaya = True
+        saptami_dates = [d for d in cluster_dates if date_to_tithi[d] == saptami_idx]
+        if saptami_dates:
+            start_day = saptami_dates[0]
         else:
-            t_str = f"Overlap: Tithi {info.tithi_at_sunrise} & Tithi {info.tithi_at_cutoff} (Counted as 1 day)"
-        details.append(f"{info.date.strftime('%Y-%m-%d')}: {t_str}")
+            start_day = end_day - datetime.timedelta(days=6)
+
+        total_days = (end_day - start_day).days + 1
+        if total_days < 7:
+            start_day = end_day - datetime.timedelta(days=6)
+            total_days = 7
+
+    # Step 4: Vriddhi Rule Detection
+    has_vriddhi = total_days > 7
 
     return VratSchedule(
-        start_date=start_date.strftime("%Y-%m-%d"),
-        end_date=end_date.strftime("%Y-%m-%d"),
+        start_date=start_day.strftime("%Y-%m-%d"),
+        end_date=end_day.strftime("%Y-%m-%d"),
         total_fasting_days=total_days,
         has_kshaya=has_kshaya,
-        has_vriddhi=has_vriddhi,
-        daily_details=details
+        has_vriddhi=has_vriddhi
     )
 
 
@@ -147,3 +135,4 @@ def calculate_bhaktambar_vrat(
 # ==========================================
 
 from .provider import SwissEphTithiProvider
+

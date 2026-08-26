@@ -34,13 +34,13 @@ def generate_jain_festivals(
             moon_lon = get_planetary_longitude(sunrise_jd, 'Moon', ayanamsa)
             tithi_idx = get_tithi(sun_lon, moon_lon)
             
-            # Fast Jain tithi index
+            # Fast Jain tithi index and month
             reference_jd = sunrise_jd + (2.4 / 24.0)
             sun_lon_j = get_planetary_longitude(reference_jd, 'Sun', ayanamsa)
             moon_lon_j = get_planetary_longitude(reference_jd, 'Moon', ayanamsa)
             jain_tithi_idx = get_tithi(sun_lon_j, moon_lon_j)
             
-            hindu_month, _, is_adhika = get_hindu_month(sunrise_jd, ayanamsa)
+            hindu_month, _, is_adhika = get_hindu_month(reference_jd, ayanamsa)
 
             
             # Clean month name (e.g. strip Adhika for standard matching)
@@ -54,8 +54,10 @@ def generate_jain_festivals(
                 "jain_tithi_name": "", # Unused by logic engine
                 "hindu_month": base_month,
                 "is_adhika": is_adhika,
-                "paksha": "Shukla" if jain_tithi_idx <= 15 else "Krishna",
-                "tithi_in_paksha": jain_tithi_idx if jain_tithi_idx <= 15 else jain_tithi_idx - 15,
+                "paksha": "Shukla" if tithi_idx <= 15 else "Krishna",
+                "tithi_in_paksha": tithi_idx if tithi_idx <= 15 else tithi_idx - 15,
+                "jain_paksha": "Shukla" if jain_tithi_idx <= 15 else "Krishna",
+                "jain_tithi_in_paksha": jain_tithi_idx if jain_tithi_idx <= 15 else jain_tithi_idx - 15,
             })
         except Exception:
             # Fallback if astro fails

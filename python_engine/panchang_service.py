@@ -40,6 +40,7 @@ from panchang import (
     NAKSHATRA_NAMES,
     TITHI_NAMES,
     _find_exact_end_time,
+    calculate_agni_vaas,
     calculate_bhadra_kaal,
     calculate_panchak_kaal,
     calculate_jain_tithi_from_sunrise,
@@ -388,7 +389,8 @@ def generate_location_panchang(
     tz_name = location.timezone
     rahu_start = _serialize_event(rahu_raw["start_jd"], tz_name)
     rahu_end = _serialize_event(rahu_raw["end_jd"], tz_name)
-    hindu_month, hindu_month_common, is_adhika = get_hindu_month(events.sunrise_jd, ayanamsa_name)
+    jain_ref_jd = events.sunrise_jd + JAIN_TITHI_OFFSET_DAYS
+    hindu_month, hindu_month_common, is_adhika = get_hindu_month(jain_ref_jd, ayanamsa_name)
 
     tz = ZoneInfo(tz_name)
     tz_offset_float = (
@@ -468,9 +470,15 @@ def generate_location_panchang(
     vikram_samvat = get_vikram_samvat(local_date, chaitra_shukla_1)
     vira_nirvana_samvat = get_vira_nirvana_samvat(local_date, diwali)
 
+    agni_vaas_payload = calculate_agni_vaas(
+        daily_panchang["Tithi_Index"],
+        daily_panchang["Vara_Index"],
+    )
+
     return {
         "bhadra_kaal": bhadra_payload,
         "panchak_kaal": panchak_payload,
+        "agni_vaas": agni_vaas_payload,
         "location": location.name,
         "lat": location.lat,
         "lon": location.lon,

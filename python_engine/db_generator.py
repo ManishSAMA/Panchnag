@@ -200,8 +200,8 @@ def _compute_day_row(
     next_anchor_jd = local_date_anchor_jd(local_date + timedelta(days=1), tz_name)
     next_sunrise_jd = get_sunrise(next_anchor_jd, lat, lon)
 
-    # Use sunrise as reference; fall back to midnight anchor if sunrise failed
-    ref_jd = sunrise_jd if sunrise_jd and sunrise_jd > 0 else anchor_jd
+    # Use Jain reference time (Sunrise + 2h24m / 2.4 hrs); fall back to anchor if sunrise failed
+    ref_jd = (sunrise_jd + (2.4 / 24.0)) if sunrise_jd and sunrise_jd > 0 else anchor_jd
 
     sun_lon = get_planetary_longitude(ref_jd, "Sun", ayanamsa)
     moon_lon = get_planetary_longitude(ref_jd, "Moon", ayanamsa)

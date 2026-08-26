@@ -84,8 +84,8 @@ def format_row_data(
     row['Weekday'] = panchang['Vara_Name']
     row['Sun_Rashi'] = get_sun_rashi(julian_date)
 
-    # ---- Hindu Lunar Month ----
-    hindu_month, hindu_month_common, _is_adhika = get_hindu_month(julian_date, ayanamsa_name)
+    # ---- Hindu Lunar Month (Evaluated at Jain Sunrise + 2.4h reference) ----
+    hindu_month, hindu_month_common, _is_adhika = get_hindu_month(julian_date + (2.4 / 24.0), ayanamsa_name)
     row['Hindu_Month'] = hindu_month
     row['Hindu_Month_Common'] = hindu_month_common
 
@@ -259,14 +259,14 @@ def export_to_csv(data_list: list[dict], filename: str = "panchang_output.csv") 
         writer = csv.DictWriter(f, fieldnames=keys)
         writer.writeheader()
         writer.writerows(clean_rows)
-    print(f"  ✓ CSV  → {os.path.abspath(filename)}")
+    print(f"  [OK] CSV  -> {os.path.abspath(filename)}")
 
 
 def export_to_json(data_list: list[dict], filename: str = "panchang_output.json") -> None:
     """Export data to a pretty-printed JSON file."""
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(strip_internal_output_fields(data_list), f, indent=2, ensure_ascii=False)
-    print(f"  ✓ JSON → {os.path.abspath(filename)}")
+    print(f"  [OK] JSON -> {os.path.abspath(filename)}")
 
 
 def export_to_excel(data_list: list[dict], filename: str = "panchang_output.xlsx") -> None:
@@ -317,7 +317,7 @@ def export_to_excel(data_list: list[dict], filename: str = "panchang_output.xlsx
         worksheet.column_dimensions[get_column_letter(index)].width = min(max_length + 2, 28)
 
     workbook.save(filename)
-    print(f"  ✓ Excel→ {os.path.abspath(filename)}")
+    print(f"  [OK] Excel-> {os.path.abspath(filename)}")
 
 
 def export_data(data_list: list[dict], base_filename: str, fmt: str) -> None:

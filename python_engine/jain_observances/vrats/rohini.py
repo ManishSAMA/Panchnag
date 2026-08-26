@@ -1,87 +1,61 @@
 import datetime
-from typing import List, Tuple, Protocol, Optional
+from typing import List, Tuple, Protocol
 from dataclasses import dataclass
+# pyrefly: ignore[missing-import]
 import swisseph as swe
 
 @dataclass
 class NakshatraSpan:
     nakshatra_id: int
     name: str
-    start_time: datetime.datetime  # UTC
-    end_time: datetime.datetime    # UTC
+    start_time: datetime.datetime
+    end_time: datetime.datetime
 
 class PanchangProvider(Protocol):
     def get_sunrise(self, date: datetime.date, lat: float, lon: float) -> datetime.datetime:
         ...
-    def get_nakshatra_at_time(self, dt: datetime.datetime) -> int:
+    def get_nakshatra_spans(self, start_time: datetime.datetime, end_time: datetime.datetime) -> List[NakshatraSpan]:
         ...
 
-def evaluate_rohini_vrat(
-    start_date: datetime.date,
-    end_date: datetime.date,
-    lat: float,
-    lon: float,
-    provider: PanchangProvider
-) -> List[datetime.date]:
-    """
-    Evaluates Rohini Vrat dates between start_date and end_date.
-    A day is flagged if Rohini Nakshatra (ID = 4) is active at the morning cutoff (Sunrise + 144 mins).
-    Handles Tithi/Nakshatra Vriddhi (both days marked if Rohini is active at cutoff on both days)
-    and Kshaya (assign to day before if Rohini is skipped at cutoff).
-    """
+def get_jain_day_window(date: datetime.date, lat: float, lon: float, provider: PanchangProvider) -> Tuple[datetime.datetime, datetime.datetime]:
+    sunrise_today = provider.get_sunrise(date, lat, lon)
+    sunrise_tomorrow = provider.get_sunrise(date + datetime.timedelta(days=1), lat, lon)
+    jain_start = sunrise_today + datetime.timedelta(minutes=144)
+    jain_end = sunrise_tomorrow + datetime.timedelta(minutes=0)
+    return jain_start, jain_end
+
+def evaluate_rohini_vrat(start_date: datetime.date, end_date: datetime.date, lat: float, lon: float, provider: PanchangProvider) -> List[datetime.date]:
     vrat_dates = []
     ROHINI_ID = 4
-    
-    def get_nak_at_cutoff(d: datetime.date) -> int:
-        try:
-            sunrise = provider.get_sunrise(d, lat, lon)
-            cutoff = sunrise + datetime.timedelta(minutes=144)
-            return provider.get_nakshatra_at_time(cutoff)
-        except:
-            return 0
-
     curr_date = start_date
     while curr_date <= end_date:
-        nak_today = get_nak_at_cutoff(curr_date)
-        
-        if nak_today == ROHINI_ID:
-            vrat_dates.append(curr_date)
-            # Check if it lasts 2 days (Vriddhi)
-            next_date = curr_date + datetime.timedelta(days=1)
-            nak_next = get_nak_at_cutoff(next_date)
-            if nak_next == ROHINI_ID:
-                vrat_dates.append(next_date)
-                curr_date = next_date + datetime.timedelta(days=24)
-            else:
-                curr_date = curr_date + datetime.timedelta(days=24)
-        else:
-            # Check if Rohini is skipped (Kshaya)
-            next_date = curr_date + datetime.timedelta(days=1)
-            nak_next = get_nak_at_cutoff(next_date)
-            
-            # Today has Krittika (3) at cutoff, and tomorrow has Mrigashirsha (5) at cutoff,
-            # meaning Rohini (4) was completely skipped at cutoff!
-            is_skipped = (nak_today == 3 and nak_next == 5)
-            
-            if is_skipped:
-                # Assign to one day before (which is curr_date / today)
-                vrat_dates.append(curr_date)
-                curr_date += datetime.timedelta(days=24)
-            else:
-                curr_date += datetime.timedelta(days=1)
-                
+        jain_start, jain_end = get_jain_day_window(curr_date, lat, lon, provider)
+        spans = provider.get_nakshatra_spans(jain_start, jain_end)
+        rohini_span = next((span for span in spans if span.nakshatra_id == ROHINI_ID), None)
+        if rohini_span:
+            if rohini_span.start_time <= jain_start <= rohini_span.end_time:
+                if curr_date not in vrat_dates:
+                    vrat_dates.append(curr_date)
+                curr_date += datetime.timedelta(days=20)
+                continue
+            if jain_start < rohini_span.start_time < jain_end:
+                if curr_date not in vrat_dates:
+                    vrat_dates.append(curr_date)
+                curr_date += datetime.timedelta(days=20)
+                continue
+        curr_date += datetime.timedelta(days=1)
     return sorted(vrat_dates)
-
 
 # ==========================================
 # INTEGRATION HOOKS & MOCK IMPLEMENTATIONS
 # ==========================================
 
 from astronomy import get_sunrise, local_time_to_jd
-from panchang import get_nakshatra_at_jd, NAKSHATRA_NAMES
+from panchang import get_nakshatra_at_jd, get_nakshatra_start_jd, _find_exact_end_time, NAKSHATRA_NAMES, get_planetary_longitude
 
 def jd_to_utc_dt(jd: float) -> datetime.datetime:
     y, m, d, h_utc = swe.revjul(jd, swe.GREG_CAL)
+    # create utc datetime
     return datetime.datetime(y, m, d, tzinfo=datetime.timezone.utc) + datetime.timedelta(hours=h_utc)
 
 def dt_to_jd(dt: datetime.datetime) -> float:
@@ -95,20 +69,45 @@ class SwissEphPanchangProvider:
         
     def get_sunrise(self, date_obj: datetime.date, lat: float, lon: float) -> datetime.datetime:
         from location_service import get_timezone_name
-        from astronomy import local_date_anchor_jd, get_sunrise
+        from astronomy import local_date_anchor_jd, get_sunrise, jd_to_zoned_datetime
         tz_name = get_timezone_name(lat, lon)
         anchor_jd = local_date_anchor_jd(date_obj, tz_name)
         sunrise_jd = get_sunrise(anchor_jd, lat, lon)
-        return jd_to_utc_dt(sunrise_jd).replace(tzinfo=None)
+        sunrise_dt = jd_to_zoned_datetime(sunrise_jd, tz_name)
+        return sunrise_dt.replace(tzinfo=None)
         
-    def get_nakshatra_at_time(self, dt: datetime.datetime) -> int:
-        jd = dt_to_jd(dt)
-        return get_nakshatra_at_jd(jd, self.ayanamsa)
+    def get_nakshatra_spans(self, start_time: datetime.datetime, end_time: datetime.datetime) -> List[NakshatraSpan]:
+        start_jd = dt_to_jd(start_time)
+        end_jd = dt_to_jd(end_time)
+        spans = []
+        curr_jd = start_jd
+        while curr_jd <= end_jd:
+            nak_idx = get_nakshatra_at_jd(curr_jd, self.ayanamsa)
+            moon_lon = get_planetary_longitude(curr_jd, 'Moon', self.ayanamsa)
+            start_nak_jd = get_nakshatra_start_jd(curr_jd, nak_idx, moon_lon, self.ayanamsa)
+            
+            nak_len = 360.0 / 27.0
+            nak_left_deg = nak_len - (moon_lon % nak_len)
+            nak_low = curr_jd + (nak_left_deg / 16.0)
+            nak_high = curr_jd + (nak_left_deg / 11.0) + 0.05
+            end_nak_jd = _find_exact_end_time(curr_jd, get_nakshatra_at_jd, nak_idx, self.ayanamsa, nak_low, nak_high)
+            
+            start_dt = jd_to_utc_dt(start_nak_jd).replace(tzinfo=None)
+            end_dt = jd_to_utc_dt(end_nak_jd).replace(tzinfo=None)
+            
+            spans.append(NakshatraSpan(
+                nakshatra_id=nak_idx,
+                name=NAKSHATRA_NAMES[nak_idx - 1],
+                start_time=start_dt,
+                end_time=end_dt
+            ))
+            curr_jd = end_nak_jd + 0.01
+        return spans
 
 class JSONApiPanchangProvider:
     def __init__(self, api_url: str):
         self.api_url = api_url
     def get_sunrise(self, date: datetime.date, lat: float, lon: float) -> datetime.datetime:
         raise NotImplementedError("Implement API call")
-    def get_nakshatra_at_time(self, dt: datetime.datetime) -> int:
+    def get_nakshatra_spans(self, start_time: datetime.datetime, end_time: datetime.datetime) -> List[NakshatraSpan]:
         raise NotImplementedError("Implement API call")

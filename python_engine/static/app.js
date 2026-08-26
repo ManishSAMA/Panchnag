@@ -584,6 +584,15 @@ registerPage('panchang', {
       { label: 'Sun Rashi', value: p.sun_rashi || '—', sub: '' },
     ];
 
+    const avData = data.agni_vaas;
+    if (avData) {
+      rows.push({
+        label: 'Agni Vaas',
+        value: `${avData.residence_hindi} (${avData.residence}) — ${avData.status_hindi}`,
+        sub: avData.description_hindi
+      });
+    }
+
     const pk = data.panchak_kaal;
     if (pk) {
       const pkLabel = pk.has_window
@@ -744,6 +753,41 @@ registerPage('panchang', {
             ${segmentsHTML}
             <div class="rahu-kaal-note" style="margin-top: 8px;">
               ${pk.has_window ? 'Avoid starting important works during Panchak.' : 'No Panchak active today.'}
+            </div>
+          </div>
+        `;
+      })()}
+      ${(() => {
+        const av = data.agni_vaas;
+        if (!av) return '';
+        const badgeClass = av.is_auspicious ? 'agni-badge--auspicious' : 'agni-badge--inauspicious';
+        const cardClass  = av.is_auspicious ? 'agni-vaas-card--auspicious' : 'agni-vaas-card--inauspicious';
+        return `
+          <div class="panchang-card agni-vaas-card ${cardClass}" style="padding: 18px; margin-top: 16px;">
+            <div class="agni-vaas-header" style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 10px;">
+              <div class="agni-vaas-title" style="font-weight:700; font-size:16px; color:var(--brand-dark);">
+                🔥 Agni Vaas (अग्नि वास)
+              </div>
+              <span class="agni-badge ${badgeClass}">${av.status_hindi}</span>
+            </div>
+            
+            <div class="panchang-row" style="padding: 6px 0; border-top: 1px solid rgba(0,0,0,0.06);">
+              <div class="panchang-label" style="min-width: 110px;">Vas (निवास):</div>
+              <div class="panchang-value" style="font-weight:600;">${av.residence_full}</div>
+            </div>
+
+            <div class="panchang-row" style="padding: 6px 0; border: none;">
+              <div class="panchang-label" style="min-width: 110px;">Havan Result:</div>
+              <div class="panchang-value" style="color: ${av.is_auspicious ? '#15803d' : '#b91c1c'}; font-weight:600;">
+                ${av.description_hindi}
+              </div>
+            </div>
+
+            <div class="panchang-row" style="padding: 6px 0; border: none; font-size: 12px; color: var(--text-muted);">
+              <div class="panchang-label" style="min-width: 110px;">Formula:</div>
+              <div class="panchang-value">
+                Tithi (${av.absolute_tithi}) + Vaar (${av.vara_number}) + 1 = ${av.total_sum} % 4 = Remainder <strong>${av.remainder}</strong>
+              </div>
             </div>
           </div>
         `;

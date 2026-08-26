@@ -259,6 +259,10 @@ def main():
     parser.add_argument("--monthly", action="store_true",
                         help="Generate one output file per month instead of one large file")
 
+    parser.add_argument("--profile", type=str,
+                        default="shwetambar_murtipujak_tapagachchha",
+                        help="Jain sect profile (e.g. shwetambar_murtipujak_tapagachchha, digambar, etc.)")
+
     # --- Performance ---
     parser.add_argument("--workers", type=int, default=1,
                         help=f"Number of CPU workers for parallel generation "
@@ -268,12 +272,14 @@ def main():
 
     # Validate
     if args.start_year > args.end_year:
-        parser.error("--start_year must be ≤ --end_year")
+        parser.error("--start_year must be <= --end_year")
     workers = max(1, min(args.workers, cpu_count()))
 
     # Precompute festival dates for Samvat calculations (once per year, before workers start)
-    print("  Computing festival dates for Samvat years …")
+    print("  Computing festival dates for Samvat years...")
     festival_dates: dict = {}
+    festival_index: dict = {}
+    from jain_observances.festival_service import generate_jain_festivals
     for year in range(args.start_year, args.end_year + 1):
         festival_dates[year] = {
             'chaitra_shukla_1': find_chaitra_shukla_1(
@@ -283,15 +289,31 @@ def main():
                 year, args.lat, args.lon, args.tz_offset, args.ayanamsa
             ),
         }
+        fest_data = generate_jain_festivals(year, args.lat, args.lon, args.ayanamsa, args.profile)
+        for f in fest_data.get("festivals", []):
+            start_d = datetime.strptime(f["start_date"], "%Y-%m-%d").date()
+            end_d = datetime.strptime(f.get("end_date", f["start_date"]), "%Y-%m-%d").date()
+            curr_d = start_d
+            while curr_d <= end_d:
+                d_str = curr_d.isoformat()
+                if d_str not in festival_index:
+                    festival_index[d_str] = {"festivals": [], "parva_tithis": []}
+                if f.get("category") == "parva":
+                    festival_index[d_str]["parva_tithis"].append(f)
+                else:
+                    festival_index[d_str]["festivals"].append(f)
+                curr_d += timedelta(days=1)
 
     # Shared worker config
     config = {
-        'lat':           args.lat,
-        'lon':           args.lon,
-        'tz_offset':     args.tz_offset,
-        'tz_label':      args.tz_label,
-        'ayanamsa':      args.ayanamsa,
-        'festival_dates': festival_dates,
+        'lat':              args.lat,
+        'lon':              args.lon,
+        'tz_offset':        args.tz_offset,
+        'tz_label':         args.tz_label,
+        'ayanamsa':         args.ayanamsa,
+        'festival_dates':   festival_dates,
+        'festival_index':   festival_index,
+        'festival_profile': args.profile,
     }
 
     start_date = date(args.start_year, 1, 1)
@@ -299,10 +321,10 @@ def main():
     total_days = (end_date - start_date).days + 1
 
     print("=" * 65)
-    print("  🪐  Panchang Generator — Swiss Ephemeris")
+    print("  * Panchang Generator - Swiss Ephemeris")
     print("=" * 65)
-    print(f"  Date range : {start_date} → {end_date} ({total_days} days)")
-    print(f"  Location   : Lat {args.lat}°, Lon {args.lon}°")
+    print(f"  Date range : {start_date} to {end_date} ({total_days} days)")
+    print(f"  Location   : Lat {args.lat} deg, Lon {args.lon} deg")
     print(f"  Timezone   : UTC{args.tz_offset:+.1f} ({args.tz_label})")
     print(f"  Ayanamsa   : {args.ayanamsa}")
     print(f"  Format     : {args.format}")
@@ -311,12 +333,12 @@ def main():
     print("=" * 65)
 
     all_dates = list(_dates_in_range(start_date, end_date))
-    print(f"  Computing {len(all_dates)} days with {workers} worker(s) …")
+    print(f"  Computing {len(all_dates)} days with {workers} worker(s)...")
     results = run_generation(config, all_dates, workers)
     formatted_results = apply_element_continuity_formatting(results, tz_offset=args.tz_offset)
 
-    print(f"\n  ✓ Computed {len(results)} days")
-    print("  Exporting …")
+    print(f"\n  [OK] Computed {len(results)} days")
+    print("  Exporting...")
 
     if args.monthly:
         for year in range(args.start_year, args.end_year + 1):
@@ -330,14 +352,14 @@ def main():
                     continue
 
                 month_name = calendar.month_abbr[month]
-                print(f"  ► {year}-{month_name} ({len(month_rows)} days) …")
+                print(f"  -> {year}-{month_name} ({len(month_rows)} days)...")
                 fname = f"{args.output}_{year}_{month:02d}_{month_name}"
                 export_data(month_rows, fname, args.format)
     else:
         out_base = f"{args.output}_{args.start_year}_{args.end_year}"
         export_data(formatted_results, out_base, args.format)
 
-    print("\n  ✅ Done!\n")
+    print("\n  [DONE] Completed!\n")
 
 
 if __name__ == "__main__":
