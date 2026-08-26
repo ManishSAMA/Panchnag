@@ -63,7 +63,11 @@ class JainFestivalServiceTest(unittest.TestCase):
         mahavir_events = [f for f in res["festivals"] if f["id"] == "mahavir_janma_kalyanak"]
         self.assertEqual(len(mahavir_events), 1)
         event = mahavir_events[0]
-        self.assertEqual(event["start_date"], "2026-03-30")
+        # panchang_tithi_map confirms Chaitra Shukla Trayodashi (13) falls on 2026-03-31
+        # (Ekadashi=03-29, Dwadashi=03-30, Trayodashi=03-31, no kshaya/vriddhi around this
+        # date), matching this event's own tithi/month/paksha assertions below -- the
+        # previous "2026-03-30" here was a stale fixture inconsistent with its own tithi.
+        self.assertEqual(event["start_date"], "2026-03-31")
         self.assertEqual(event["jain_month"], "Chaitra")
         self.assertEqual(event["paksha"], "Shukla")
         self.assertEqual(event["tithi"], "Trayodashi (13)")
@@ -83,12 +87,22 @@ class JainFestivalServiceTest(unittest.TestCase):
         self.assertEqual(res["panchang_tithi_map"]["2026-03-29"], "Chaitra Shukla Ekadashi (11)")
 
         sumati_fests = [f for f in res["festivals"] if "sumatinath" in f["id"] and f.get("jain_month") == "Chaitra"]
-        self.assertEqual(len(sumati_fests), 3)
-        for sf in sumati_fests:
+        # Vrindavan/Uttarapurana/Ashadhara agree on Birth+Omniscience+Liberation at Ekadashi (11);
+        # Vrindavan additionally records a separate, earlier Liberation Kalyanak at Navami (9).
+        self.assertEqual(len(sumati_fests), 4)
+        ekadashi_fests = [sf for sf in sumati_fests if sf["tithi"] == "Ekadashi (11)"]
+        self.assertEqual(len(ekadashi_fests), 3)
+        for sf in ekadashi_fests:
             self.assertEqual(sf["start_date"], "2026-03-29")
             self.assertEqual(sf["tithi"], "Ekadashi (11)")
             self.assertEqual(sf["paksha"], "Shukla")
             self.assertEqual(sf["jain_month"], "Chaitra")
+
+        navami_fests = [sf for sf in sumati_fests if sf["tithi"] == "Navami (9)"]
+        self.assertEqual(len(navami_fests), 1)
+        self.assertEqual(navami_fests[0]["id"], "shri_sumatinath_ji___liberation_kalyanak_9_vrindavan")
+        self.assertEqual(navami_fests[0]["paksha"], "Shukla")
+        self.assertEqual(navami_fests[0]["jain_month"], "Chaitra")
 
     def test_ayambil_oli_ranges(self):
         """Verify Chaitra and Ashvin Ayambil Oli start dates."""
@@ -139,11 +153,14 @@ class JainFestivalServiceTest(unittest.TestCase):
         """Verify Samvatsari and Paryushan start differ between Tapagachchha (Shukla 4) and Sthanakvasi/Terapanthi (Shukla 5)."""
         from jain_observances.festival_service import generate_jain_festivals
         
-        # Tapagachchha Samvatsari 2026 (Bhadrapada Shukla 4 -> 2026-09-14 approx)
+        # Tapagachchha Samvatsari 2026 (Bhadrapada Shukla 4). panchang_tithi_map confirms
+        # Chaturthi (4) falls on 2026-09-15 (Tritiya=09-14, Panchami=09-16, no
+        # kshaya/vriddhi around this date) -- the previous "2026-09-14" here was a stale
+        # fixture (that date is actually Tritiya, one tithi earlier).
         res_tapa = generate_jain_festivals(2026, 28.6139, 77.2090, "Lahiri", "shwetambar_murtipujak_tapagachchha")
         tapa_samvatsari = [f for f in res_tapa["festivals"] if f["id"] == "samvatsari_tapagachchha"]
         self.assertEqual(len(tapa_samvatsari), 1)
-        self.assertEqual(tapa_samvatsari[0]["start_date"], "2026-09-14")
+        self.assertEqual(tapa_samvatsari[0]["start_date"], "2026-09-15")
         
         # Sthanakvasi Samvatsari 2026 (Bhadrapada Shukla 5 -> 2026-09-16 approx)
         res_sthanak = generate_jain_festivals(2026, 28.6139, 77.2090, "Lahiri", "shwetambar_sthanakvasi")
@@ -1878,6 +1895,91 @@ class Namokar35VratTest(unittest.TestCase):
             self.assertEqual(s35["boundary_type"], "END")
             self.assertEqual(s35["badge"], "Namokar Vrat Purna")
             self.assertEqual(s35["mantra_pada"], "Ṇamō Lōē Savvasāhūṇaṁ")
+
+
+class KalyanakAmantaMonthCorrectionTest(unittest.TestCase):
+    """Regression tests for the systematic amanta/purnimanta month-offset bug in the
+    Vrindavan/Uttarapurana/Ashadhara Tirthankara Kalyanak dataset: most Krishna-paksha
+    entries stored the source PDF's (purnimanta) month name directly in `jain_month`,
+    which festival_service.py then shifts +1 for display -- landing one month later than
+    the source actually states. Fixed by re-deriving the correct amanta month (source
+    month - 1) for every Krishna-paksha kalyanak entry, cross-checked against
+    tests/tirthankara_kalyanaks_data.json and two independent real-world calendar facts
+    (Diwali = Kartika Krishna Amavasya; Janmashtami's Bhadrapada/Shravana dual-naming)."""
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_observances.festival_service import generate_jain_festivals
+        cls.res = generate_jain_festivals(
+            year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all"
+        )
+        cls.by_id = {f["id"]: f for f in cls.res["festivals"]}
+
+    def test_rishabhdev_liberation_displays_magha_not_phalguna(self):
+        """Source PDF: Magha Krishna Chaturdashi (14). Was wrongly stored as amanta
+        'Magha' (displaying as Phalguna); corrected to amanta 'Pausha'."""
+        f = self.by_id["shri_rishabhdev_ji___liberation_kalyanak_14_vrindavan_uttarapurana_ashadhara"]
+        self.assertEqual(f["jain_month"], "Magha")
+        self.assertEqual(f["paksha"], "Krishna")
+        self.assertEqual(f["tithi"], "Chaturdashi (14)")
+
+    def test_shantinath_triple_kalyanak_displays_jyeshtha_not_ashadha(self):
+        """Source PDF: Jyeshtha Krishna Chaturdashi (14), Birth+Austerity+Liberation all
+        on the same day. Was wrongly stored as amanta 'Jyeshtha' (displaying as Ashadha);
+        corrected to amanta 'Vaishakha'."""
+        ids = [
+            "shri_shantinath_ji___austerity_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+            "shri_shantinath_ji___birth_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+            "shri_shantinath_ji___liberation_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+        ]
+        dates = set()
+        for fid in ids:
+            f = self.by_id[fid]
+            self.assertEqual(f["jain_month"], "Jyeshtha")
+            self.assertEqual(f["paksha"], "Krishna")
+            self.assertEqual(f["tithi"], "Chaturdashi (14)")
+            dates.add(f["start_date"])
+        self.assertEqual(len(dates), 1, "Birth/Austerity/Liberation should fall on the same date")
+
+    def test_mahavira_liberation_from_kalyanak_table_matches_diwali(self):
+        """The Vrindavan/Uttarapurana/Ashadhara-sourced Liberation entry was wrongly
+        stored as amanta 'Kartika' (displaying as Agrahayana/Margashirsha); corrected to
+        amanta 'Ashwin' so it displays as Kartika Krishna Amavasya (Diwali) -- and now
+        agrees with the separately-modeled Diwali/Mahavir-Nirvana entries on the same date."""
+        f = self.by_id["shri_mahavira_ji___liberation_kalyanak_15_vrindavan_uttarapurana_ashadhara"]
+        self.assertEqual(f["jain_month"], "Kartika")
+        self.assertEqual(f["paksha"], "Krishna")
+        self.assertEqual(f["tithi"], "Amavasya (15)")
+        diwali = self.by_id["mahavir_nirvana_deepavali"]
+        self.assertEqual(f["start_date"], diwali["start_date"])
+
+    def test_newly_added_sumatinath_liberation_on_navami(self):
+        """Vrindavan uniquely records a second, earlier Sumatinath Liberation Kalyanak on
+        Chaitra Shukla Navami (9), distinct from the Ekadashi (11) one shared by all three
+        sources. Previously absent from the registry entirely."""
+        f = self.by_id["shri_sumatinath_ji___liberation_kalyanak_9_vrindavan"]
+        self.assertEqual(f["jain_month"], "Chaitra")
+        self.assertEqual(f["paksha"], "Shukla")
+        self.assertEqual(f["tithi"], "Navami (9)")
+        self.assertEqual(f["sources"], ["Vrindavan"])
+
+    def test_newly_added_parshvanath_omniscience_and_anantnath_liberation_on_chaitra_krishna_4(self):
+        """Vrindavan (and Ashadhara for Parshvanath) record a Chaitra Krishna Chaturthi (4)
+        Kalyanak that Uttarapurana places on a different day; previously only Uttarapurana's
+        version of the Parshvanath entry existed, and Anantnath's day-4 Liberation was
+        entirely absent alongside its existing Amavasya-day Liberation entry."""
+        parshva = self.by_id["shri_parshvanath_ji___omniscience_kalyanak_4_vrindavan_ashadhara"]
+        self.assertEqual(parshva["jain_month"], "Chaitra")
+        self.assertEqual(parshva["paksha"], "Krishna")
+        self.assertEqual(parshva["tithi"], "Chaturthi (4)")
+        self.assertEqual(sorted(parshva["sources"]), ["Ashadhara", "Vrindavan"])
+
+        ananta = self.by_id["shri_anantnath_ji___liberation_kalyanak_4_vrindavan"]
+        self.assertEqual(ananta["jain_month"], "Chaitra")
+        self.assertEqual(ananta["paksha"], "Krishna")
+        self.assertEqual(ananta["tithi"], "Chaturthi (4)")
+        self.assertEqual(ananta["sources"], ["Vrindavan"])
+        self.assertEqual(parshva["start_date"], ananta["start_date"])
 
 
 if __name__ == "__main__":
