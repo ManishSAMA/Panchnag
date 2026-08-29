@@ -25,20 +25,21 @@ def get_jain_day_window(date: datetime.date, lat: float, lon: float, provider: P
     return jain_start, jain_end
 
 def evaluate_rohini_vrat(start_date: datetime.date, end_date: datetime.date, lat: float, lon: float, provider: PanchangProvider) -> List[datetime.date]:
+    """Rohini Nakshatra Parv Vrat is observed on the day Rohini nakshatra prevails
+    at sunrise (udaya). Only when Rohini's whole span falls between two sunrises --
+    touching neither -- does it fall back to the civil day that wholly contains it."""
     vrat_dates = []
     ROHINI_ID = 4
     curr_date = start_date
     while curr_date <= end_date:
-        jain_start, jain_end = get_jain_day_window(curr_date, lat, lon, provider)
-        spans = provider.get_nakshatra_spans(jain_start, jain_end)
+        sunrise_today = provider.get_sunrise(curr_date, lat, lon)
+        sunrise_tomorrow = provider.get_sunrise(curr_date + datetime.timedelta(days=1), lat, lon)
+        spans = provider.get_nakshatra_spans(sunrise_today, sunrise_tomorrow)
         rohini_span = next((span for span in spans if span.nakshatra_id == ROHINI_ID), None)
         if rohini_span:
-            if rohini_span.start_time <= jain_start <= rohini_span.end_time:
-                if curr_date not in vrat_dates:
-                    vrat_dates.append(curr_date)
-                curr_date += datetime.timedelta(days=20)
-                continue
-            if jain_start < rohini_span.start_time < jain_end:
+            prevails_at_sunrise = rohini_span.start_time <= sunrise_today <= rohini_span.end_time
+            wholly_within_day = sunrise_today < rohini_span.start_time and rohini_span.end_time < sunrise_tomorrow
+            if prevails_at_sunrise or wholly_within_day:
                 if curr_date not in vrat_dates:
                     vrat_dates.append(curr_date)
                 curr_date += datetime.timedelta(days=20)

@@ -295,7 +295,7 @@ class RohiniVratFestival(FestivalRule):
         lat, lon = context["lat"], context["lon"]
         year = context["year"]
         ayanamsa = context.get("ayanamsa", "Lahiri")
-        start_date_obj = date(year, 1, 1)
+        start_date_obj = date(year - 1, 12, 15)
         end_date_obj = date(year, 12, 31)
         provider = SwissEphPanchangProvider(ayanamsa=ayanamsa)
         dates = evaluate_rohini_vrat(start_date_obj, end_date_obj, lat, lon, provider)
@@ -304,7 +304,7 @@ class RohiniVratFestival(FestivalRule):
             d_str = d.strftime("%Y-%m-%d")
             occurrences.append({
                 "id": self.id,
-                "occurrence_id": self.id,
+                "occurrence_id": f"{self.id}:{d_str}",
                 "name": self.name,
                 "name_hindi": self.name_hindi,
                 "category": self.category,

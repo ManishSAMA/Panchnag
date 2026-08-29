@@ -52,6 +52,19 @@ FESTIVAL_REGISTRY = [
     },
 
     {
+        "id": "rohini_nakshatra_parv_vrat",
+        "name": "Rohini Nakshatra Parv Vrat",
+        "name_hindi": "रोहिणी नक्षत्र पर्व व्रत",
+        "category": "parva",
+        "profiles": ["all"],
+        "rule_type": "RohiniVrat",
+        "jain_month": "",
+        "meaning": "Monthly Digambar vrat observed on the day Rohini nakshatra prevails at sunrise, dedicated to Bhagwan Vasupujya.",
+        "observance": "Fasting and worship of Bhagwan Vasupujya; traditionally observed by women for family well-being.",
+        "sources": ["Jain Traditions", "Vrat Vidhi Sangrah"]
+    },
+
+    {
         "id": "ratnatraya_chaitra",
         "name": "Chaitra Ratnatraya Vrat",
         "name_hindi": "चैत्र रत्नत्रय व्रत",

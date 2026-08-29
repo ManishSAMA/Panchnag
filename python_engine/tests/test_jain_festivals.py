@@ -2040,6 +2040,39 @@ class KartikaKrishnaMonthResolutionTest(unittest.TestCase):
             self.assertEqual(self.by_id_2027[fid]["jain_month"], "Kartika", fid)
 
 
+class RohiniNakshatraParvVratTest(unittest.TestCase):
+    """Rohini Nakshatra Parv Vrat -- a monthly Digambar vrat observed on the day
+    Rohini nakshatra prevails at sunrise. Regression coverage for two bugs:
+      1. The vrat was never wired into the festival engine (no registry entry with
+         rule_type "RohiniVrat"), so the 2026 output had zero Rohini occurrences.
+      2. `evaluate_rohini_vrat` selected the day Rohini *begins* within the Jain-day
+         window rather than the day it prevails *at sunrise*, landing one day early
+         (2026-03-23 instead of the book-confirmed 2026-03-24)."""
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_observances.festival_service import generate_jain_festivals
+        cls.res = generate_jain_festivals(
+            year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all"
+        )
+        cls.rohini = [f for f in cls.res["festivals"] if f["id"] == "rohini_nakshatra_parv_vrat"]
+
+    def test_rohini_vrat_is_present_and_monthly(self):
+        self.assertGreaterEqual(len(self.rohini), 12)
+        for f in self.rohini:
+            self.assertIn("Rohini", f["name"])
+            self.assertEqual(f["category"], "parva")
+
+    def test_march_2026_rohini_vrat_matches_printed_panchang(self):
+        dates = {f["start_date"] for f in self.rohini}
+        self.assertIn("2026-03-24", dates)
+        self.assertNotIn("2026-03-23", dates)
+
+    def test_rohini_vrat_occurrence_ids_are_unique(self):
+        occ_ids = [f["occurrence_id"] for f in self.rohini]
+        self.assertEqual(len(occ_ids), len(set(occ_ids)))
+
+
 if __name__ == "__main__":
     unittest.main()
 
