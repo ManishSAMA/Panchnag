@@ -874,24 +874,16 @@ class NavpadOliFestival(FestivalRule):
             for i, d in enumerate(vrat_dates):
                 pad_assignments[d] = (i + 1, pads[i])
         else:
-            # total_days is 10 (Only Vriddhi)
-            pad_idx = 0
-            for i, d in enumerate(vrat_dates):
-                if i == 0:
-                    pad_assignments[d] = (1, pads[0])
-                else:
-                    prev_d = vrat_dates[i - 1]
-                    snap_d = date_to_snap[d.isoformat()]
-                    snap_prev = date_to_snap[prev_d.isoformat()]
-                    is_repeat = (snap_d["tithi"] == snap_prev["tithi"] or snap_d["jain_tithi"] == snap_prev["jain_tithi"])
-                    if is_repeat:
-                        pad_assignments[d] = (pad_idx + 1, pads[pad_idx])
-                    else:
-                        pad_idx += 1
-                        if pad_idx < len(pads):
-                            pad_assignments[d] = (pad_idx + 1, pads[pad_idx])
-                        else:
-                            pad_assignments[d] = (9, pads[-1])
+            # >9 days: one or more tithis are vriddhi. Anchor each day to its Shukla
+            # sunrise tithi -- pad N is Shukla tithi (N + 6), i.e. Saptami..Purnima ->
+            # pad 1..9 -- so vriddhi days (same sunrise tithi as a neighbour) share a
+            # pad and Purnima always lands on Day 9 (Samyag Tapa). Using one consistent
+            # tithi measure avoids the sunrise-vs-jain_tithi double-count that used to
+            # strand the sequence at Day 8.
+            for d in vrat_dates:
+                t_num = date_to_snap[d.isoformat()]["tithi_in_paksha"]
+                pad_num = min(max(t_num - 6, 1), 9)
+                pad_assignments[d] = (pad_num, pads[pad_num - 1])
 
         # Overall span formatted as MM-DD
         start_mm_dd = start_date.strftime("%m-%d")

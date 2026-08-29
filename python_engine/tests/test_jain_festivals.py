@@ -466,6 +466,19 @@ class NavpadOliTest(unittest.TestCase):
         spring_events.sort(key=lambda x: x["start_date"])
         self.assertEqual(spring_events[0]["title"], "Navpad Oli - Day 1 (Arihant)")
         self.assertEqual(spring_events[-1]["title"], "Navpad Oli - Day 9 (Samyag Tapa)")
+
+        # Autumn Oli (Ashwin Shukla) -- 10 days in 2026 due to a Saptami sunrise-vriddhi.
+        # All 9 pads must still be assigned, with exactly one repeated day and Day 9
+        # (Samyag Tapa) landing on the final day (Ashwin Shukla Purnima, 2026-10-26).
+        autumn_events = [f for f in events if "autumn" in f["id"]]
+        self.assertEqual(len(autumn_events), 10)
+        autumn_events.sort(key=lambda x: x["start_date"])
+        autumn_days = [e["title"] for e in autumn_events]
+        self.assertEqual(autumn_days.count("Navpad Oli - Day 1 (Arihant)"), 2)
+        self.assertEqual(autumn_events[-1]["title"], "Navpad Oli - Day 9 (Samyag Tapa)")
+        self.assertEqual(autumn_events[-1]["start_date"], "2026-10-26")
+        distinct_pads = {t for t in autumn_days}
+        self.assertEqual(len(distinct_pads), 9)
         
         # Verify schema
         for e in events:
