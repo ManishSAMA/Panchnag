@@ -3,7 +3,7 @@ from functools import lru_cache
 from datetime import date, timedelta
 from zoneinfo import ZoneInfo
 
-from astronomy import get_planetary_longitude, get_sunrise, local_date_anchor_jd
+from astronomy import get_planetary_longitude, get_sunrise, get_sunset, local_date_anchor_jd
 from panchang import get_tithi, get_hindu_month, calculate_jain_tithi_from_sunrise
 from panchang_service import resolve_location
 from .registry import FESTIVAL_REGISTRY
@@ -59,9 +59,19 @@ def _build_snapshots(year: int, lat: float, lon: float, ayanamsa: str, tz_name: 
             # Clean month name (e.g. strip Adhika for standard matching)
             base_month = hindu_month.removeprefix("Adhika ")
 
+            # Evening (pradosh) tithi -- the one prevailing at sunset. Used for the
+            # day-selection of pradosh-vyapini festivals (Diwali/Mahavir Nirvana,
+            # Dhanteras, Ahoi Ashtami, ...), which the udaya tithi gets wrong whenever
+            # the target tithi starts during the day and ends before the next sunrise.
+            sunset_jd = get_sunset(day_start_jd, lat, lon)
+            sun_lon_e = get_planetary_longitude(sunset_jd, 'Sun', ayanamsa)
+            moon_lon_e = get_planetary_longitude(sunset_jd, 'Moon', ayanamsa)
+            evening_tithi_idx = get_tithi(sun_lon_e, moon_lon_e)
+
             snapshots.append({
                 "date": curr,
                 "sunrise_jd": sunrise_jd,
+                "sunset_jd": sunset_jd,
                 "tithi": tithi_idx,
                 "jain_tithi": jain_tithi_idx,
                 "jain_tithi_name": "", # Unused by logic engine
@@ -71,6 +81,9 @@ def _build_snapshots(year: int, lat: float, lon: float, ayanamsa: str, tz_name: 
                 "tithi_in_paksha": tithi_idx if tithi_idx <= 15 else tithi_idx - 15,
                 "jain_paksha": "Shukla" if jain_tithi_idx <= 15 else "Krishna",
                 "jain_tithi_in_paksha": jain_tithi_idx if jain_tithi_idx <= 15 else jain_tithi_idx - 15,
+                "evening_tithi": evening_tithi_idx,
+                "evening_paksha": "Shukla" if evening_tithi_idx <= 15 else "Krishna",
+                "evening_tithi_in_paksha": evening_tithi_idx if evening_tithi_idx <= 15 else evening_tithi_idx - 15,
             })
         except Exception:
             # Fallback if astro fails
@@ -138,8 +151,10 @@ def generate_jain_festivals(
         f.setdefault("observance", f.get("observance", "Vrat observance and prayer"))
         f.setdefault("sources", f.get("sources", []))
         
-        # Normalize jain_month, paksha, and format tithi if possible
-        if f.get("jain_month") != "Nakshatra:":
+        # Normalize jain_month, paksha, and format tithi if possible. `skip_relabel`
+        # occurrences (e.g. a pradosh-vyapini festival landing on a day whose udaya
+        # paksha differs from the observance's) carry their own final labels.
+        if f.get("jain_month") != "Nakshatra:" and not f.get("skip_relabel"):
             snap = date_to_snap.get(f["start_date"])
             if snap:
                 base_month = snap["purnimanta_month"]

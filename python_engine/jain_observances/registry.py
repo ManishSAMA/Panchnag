@@ -147,6 +147,7 @@ FESTIVAL_REGISTRY = [
         "jain_month": "Ashwin",
         "paksha": "Krishna",
         "tithi": 15,
+        "day_rule": "pradosh",
     },
     {
         "id": "diwali",
@@ -396,6 +397,7 @@ FESTIVAL_REGISTRY = [
         "jain_month": "Ashwin",
         "paksha": "Krishna",
         "tithi": 15,
+        "day_rule": "pradosh",
         "meaning": "Bhagwan Mahavira attained Nirvana (liberation) at Pavapuri.",
         "observance": "Lighting of lamps, offering of Nirvan Ladoo.",
         "sources": ["Jain Panchang Rules"],
@@ -1442,6 +1444,7 @@ FESTIVAL_REGISTRY = [
         "jain_month": "Ashwin",
         "paksha": "Krishna",
         "tithi": 15,
+        "day_rule": "pradosh",
         "meaning": "Liberation Kalyanak of Lord Mahavira",
         "observance": "Special prayers, pujas, and temple visits.",
         "sources": ["Vrindavan", "Uttarapurana", "Ashadhara"],

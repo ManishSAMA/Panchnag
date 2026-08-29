@@ -38,6 +38,19 @@ def _matches_purnimanta_target(s: Dict[str, Any], jain_month: str, paksha: str) 
         return False
     return not s.get("purnimanta_is_adhika", s["is_adhika"])
 
+
+def _pradosh_days(snaps: List[Dict[str, Any]], tithi: int, paksha: str = "Krishna") -> List[Dict[str, Any]]:
+    """Days on which `tithi` (paksha-relative) prevails at sunset -- the pradosh-vyapini
+    day-selection used by Diwali / Mahavir Nirvana, Dhanteras, Ahoi Ashtami, etc.
+    Returns chronologically-sorted matches; empty if the tithi is a complete kshaya at
+    sunset (callers fall back to the previous tithi, as with the udaya rule)."""
+    out = [
+        s for s in snaps
+        if s.get("evening_paksha", s["paksha"]) == paksha
+        and s.get("evening_tithi_in_paksha", s["tithi_in_paksha"]) == tithi
+    ]
+    return sorted(out, key=lambda s: s["date"])
+
 class FestivalRule:
     """Base class for all festival rules."""
     def __init__(self, config: Dict[str, Any]):
@@ -56,6 +69,9 @@ class FestivalRule:
         self.vriddhi_rule = config.get("vriddhi_rule")
         self.kshaya_rule = config.get("kshaya_rule")
         self.adhika_rule = config.get("adhika_rule")
+        # "udaya" (sunrise tithi, default) or "pradosh" (tithi prevailing at sunset --
+        # for evening-observed festivals like Diwali / Mahavir Nirvana).
+        self.day_rule = config.get("day_rule", "udaya")
 
     def matches_profile(self, profile: str) -> bool:
         return profile in self.profiles or "all" in self.profiles
@@ -89,14 +105,17 @@ class SingleTithiFestival(FestivalRule):
         matches = snapshots
         if self.jain_month:
             matches = [s for s in matches if _matches_purnimanta_target(s, self.jain_month, self.paksha)]
-        if self.paksha:
+        if self.paksha and self.day_rule != "pradosh":
             matches = [s for s in matches if s["paksha"] == self.paksha]
 
         occurrences = []
         if isinstance(self.tithi, int):
             if self.jain_month:
                 # Single annual occurrence
-                candidates = [s for s in matches if s["tithi_in_paksha"] == self.tithi]
+                if self.day_rule == "pradosh":
+                    candidates = _pradosh_days(matches, self.tithi, self.paksha or "Krishna")
+                else:
+                    candidates = [s for s in matches if s["tithi_in_paksha"] == self.tithi]
                 if candidates:
                     if self.category == "parva":
                         for cand in candidates:
@@ -1300,27 +1319,19 @@ class DiwaliChaturmasNishthapanFestival(FestivalRule):
             # Keep Nija
             month_snaps = [s for s in month_snaps if not s["is_adhika"]]
 
-        # Evaluate morning window to find active Krishna Chaturdashi (14) and Amavasya (15)
-        amavasya_days = []
-        chaturdashi_days = []
-        for s in month_snaps:
-            if s["paksha"] == "Krishna":
-                if s["tithi_in_paksha"] == 15:
-                    amavasya_days.append(s)
-                if s["tithi_in_paksha"] == 14:
-                    chaturdashi_days.append(s)
+        # Diwali / Mahavir Nirvana is pradosh-vyapini: the day Amavasya prevails at sunset,
+        # not the udaya-Amavasya day (which is a day late whenever Amavasya begins during
+        # the day and ends before the next sunrise -- e.g. 8 Nov vs 9 Nov 2026).
+        amavasya_days = _pradosh_days(month_snaps, 15)
+        chaturdashi_days = _pradosh_days(month_snaps, 14)
 
         target_snap = None
         if amavasya_days:
-            # Normal or Vriddhi (Repeated Amavasya)
-            # If Amavasya repeats, assign strictly to the 2nd Amavasya (last instance)
+            # Normal or Vriddhi (Amavasya at sunset on two days) -> 2nd instance
             target_snap = amavasya_days[-1]
-        else:
-            # Kshaya Tithi (Skipped Amavasya)
-            # Trigger event on Kartika Krishna Chaturdashi (14) during active Amavasya prevailing window
-            # (which is the last Chaturdashi day)
-            if chaturdashi_days:
-                target_snap = chaturdashi_days[-1]
+        elif chaturdashi_days:
+            # Kshaya (Amavasya never reaches a sunset) -> last Chaturdashi
+            target_snap = chaturdashi_days[-1]
 
         if not target_snap:
             return []
@@ -1361,7 +1372,9 @@ class DiwaliChaturmasNishthapanFestival(FestivalRule):
                 "sources": ["Jain Traditions"]
             }
         ]
-        
+
+        for occ in occurrences:
+            occ["tithi"] = "Amavasya (15)"
         return occurrences
 
 
@@ -3769,16 +3782,24 @@ class SplitDayAhoiKarwaDampatyaFestival(FestivalRule):
                     "sources": ["Panchang Traditions"]
                 })
 
-        # 2. Ahoi Ashtami (Pradosha Vyapini - Ashtami 8)
-        # 3. Dampatya Ashtami (Udaya Tithi - Ashtami 8)
-        ashtami_snaps = [
+        # 2. Ahoi Ashtami -- Pradosha (evening star-sighting) Vyapini, Ashtami 8.
+        # 3. Dampatya Ashtami -- Udaya (sunrise) Tithi, Ashtami 8. These genuinely differ
+        #    whenever Ashtami starts during the day and ends before the next sunrise.
+        ahoi_days = _pradosh_days(kartika_snaps, 8)
+        if not ahoi_days:
+            ahoi_days = _pradosh_days(kartika_snaps, 7)  # kshaya -> Saptami evening
+        udaya_ashtami = [
             s for s in kartika_snaps
             if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 8
         ]
+        if not udaya_ashtami:
+            udaya_ashtami = [
+                s for s in kartika_snaps
+                if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 7
+            ]
 
-        if ashtami_snaps:
-            ahoi_snap = ashtami_snaps[0]
-            ahoi_date_str = ahoi_snap["date"].isoformat()
+        if ahoi_days:
+            ahoi_date_str = ahoi_days[0]["date"].isoformat()
             events.append({
                 "id": f"ahoi_ashtami_{year}",
                 "occurrence_id": f"ahoi_ashtami_{year}",
@@ -3791,14 +3812,14 @@ class SplitDayAhoiKarwaDampatyaFestival(FestivalRule):
                 "start_date": ahoi_date_str,
                 "end_date": ahoi_date_str,
                 "status": "confirmed",
+                "tithi": "Ashtami (8)",
                 "description": "Kartika Krishna Ashtami fast observed during Pradosha (Evening Star sighting) window",
                 "meaning": "Kartika Krishna Ashtami fast observed during Pradosha (Evening Star sighting) window",
                 "observance": "Pradosha Evening Fasting, Star Sighting",
                 "sources": ["Panchang Traditions"]
             })
-
-            dampatya_snap = ashtami_snaps[0]
-            dampatya_date_str = dampatya_snap["date"].isoformat()
+        if udaya_ashtami:
+            dampatya_date_str = udaya_ashtami[0]["date"].isoformat()
             events.append({
                 "id": f"dampatya_ashtami_{year}",
                 "occurrence_id": f"dampatya_ashtami_{year}",
@@ -3811,52 +3832,11 @@ class SplitDayAhoiKarwaDampatyaFestival(FestivalRule):
                 "start_date": dampatya_date_str,
                 "end_date": dampatya_date_str,
                 "status": "confirmed",
+                "tithi": "Ashtami (8)",
                 "description": "Kartika Krishna Ashtami daytime vow and aradhana observed on Udaya Tithi",
                 "meaning": "Kartika Krishna Ashtami daytime vow and aradhana observed on Udaya Tithi",
                 "observance": "Udaya Tithi Vrat, Daytime Aradhana",
                 "sources": ["Panchang Traditions"]
-            })
-        else:
-            saptami_snaps = [
-                s for s in kartika_snaps
-                if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 7
-            ]
-            if saptami_snaps:
-                snap = saptami_snaps[-1]
-                date_str = snap["date"].isoformat()
-                events.append({
-                    "id": f"ahoi_ashtami_{year}",
-                    "occurrence_id": f"ahoi_ashtami_{year}",
-                    "name": "Ahoi Ashtami",
-                    "title": "Ahoi Ashtami",
-                    "name_hindi": "अहोई अष्टमी",
-                    "category": "vrat",
-                    "badge": "Ahoi Ashtami",
-                    "badge_color": "pink",
-                    "start_date": date_str,
-                    "end_date": date_str,
-                    "status": "confirmed",
-                    "description": "Kartika Krishna Ashtami fast observed during Pradosha (Evening Star sighting) window",
-                    "meaning": "Kartika Krishna Ashtami fast observed during Pradosha (Evening Star sighting) window",
-                    "observance": "Pradosha Evening Fasting, Star Sighting",
-                    "sources": ["Panchang Traditions"]
-                })
-                events.append({
-                    "id": f"dampatya_ashtami_{year}",
-                    "occurrence_id": f"dampatya_ashtami_{year}",
-                    "name": "Dampatya Ashtami",
-                    "title": "Dampatya Ashtami",
-                    "name_hindi": "दम्पत्य अष्टमी",
-                    "category": "vrat",
-                    "badge": "Dampatya Ashtami",
-                    "badge_color": "pink",
-                    "start_date": date_str,
-                    "end_date": date_str,
-                    "status": "confirmed",
-                    "description": "Kartika Krishna Ashtami daytime vow and aradhana observed on Udaya Tithi",
-                    "meaning": "Kartika Krishna Ashtami daytime vow and aradhana observed on Udaya Tithi",
-                    "observance": "Udaya Tithi Vrat, Daytime Aradhana",
-                    "sources": ["Panchang Traditions"]
                 })
 
         return events
@@ -3890,19 +3870,15 @@ class GyanDhanTrayodashiFestival(FestivalRule):
         else:
             kartika_snaps = [s for s in kartika_snaps if not s["is_adhika"]]
 
-        trayodashi_days = [
-            s for s in kartika_snaps
-            if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 13
-        ]
+        # Dhanteras / Gyan Trayodashi is pradosh-vyapini (Dhanvantari & Yama Deepdaan are
+        # evening rites): the day Trayodashi prevails at sunset, not the udaya day.
+        trayodashi_days = _pradosh_days(kartika_snaps, 13)
 
         target_snap = None
         if trayodashi_days:
             target_snap = trayodashi_days[0]  # Vriddhi -> 1st Trayodashi
         else:
-            dvadashi_days = [
-                s for s in kartika_snaps
-                if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 12
-            ]
+            dvadashi_days = _pradosh_days(kartika_snaps, 12)
             if dvadashi_days:
                 target_snap = dvadashi_days[-1]
 
@@ -3927,7 +3903,8 @@ class GyanDhanTrayodashiFestival(FestivalRule):
                 "description": "Kartika Krishna Trayodashi aradhana dedicated to pure knowledge (Samyak Jnana), Shastra Pujan, and commencement of Diwali Mahaparv",
                 "meaning": "Kartika Krishna Trayodashi aradhana dedicated to pure knowledge (Samyak Jnana), Shastra Pujan, and commencement of Diwali Mahaparv",
                 "observance": "Samyak Jnana Aradhana, Shastra Pujan, Jin Agam Vachana",
-                "sources": ["Jain Traditions"]
+                "sources": ["Jain Traditions"],
+                "tithi": "Trayodashi (13)",
             },
             {
                 "id": f"dhan_teras_{year}",
@@ -3944,7 +3921,8 @@ class GyanDhanTrayodashiFestival(FestivalRule):
                 "description": "Aradhana of spiritual wealth (Ratnatraya / Atma-Dhan) and initiation of the 5-day Mahavira Nirvana Mahotsav",
                 "meaning": "Aradhana of spiritual wealth (Ratnatraya / Atma-Dhan) and initiation of the 5-day Mahavira Nirvana Mahotsav",
                 "observance": "Atma-Dhan Aradhana, Deepotsav Initiation, Lakshmi-Saraswati Pujan",
-                "sources": ["Jain Traditions"]
+                "sources": ["Jain Traditions"],
+                "tithi": "Trayodashi (13)",
             }
         ]
 
@@ -3978,10 +3956,9 @@ class KartikaAmavasyaMahaviraNirvanaFestival(FestivalRule):
         else:
             kartika_snaps = [s for s in kartika_snaps if not s["is_adhika"]]
 
-        amavasya_days = [
-            s for s in kartika_snaps
-            if s["paksha"] == "Krishna" and s["tithi_in_paksha"] in [15, 30]
-        ]
+        # Pradosh-vyapini: the day Amavasya prevails at sunset (Diwali / Nirvan Laddu is
+        # an evening observance), not the udaya-Amavasya day -- see KALYANAK_AUDIT_NOTES.
+        amavasya_days = _pradosh_days(kartika_snaps, 15)
 
         events = []
         if len(amavasya_days) >= 2:
@@ -4096,10 +4073,7 @@ class KartikaAmavasyaMahaviraNirvanaFestival(FestivalRule):
             })
         else:
             # Kshaya: fallback to Kartika Krishna Chaturdashi (14)
-            chaturdashi_days = [
-                s for s in kartika_snaps
-                if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 14
-            ]
+            chaturdashi_days = _pradosh_days(kartika_snaps, 14)
             if chaturdashi_days:
                 d_str = chaturdashi_days[-1]["date"].isoformat()
                 events.append({
@@ -4154,6 +4128,8 @@ class KartikaAmavasyaMahaviraNirvanaFestival(FestivalRule):
                     "sources": ["Jain Traditions"]
                 })
 
+        for e in events:
+            e["tithi"] = "Amavasya (15)"
         return events
 
 
@@ -4168,10 +4144,12 @@ class KartikaShuklaEkamNewYearFestival(FestivalRule):
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         year = context["year"]
 
+        # get_jain_month() (purnimanta) not raw hindu_month: the pradosh-Pratipada day
+        # (evening after Diwali Amavasya) still reads amanta "Ashwin" at sunrise.
         kartika_snaps = [
             s for s in snapshots
             if s["date"].year == year
-            and s["hindu_month"].upper() in ["KARTIKA", "KATAK", "KARTIK"]
+            and get_jain_month(s) == "KARTIKA"
         ]
         if not kartika_snaps:
             return []
@@ -4181,28 +4159,18 @@ class KartikaShuklaEkamNewYearFestival(FestivalRule):
         else:
             kartika_snaps = [s for s in kartika_snaps if not s["is_adhika"]]
 
-        ekam_days = [
-            s for s in kartika_snaps
-            if s["paksha"] == "Shukla" and s["tithi_in_paksha"] == 1
-        ]
-
-        target_snap = None
-        if ekam_days:
-            target_snap = ekam_days[0]  # Vriddhi -> 1st Pratipada
-        else:
-            amavasya_days = [
-                s for s in kartika_snaps
-                if s["paksha"] == "Krishna" and s["tithi_in_paksha"] in [15, 30]
-            ]
-            if amavasya_days:
-                target_snap = amavasya_days[-1]
-
-        if not target_snap:
+        # Jain New Year = Vira Nirvana Samvat day 1 = the day AFTER Mahavir Nirvana
+        # (which is the pradosh-vyapini Kartik Krishna Amavasya).
+        amavasya_days = _pradosh_days(kartika_snaps, 15)
+        if not amavasya_days:
             return []
+        date_str = (amavasya_days[-1]["date"] + timedelta(days=1)).isoformat()
+        # This day's udaya paksha is still Krishna (Amavasya ends after sunrise) even
+        # though the observance is Kartika Shukla Pratipada -- carry final labels.
+        _ny_labels = {"skip_relabel": True, "jain_month": "Kartika",
+                      "paksha": "Shukla", "tithi": "Pratipada (1)"}
 
-        date_str = target_snap["date"].isoformat()
-
-        return [
+        occurrences_ny = [
             {
                 "id": f"jain_new_year_{year}",
                 "occurrence_id": f"jain_new_year_{year}",
@@ -4238,6 +4206,9 @@ class KartikaShuklaEkamNewYearFestival(FestivalRule):
                 "sources": ["Jain Traditions"]
             }
         ]
+        for occ in occurrences_ny:
+            occ.update(_ny_labels)
+        return occurrences_ny
 
 
 class BhaiDoojFestival(FestivalRule):
@@ -4264,6 +4235,9 @@ class BhaiDoojFestival(FestivalRule):
         else:
             kartika_snaps = [s for s in kartika_snaps if not s["is_adhika"]]
 
+        # Bhai Dooj / Yama Dvitiya is aparahna-vyapini. Without an aparahna tithi the
+        # udaya Shukla Dvitiya is the closest safe approximation (pradosh over-shoots
+        # into Tritiya on years where Dvitiya is short, e.g. 2027).
         dvitiya_days = [
             s for s in kartika_snaps
             if s["paksha"] == "Shukla" and s["tithi_in_paksha"] == 2

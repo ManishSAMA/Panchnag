@@ -2202,6 +2202,67 @@ class AdhikMaasKrishnaKalyanakPlacementTest(unittest.TestCase):
                 self.fail(f"{f['name']} still on {f['start_date']} (Adhik Jyeshtha Krishna)")
 
 
+class PradoshVyapiniDiwaliClusterTest(unittest.TestCase):
+    """Diwali / Mahavir Nirvana, Dhanteras and Ahoi Ashtami are pradosh-vyapini (evening
+    observances). Kartik Krishna Amavasya 2026 runs 8 Nov 11:28 -> 9 Nov 12:31 IST, so the
+    evening of 8 Nov is the Diwali night; the udaya-Amavasya day (9 Nov) is a day late.
+    Every published 2026 calendar: Diwali 8 Nov, Govardhan/Jain New Year 9 Nov, Bhai Dooj 10 Nov."""
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_observances.festival_service import generate_jain_festivals
+        cls.res = generate_jain_festivals(
+            year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all"
+        )
+        cls.by_id = {f["id"]: f for f in cls.res["festivals"]}
+        cls.by_name = {}
+        for f in cls.res["festivals"]:
+            cls.by_name.setdefault(f["name"], []).append(f["start_date"])
+
+    def test_mahavir_nirvana_cluster_on_pradosh_amavasya_8_nov(self):
+        for fid in ("mahavira_nirvana_kalyanak_2026", "varsha_yog_nishthapan_2026",
+                    "gautam_gandhar_kevalgyan_2026", "diwali_2026", "chaturmas_nishthapan_2026",
+                    "mahavir_nirvana_deepavali",
+                    "shri_mahavira_ji___liberation_kalyanak_15_vrindavan_uttarapurana_ashadhara",
+                    "shri_mahavir_swami_ji___moksha_kalyanak__the_nirvana_liberation_of_lord_mahavira__celebrated_as_jain_diwali"):
+            f = self.by_id[fid]
+            self.assertEqual(f["start_date"], "2026-11-08", fid)
+            self.assertEqual(f["tithi"], "Amavasya (15)", fid)
+            self.assertEqual((f["jain_month"], f["paksha"]), ("Kartika", "Krishna"), fid)
+
+    def test_dhanteras_and_gyan_trayodashi_on_pradosh_trayodashi_6_nov(self):
+        for fid in ("dhan_teras_2026", "gyan_trayodashi_2026"):
+            f = self.by_id[fid]
+            self.assertEqual(f["start_date"], "2026-11-06", fid)
+            self.assertEqual(f["tithi"], "Trayodashi (13)", fid)
+
+    def test_ahoi_pradosh_but_dampatya_udaya(self):
+        self.assertEqual(self.by_id["ahoi_ashtami_2026"]["start_date"], "2026-11-01")
+        self.assertEqual(self.by_id["dampatya_ashtami_2026"]["start_date"], "2026-11-02")
+        # Karwa Chauth (moonrise vyapini) unaffected
+        self.assertEqual(self.by_id["karwa_chauth_2026"]["start_date"], "2026-10-29")
+
+    def test_new_year_is_the_day_after_the_corrected_nirvana_day(self):
+        from datetime import date, timedelta
+        nirvana = date.fromisoformat(self.by_id["mahavira_nirvana_kalyanak_2026"]["start_date"])
+        ny = self.by_id["jain_new_year_2026"]
+        self.assertEqual(ny["start_date"], (nirvana + timedelta(days=1)).isoformat())
+        self.assertEqual(ny["start_date"], "2026-11-09")
+        self.assertEqual((ny["jain_month"], ny["paksha"], ny["tithi"]), ("Kartika", "Shukla", "Pratipada (1)"))
+
+    def test_2027_normal_year_diwali_and_cascade_still_resolve(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        from datetime import date, timedelta
+        res = generate_jain_festivals(2027, 28.6139, 77.2090, "Lahiri", "all")
+        by_id = {f["id"]: f for f in res["festivals"]}
+        d = by_id["mahavira_nirvana_kalyanak_2027"]
+        self.assertEqual((d["jain_month"], d["paksha"], d["tithi"]), ("Kartika", "Krishna", "Amavasya (15)"))
+        n = date.fromisoformat(d["start_date"])
+        self.assertEqual(by_id["jain_new_year_2027"]["start_date"], (n + timedelta(days=1)).isoformat())
+        # Bhai Dooj (udaya Shukla Dvitiya) must not collide with the New Year day
+        self.assertNotEqual(by_id["bhai_dooj_2027"]["start_date"], by_id["jain_new_year_2027"]["start_date"])
+
+
 class SumatinathJainiJiyalalKalyanakTest(unittest.TestCase):
     """Pt. Jaini Jiyalal Panchang prints Sumatinath Janma-Tapa together on Chaitra
     Shukla Dashami (2026-03-28, Pushya nakshatra). Added alongside -- not replacing --
