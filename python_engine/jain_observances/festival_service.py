@@ -157,8 +157,12 @@ def generate_jain_festivals(
                 t_val = f.get("tithi")
                 t_num = snap["tithi_in_paksha"]
                 if isinstance(t_val, int) or not t_val:
-                    # Use the snap's tithi if not provided, or format the integer provided
+                    # Use the snap's tithi if not provided, or format the integer provided.
+                    # A raw index in the 16..30 range (some rules pass d["tithi"] straight
+                    # through) is a Krishna-paksha tithi -- fold it back to 1..15.
                     use_num = t_val if isinstance(t_val, int) else t_num
+                    if use_num > 15:
+                        use_num -= 15
                     t_name = TITHI_LABEL_MAP.get(use_num, f"Tithi {use_num}")
                     if snap["paksha"] == "Krishna" and use_num == 15:
                         t_name = "Amavasya (15)"

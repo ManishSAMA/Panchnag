@@ -1383,11 +1383,14 @@ class VeerShasanJayantiShrut(FestivalRule):
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         year = context["year"]
 
-        # --- Month filter: Shravana ---
+        # --- Month filter: Shravana (purnimanta) ---
+        # Target is Krishna-paksha Ekam, whose purnimanta month (Shravana) is one
+        # amanta month later than the amanta month it physically sits in -- so match on
+        # get_jain_month(s) (purnimanta, Adhik-Maas-aware), not raw s["hindu_month"].
         month_snaps = [
             s for s in snapshots
             if s["date"].year == year
-            and s["hindu_month"].upper() == "SHRAVANA"
+            and get_jain_month(s) == "SHRAVANA"
         ]
 
         if not month_snaps:

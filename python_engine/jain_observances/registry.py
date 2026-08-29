@@ -354,20 +354,10 @@ FESTIVAL_REGISTRY = [
         "observance": "Jinvani Puja, Swadhyay",
         "sources": ["Jain Panchang Rules"],
     },
-    {
-        "id": "veera_shasana_jayanti",
-        "name": "Veera Shasana Jayanti",
-        "name_hindi": "वीर शासन जयंती",
-        "category": "parva",
-        "profiles": ["all"],
-        "rule_type": "SingleTithi",
-        "jain_month": "Ashadha",
-        "paksha": "Krishna",
-        "tithi": 1,
-        "meaning": "Commemorates Lord Mahavira's first divine sermon (Divya Dhwani)",
-        "observance": "Worship, discourses, and celebration",
-        "sources": ["Jain Panchang Rules"],
-    },
+    # "veera_shasana_jayanti" (SingleTithi, Ashadha Krishna 1) removed -- it duplicated
+    # the richer "veer_shasan_jayanti" (VeerShasanJayanti rule, + Shrut Udbhav Divas,
+    # + vriddhi/kshaya handling) on the same day once that rule's month filter was
+    # corrected from raw amanta "SHRAVANA" to purnimanta get_jain_month(s).
     {
         "id": "raksha_bandhan",
         "name": "Raksha Bandhan (Vishnukumar Muni Parv)",

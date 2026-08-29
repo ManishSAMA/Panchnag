@@ -334,6 +334,14 @@ class RaviVratTest(unittest.TestCase):
             self.assertEqual(event["badge_color"], "purple")
             self.assertEqual(event["is_span"], False)
             self.assertTrue(event["name"].startswith("☀️ Ravi"))
+            # Krishna-paksha Ravi Vrat days must show a paksha-relative tithi label
+            # (1..15), never the raw 16..30 index ("Tithi 19").
+            self.assertNotIn("Tithi ", event["tithi"], event["start_date"])
+            self.assertRegex(
+                event["tithi"],
+                r"^(Ekam|Dwitiya|Tritiya|Chaturthi|Panchami|Shasthi|Saptami|Ashtami|"
+                r"Navami|Dashami|Ekadashi|Dwadashi|Trayodashi|Chaturdashi|Purnima|Amavasya) \(\d+\)$",
+            )
 
         # Verify ravivara_vrat
         ravivara_events = [f for f in res["festivals"] if f["id"] == "ravivara_2026"]
@@ -638,6 +646,14 @@ class VeerShasanJayantiTest(unittest.TestCase):
 
         v = vsj[0]
         s = sud[0]
+
+        # Veer Shasan Jayanti = the day after Ashadha Purnima = purnimanta Shravana
+        # Krishna Ekam = amanta Ashadha Krishna Ekam = 2026-07-30 (NOT amanta Shravana
+        # Krishna Ekam / 2026-08-29, which is a month late).
+        self.assertEqual(v["start_date"], "2026-07-30")
+        self.assertEqual(s["start_date"], "2026-07-30")
+        # The redundant bare SingleTithi entry has been removed.
+        self.assertEqual([f for f in res["festivals"] if f["id"] == "veera_shasana_jayanti"], [])
 
         self.assertEqual(v["title"], "Veer Shasan Jayanti")
         self.assertEqual(v["category"], "jayanti")
