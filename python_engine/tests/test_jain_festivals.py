@@ -1982,6 +1982,64 @@ class KalyanakAmantaMonthCorrectionTest(unittest.TestCase):
         self.assertEqual(parshva["start_date"], ananta["start_date"])
 
 
+class KartikaKrishnaMonthResolutionTest(unittest.TestCase):
+    """Regression tests for the same amanta/purnimanta off-by-one-month bug as
+    KalyanakAmantaMonthCorrectionTest, this time hardcoded inside custom rule classes
+    (KartikaAmavasyaMahaviraNirvanaFestival, SplitDayAhoiKarwaDampatyaFestival,
+    GyanDhanTrayodashiFestival, DiwaliChaturmasNishthapanFestival): each filtered
+    snapshots by raw s["hindu_month"] (amanta) against a purnimanta-sounding literal
+    ("KARTIKA"), instead of get_jain_month(s) (purnimanta) -- landing every Krishna-paksha
+    target one full lunar month late, in both 2026 and 2027 (not an Adhik Maas artifact).
+    Confirmed against an independently printed panchang: user-reported bug."""
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_observances.festival_service import generate_jain_festivals
+        cls.res_2026 = generate_jain_festivals(
+            year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all"
+        )
+        cls.by_id_2026 = {f["id"]: f for f in cls.res_2026["festivals"]}
+        cls.res_2027 = generate_jain_festivals(
+            year=2027, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all"
+        )
+        cls.by_id_2027 = {f["id"]: f for f in cls.res_2027["festivals"]}
+
+    def test_mahavir_nirvana_cluster_lands_on_kartika_amavasya_not_agrahayana(self):
+        for fid in ("mahavira_nirvana_kalyanak_2026", "varsha_yog_nishthapan_2026",
+                    "gautam_gandhar_kevalgyan_2026", "diwali_2026", "chaturmas_nishthapan_2026"):
+            f = self.by_id_2026[fid]
+            self.assertEqual(f["jain_month"], "Kartika", fid)
+            self.assertEqual(f["paksha"], "Krishna", fid)
+            self.assertEqual(f["tithi"], "Amavasya (15)", fid)
+        # All land on the same date as the already-correct, independently-modeled entry
+        reference = self.by_id_2026["mahavir_nirvana_deepavali"]
+        for fid in ("mahavira_nirvana_kalyanak_2026", "diwali_2026"):
+            self.assertEqual(self.by_id_2026[fid]["start_date"], reference["start_date"], fid)
+        # No leftover duplicate cluster a month later
+        agrahayana_dupes = [
+            f for f in self.res_2026["festivals"]
+            if f["id"] in ("mahavira_nirvana_kalyanak_2026", "diwali_2026", "chaturmas_nishthapan_2026",
+                            "varsha_yog_nishthapan_2026", "gautam_gandhar_kevalgyan_2026")
+            and f["jain_month"] == "Agrahayana"
+        ]
+        self.assertEqual(agrahayana_dupes, [])
+
+    def test_karwa_chauth_gyan_dhan_trayodashi_land_on_kartika_not_agrahayana(self):
+        kc = self.by_id_2026["karwa_chauth_2026"]
+        self.assertEqual((kc["jain_month"], kc["paksha"], kc["tithi"]), ("Kartika", "Krishna", "Chaturthi (4)"))
+
+        gt = self.by_id_2026["gyan_trayodashi_2026"]
+        dt = self.by_id_2026["dhan_teras_2026"]
+        for f in (gt, dt):
+            self.assertEqual((f["jain_month"], f["paksha"], f["tithi"]), ("Kartika", "Krishna", "Trayodashi (13)"))
+        self.assertEqual(gt["start_date"], dt["start_date"])
+
+    def test_fix_reproduces_correctly_in_a_non_adhik_maas_year(self):
+        """2027 has no Adhik Jyeshtha -- confirms this was never an Adhik Maas artifact."""
+        for fid in ("mahavira_nirvana_kalyanak_2027", "karwa_chauth_2027", "gyan_trayodashi_2027"):
+            self.assertEqual(self.by_id_2027[fid]["jain_month"], "Kartika", fid)
+
+
 if __name__ == "__main__":
     unittest.main()
 

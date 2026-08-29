@@ -1576,7 +1576,7 @@ function openFestivalModal(f) {
   const modalTitle = document.getElementById('festModalTitle');
   if (!modalBody) return;
 
-  if (modalTitle) modalTitle.textContent = f.name;
+  if (modalTitle) modalTitle.textContent = f.name + formatSourceSuffixText(f);
 
   const statusBadge = f.status === 'review_needed'
     ? `<span class="fest-badge fest-badge--review">⚠️ Review Needed</span>`
@@ -1905,6 +1905,33 @@ function getCategoryPill(f) {
   return `<span class="fest-badge" style="background:#9B59B6; color:#FFF; font-size:10px; font-weight:600; padding:3px 6px; border-radius:10px;">🟣 Parva / Vrat</span>`;
 }
 
+// Generic/placeholder source labels that don't identify a specific citable text --
+// showing these as a tag would just add noise across most of the calendar, so they're
+// excluded. Named primary texts (Vrindavan, Uttarapurana, Ashadhara, ...) are shown,
+// since those are exactly the case where the same event has multiple, differently-dated
+// entries and the reader needs to know which classical source each one comes from.
+const GENERIC_SOURCE_LABELS = new Set([
+  'jain traditions', 'jain panchang rules', 'jain/vedic traditions',
+  'digambar jain traditions', 'tapagachchha rules', 'sthanakvasi rules',
+]);
+
+function namedSources(f) {
+  return (f.sources || []).filter(s => s && !GENERIC_SOURCE_LABELS.has(s.toLowerCase().trim()));
+}
+
+function formatSourceTag(f) {
+  const sources = namedSources(f);
+  if (sources.length === 0) return '';
+  return `<span style="font-size:10px; color:#8E44AD; font-weight:600; margin-left:4px;" title="Source: ${sources.join(', ')}">(${sources.join(', ')})</span>`;
+}
+
+// Plain-text variant for contexts that set .textContent rather than .innerHTML (e.g. the
+// modal title), where inserting markup would render as literal tags instead of styling.
+function formatSourceSuffixText(f) {
+  const sources = namedSources(f);
+  return sources.length === 0 ? '' : ` (${sources.join(', ')})`;
+}
+
 function renderJainList(filteredList) {
   const listContainer = document.getElementById('festList');
   if (!listContainer) return;
@@ -1996,7 +2023,7 @@ function renderJainList(filteredList) {
       <div style="display:flex; align-items:flex-start; margin-bottom:10px; cursor:pointer;" onclick="openFestivalModal('${f.occurrence_id}')">
         <div style="color:#BDC3C7; font-family:monospace; margin-right:8px; font-size:14px; user-select:none;">${branch}</div>
         <div style="flex:1;">
-          ${getCategoryPill(f)} <strong style="color:#2C3E50; margin-left:6px; font-size:14px;">${f.name}</strong> ${rangeTag}
+          ${getCategoryPill(f)} <strong style="color:#2C3E50; margin-left:6px; font-size:14px;">${f.name}</strong>${formatSourceTag(f)} ${rangeTag}
           ${progressHTML}
         </div>
       </div>`;

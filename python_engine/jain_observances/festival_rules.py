@@ -1261,11 +1261,15 @@ class DiwaliChaturmasNishthapanFestival(FestivalRule):
         year = context["year"]
         target_month = self.jain_month # e.g. "Kartik" or "Kartika"
         
-        # Season Filter: Month == Kartika
+        # Season Filter: Month == Kartika. Use get_jain_month() (purnimanta), not raw
+        # hindu_month (amanta) -- this target includes Krishna-paksha days (Chaturdashi/
+        # Amavasya), which live one amanta month earlier than their purnimanta display
+        # name (see KALYANAK_AUDIT_NOTES.md); a raw amanta match here silently lands one
+        # full lunar month late, every year, not just in Adhik Maas years.
         month_snaps = [
             s for s in snapshots
             if s["date"].year == year
-            and s["hindu_month"].upper() in ["KARTIK", "KARTIKA"]
+            and get_jain_month(s) == "KARTIKA"
         ]
         
         if not month_snaps:
@@ -3679,10 +3683,14 @@ class SplitDayAhoiKarwaDampatyaFestival(FestivalRule):
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         year = context["year"]
 
+        # Use get_jain_month() (purnimanta), not raw hindu_month (amanta) -- every target
+        # tithi here is Krishna-paksha, which lives one amanta month earlier than its
+        # purnimanta display name (see KALYANAK_AUDIT_NOTES.md); a raw amanta match here
+        # silently lands one full lunar month late, every year.
         kartika_snaps = [
             s for s in snapshots
             if s["date"].year == year
-            and s["hindu_month"].upper() in ["KARTIKA", "KATAK", "KARTIK"]
+            and get_jain_month(s) == "KARTIKA"
         ]
         if not kartika_snaps:
             return []
@@ -3849,10 +3857,14 @@ class GyanDhanTrayodashiFestival(FestivalRule):
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         year = context["year"]
 
+        # Use get_jain_month() (purnimanta), not raw hindu_month (amanta) -- the target
+        # tithi is Krishna-paksha Trayodashi, which lives one amanta month earlier than
+        # its purnimanta display name (see KALYANAK_AUDIT_NOTES.md); a raw amanta match
+        # here silently lands one full lunar month late, every year.
         kartika_snaps = [
             s for s in snapshots
             if s["date"].year == year
-            and s["hindu_month"].upper() in ["KARTIKA", "KATAK", "KARTIK"]
+            and get_jain_month(s) == "KARTIKA"
         ]
         if not kartika_snaps:
             return []
@@ -3932,10 +3944,15 @@ class KartikaAmavasyaMahaviraNirvanaFestival(FestivalRule):
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         year = context["year"]
 
+        # Use get_jain_month() (purnimanta), not raw hindu_month (amanta) -- the target
+        # tithi is Krishna-paksha Amavasya, which lives one amanta month earlier than its
+        # purnimanta display name (see KALYANAK_AUDIT_NOTES.md); a raw amanta match here
+        # silently lands one full lunar month late, every year -- this was duplicating the
+        # whole Mahavir Nirvana/Diwali cluster a month after its correct occurrence.
         kartika_snaps = [
             s for s in snapshots
             if s["date"].year == year
-            and s["hindu_month"].upper() in ["KARTIKA", "KATAK", "KARTIK"]
+            and get_jain_month(s) == "KARTIKA"
         ]
         if not kartika_snaps:
             return []

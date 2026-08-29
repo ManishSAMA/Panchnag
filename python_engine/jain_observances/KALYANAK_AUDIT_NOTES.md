@@ -39,6 +39,43 @@ only shows up if you cross-check against the source. Shukla-paksha entries need 
   (2026-03-30 → 2026-03-31) and `test_paryushan_profile_specific_dates`'s Tapagachchha Samvatsari
   assertion (2026-09-14 → 2026-09-15).
 
+## Fixed later this session: the same amanta/purnimanta bug, baked into code this time
+
+The registry-data fix above covers `SingleTithi`-family entries where `jain_month` is a plain
+string field. But the identical mistake — filtering `s["hindu_month"]` (raw amanta) directly
+against a purnimanta-sounding literal, without the +1 shift Krishna-paksha targets need — also
+exists **hardcoded inside custom rule classes** in `festival_rules.py`. Found via user cross-
+check against an independently printed panchang: the whole Diwali/Mahavir-Nirvana/Chaturmas
+cluster was duplicated a lunar month late (Kartika → wrongly landing on Agrahayana), alongside
+Karwa Chauth, Ahoi Ashtami, Dampatya Ashtami, Gyan Trayodashi, and Dhan Trayodashi (Dhanteras)
+all resolving a month late — confirmed to reproduce in **both** 2026 and 2027 (i.e. not an Adhik
+Maas artifact; every one of these classes filters `s["hindu_month"].upper() in ["KARTIKA", ...]`
+directly, when their target tithis are Krishna-paksha and so need `get_jain_month(s) ==
+"KARTIKA"` instead — the same helper `ChaitraLabdhiVidhanFestival` already used correctly).
+
+Fixed in `KartikaAmavasyaMahaviraNirvanaFestival`, `SplitDayAhoiKarwaDampatyaFestival`,
+`GyanDhanTrayodashiFestival`, and `DiwaliChaturmasNishthapanFestival` by switching their month
+filter from raw `s["hindu_month"]` to `get_jain_month(s)`. Verified: exactly the 10 affected
+occurrence ids shifted to their correct Kartika dates in 2026 (nothing else in the 399-occurrence
+festival list changed), and the same fix corrects 2027 too.
+
+**Not fixed, flagged for a dedicated audit:** this exact `s["hindu_month"].upper() in [...]`
+raw-amanta pattern (not `get_jain_month()`) appears **40+ times** across `festival_rules.py`,
+in dozens of other classes. Most are probably fine — a class whose target tithi is Shukla-paksha
+only doesn't need the shift, and many of the 40+ are exactly that. But some unknown subset may
+share this same Krishna-paksha bug undetected. This needs the same kind of case-by-case check
+done for the 4 classes above, not a blanket find-replace (an incorrect blanket change could
+break a class that's currently right). This is a natural companion to the still-unexecuted
+`festival_rules.py` duplication refactor (Family A/B/C plan, see memory) — a shared, correctly
+`get_jain_month()`-based helper would prevent this whole bug class at the source.
+
+**Also flagged, separate and smaller:** `SplitDayAhoiKarwaDampatyaFestival`'s docstring claims
+Ahoi Ashtami uses a "Pradosha (evening) Vyapini" day-selection rule, distinct from Dampatya
+Ashtami's "Udaya Tithi" rule — but the code doesn't actually implement that distinction; both
+just take the first sunrise-tithi Ashtami day. This is why, after the month fix, Ahoi Ashtami
+lands on 2026-11-02 while an independently printed panchang says 2026-11-01 — a real, un-
+implemented feature gap, not a regression from the month fix above.
+
 ## NOT fixed — needs your call before anyone touches it
 
 ### 1. `KarmaNirjaraVratFestival` vs `jain_observances/vrats/karma_nirjara.py`
