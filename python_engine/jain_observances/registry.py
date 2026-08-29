@@ -907,6 +907,36 @@ FESTIVAL_REGISTRY = [
         "sources": ["Vrindavan", "Uttarapurana", "Ashadhara"],
     },
     {
+        # Pt. Jaini Jiyalal Panchang prints "सुमतिनाथजी जन्म-तप" (Janma + Tapa together)
+        # on the day whose nakshatra is Pushya = Chaitra Shukla Dashami. Distinct from the
+        # Vrindavan/Uttarapurana/Ashadhara tradition above (Birth = Chaitra Shukla 11,
+        # Austerity = Vaishakha Shukla 9), which is kept alongside this entry.
+        "id": "shri_sumatinath_ji___birth_kalyanak_chaitra_shukla_10_jaini_jiyalal",
+        "name": "Shri Sumatinath Ji - Birth Kalyanak",
+        "category": "kalyanak",
+        "profiles": ["all"],
+        "rule_type": "SingleTithi",
+        "jain_month": "Chaitra",
+        "paksha": "Shukla",
+        "tithi": 10,
+        "meaning": "Birth Kalyanak of Lord Sumatinath (Janma-Tapa, observed together)",
+        "observance": "Special prayers, pujas, and temple visits.",
+        "sources": ["Pt. Jaini Jiyalal Panchang"],
+    },
+    {
+        "id": "shri_sumatinath_ji___austerity_kalyanak_chaitra_shukla_10_jaini_jiyalal",
+        "name": "Shri Sumatinath Ji - Austerity Kalyanak",
+        "category": "kalyanak",
+        "profiles": ["all"],
+        "rule_type": "SingleTithi",
+        "jain_month": "Chaitra",
+        "paksha": "Shukla",
+        "tithi": 10,
+        "meaning": "Austerity Kalyanak of Lord Sumatinath (Janma-Tapa, observed together)",
+        "observance": "Special prayers, pujas, and temple visits.",
+        "sources": ["Pt. Jaini Jiyalal Panchang"],
+    },
+    {
         "id": "shri_mahavira_ji___omniscience_kalyanak_10_vrindavan_uttarapurana_ashadhara",
         "name": "Shri Mahavira Ji - Omniscience Kalyanak",
         "category": "kalyanak",

@@ -88,8 +88,14 @@ class JainFestivalServiceTest(unittest.TestCase):
 
         sumati_fests = [f for f in res["festivals"] if "sumatinath" in f["id"] and f.get("jain_month") == "Chaitra"]
         # Vrindavan/Uttarapurana/Ashadhara agree on Birth+Omniscience+Liberation at Ekadashi (11);
-        # Vrindavan additionally records a separate, earlier Liberation Kalyanak at Navami (9).
-        self.assertEqual(len(sumati_fests), 4)
+        # Vrindavan additionally records a separate, earlier Liberation Kalyanak at Navami (9);
+        # Pt. Jaini Jiyalal Panchang adds Janma-Tapa together at Dashami (10).
+        self.assertEqual(len(sumati_fests), 6)
+        dashami_fests = [sf for sf in sumati_fests if sf["tithi"] == "Dashami (10)"]
+        self.assertEqual(len(dashami_fests), 2)
+        for sf in dashami_fests:
+            self.assertEqual(sf["start_date"], "2026-03-28")
+            self.assertEqual(sf["sources"], ["Pt. Jaini Jiyalal Panchang"])
         ekadashi_fests = [sf for sf in sumati_fests if sf["tithi"] == "Ekadashi (11)"]
         self.assertEqual(len(ekadashi_fests), 3)
         for sf in ekadashi_fests:
@@ -2071,6 +2077,33 @@ class RohiniNakshatraParvVratTest(unittest.TestCase):
     def test_rohini_vrat_occurrence_ids_are_unique(self):
         occ_ids = [f["occurrence_id"] for f in self.rohini]
         self.assertEqual(len(occ_ids), len(set(occ_ids)))
+
+
+class SumatinathJainiJiyalalKalyanakTest(unittest.TestCase):
+    """Pt. Jaini Jiyalal Panchang prints Sumatinath Janma-Tapa together on Chaitra
+    Shukla Dashami (2026-03-28, Pushya nakshatra). Added alongside -- not replacing --
+    the Vrindavan/Uttarapurana/Ashadhara entries (Birth = Chaitra Shukla 11 = 2026-03-29,
+    Austerity = Vaishakha Shukla 9)."""
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_observances.festival_service import generate_jain_festivals
+        cls.res = generate_jain_festivals(
+            year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all"
+        )
+        cls.by_id = {f["id"]: f for f in cls.res["festivals"]}
+
+    def test_jaini_jiyalal_janma_tapa_land_together_on_chaitra_shukla_dashami(self):
+        birth = self.by_id["shri_sumatinath_ji___birth_kalyanak_chaitra_shukla_10_jaini_jiyalal"]
+        tapa = self.by_id["shri_sumatinath_ji___austerity_kalyanak_chaitra_shukla_10_jaini_jiyalal"]
+        self.assertEqual(birth["start_date"], "2026-03-28")
+        self.assertEqual(tapa["start_date"], "2026-03-28")
+        self.assertEqual(birth["tithi"], "Dashami (10)")
+
+    def test_scholarly_sumatinath_entries_are_still_present(self):
+        scholarly_birth = self.by_id["shri_sumatinath_ji___birth_kalyanak_11_vrindavan_uttarapurana_ashadhara"]
+        self.assertEqual(scholarly_birth["start_date"], "2026-03-29")
+        self.assertIn("shri_sumatinath_ji___austerity_kalyanak_9_vrindavan_uttarapurana_ashadhara", self.by_id)
 
 
 if __name__ == "__main__":
