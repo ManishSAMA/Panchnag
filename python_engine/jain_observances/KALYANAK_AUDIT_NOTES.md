@@ -86,6 +86,10 @@ Currently causes `KarmaNirjaraVratTest.test_karma_nirjara_vrat_resolution` to fa
 occurrences, gets 4) — pre-existing, unrelated to this session's changes.
 
 ### 2. Snapshot-timing inconsistency in `festival_service.py` (architectural, wide blast radius)
+> **Update:** the Krishna-paksha *month-naming* consequence of this is now fixed — see
+> "adhik-maas purnimanta resolution" below. The underlying dual-moment snapshot
+> (`tithi` at plain sunrise vs `hindu_month` at +2.4h) is still there for other fields.
+
 In `generate_jain_festivals`'s snapshot-building loop: `tithi`/`paksha`/`tithi_in_paksha` are
 computed at **plain sunrise** (`sunrise_jd`), but `hindu_month`, `jain_tithi`, `jain_paksha` are
 computed at **sunrise + 2.4 hours** (`reference_jd`). On any day where a tithi transition falls
@@ -110,6 +114,43 @@ not touched this session** — fixing the snapshot builder's timing model needs 
 dedicated, carefully-tested pass (it's astronomical-timing-sensitive code every rule depends
 on), not a tack-on fix. `test_chaitra_amavasya_kalyanak_varshant_resolution_2026` is left
 failing, understood, and documented here rather than papered over.
+
+## Fixed later: adhik-maas purnimanta resolution (`plans/adhik_maas_purnimanta_fix.md`)
+
+`_build_snapshots` now attaches `purnimanta_month` / `purnimanta_is_adhika` to every
+snapshot, derived from the **next chronological Shukla paksha's** amanta month/adhika
+(a Krishna paksha shares its purnimanta month with the Shukla paksha that ends at that
+month's Purnima). `SingleTithiFestival` / `MultiDayFestival` match Krishna-paksha entries
+against those fields; `get_jain_month()` and both display paths use them too. Single source
+of truth for month names + the shift is the new `jain_observances/months.py`.
+
+This corrected three latent bug classes at once:
+1. **Adhik-Maas Krishna flip** (the reported bug). VS 2083 = Adhika Jyeshtha. A Krishna
+   paksha's adhik/nija status is *opposite* in amanta vs purnimanta reckoning, so filtering
+   `not s["is_adhika"]` (amanta) put every Jyeshtha-Krishna Kalyanak in the *Adhik* paksha
+   (2-16 May 2026) instead of the *Nija* one (1-15 Jun). Anantnath J&T 14 May → **12 Jun**;
+   Shantinath J-T-M 16 May → **14 Jun**; Shreyansnath/Vimalnath/Ajitnath conceptions likewise.
+   Confirmed against Pt. Jaini Jiyalal Panchang.
+2. **Item #2 above (snapshot-timing) — now effectively resolved for Krishna month-naming.**
+   Deriving purnimanta identity from the next Shukla day (mid-paksha, away from the month
+   boundary) sidesteps the 2.4h `reference_jd` ambiguity at the Amavasya. Diwali 2027 moved
+   from a wrong **2027-09-30** to the correct **2027-10-29**; `ChaitraAmavasyaKalyanakVarshantTest`
+   now passes; ~10 Krishna-Amavasya-day Kalyanaks that were silently dropped (Anantnath/Aranath
+   Moksha on Chaitra Kr Amavasya, Shreyansnath Omniscience on Magha Kr Amavasya, …) now appear.
+3. **"Margashirsha" vs "Agrahayana" spelling mismatch.** `get_hindu_month` emits "Agrahayana";
+   ~16 registry entries store `jain_month: "Margashirsha"` and were matched with `==`, so they
+   produced nothing. `months.canonical()` collapses the aliases → Pushpadanta / Arahnath /
+   Naminath / Sambhavnath / Sheetalnath entries in that month now resolve.
+
+Verification: 274/274 SingleTithi Kalyanak occurrences across 2026 + 2027 display the
+purnimanta month/paksha their registry entry intends (0 mismatches); full 2027 (non-adhik)
+diff is additive only (previously-missing entries), nothing mis-shifted.
+
+**Still open:** the ~30 custom rule classes that filter raw `s["hindu_month"].upper() in [...]`
++ `is_adhika` for Krishna-paksha targets are not individually audited for adhik years. The
+2026-relevant one (`MonthlyVratFestival`, targets Jyeshtha) plus the KALYANAK_AUDIT-fixed
+Kartika cluster are covered by tests and green; the rest are mostly Shukla-only or non-adhik-
+month and lower risk. Companion to the still-unexecuted festival_rules.py dedup refactor.
 
 ## Reusable audit tooling (scratchpad, not committed)
 

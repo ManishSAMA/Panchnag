@@ -8,20 +8,34 @@ from panchang import get_tithi, get_hindu_month, calculate_jain_tithi_from_sunri
 from panchang_service import resolve_location
 from .registry import FESTIVAL_REGISTRY
 from .festival_rules import RuleFactory
+from .months import next_month
 
-@lru_cache(maxsize=32)
-def generate_jain_festivals(
-    year: int,
-    lat: float,
-    lon: float,
-    ayanamsa: str = "Lahiri",
-    profile: str = "shwetambar_murtipujak_tapagachchha"
-) -> dict:
-    """Generate all Jain festivals for a given year and location, filtered by profile."""
-    location = resolve_location(lat=lat, lon=lon)
-    tz_name = location.timezone
-    
-    # 1. Generate daily Panchang snapshots for a 14-month window (Dec 1 of previous year to Jan 31 of next year)
+def _assign_purnimanta(snapshots: list) -> None:
+    """Attach purnimanta_month / purnimanta_is_adhika to each snapshot.
+
+    A paksha's purnimanta month is the month of the Shukla paksha that ends at its
+    Purnima. For a Shukla paksha that is its own amanta month/adhika. For a Krishna
+    paksha it is the *next* chronological Shukla paksha's amanta month/adhika -- which,
+    in an Adhik-Maas year, inverts the adhik/nija tag relative to the amanta reading.
+    """
+    next_shukla_month = None
+    next_shukla_adhika = None
+    for snap in reversed(snapshots):
+        if snap["paksha"] == "Shukla":
+            snap["purnimanta_month"] = snap["hindu_month"]
+            snap["purnimanta_is_adhika"] = snap["is_adhika"]
+            next_shukla_month = snap["hindu_month"]
+            next_shukla_adhika = snap["is_adhika"]
+        elif next_shukla_month is not None:
+            snap["purnimanta_month"] = next_shukla_month
+            snap["purnimanta_is_adhika"] = next_shukla_adhika
+        else:
+            snap["purnimanta_month"] = next_month(snap["hindu_month"])
+            snap["purnimanta_is_adhika"] = snap["is_adhika"]
+
+
+def _build_snapshots(year: int, lat: float, lon: float, ayanamsa: str, tz_name: str) -> list:
+    """Daily Panchang snapshots for a 14-month window (Dec 1 of prev year to Jan 31 of next)."""
     snapshots = []
     start_date = date(year - 1, 12, 1)
     end_date = date(year + 1, 1, 31)
@@ -33,19 +47,18 @@ def generate_jain_festivals(
             sun_lon = get_planetary_longitude(sunrise_jd, 'Sun', ayanamsa)
             moon_lon = get_planetary_longitude(sunrise_jd, 'Moon', ayanamsa)
             tithi_idx = get_tithi(sun_lon, moon_lon)
-            
+
             # Fast Jain tithi index and month
             reference_jd = sunrise_jd + (2.4 / 24.0)
             sun_lon_j = get_planetary_longitude(reference_jd, 'Sun', ayanamsa)
             moon_lon_j = get_planetary_longitude(reference_jd, 'Moon', ayanamsa)
             jain_tithi_idx = get_tithi(sun_lon_j, moon_lon_j)
-            
+
             hindu_month, _, is_adhika = get_hindu_month(reference_jd, ayanamsa)
 
-            
             # Clean month name (e.g. strip Adhika for standard matching)
             base_month = hindu_month.removeprefix("Adhika ")
-            
+
             snapshots.append({
                 "date": curr,
                 "sunrise_jd": sunrise_jd,
@@ -63,6 +76,25 @@ def generate_jain_festivals(
             # Fallback if astro fails
             pass
         curr += timedelta(days=1)
+
+    _assign_purnimanta(snapshots)
+    return snapshots
+
+
+@lru_cache(maxsize=32)
+def generate_jain_festivals(
+    year: int,
+    lat: float,
+    lon: float,
+    ayanamsa: str = "Lahiri",
+    profile: str = "shwetambar_murtipujak_tapagachchha"
+) -> dict:
+    """Generate all Jain festivals for a given year and location, filtered by profile."""
+    location = resolve_location(lat=lat, lon=lon)
+    tz_name = location.timezone
+
+    # 1. Generate daily Panchang snapshots
+    snapshots = _build_snapshots(year, lat, lon, ayanamsa, tz_name)
 
     festivals = []
     context = {"lat": lat, "lon": lon, "ayanamsa": ayanamsa, "year": year}
@@ -110,20 +142,14 @@ def generate_jain_festivals(
         if f.get("jain_month") != "Nakshatra:":
             snap = date_to_snap.get(f["start_date"])
             if snap:
+                base_month = snap["purnimanta_month"]
+                is_adhika = snap["purnimanta_is_adhika"]
                 prefix = ""
-                if snap["is_adhika"]:
+                if is_adhika:
                     prefix = "Adhika "
-                elif any(s["hindu_month"] == snap["hindu_month"] and s["is_adhika"] and s["date"].year == snap["date"].year for s in snapshots):
+                elif any(s["purnimanta_month"] == base_month and s["purnimanta_is_adhika"] and s["date"].year == snap["date"].year for s in snapshots):
                     prefix = "Nija "
-                
-                # Apply Purnimanta Shift: If Krishna paksha, month is actually +1
-                base_month = snap["hindu_month"]
-                if snap["paksha"] == "Krishna":
-                    m_names = ["Chaitra", "Vaishakha", "Jyeshtha", "Ashadha", "Shravana", "Bhadrapada", "Ashwin", "Kartika", "Agrahayana", "Pausha", "Magha", "Phalguna"]
-                    if base_month in m_names:
-                        idx = m_names.index(base_month)
-                        base_month = m_names[(idx + 1) % 12]
-                
+
                 f["jain_month"] = prefix + base_month
                 f["paksha"] = snap["paksha"]
                 
@@ -162,19 +188,13 @@ def generate_jain_festivals(
         if s["paksha"] == "Krishna" and t_num == 15:
             t_name = "Amavasya (15)"
         
+        base_month = s["purnimanta_month"]
         prefix = ""
-        if s["is_adhika"]:
+        if s["purnimanta_is_adhika"]:
             prefix = "Adhika "
-        elif any(x["hindu_month"] == s["hindu_month"] and x["is_adhika"] and x["date"].year == s["date"].year for x in snapshots):
+        elif any(x["purnimanta_month"] == base_month and x["purnimanta_is_adhika"] and x["date"].year == s["date"].year for x in snapshots):
             prefix = "Nija "
-            
-        base_month = s["hindu_month"]
-        if s["paksha"] == "Krishna":
-            m_names = ["Chaitra", "Vaishakha", "Jyeshtha", "Ashadha", "Shravana", "Bhadrapada", "Ashwin", "Kartika", "Agrahayana", "Pausha", "Magha", "Phalguna"]
-            if base_month in m_names:
-                idx = m_names.index(base_month)
-                base_month = m_names[(idx + 1) % 12]
-                
+
         panchang_tithi_map[s["date"].isoformat()] = f"{prefix}{base_month} {s['paksha']} {t_name}"
 
     return {

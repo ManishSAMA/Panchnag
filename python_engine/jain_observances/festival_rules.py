@@ -1,8 +1,23 @@
 # jain_festival_rules.py - Data-driven and OOP rule registry for Jain festivals.
 
 from datetime import timedelta
+from typing import List, Dict, Any
+from datetime import date
+from .registry import FESTIVAL_REGISTRY
+from .months import canonical as _canonical_month, next_month as _next_month
+
+# Legacy spellings some call sites / display paths still expect from get_jain_month().
+_LEGACY_MONTH_NAMES = {"ASHWIN": "ASHVINA", "AGRAHAYANA": "MARGASHIRSHA"}
+
 
 def get_jain_month(s: Dict[str, Any]) -> str:
+    """Purnimanta month name (UPPER) for a snapshot. Uses the snapshot's precomputed
+    ``purnimanta_month`` (which is Adhik-Maas-aware); falls back to the naive
+    amanta+1-for-Krishna shift only for snapshots built without that field."""
+    pm = s.get("purnimanta_month")
+    if pm:
+        u = _canonical_month(pm)
+        return _LEGACY_MONTH_NAMES.get(u, u)
     m_names = [
         "CHAITRA", "VAISHAKHA", "JYESHTHA", "ASHADHA", "SHRAVANA", "BHADRAPADA",
         "ASHVINA", "KARTIKA", "MARGASHIRSHA", "PAUSHA", "MAGHA", "PHALGUNA"
@@ -10,14 +25,18 @@ def get_jain_month(s: Dict[str, Any]) -> str:
     base_month = s["hindu_month"].upper()
     if base_month == "ASHWIN":
         base_month = "ASHVINA"
-    if s["paksha"] == "Krishna":
-        if base_month in m_names:
-            idx = m_names.index(base_month)
-            base_month = m_names[(idx + 1) % 12]
+    if s["paksha"] == "Krishna" and base_month in m_names:
+        base_month = m_names[(m_names.index(base_month) + 1) % 12]
     return base_month
-from typing import List, Dict, Any
-from datetime import date
-from .registry import FESTIVAL_REGISTRY
+
+
+def _matches_purnimanta_target(s: Dict[str, Any], jain_month: str, paksha: str) -> bool:
+    """True if snapshot ``s`` sits in the (non-adhik) purnimanta month/paksha that a
+    registry entry with the given ``jain_month`` (stored amanta) and ``paksha`` targets."""
+    target = _next_month(jain_month) if paksha == "Krishna" else jain_month
+    if _canonical_month(s.get("purnimanta_month", s["hindu_month"])) != _canonical_month(target):
+        return False
+    return not s.get("purnimanta_is_adhika", s["is_adhika"])
 
 class FestivalRule:
     """Base class for all festival rules."""
@@ -69,10 +88,10 @@ class SingleTithiFestival(FestivalRule):
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
         matches = snapshots
         if self.jain_month:
-            matches = [s for s in matches if s["hindu_month"] == self.jain_month and not s["is_adhika"]]
+            matches = [s for s in matches if _matches_purnimanta_target(s, self.jain_month, self.paksha)]
         if self.paksha:
             matches = [s for s in matches if s["paksha"] == self.paksha]
-            
+
         occurrences = []
         if isinstance(self.tithi, int):
             if self.jain_month:
@@ -117,7 +136,9 @@ class MultiDayFestival(FestivalRule):
     """Festival spanning multiple consecutive days (e.g. Ayambil Oli)."""
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
         duration_days = self.config.get("duration_days", 9)
-        matches = [s for s in snapshots if s["hindu_month"] == self.jain_month and not s["is_adhika"] and s["paksha"] == self.paksha]
+        matches = [s for s in snapshots
+                   if _matches_purnimanta_target(s, self.jain_month, self.paksha)
+                   and s["paksha"] == self.paksha]
         
         start_tithi = int(self.tithi.split('-')[0]) if isinstance(self.tithi, str) and '-' in self.tithi else self.tithi
         

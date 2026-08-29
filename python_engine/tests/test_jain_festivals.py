@@ -1932,7 +1932,8 @@ class KalyanakAmantaMonthCorrectionTest(unittest.TestCase):
     def test_shantinath_triple_kalyanak_displays_jyeshtha_not_ashadha(self):
         """Source PDF: Jyeshtha Krishna Chaturdashi (14), Birth+Austerity+Liberation all
         on the same day. Was wrongly stored as amanta 'Jyeshtha' (displaying as Ashadha);
-        corrected to amanta 'Vaishakha'."""
+        corrected to amanta 'Vaishakha'. 2026 has Adhika Jyeshtha, so the (correct) Nija
+        Jyeshtha Krishna paksha displays with the 'Nija ' qualifier."""
         ids = [
             "shri_shantinath_ji___austerity_kalyanak_14_vrindavan_uttarapurana_ashadhara",
             "shri_shantinath_ji___birth_kalyanak_14_vrindavan_uttarapurana_ashadhara",
@@ -1941,11 +1942,13 @@ class KalyanakAmantaMonthCorrectionTest(unittest.TestCase):
         dates = set()
         for fid in ids:
             f = self.by_id[fid]
-            self.assertEqual(f["jain_month"], "Jyeshtha")
+            self.assertTrue(f["jain_month"].endswith("Jyeshtha"), f["jain_month"])
+            self.assertNotIn("Ashadha", f["jain_month"])
             self.assertEqual(f["paksha"], "Krishna")
             self.assertEqual(f["tithi"], "Chaturdashi (14)")
             dates.add(f["start_date"])
         self.assertEqual(len(dates), 1, "Birth/Austerity/Liberation should fall on the same date")
+        self.assertEqual(dates, {"2026-06-14"})
 
     def test_mahavira_liberation_from_kalyanak_table_matches_diwali(self):
         """The Vrindavan/Uttarapurana/Ashadhara-sourced Liberation entry was wrongly
@@ -2077,6 +2080,97 @@ class RohiniNakshatraParvVratTest(unittest.TestCase):
     def test_rohini_vrat_occurrence_ids_are_unique(self):
         occ_ids = [f["occurrence_id"] for f in self.rohini]
         self.assertEqual(len(occ_ids), len(set(occ_ids)))
+
+
+class PurnimantaSnapshotFieldsTest(unittest.TestCase):
+    """In an Adhik-Maas year a Krishna paksha's adhik/nija status flips between amanta
+    and purnimanta reckoning. VS 2083 = Adhika Jyeshtha (amanta ~17 May-15 Jun 2026):
+      - amanta Vaishakha Krishna (2-16 May)      -> purnimanta *Adhik* Jyeshtha Krishna
+      - amanta Adhika Jyeshtha Krishna (1-15 Jun) -> purnimanta *Nija*  Jyeshtha Krishna
+    Shukla pakshas keep the same month/adhika in both systems."""
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_observances.festival_service import _build_snapshots
+        from panchang_service import resolve_location
+        loc = resolve_location(lat=28.6139, lon=77.2090)
+        cls.by_date = {s["date"].isoformat(): s
+                       for s in _build_snapshots(2026, 28.6139, 77.2090, "Lahiri", loc.timezone)}
+
+    def test_amanta_vaishakha_krishna_is_purnimanta_adhik_jyeshtha(self):
+        s = self.by_date["2026-05-14"]
+        self.assertEqual((s["paksha"], s["hindu_month"], s["is_adhika"]), ("Krishna", "Vaishakha", False))
+        self.assertEqual(s["purnimanta_month"], "Jyeshtha")
+        self.assertTrue(s["purnimanta_is_adhika"])
+
+    def test_amanta_adhika_jyeshtha_krishna_is_purnimanta_nija_jyeshtha(self):
+        s = self.by_date["2026-06-12"]
+        self.assertEqual((s["paksha"], s["hindu_month"], s["is_adhika"]), ("Krishna", "Jyeshtha", True))
+        self.assertEqual(s["purnimanta_month"], "Jyeshtha")
+        self.assertFalse(s["purnimanta_is_adhika"])
+
+    def test_shukla_purnimanta_equals_amanta(self):
+        adhik_shukla = self.by_date["2026-05-25"]
+        self.assertEqual((adhik_shukla["paksha"], adhik_shukla["is_adhika"]), ("Shukla", True))
+        self.assertEqual(adhik_shukla["purnimanta_month"], adhik_shukla["hindu_month"])
+        self.assertTrue(adhik_shukla["purnimanta_is_adhika"])
+
+        nija_shukla = self.by_date["2026-06-20"]
+        self.assertEqual((nija_shukla["paksha"], nija_shukla["is_adhika"]), ("Shukla", False))
+        self.assertEqual(nija_shukla["purnimanta_month"], "Jyeshtha")
+        self.assertFalse(nija_shukla["purnimanta_is_adhika"])
+
+    def test_normal_year_krishna_purnimanta_is_amanta_plus_one_not_adhik(self):
+        from jain_observances.festival_service import _build_snapshots
+        from panchang_service import resolve_location
+        loc = resolve_location(lat=28.6139, lon=77.2090)
+        by_date = {s["date"].isoformat(): s
+                   for s in _build_snapshots(2027, 28.6139, 77.2090, "Lahiri", loc.timezone)}
+        # pick any Krishna day in 2027 (no Adhik Maas) - purnimanta must be amanta+1, not adhik
+        for s in by_date.values():
+            if s["date"].year == 2027 and s["paksha"] == "Krishna":
+                self.assertFalse(s["purnimanta_is_adhika"], s["date"])
+
+
+class AdhikMaasKrishnaKalyanakPlacementTest(unittest.TestCase):
+    """VS 2083 has Adhika Jyeshtha. Jyeshtha-Krishna Kalyanaks must be observed in the
+    *Nija* purnimanta Jyeshtha Krishna paksha (1-15 Jun 2026), NOT the *Adhik* one
+    (2-16 May 2026, which the app previously used because it read the amanta is_adhika
+    flag -- the opposite of the purnimanta status for a Krishna paksha). Confirmed
+    against Pt. Jaini Jiyalal Panchang: Anantnath Janma+Tapa 12 Jun, Shantinath
+    Janma-Tapa-Moksha 14 Jun."""
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_observances.festival_service import generate_jain_festivals
+        cls.res = generate_jain_festivals(
+            year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all"
+        )
+        cls.by_name = {}
+        for f in cls.res["festivals"]:
+            cls.by_name.setdefault(f["name"], []).append(f)
+
+    def _dates(self, name):
+        return sorted(f["start_date"] for f in self.by_name.get(name, []))
+
+    def test_anantnath_janma_tapa_in_nija_jyeshtha_krishna_june(self):
+        self.assertEqual(self._dates("Shri Anantnath Ji - Birth Kalyanak"), ["2026-06-12"])
+        self.assertEqual(self._dates("Shri Anantnath Ji - Austerity Kalyanak"), ["2026-06-12"])
+
+    def test_shantinath_triple_kalyanak_in_nija_jyeshtha_krishna_june(self):
+        for evt in ("Birth", "Austerity", "Liberation"):
+            self.assertEqual(self._dates(f"Shri Shantinath Ji - {evt} Kalyanak"), ["2026-06-14"], evt)
+
+    def test_nija_jyeshtha_krishna_display_label(self):
+        anant = self.by_name["Shri Anantnath Ji - Birth Kalyanak"][0]
+        self.assertEqual(anant["jain_month"], "Nija Jyeshtha")
+        self.assertEqual(anant["paksha"], "Krishna")
+        self.assertEqual(anant["tithi"], "Dwadashi (12)")
+
+    def test_no_kalyanaks_left_in_adhik_jyeshtha_krishna_may(self):
+        for f in self.res["festivals"]:
+            if f["start_date"] in ("2026-05-14", "2026-05-16") and "Kalyanak" in f["name"]:
+                self.fail(f"{f['name']} still on {f['start_date']} (Adhik Jyeshtha Krishna)")
 
 
 class SumatinathJainiJiyalalKalyanakTest(unittest.TestCase):
