@@ -152,27 +152,31 @@ diff is additive only (previously-missing entries), nothing mis-shifted.
 Kartika cluster are covered by tests and green; the rest are mostly Shukla-only or non-adhik-
 month and lower risk. Companion to the still-unexecuted festival_rules.py dedup refactor.
 
-## Fixed later: pradosh-vyapini day-selection for the Diwali / Mahavir Nirvana cluster
+## The Diwali / Mahavir Nirvana cluster day-selection (pradosh vs udaya)
 
-The engine resolved every tithi by **udaya (sunrise)** only. Diwali / Mahavir Nirvana,
-Dhanteras and Ahoi Ashtami are **pradosh (evening) vyapini** -- observed on the day the
-target tithi prevails at sunset. Whenever that tithi begins during the day and ends before
-the next sunrise, udaya lands the festival one day late. Concretely for 2026: Kartik Krishna
-Amavasya runs 8 Nov 11:28 -> 9 Nov 12:31 IST, so Mahavir Nirvana Kalyanak / Jain Diwali
-belongs on **8 Nov** (evening), not the udaya-Amavasya **9 Nov** the app was emitting -- the
-single most important Jain date of the year, one day off. Dhanteras 7 -> 6 Nov, Ahoi 2 -> 1 Nov.
+There was a wrong turn here worth recording. An intermediate commit moved the whole Diwali
+cluster to **pradosh (sunset) vyapini** on the theory that "Diwali = evening Lakshmi Puja".
+The **printed Pt. Jaini Jiyalal panchang (p.18)** settles it -- and it splits the cluster:
 
-Fix: `_build_snapshots` records the sunset tithi (`evening_tithi` / `evening_paksha` /
-`evening_tithi_in_paksha`); `festival_rules._pradosh_days()` selects days by it; a `day_rule`
-config key (`"pradosh"`) routes `SingleTithiFestival`; and `KartikaAmavasyaMahaviraNirvana`,
-`DiwaliChaturmasNishthapan`, `GyanDhanTrayodashi`, `SplitDayAhoiKarwaDampatya` (Ahoi only --
-Dampatya stays udaya, Karwa Chauth stays moonrise) use it directly. Jain New Year is now
-computed as **Mahavir Nirvana + 1 day**; a `skip_relabel` post-processor flag lets it keep
-its "Kartika Shukla Pratipada" labels on a day whose udaya paksha is still Krishna.
-`PradoshVyapiniDiwaliClusterTest` covers 2026 + the 2027 (normal-year) cascade.
+| Observance | 2026 date | Rule |
+|---|---|---|
+| Ahoi + Dampatya Ashtami | 1 Nov | **pradosh** Kartik Kr. Ashtami (udaya there is Saptami) |
+| यमदीपदान (Yama Deepdaan) | 6 Nov | pradosh Trayodashi |
+| **धनतेरस (Dhanteras)** | **7 Nov** | **udaya** Kartik Kr. Trayodashi |
+| Hindu सांय प्रदोष महालक्ष्मी पूजन | 8 Nov | pradosh Amavasya (Hindu Diwali night) |
+| **श्री महावीर स्वामी मोक्ष / गौतम केवलज्ञान** | **9 Nov** | **udaya / pratyush** Amavasya -- the Digambar dawn-nirvana convention |
+| **वीर निर्वाण सं. 2553 प्रारम्भ** | **10 Nov** | udaya Kartik Sh. Pratipada |
+| भय्या दूज | 11 Nov | (udaya Sh. Dvitiya) |
 
-**Not implemented:** aparahna / nishita / moonrise vyapini. Bhai Dooj (aparahna) and Karwa
-Chauth (moonrise) stay on udaya -- Bhai Dooj can be +1 in years where Shukla Dvitiya is short.
+So: **Mahavir Nirvana, Dhanteras and Jain New Year use udaya** (reverted to the original
+behaviour); only **Ahoi + Dampatya Ashtami** are genuinely pradosh-vyapini (1 Nov, fixing the
+old udaya answer of 2 Nov). `DiwaliClusterDateTest` pins all of these against the printed book.
+
+**Infrastructure kept** for any future pradosh/aparahna/nishita work: `_build_snapshots`
+records the sunset tithi (`evening_tithi` / `evening_paksha` / `evening_tithi_in_paksha`);
+`festival_rules._pradosh_days()`; the `day_rule` config key on `FestivalRule`; and the
+`skip_relabel` post-processor flag. Only `SplitDayAhoiKarwaDampatyaFestival` uses `_pradosh_days`
+now.
 
 ## Reusable audit tooling (scratchpad, not committed)
 
