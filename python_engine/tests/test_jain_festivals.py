@@ -1888,6 +1888,22 @@ class ChaitraAmavasyaKalyanakVarshantTest(unittest.TestCase):
         self.assertEqual(an_evt["start_date"], ar_evt["start_date"])
         self.assertEqual(ar_evt["start_date"], ls_evt["start_date"])
 
+        # The cluster + year-end marker sit on purnimanta Chaitra Krishna Amavasya --
+        # the day before Chaitra Shukla Pratipada (VS 2083 begins 2026-03-20), NOT the
+        # amanta Chaitra Krishna Amavasya a lunar month later.
+        self.assertEqual(an_evt["start_date"], "2026-03-19")
+        self.assertEqual(vs_evt["start_date"], "2026-03-19")
+        self.assertEqual((vs_evt["jain_month"], vs_evt["paksha"]), ("Chaitra", "Krishna"))
+
+    def test_varshant_2027_is_purnimanta_chaitra_amavasya_not_a_month_late(self):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(2027, 28.6139, 77.2090, "Lahiri", "all")
+        by_id = {f["id"]: f for f in res["festivals"]}
+        for fid in ("vikram_samvat_varshant_2027", "ananthnath_moksha_2027", "aranath_moksha_2027"):
+            f = by_id[fid]
+            self.assertEqual(f["start_date"], "2027-04-06", fid)
+            self.assertEqual((f["jain_month"], f["paksha"], f["tithi"]), ("Chaitra", "Krishna", "Amavasya (15)"), fid)
+
 
 class Namokar35VratTest(unittest.TestCase):
     def test_namokar_35_vrat_resolution_2026(self):

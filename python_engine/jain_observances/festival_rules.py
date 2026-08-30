@@ -5026,10 +5026,15 @@ class ChaitraAmavasyaKalyanakVarshantFestival(FestivalRule):
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         year = context["year"]
 
+        # get_jain_month() (purnimanta) not raw hindu_month (amanta): the target is the
+        # Krishna-paksha Amavasya immediately before Chaitra Shukla Pratipada (the Vikram
+        # Samvat new year) -- that Amavasya's amanta month is Phalguna, so a raw match on
+        # "CHAITRA" lands the whole cluster (Ananthnath/Aranath Moksha + the year-end
+        # marker) one full lunar month late. Same bug class as the Kartika cluster.
         chaitra_snaps = [
             s for s in snapshots
             if s["date"].year == year
-            and s["hindu_month"].upper() in ["CHAITRA", "CHAIT", "CHET"]
+            and get_jain_month(s) == "CHAITRA"
         ]
         if not chaitra_snaps:
             return []
@@ -5041,7 +5046,7 @@ class ChaitraAmavasyaKalyanakVarshantFestival(FestivalRule):
 
         amavasya_days = [
             s for s in chaitra_snaps
-            if s["paksha"] == "Krishna" and (s["tithi_in_paksha"] == 15 or s["tithi"] == 30)
+            if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 15
         ]
 
         if amavasya_days:
