@@ -78,12 +78,14 @@ implemented feature gap, not a regression from the month fix above.
 
 ## NOT fixed — needs your call before anyone touches it
 
-### 1. `KarmaNirjaraVratFestival` vs `jain_observances/vrats/karma_nirjara.py`
-Live code (tested, wired up) targets Shukla Chaturdashi (14), no kshaya handling. A dead,
-never-imported module targets Shukla Panchami (5) with a Chaturthi (4) kshaya fallback. Two
-different definitions of "Karma Nirjara Vrat". Unresolved — pick one before editing either file.
-Currently causes `KarmaNirjaraVratTest.test_karma_nirjara_vrat_resolution` to fail (expects 5
-occurrences, gets 4) — pre-existing, unrelated to this session's changes.
+### 1. `KarmaNirjaraVratFestival` vs `jain_observances/vrats/karma_nirjara.py` — RESOLVED 2026-08-30
+User directive settled it: **Shukla Chaturdashi (14)** of each of the four Chaturmas months
+(Ashadha, Shravana, Bhadrapada, Ashvin), **exactly four occurrences a year**. The live
+`KarmaNirjaraVratFestival` class is the rule; the dead `vrats/karma_nirjara.py` module
+(Shukla Panchami 5) is not it — left in place, unimported, pending the festival_rules dedup
+refactor. See "Karma Nirjara Vrat: first-active-day + exactly-4" below.  The old
+`KarmaNirjaraVratTest` (expected 5 occurrences / Shravana on both 26 & 27 Aug — a behaviour
+the code never produced) is replaced; suite is green.
 
 ### 2. Snapshot-timing inconsistency in `festival_service.py` (architectural, wide blast radius)
 > **Update:** the Krishna-paksha *month-naming* consequence of this is now fixed — see
@@ -177,6 +179,59 @@ records the sunset tithi (`evening_tithi` / `evening_paksha` / `evening_tithi_in
 `festival_rules._pradosh_days()`; the `day_rule` config key on `FestivalRule`; and the
 `skip_relabel` post-processor flag. Only `SplitDayAhoiKarwaDampatyaFestival` uses `_pradosh_days`
 now.
+
+## Kalyanak day-selection: first-active-day override (not udaya)
+
+Session date: 2026-08-30. Reported by user against the printed panchang: Shri Rishabhdev
+Ji - Conception Kalyanak (amanta Jyeshtha Kr. Dwitiya, displays Ashadha Kr. Dwitiya) was
+showing on **2026-07-02** (the udaya/sunrise Dwitiya day) but the book puts it on
+**2026-07-01**. Dwitiya that fortnight starts 1 Jul ~07:38 and runs to 2 Jul ~09:38 — it
+is the tithi prevailing at the Jain day-start (sunrise + 144 min / 6 ghatika) on **both**
+1 and 2 Jul.
+
+**Rule (user's, verbatim): when a Kalyanak's target tithi spans two consecutive civil
+days, fix the Kalyanak to the first day it is active — do NOT use udaya alignment for
+Kalyanaks.** Operationalised as: if the target tithi is the one prevailing at the
+6-ghatika mark on two consecutive days, use the first of those two days; otherwise the
+existing udaya (+ `second_day` / kshaya) resolution is unchanged.
+
+Implemented in `SingleTithiFestival._kalyanak_first_active_day` (festival_rules.py),
+scoped to categories `{kalyanak, janam_kalyanak, garbha_kalyanak}` with the default
+`day_rule == "udaya"`. Uses the snapshot's `jain_paksha` / `jain_tithi_in_paksha`
+(already computed at `reference_jd = sunrise + 2.4h`).
+
+Blast radius (profile `all`, verified by before/after diff): **2026 — exactly 3
+occurrences shift, all one day earlier**: Rishabhdev conception 07-02→07-01,
+Pushpadanta (Suvidhinath) conception 02-11→02-10, Sheetalnath liberation 10-19→10-18.
+**2027 — exactly 2**: Munisuvrat liberation 03-05→03-04, Neminath omniscience
+10-09→10-08. All are genuine two-consecutive-6-ghatika-day spans. Nothing else in either
+year's list changes; no non-Kalyanak `SingleTithi` festival is affected. Source-verified
+dates that intentionally stay put (single 6-ghatika day, so no override): Mahavir Janma
+31 Mar, Parshvanath conception 4 Apr, Sumatinath Ekadashi 29 Mar / Dashami 28 Mar,
+Anantnath 12 Jun, Shantinath 14 Jun, Mahavira Liberation (Diwali) 9 Nov.
+
+Regression coverage: `KalyanakTithiVriddhiFirstDayTest` in tests/test_jain_festivals.py.
+
+## Karma Nirjara Vrat: first-active-day + exactly-4
+
+Session date: 2026-08-30. User directive: Karma Nirjara Vrat maps to **Shukla Chaturdashi
+(14)** of each of the four Chaturmas months (Ashadha, Shravana, Bhadrapada, Ashvin) —
+**exactly four occurrences a year** — using the **same first-active-day rule** as Kalyanaks
+(above): if Chaturdashi prevails at the 6-ghatika mark on two consecutive days, assign to
+the first; a total Chaturdashi kshaya falls to the Shukla Trayodashi (13) day.
+
+`KarmaNirjaraVratFestival.resolve` rewritten accordingly (shares
+`_first_of_two_jain_daystart_days` with `SingleTithiFestival._kalyanak_first_active_day`).
+It now emits exactly one occurrence per month (previously a sunrise-vriddhi could double a
+month, and a sunrise-kshaya could drop one). Adhik-split month → strictly the Adhik month.
+
+Blast radius (profile `all`, before/after diff): **one date per year** —
+`karma_nirjara_vrat_shravana` 2026 27 Aug → **26 Aug**, 2027 16 Aug → **15 Aug** (both real
+6-ghatika two-day spans). Count stays 4 in both years; the other three months unchanged.
+
+Regression coverage: `KarmaNirjaraVratTest` (rewritten — 3 tests). This also clears the
+long-standing suite failure noted under "NOT fixed → item 1" above; `test_jain_festivals.py`
++ `test_bhaktambar_vrat.py` are now **109 passed, 0 failed**.
 
 ## Reusable audit tooling (scratchpad, not committed)
 

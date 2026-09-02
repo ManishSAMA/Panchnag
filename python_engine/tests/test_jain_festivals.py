@@ -351,39 +351,47 @@ class RaviVratTest(unittest.TestCase):
 
 
 class KarmaNirjaraVratTest(unittest.TestCase):
-    def test_karma_nirjara_vrat_resolution(self):
+    """Karma Nirjara Vrat: Shukla Chaturdashi (14) of each Chaturmas month (Ashadha,
+    Shravana, Bhadrapada, Ashvin) -- exactly four occurrences a year. Anchored to the
+    FIRST civil day the Chaturdashi is active (Jain day-start / 6-ghatika rule), not the
+    udaya day.
+
+    2026 ground truth: Shravana Shukla Chaturdashi prevails at the 6-ghatika mark on
+    both 26 and 27 Aug, so the vrat lands on 26 Aug (Day 1), a single event -- not the
+    udaya day 27 Aug. The other three months are single 6-ghatika days and keep udaya."""
+
+    @classmethod
+    def setUpClass(cls):
         from jain_observances.festival_service import generate_jain_festivals
         res = generate_jain_festivals(
-            year=2026,
-            lat=28.6139,
-            lon=77.2090,
-            ayanamsa="Lahiri",
-            profile="all"
+            year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all"
         )
-        
-        # Look for karma_nirjara occurrences
-        vrat_events = [f for f in res["festivals"] if "karma_nirjara" in f["id"]]
-        
-        # Verify total events (Ashadha, Shravana [repeats], Bhadrapada, Ashwin)
-        self.assertEqual(len(vrat_events), 5)
-        
-        # Verify first and last dates
-        self.assertEqual(vrat_events[0]["start_date"], "2026-07-28")
-        self.assertEqual(vrat_events[-1]["start_date"], "2026-10-25")
-        
-        # Verify the VRAT schemas
-        for event in vrat_events:
+        cls.vrat_events = sorted(
+            (f for f in res["festivals"] if "karma_nirjara" in f["id"]),
+            key=lambda f: f["start_date"],
+        )
+
+    def test_fires_exactly_four_times_one_per_chaturmas_month(self):
+        self.assertEqual(len(self.vrat_events), 4)
+        months = [f["jain_month"] for f in self.vrat_events]
+        self.assertEqual(months, ["Ashadha", "Shravana", "Bhadrapada", "Ashwin"])
+
+    def test_dates_2026(self):
+        dates = {f["jain_month"]: f["start_date"] for f in self.vrat_events}
+        self.assertEqual(dates["Ashadha"], "2026-07-28")
+        self.assertEqual(dates["Shravana"], "2026-08-26")
+        self.assertEqual(dates["Bhadrapada"], "2026-09-25")
+        self.assertEqual(dates["Ashwin"], "2026-10-25")
+
+    def test_vrat_schema(self):
+        for event in self.vrat_events:
             self.assertEqual(event["category"], "parva_vrat")
             self.assertEqual(event["badge"], "Parva / Vrat")
             self.assertEqual(event["badge_color"], "purple")
             self.assertEqual(event["is_span"], False)
+            self.assertEqual(event["paksha"], "Shukla")
+            self.assertEqual(event["tithi"], "Chaturdashi (14)")
             self.assertTrue(event["name"].startswith("Karma Nirjara Vrat"))
-
-        # Verify Shravana Shukla Chaturdashi repeated (Tithi Vriddhi) in 2026
-        shravana_events = [f for f in vrat_events if "Shravana" in f["jain_month"]]
-        self.assertEqual(len(shravana_events), 2)
-        self.assertEqual(shravana_events[0]["start_date"], "2026-08-26")
-        self.assertEqual(shravana_events[1]["start_date"], "2026-08-27")
 
 
 class AshtahnikaMahaparvTest(unittest.TestCase):
@@ -2034,6 +2042,44 @@ class KalyanakAmantaMonthCorrectionTest(unittest.TestCase):
         self.assertEqual(ananta["tithi"], "Chaturthi (4)")
         self.assertEqual(ananta["sources"], ["Vrindavan"])
         self.assertEqual(parshva["start_date"], ananta["start_date"])
+
+
+class KalyanakTithiVriddhiFirstDayTest(unittest.TestCase):
+    """Kalyanaks are fixed to the FIRST civil day their target tithi is active,
+    overriding the udaya (sunrise) alignment. Concretely: when the target tithi is
+    the one prevailing at the Jain day-start (sunrise + 144 min / 6 ghatika) on two
+    consecutive days, the Kalyanak lands on the first of those two days.
+
+    2026 ground truth: Ashadha Krishna Dwitiya (2) prevails at the 6-ghatika mark on
+    both 1 Jul and 2 Jul, so Shri Rishabhdev Ji - Conception Kalyanak must display on
+    2026-07-01, not the udaya day 2026-07-02."""
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_observances.festival_service import generate_jain_festivals
+        cls.res = generate_jain_festivals(
+            year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all"
+        )
+        cls.by_id = {f["id"]: f for f in cls.res["festivals"]}
+
+    def test_rishabhdev_conception_lands_on_first_of_the_two_dwitiya_days(self):
+        f = self.by_id["shri_rishabhdev_ji___conception_kalyanak_2_vrindavan_uttarapurana_ashadhara"]
+        self.assertEqual(f["start_date"], "2026-07-01")
+        self.assertEqual(f["paksha"], "Krishna")
+        self.assertEqual(f["tithi"], "Dwitiya (2)")
+
+    def test_single_jain_daystart_day_still_uses_udaya(self):
+        """Mahavir Janma Kalyanak: Chaitra Shukla Trayodashi (13) owns the 6-ghatika
+        mark on only one day (30 Mar) - no two-day span - so the udaya day 31 Mar
+        stands unchanged."""
+        f = self.by_id["mahavir_janma_kalyanak"]
+        self.assertEqual(f["start_date"], "2026-03-31")
+
+    def test_non_kalyanak_single_tithi_festivals_are_untouched(self):
+        """The override is scoped to Kalyanaks; Meru Trayodashi (Pausha Krishna 13,
+        category 'festival') keeps its plain udaya resolution."""
+        f = self.by_id["meru_trayodashi"]
+        self.assertEqual(f["start_date"], "2026-01-16")
 
 
 class KartikaKrishnaMonthResolutionTest(unittest.TestCase):

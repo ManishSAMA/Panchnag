@@ -9,6 +9,11 @@ from .months import canonical as _canonical_month, next_month as _next_month
 # Legacy spellings some call sites / display paths still expect from get_jain_month().
 _LEGACY_MONTH_NAMES = {"ASHWIN": "ASHVINA", "AGRAHAYANA": "MARGASHIRSHA"}
 
+# Kalyanak categories get a day-selection override: fixed to the first civil day the
+# target tithi is active, not the udaya (sunrise) day. See
+# SingleTithiFestival._kalyanak_first_active_day.
+_KALYANAK_CATEGORIES = frozenset({"kalyanak", "janam_kalyanak", "garbha_kalyanak"})
+
 
 def get_jain_month(s: Dict[str, Any]) -> str:
     """Purnimanta month name (UPPER) for a snapshot. Uses the snapshot's precomputed
@@ -50,6 +55,22 @@ def _pradosh_days(snaps: List[Dict[str, Any]], tithi: int, paksha: str = "Krishn
         and s.get("evening_tithi_in_paksha", s["tithi_in_paksha"]) == tithi
     ]
     return sorted(out, key=lambda s: s["date"])
+
+
+def _first_of_two_jain_daystart_days(snaps: List[Dict[str, Any]], paksha: str, tithi: int):
+    """First of two consecutive civil days on which `tithi` (paksha-relative) prevails at
+    the Jain day-start (sunrise + 144 min / 6 ghatika). Returns that date, or None when
+    there is no such two-day span. This is the "Day 1 anchor" a tithi that straddles two
+    civil days gets for Kalyanaks and the Chaturmas Karma Nirjara Vrat -- overriding the
+    udaya (sunrise) rule, which would land on the second day."""
+    jain_days = sorted(
+        s["date"] for s in snaps
+        if s.get("jain_paksha") == paksha and s.get("jain_tithi_in_paksha") == tithi
+    )
+    for earlier, later in zip(jain_days, jain_days[1:]):
+        if (later - earlier).days == 1:
+            return earlier
+    return None
 
 class FestivalRule:
     """Base class for all festival rules."""
@@ -101,6 +122,20 @@ class FestivalRule:
 
 class SingleTithiFestival(FestivalRule):
     """Festival occurring on a specific single Tithi, supporting Vriddhi and Kshaya."""
+
+    def _kalyanak_first_active_day(self, snapshots: List[Dict[str, Any]]):
+        """Kalyanak day-selection override: a Kalyanak whose target tithi prevails at
+        the Jain day-start (sunrise + 144 min / 6 ghatika) on two consecutive days is
+        fixed to the FIRST of those days, not the udaya (sunrise) day. Returns that
+        date, or None when no such two-day span exists (udaya resolution then applies).
+        Scoped to Kalyanak categories with the default udaya day_rule."""
+        if (self.category not in _KALYANAK_CATEGORIES
+                or self.day_rule != "udaya"
+                or not self.jain_month or not self.paksha):
+            return None
+        matches = [s for s in snapshots if _matches_purnimanta_target(s, self.jain_month, self.paksha)]
+        return _first_of_two_jain_daystart_days(matches, self.paksha, self.tithi)
+
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
         matches = snapshots
         if self.jain_month:
@@ -121,7 +156,13 @@ class SingleTithiFestival(FestivalRule):
                         for cand in candidates:
                             occurrences.append(self._create_occurrence(cand["date"], cand["date"], self.tithi, self.jain_month, self.paksha, profile))
                     else:
-                        resolved_day = candidates[1]["date"] if len(candidates) > 1 and self.vriddhi_rule == "second_day" else candidates[0]["date"]
+                        kalyanak_day = self._kalyanak_first_active_day(snapshots)
+                        if kalyanak_day is not None:
+                            resolved_day = kalyanak_day
+                        elif len(candidates) > 1 and self.vriddhi_rule == "second_day":
+                            resolved_day = candidates[1]["date"]
+                        else:
+                            resolved_day = candidates[0]["date"]
                         occurrences.append(self._create_occurrence(resolved_day, resolved_day, self.tithi, self.jain_month, self.paksha, profile))
                 else:
                     # Kshaya
@@ -725,10 +766,22 @@ class RavivaraVratFestival(FestivalRule):
 
 
 class KarmaNirjaraVratFestival(FestivalRule):
+    """Karma Nirjara Vrat: Shukla Chaturdashi (14) of each of the four Chaturmas months
+    -- Ashadha, Shravana, Bhadrapada, Ashvin -- so it fires exactly four times a year.
+
+    Day selection (per user directive): the vrat is anchored to the FIRST civil day the
+    Chaturdashi is active, not the udaya (sunrise) day. Concretely -- if Chaturdashi
+    prevails at the Jain day-start (sunrise + 144 min / 6 ghatika) on two consecutive
+    days, use the first of them; otherwise the udaya day; on a total Chaturdashi kshaya,
+    the Shukla Trayodashi (13) day (the day Chaturdashi becomes active).
+
+    Adhik Maas: if the month is split (Adhik + Nija) that year, the vrat is observed
+    strictly in the Adhik month.
+    """
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         year = context["year"]
-        target_month = self.jain_month # e.g. "ASHADHA", "SHRAVANA", "BHADRAPADA", "ASHVINA"
-        
+        target_month = self.jain_month
+
         season_months = ["ASHADHA", "SHRAVANA", "BHADRAPADA", "ASHVINA", "ASHWIN"]
         if target_month and target_month.upper() not in season_months:
             return []
@@ -739,60 +792,71 @@ class KarmaNirjaraVratFestival(FestivalRule):
         for m in months_to_process:
             target_months_set = {m}
             if m in ["ASHVINA", "ASHWIN"]:
-                target_months_set.add("ASHVINA")
-                target_months_set.add("ASHWIN")
+                target_months_set |= {"ASHVINA", "ASHWIN"}
 
             month_snaps = [
                 s for s in snapshots
                 if s["date"].year == year
                 and s["hindu_month"].upper() in target_months_set
             ]
-            
             if not month_snaps:
                 continue
 
             has_adhik_month_in_year = any(s["is_adhika"] for s in month_snaps)
-            
-            if m == "ASHADHA":
-                if has_adhik_month_in_year:
-                    month_snaps = [s for s in month_snaps if s["is_adhika"]]
-                else:
-                    month_snaps = [s for s in month_snaps if not s["is_adhika"]]
+            if has_adhik_month_in_year:
+                month_snaps = [s for s in month_snaps if s["is_adhika"]]
+            else:
+                month_snaps = [s for s in month_snaps if not s["is_adhika"]]
+            if not month_snaps:
+                continue
 
-            for s in month_snaps:
-                is_tithi_14_at_sunrise = (s["tithi_in_paksha"] == 14 and s["paksha"] == "Shukla")
-                
-                if is_tithi_14_at_sunrise:
-                    if has_adhik_month_in_year:
-                        prefix = "Adhik " if s["is_adhika"] else "Nija "
-                    else:
-                        prefix = ""
-                    
-                    month_title = prefix + s["hindu_month"]
-                    title = f"Karma Nirjara Vrat ({month_title})"
-                    
-                    occurrences.append({
-                        "id": f"karma_nirjara_vrat_{month_title.lower().replace(' ', '_')}_{year}",
-                        "occurrence_id": f"karma_nirjara_vrat_{s['date'].isoformat()}",
-                        "name": title,
-                        "title": title,
-                        "name_hindi": title,
-                        "category": "parva_vrat",
-                        "start_date": s["date"].isoformat(),
-                        "end_date": s["date"].isoformat(),
-                        "status": "confirmed",
-                        "badge": "Parva / Vrat",
-                        "badge_color": "purple",
-                        "is_span": False,
-                        "jain_month": month_title,
-                        "paksha": "Shukla",
-                        "tithi": "Chaturdashi (14)",
-                        "meaning": self.meaning or "Vrat observing shedding of karmas via austerity.",
-                        "observance": self.observance or "Fasting and meditation.",
-                        "sources": self.sources or ["Digambar Jain Traditions"]
-                    })
+            resolved_day = _first_of_two_jain_daystart_days(month_snaps, "Shukla", 14)
+            if resolved_day is None:
+                udaya = sorted(s["date"] for s in month_snaps
+                               if s["paksha"] == "Shukla" and s["tithi_in_paksha"] == 14)
+                if udaya:
+                    resolved_day = udaya[0]
+            if resolved_day is None:
+                jain_daystart = sorted(s["date"] for s in month_snaps
+                                       if s.get("jain_paksha") == "Shukla"
+                                       and s.get("jain_tithi_in_paksha") == 14)
+                if jain_daystart:
+                    resolved_day = jain_daystart[0]
+            if resolved_day is None:
+                # Total Chaturdashi kshaya -> the Shukla Trayodashi (13) day it starts on.
+                trayodashi = sorted(s["date"] for s in month_snaps
+                                    if s["paksha"] == "Shukla" and s["tithi_in_paksha"] == 13)
+                if trayodashi:
+                    resolved_day = trayodashi[-1]
+            if resolved_day is None:
+                continue
 
-        return occurrences
+            day_snap = next((s for s in month_snaps if s["date"] == resolved_day), month_snaps[0])
+            prefix = "Adhik " if (has_adhik_month_in_year and day_snap["is_adhika"]) else ""
+            month_title = prefix + day_snap["hindu_month"]
+            title = f"Karma Nirjara Vrat ({month_title})"
+
+            occurrences.append({
+                "id": f"karma_nirjara_vrat_{month_title.lower().replace(' ', '_')}_{year}",
+                "occurrence_id": f"karma_nirjara_vrat_{resolved_day.isoformat()}",
+                "name": title,
+                "title": title,
+                "name_hindi": title,
+                "category": "parva_vrat",
+                "start_date": resolved_day.isoformat(),
+                "end_date": resolved_day.isoformat(),
+                "status": "confirmed",
+                "badge": "Parva / Vrat",
+                "badge_color": "purple",
+                "is_span": False,
+                "jain_month": month_title,
+                "paksha": "Shukla",
+                "tithi": "Chaturdashi (14)",
+                "meaning": self.meaning or "Vrat observing shedding of karmas via austerity.",
+                "observance": self.observance or "Fasting and meditation.",
+                "sources": self.sources or ["Digambar Jain Traditions"]
+            })
+
         return occurrences
 
 
