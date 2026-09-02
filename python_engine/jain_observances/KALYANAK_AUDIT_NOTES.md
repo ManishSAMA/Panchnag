@@ -233,6 +233,58 @@ Regression coverage: `KarmaNirjaraVratTest` (rewritten — 3 tests). This also c
 long-standing suite failure noted under "NOT fixed → item 1" above; `test_jain_festivals.py`
 + `test_bhaktambar_vrat.py` are now **109 passed, 0 failed**.
 
+## The 6-Ghati pull-back for single-tithi day-selection
+
+Session date: 2026-09-02. Reported by user against the printed panchang: Akshaya Tritiya
+(Dan Divas) 2026 was showing on **2026-04-20** but belongs on **2026-04-19**. Vaishakha
+Shukla 2026: Tritiya (3) is the tithi at sunrise on 20 Apr but ends only ~1h29m after
+sunrise, so at the Jain day-start (sunrise + 144 min / 6 ghatika) it has already advanced
+to Chaturthi (4). 19 Apr is a strong Dwitiya (2).
+
+**Rule (user's): when the tithi active at sunrise ends before the 6-ghatika mark (2h24m
+after sunrise) it is "too weak to claim that day's festivals" — pull the observance back
+to the previous civil day, IFF that previous day is *strong* for `tithi - 1` (its sunrise
+tithi is `tithi - 1` and still holds at its own 6-ghatika mark). A run of consecutive
+weak days keeps the udaya day** (pulling back would only land on another weak day — e.g.
+Chaitra Shukla 2026 late-March, where every tithi ends within ~1h of sunrise; Mahavir
+Janma stays 31 Mar).
+
+Implemented as `_sixghati_pullback(day_snap, snaps, tithi, paksha)` in `festival_rules.py`,
+wired into **every** `SingleTithiFestival` single-tithi resolution (annual + recurring
+monthly, all categories — festival / parva-vrat / kalyanak / *janam* / *garbha*) after the
+udaya candidate is chosen, and into `AkshayaTritiyaFestival`. The pre-existing
+`_kalyanak_first_active_day` (tithi-vriddhi → first day) still runs first and is unchanged;
+the two are complementary (vriddhi = tithi holds the 6-ghatika mark on 2 days; pull-back =
+it holds it on 0 days but appears at a sunrise). Per the user's 2026-09-02 directive the
+pull-back **does override source-verified Kalyanak dates** where the rule fires.
+
+Blast radius (profile `all`, before/after diff, 2025–2027). Every shift is exactly one
+day earlier; counts unchanged, nothing dropped or added:
+
+| Festival | tithi | before → after |
+|---|---|---|
+| `akshaya_tritiya_dan_divas` 2026 | Tritiya (3) | 04-20 → **04-19** |
+| Abhinandan conception + liberation 2025 | Shasthi (6) | 05-03 → 05-02 |
+| Naminath birth + austerity 2025 | Dashami (10) | 06-21 → 06-20 |
+| Vasupujya birth + austerity 2025 | Chaturdashi (14) | 02-27 → 02-26 |
+| Vimalnath birth + austerity 2025 | Chaturthi (4) | 02-02 → 02-01 |
+| Dharmanath birth + austerity 2026 | Trayodashi (13) | 01-31 → 01-30 |
+| Parshvanath omniscience (uttarapurana) 2026 | Chaturdashi (14) | 03-18 → 03-17 |
+| Sumatinath birth/omniscience/liberation (scholarly) 2026 | Ekadashi (11) | 03-29 → **03-28** *(Delhi; at Jaipur the Jiyalal Dashami-10 pair shifts 03-28 → 03-27 instead)* |
+| Ajitnath omniscience 2027 | Ekadashi (11) | 01-19 → 01-18 |
+| Kunthunath conception 2027 | Dashami (10) | 07-29 → 07-28 |
+| Sambhavnath birth 2027 | Purnima (15) | 11-14 → 11-13 |
+| Sambhavnath conception 2027 | Ashtami (8) | 03-16 → 03-15 *(Jaipur only)* |
+
+Location-dependent by nature (6-ghatika outcome depends on local sunrise): ~17–18 shifts
+per the two reference cities.
+
+Regression coverage: `AkshayaTritiyaTest.test_akshaya_tritiya_resolution_2026` (now asserts
+04-19), `SixGhatiPullbackTest` (4 tests: weak+strong-prev pulls, strong day no-op, weak run
+stays, Dharmanath integration), and updated `test_sumatinath_kalyanaks_on_ekadashi` /
+`SumatinathJainiJiyalalKalyanakTest.test_scholarly_sumatinath_entries_are_still_present`
+(29 Mar → 28 Mar).
+
 ## Reusable audit tooling (scratchpad, not committed)
 
 The cross-reference approach (parse `tests/tirthankara_kalyanaks_data.json`, apply the

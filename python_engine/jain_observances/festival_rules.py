@@ -57,6 +57,29 @@ def _pradosh_days(snaps: List[Dict[str, Any]], tithi: int, paksha: str = "Krishn
     return sorted(out, key=lambda s: s["date"])
 
 
+def _sixghati_pullback(day_snap: Dict[str, Any], snaps: List[Dict[str, Any]], tithi: int, paksha: str) -> date:
+    """6-Ghati pull-back for a single-tithi day-selection.
+
+    ``day_snap`` is the udaya day for ``tithi`` (its sunrise tithi is ``tithi``). If that
+    tithi is *weak* -- it does not survive to the Jain day-start (sunrise + 144 min /
+    6 ghatika), i.e. the tithi has already advanced by then -- and the immediately
+    preceding civil day is *strong* for ``tithi - 1`` (that day's sunrise tithi is
+    ``tithi - 1`` AND it still holds at its own Jain day-start), the observance moves
+    back to that previous day. Otherwise (the udaya day is itself strong, or it is weak
+    but the previous day is also weak -- a run of weak days) the udaya day stands."""
+    weak = day_snap.get("jain_paksha") != paksha or day_snap.get("jain_tithi_in_paksha") != tithi
+    if not weak:
+        return day_snap["date"]
+    prev = day_snap["date"] - timedelta(days=1)
+    prev_strong = any(
+        s["date"] == prev
+        and s["paksha"] == paksha and s["tithi_in_paksha"] == tithi - 1
+        and s.get("jain_paksha") == paksha and s.get("jain_tithi_in_paksha") == tithi - 1
+        for s in snaps
+    )
+    return prev if prev_strong else day_snap["date"]
+
+
 def _first_of_two_jain_daystart_days(snaps: List[Dict[str, Any]], paksha: str, tithi: int):
     """First of two consecutive civil days on which `tithi` (paksha-relative) prevails at
     the Jain day-start (sunrise + 144 min / 6 ghatika). Returns that date, or None when
@@ -159,10 +182,12 @@ class SingleTithiFestival(FestivalRule):
                         kalyanak_day = self._kalyanak_first_active_day(snapshots)
                         if kalyanak_day is not None:
                             resolved_day = kalyanak_day
-                        elif len(candidates) > 1 and self.vriddhi_rule == "second_day":
-                            resolved_day = candidates[1]["date"]
                         else:
-                            resolved_day = candidates[0]["date"]
+                            if len(candidates) > 1 and self.vriddhi_rule == "second_day":
+                                chosen = candidates[1]
+                            else:
+                                chosen = candidates[0]
+                            resolved_day = _sixghati_pullback(chosen, matches, self.tithi, self.paksha)
                         occurrences.append(self._create_occurrence(resolved_day, resolved_day, self.tithi, self.jain_month, self.paksha, profile))
                 else:
                     # Kshaya
@@ -182,7 +207,8 @@ class SingleTithiFestival(FestivalRule):
                             for cand in candidates:
                                 occurrences.append(self._create_occurrence(cand["date"], cand["date"], self.tithi, _month_name, self.paksha, profile))
                         else:
-                            resolved_day = candidates[1]["date"] if len(candidates) > 1 and self.vriddhi_rule == "second_day" else candidates[0]["date"]
+                            chosen = candidates[1] if len(candidates) > 1 and self.vriddhi_rule == "second_day" else candidates[0]
+                            resolved_day = _sixghati_pullback(chosen, group, self.tithi, self.paksha)
                             occurrences.append(self._create_occurrence(resolved_day, resolved_day, self.tithi, _month_name, self.paksha, profile))
                     else:
                         # Kshaya
@@ -1196,16 +1222,19 @@ class AkshayaTritiyaFestival(FestivalRule):
         dwitiya_days = []
         for s in month_snaps:
             if s["paksha"] == "Shukla":
-                if s["tithi"] == 3 or s["jain_tithi"] == 3:
+                if s["tithi_in_paksha"] == 3:
                     tritiya_days.append(s)
-                if s["tithi"] == 2 or s["jain_tithi"] == 2:
+                if s["tithi_in_paksha"] == 2:
                     dwitiya_days.append(s)
 
         target_snap = None
         if tritiya_days:
-            # Normal or Vriddhi (Repeated Tritiya)
-            # If Tritiya repeats, assign primary observance to the 1st Tritiya
-            target_snap = tritiya_days[0]
+            # Normal / Vriddhi (assign to the 1st Tritiya), then apply the 6-Ghati
+            # pull-back: a Tritiya too weak to survive to the Jain day-start moves to
+            # the preceding (strong) Dwitiya day -- so Dwitiya and Tritiya festivals
+            # share that civil date.
+            _t_date = _sixghati_pullback(tritiya_days[0], month_snaps, 3, "Shukla")
+            target_snap = next((s for s in month_snaps if s["date"] == _t_date), tritiya_days[0])
         else:
             # Kshaya Tithi (Skipped Tritiya)
             # Trigger event on Vaishakha Shukla Dwitiya (2) when Tritiya prevailing window is active

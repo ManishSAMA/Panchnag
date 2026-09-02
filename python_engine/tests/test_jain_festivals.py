@@ -74,7 +74,12 @@ class JainFestivalServiceTest(unittest.TestCase):
         self.assertEqual(event["status"], "confirmed")
 
     def test_sumatinath_kalyanaks_on_ekadashi(self):
-        """Verify March 29, 2026 resolves to Chaitra Shukla Ekadashi (11) and Sumatinath Kalyanaks map to 2026-03-29."""
+        """Chaitra Shukla 2026 at Delhi: Ekadashi (11) is the tithi at sunrise on
+        29 Mar but ends only ~1h32m after sunrise -- it fails the 6-Ghati (2h24m)
+        threshold, so the three scholarly Sumatinath Kalyanaks (Birth / Omniscience /
+        Liberation, target tithi Ekadashi) are pulled back to the preceding strong
+        Dashami (10) day, 28 Mar -- the same civil date as the Pt. Jaini Jiyalal
+        Janma-Tapa entries. See _sixghati_pullback / KALYANAK_AUDIT_NOTES."""
         from jain_observances.festival_service import generate_jain_festivals
 
         res = generate_jain_festivals(
@@ -99,7 +104,7 @@ class JainFestivalServiceTest(unittest.TestCase):
         ekadashi_fests = [sf for sf in sumati_fests if sf["tithi"] == "Ekadashi (11)"]
         self.assertEqual(len(ekadashi_fests), 3)
         for sf in ekadashi_fests:
-            self.assertEqual(sf["start_date"], "2026-03-29")
+            self.assertEqual(sf["start_date"], "2026-03-28")
             self.assertEqual(sf["tithi"], "Ekadashi (11)")
             self.assertEqual(sf["paksha"], "Shukla")
             self.assertEqual(sf["jain_month"], "Chaitra")
@@ -574,8 +579,13 @@ class AkshayaTritiyaTest(unittest.TestCase):
         
         events = [f for f in res["festivals"] if f["id"] == "akshaya_tritiya_dan_divas_2026"]
         self.assertEqual(len(events), 1)
-        
+
         e = events[0]
+        # Vaishakha Shukla 2026: Tritiya (3) is the tithi at sunrise on 20 Apr but ends
+        # only ~1h29m after sunrise -- it fails the 6-Ghati (2h24m) threshold. The
+        # preceding day 19 Apr is a strong Dwitiya (2), so Akshaya Tritiya is pulled
+        # back onto 19 Apr (Dwitiya and Tritiya festivals share that civil date).
+        self.assertEqual(e["start_date"], "2026-04-19")
         self.assertEqual(e["title"], "Akshaya Tritiya (Dan Divas)")
         self.assertEqual(e["category"], "mahaparv")
         self.assertEqual(e["badge"], "Akshaya Tritiya")
@@ -2075,11 +2085,53 @@ class KalyanakTithiVriddhiFirstDayTest(unittest.TestCase):
         f = self.by_id["mahavir_janma_kalyanak"]
         self.assertEqual(f["start_date"], "2026-03-31")
 
-    def test_non_kalyanak_single_tithi_festivals_are_untouched(self):
-        """The override is scoped to Kalyanaks; Meru Trayodashi (Pausha Krishna 13,
-        category 'festival') keeps its plain udaya resolution."""
+    def test_non_kalyanak_single_tithi_festival_without_weak_udaya_is_untouched(self):
+        """Meru Trayodashi (Pausha Krishna 13, category 'festival'): its udaya tithi is
+        strong at the 6-ghatika mark, so neither the first-active-day override nor the
+        6-Ghati pull-back applies -- plain udaya resolution stands."""
         f = self.by_id["meru_trayodashi"]
         self.assertEqual(f["start_date"], "2026-01-16")
+
+
+class SixGhatiPullbackTest(unittest.TestCase):
+    """_sixghati_pullback: a single-tithi observance whose udaya day is 6-Ghati-weak
+    (sunrise tithi does not survive to sunrise + 144 min) moves back one civil day IFF
+    the preceding day is strong for tithi - 1. A run of weak days keeps the udaya day."""
+
+    def _snap(self, d, t, jt, paksha="Shukla"):
+        return {
+            "date": date.fromisoformat(d),
+            "paksha": paksha, "tithi_in_paksha": t,
+            "jain_paksha": paksha if jt <= 15 else ("Krishna" if paksha == "Shukla" else "Shukla"),
+            "jain_tithi_in_paksha": jt,
+        }
+
+    def test_weak_udaya_with_strong_previous_day_pulls_back(self):
+        from jain_observances.festival_rules import _sixghati_pullback
+        snaps = [self._snap("2026-04-19", 2, 2), self._snap("2026-04-20", 3, 4)]
+        self.assertEqual(_sixghati_pullback(snaps[1], snaps, 3, "Shukla"), date(2026, 4, 19))
+
+    def test_strong_udaya_day_is_unchanged(self):
+        from jain_observances.festival_rules import _sixghati_pullback
+        snaps = [self._snap("2026-01-16", 13, 13)]
+        self.assertEqual(_sixghati_pullback(snaps[0], snaps, 13, "Shukla"), date(2026, 1, 16))
+
+    def test_run_of_weak_days_keeps_udaya_day(self):
+        from jain_observances.festival_rules import _sixghati_pullback
+        # 30 Mar weak (12 -> 13), 31 Mar weak (13 -> 14): previous day is NOT strong for 12.
+        snaps = [self._snap("2026-03-30", 12, 13), self._snap("2026-03-31", 13, 14)]
+        self.assertEqual(_sixghati_pullback(snaps[1], snaps, 13, "Shukla"), date(2026, 3, 31))
+
+    def test_dharmanath_austerity_2026_pulls_back_one_day(self):
+        """Integration: Magha Shukla Trayodashi (13) 2026 at Delhi -- 31 Jan udaya is
+        weak, 30 Jan is a strong Dwadashi (12) -> Kalyanak lands on 2026-01-30."""
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all")
+        by_id = {f["id"]: f for f in res["festivals"]}
+        self.assertEqual(
+            by_id["shri_dharmanath_ji___austerity_kalyanak_13_vrindavan_uttarapurana_ashadhara"]["start_date"],
+            "2026-01-30",
+        )
 
 
 class KartikaKrishnaMonthResolutionTest(unittest.TestCase):
@@ -2320,8 +2372,9 @@ class DiwaliClusterDateTest(unittest.TestCase):
 class SumatinathJainiJiyalalKalyanakTest(unittest.TestCase):
     """Pt. Jaini Jiyalal Panchang prints Sumatinath Janma-Tapa together on Chaitra
     Shukla Dashami (2026-03-28, Pushya nakshatra). Added alongside -- not replacing --
-    the Vrindavan/Uttarapurana/Ashadhara entries (Birth = Chaitra Shukla 11 = 2026-03-29,
-    Austerity = Vaishakha Shukla 9)."""
+    the Vrindavan/Uttarapurana/Ashadhara entries (Birth = Chaitra Shukla 11, which the
+    6-Ghati pull-back lands on the same 2026-03-28 civil day since Ekadashi is weak at
+    the 29 Mar sunrise; Austerity = Vaishakha Shukla 9)."""
 
     @classmethod
     def setUpClass(cls):
@@ -2340,7 +2393,7 @@ class SumatinathJainiJiyalalKalyanakTest(unittest.TestCase):
 
     def test_scholarly_sumatinath_entries_are_still_present(self):
         scholarly_birth = self.by_id["shri_sumatinath_ji___birth_kalyanak_11_vrindavan_uttarapurana_ashadhara"]
-        self.assertEqual(scholarly_birth["start_date"], "2026-03-29")
+        self.assertEqual(scholarly_birth["start_date"], "2026-03-28")
         self.assertIn("shri_sumatinath_ji___austerity_kalyanak_9_vrindavan_uttarapurana_ashadhara", self.by_id)
 
 
