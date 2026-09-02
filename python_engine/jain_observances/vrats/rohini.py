@@ -25,9 +25,11 @@ def get_jain_day_window(date: datetime.date, lat: float, lon: float, provider: P
     return jain_start, jain_end
 
 def evaluate_rohini_vrat(start_date: datetime.date, end_date: datetime.date, lat: float, lon: float, provider: PanchangProvider) -> List[datetime.date]:
-    """Rohini Nakshatra Parv Vrat is observed on the day Rohini nakshatra prevails
-    at sunrise (udaya). Only when Rohini's whole span falls between two sunrises --
-    touching neither -- does it fall back to the civil day that wholly contains it."""
+    """Rohini Nakshatra Parv Vrat is observed on the day Rohini nakshatra prevails at
+    sunrise (Udaya Nakshatra). When Rohini begins after a sunrise and ends before the
+    next -- touching neither sunrise -- the vrat is NOT placed on the day it merely
+    begins; it moves forward to the following civil day (the sunrise closest to the end
+    of the Rohini span)."""
     vrat_dates = []
     ROHINI_ID = 4
     curr_date = start_date
@@ -38,10 +40,11 @@ def evaluate_rohini_vrat(start_date: datetime.date, end_date: datetime.date, lat
         rohini_span = next((span for span in spans if span.nakshatra_id == ROHINI_ID), None)
         if rohini_span:
             prevails_at_sunrise = rohini_span.start_time <= sunrise_today <= rohini_span.end_time
-            wholly_within_day = sunrise_today < rohini_span.start_time and rohini_span.end_time < sunrise_tomorrow
-            if prevails_at_sunrise or wholly_within_day:
-                if curr_date not in vrat_dates:
-                    vrat_dates.append(curr_date)
+            touches_no_sunrise = sunrise_today < rohini_span.start_time and rohini_span.end_time < sunrise_tomorrow
+            if prevails_at_sunrise or touches_no_sunrise:
+                vrat_day = curr_date if prevails_at_sunrise else curr_date + datetime.timedelta(days=1)
+                if vrat_day not in vrat_dates:
+                    vrat_dates.append(vrat_day)
                 curr_date += datetime.timedelta(days=20)
                 continue
         curr_date += datetime.timedelta(days=1)

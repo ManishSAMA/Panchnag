@@ -80,6 +80,20 @@ def _sixghati_pullback(day_snap: Dict[str, Any], snaps: List[Dict[str, Any]], ti
     return prev if prev_strong else day_snap["date"]
 
 
+def _kshaya_backshift(pool: List[Dict[str, Any]], tithi: int):
+    """Kshaya (-1) rule: the target tithi is omitted -- it begins after a civil sunrise
+    and ends before the next, so it never carries a date -- and the observance moves
+    BACK to the day that tithi begins on, i.e. the preceding tithi's (last) day. Both
+    the preceding-tithi events and the kshaya-tithi events then share that civil date.
+    Falls forward to the next tithi only when the preceding tithi is unavailable in the
+    pool (e.g. a Pratipada kshaya, whose tithi-1 sits in the prior paksha)."""
+    prev = sorted(s["date"] for s in pool if s["tithi_in_paksha"] == tithi - 1)
+    if prev:
+        return prev[-1]
+    nxt = sorted(s["date"] for s in pool if s["tithi_in_paksha"] > tithi)
+    return nxt[0] if nxt else None
+
+
 def _purn_month_tithi_day(snapshots: List[Dict[str, Any]], year: int, amanta_month: str,
                           paksha: str, tithi: int):
     """Civil date in `year` for `tithi` of the purnimanta month/paksha that a registry
@@ -210,10 +224,8 @@ class SingleTithiFestival(FestivalRule):
                             resolved_day = _sixghati_pullback(chosen, matches, self.tithi, self.paksha)
                         occurrences.append(self._create_occurrence(resolved_day, resolved_day, self.tithi, self.jain_month, self.paksha, profile))
                 else:
-                    # Kshaya
-                    next_days = [s for s in matches if s["tithi_in_paksha"] > self.tithi]
-                    if next_days:
-                        resolved_day = next_days[0]["date"]
+                    resolved_day = _kshaya_backshift(matches, self.tithi)
+                    if resolved_day:
                         occurrences.append(self._create_occurrence(resolved_day, resolved_day, self.tithi, self.jain_month, self.paksha, profile))
             else:
                 # Recurring monthly
@@ -231,10 +243,8 @@ class SingleTithiFestival(FestivalRule):
                             resolved_day = _sixghati_pullback(chosen, group, self.tithi, self.paksha)
                             occurrences.append(self._create_occurrence(resolved_day, resolved_day, self.tithi, _month_name, self.paksha, profile))
                     else:
-                        # Kshaya
-                        next_days = [s for s in group if s["tithi_in_paksha"] > self.tithi]
-                        if next_days:
-                            resolved_day = next_days[0]["date"]
+                        resolved_day = _kshaya_backshift(group, self.tithi)
+                        if resolved_day:
                             occurrences.append(self._create_occurrence(resolved_day, resolved_day, self.tithi, _month_name, self.paksha, profile))
         return occurrences
 
@@ -253,10 +263,7 @@ class MultiDayFestival(FestivalRule):
         if candidates:
             resolved_day = candidates[0]["date"]
         else:
-            # Kshaya
-            next_days = [s for s in matches if s["tithi_in_paksha"] > start_tithi]
-            if next_days:
-                resolved_day = next_days[0]["date"]
+            resolved_day = _kshaya_backshift(matches, start_tithi)
                 
         occurrences = []
         if resolved_day:

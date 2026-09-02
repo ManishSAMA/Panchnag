@@ -2154,6 +2154,39 @@ class SixGhatiPullbackTest(unittest.TestCase):
         )
 
 
+class KshayaBackshiftTest(unittest.TestCase):
+    """Kshaya (-1) rule: a target tithi that is omitted (begins after a sunrise, ends
+    before the next) carries no date, so the observance moves BACK to the preceding
+    tithi's day -- the day the kshaya tithi begins -- not forward to the next tithi."""
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_observances.festival_service import generate_jain_festivals
+        cls.by_id_2026 = {f["id"]: f for f in generate_jain_festivals(
+            year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all")["festivals"]}
+        cls.by_id_2027 = {f["id"]: f for f in generate_jain_festivals(
+            year=2027, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all")["festivals"]}
+
+    def test_kshaya_kalyanak_shifts_back_one_tithi(self):
+        # Sambhavnath Conception (purnimanta Chaitra Krishna Ashtami 8) -- Ashtami is
+        # kshaya in 2026, so it lands on the Saptami (7) day, one civil day earlier.
+        f = self.by_id_2026["shri_sambhavnath_ji___conception_kalyanak_8_vrindavan_uttarapurana_ashadhara"]
+        self.assertEqual(f["start_date"], "2026-02-24")
+
+    def test_kshaya_at_tithi_15_no_longer_dropped(self):
+        # Sambhavnath Austerity (Shukla Purnima 15) -- Purnima kshaya. The old forward
+        # rule had nowhere to go (15 is the max) and dropped the event; -1 places it
+        # on the Chaturdashi (14) day.
+        f = self.by_id_2026.get("shri_sambhavnath_ji___austerity_kalyanak_15_vrindavan_uttarapurana_ashadhara")
+        self.assertIsNotNone(f)
+        self.assertEqual(f["start_date"], "2026-12-23")
+
+    def test_kshaya_shift_is_one_day_earlier_not_later(self):
+        for fid in ("shri_shantinath_ji___birth_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+                    "shri_shantinath_ji___austerity_kalyanak_14_vrindavan_uttarapurana_ashadhara"):
+            self.assertEqual(self.by_id_2027[fid]["start_date"], "2027-06-03")
+
+
 class KartikaKrishnaMonthResolutionTest(unittest.TestCase):
     """Regression tests for the same amanta/purnimanta off-by-one-month bug as
     KalyanakAmantaMonthCorrectionTest, this time hardcoded inside custom rule classes
@@ -2239,6 +2272,14 @@ class RohiniNakshatraParvVratTest(unittest.TestCase):
         dates = {f["start_date"] for f in self.rohini}
         self.assertIn("2026-03-24", dates)
         self.assertNotIn("2026-03-23", dates)
+
+    def test_october_2026_rohini_vrat_uses_udaya_nakshatra_day(self):
+        """Kartika Krishna: Rohini begins 28 Oct 07:56 (after sunrise) and ends 29 Oct
+        05:41 -- it touches neither sunrise. The vrat is NOT placed on the day it merely
+        begins (28 Oct); it moves forward to 29 Oct (Kartika Krishna Chaturthi)."""
+        dates = {f["start_date"] for f in self.rohini}
+        self.assertIn("2026-10-29", dates)
+        self.assertNotIn("2026-10-28", dates)
 
     def test_rohini_vrat_occurrence_ids_are_unique(self):
         occ_ids = [f["occurrence_id"] for f in self.rohini]
