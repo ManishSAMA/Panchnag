@@ -727,6 +727,9 @@ class SaptaRishiVratTest(unittest.TestCase):
         self.assertEqual(p_evt["badge"], "Vrat Start")
         self.assertEqual(p_evt["badge_color"], "pink")
         self.assertTrue(p_evt["is_span"])
+        # Prarambh is Ashadha Shukla Purnima (15), NOT Chaturdashi (14).
+        # 2026: Purnima is the udaya tithi on 29 Jul (strong -- no 6-Ghati pull-back).
+        self.assertEqual(p_evt["start_date"], "2026-07-29")
 
         self.assertEqual(n_evt["title"], "Sapta Rishi Vrat Nishthapan")
         self.assertEqual(n_evt["category"], "vrat")
@@ -892,10 +895,20 @@ class BhadrapadaKrishnaEkamMultiVratTest(unittest.TestCase):
         self.assertEqual(d_kalash[0]["title"], "Dhanda Kalash Vrat Prarambh")
         self.assertEqual(m_mala[0]["title"], "Megh Mala Vrat Prarambh")
 
-        # All 6 events must fall on the same date
+        # All 6 events start on purnimanta Bhadrapada Krishna Ekam (1) -- NOT Ashvin.
+        # 2026 (Delhi): that civil date is 29 Aug.
         d_target = s_karan[0]["start_date"]
+        self.assertEqual(d_target, "2026-08-29")
         for ev in [j_mukh[0], s_skandha[0], m_vidhan[0], d_kalash[0], m_mala[0]]:
             self.assertEqual(ev["start_date"], d_target)
+
+        # Rule 1 -- Mushti Vidhan + Dhanda Kalash end on Bhadrapada Purnima (15).
+        for ev in [m_vidhan[0], d_kalash[0]]:
+            self.assertEqual(ev["end_date"], "2026-09-26")
+        # Rule 2 -- the other four end one month later on Ashvin Krishna 14.
+        for ev in [s_karan[0], j_mukh[0], s_skandha[0], m_mala[0]]:
+            self.assertEqual(ev["end_date"], "2026-10-09")
+            self.assertEqual(ev["span_label"], "Span: Aug 29 – Oct 09")
 
 
 class TeenChaubisiVratTest(unittest.TestCase):
@@ -919,6 +932,9 @@ class TeenChaubisiVratTest(unittest.TestCase):
         self.assertEqual(evt["badge_color"], "pink")
         self.assertTrue(evt["is_span"])
         self.assertEqual(evt["boundary_type"], "START")
+        # purnimanta Bhadrapada Krishna Tritiya (3) -> Ashvin Krishna 14, one month.
+        self.assertEqual(evt["start_date"], "2026-08-31")
+        self.assertEqual(evt["end_date"], "2026-10-09")
 
 
 class AkshayaNidhiVratTest(unittest.TestCase):
@@ -1010,8 +1026,12 @@ class BhayaHaranVratTest(unittest.TestCase):
         evt = bh[0]
         self.assertEqual(evt["title"], "Bhaya Haran Vrat")
         self.assertEqual(evt["category"], "vrat")
-        self.assertEqual(evt["badge"], "Vrat")
-        self.assertEqual(evt["badge_color"], "green")
+        self.assertEqual(evt["badge"], "Vrat Start")
+        self.assertEqual(evt["badge_color"], "pink")
+        self.assertTrue(evt["is_span"])
+        # purnimanta Bhadrapada Krishna Chaturthi (4) -> Ashvin Krishna 14, one month.
+        self.assertEqual(evt["start_date"], "2026-09-01")
+        self.assertEqual(evt["end_date"], "2026-10-09")
 
 
 class LabdhiVidhanVratTest(unittest.TestCase):
@@ -2395,6 +2415,34 @@ class SumatinathJainiJiyalalKalyanakTest(unittest.TestCase):
         scholarly_birth = self.by_id["shri_sumatinath_ji___birth_kalyanak_11_vrindavan_uttarapurana_ashadhara"]
         self.assertEqual(scholarly_birth["start_date"], "2026-03-28")
         self.assertIn("shri_sumatinath_ji___austerity_kalyanak_9_vrindavan_uttarapurana_ashadhara", self.by_id)
+
+
+class ShodashkaranVratAnchorTest(unittest.TestCase):
+    """Each Shodashkaran Vrat cycle starts on the Krishna Pratipada (1) of a specific
+    purnimanta month -- Bhadrapada, Magha, Chaitra -- and runs ~30 days to the next
+    Krishna Pratipada. None may start in (purnimanta) Shravana.
+
+    2026 Krishna Pratipada days (purnimanta): Magha = 04 Jan, Chaitra = 04 Mar,
+    Shravana = 30 Jul, Bhadrapada = 29 Aug."""
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all")
+        cls.by_id = {f["id"]: f for f in res["festivals"]}
+
+    def test_bhadrapada_cycle_starts_on_bhadrapada_krishna_pratipada_not_shravana(self):
+        f = self.by_id["shodashkaran_BHADRAPADA_ASHVINA_2026"]
+        self.assertEqual(f["start_date"], "2026-08-29")
+        self.assertEqual(f["end_date"], "2026-09-27")
+
+    def test_magha_and_chaitra_cycles_unchanged(self):
+        self.assertEqual(self.by_id["shodashkaran_MAGHA_PHALGUNA_2026"]["start_date"], "2026-01-04")
+        self.assertEqual(self.by_id["shodashkaran_CHAITRA_VAISHAKHA_2026"]["start_date"], "2026-03-04")
+
+    def test_no_shodashkaran_vrat_starts_on_2026_07_30(self):
+        starts = [f["start_date"] for f in self.by_id.values() if f["id"].startswith("shodashkaran_")]
+        self.assertNotIn("2026-07-30", starts)
 
 
 if __name__ == "__main__":

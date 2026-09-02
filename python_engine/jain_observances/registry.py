@@ -2315,7 +2315,7 @@ FESTIVAL_REGISTRY = [
         "profiles": ["all"],
         "rule_type": "SaptaRishiVrat",
         "jain_month": "Ashadha",
-        "meaning": "Sapta Rishi Vrat from Ashadha Shukla 14 to Shravana Krishna 5",
+        "meaning": "Sapta Rishi Vrat from Ashadha Shukla Purnima (15) to Shravana Krishna 5",
         "observance": "Fasting and Sapta Rishi Puja",
         "sources": ["Jain Traditions"]
     },
@@ -2391,7 +2391,7 @@ FESTIVAL_REGISTRY = [
         "profiles": ["all"],
         "rule_type": "BhadrapadaKrishnaEkamMultiVrat",
         "jain_month": "Bhadrapada",
-        "meaning": "Commencement of 6 Vrats starting on Bhadrapada Krishna Ekam",
+        "meaning": "Commencement of 6 Vrats on purnimanta Bhadrapada Krishna Ekam (Mushti Vidhan and Dhanda Kalash end on Bhadrapada Purnima; the other four end on Ashvin Krishna 14)",
         "observance": "Vrat commencement, Solah Karan Bhavna and Aradhana",
         "sources": ["Jain Traditions"]
     },

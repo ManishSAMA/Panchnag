@@ -80,6 +80,26 @@ def _sixghati_pullback(day_snap: Dict[str, Any], snaps: List[Dict[str, Any]], ti
     return prev if prev_strong else day_snap["date"]
 
 
+def _purn_month_tithi_day(snapshots: List[Dict[str, Any]], year: int, amanta_month: str,
+                          paksha: str, tithi: int):
+    """Civil date in `year` for `tithi` of the purnimanta month/paksha that a registry
+    entry stored (amanta) as `amanta_month` + `paksha` targets -- i.e. the same
+    resolution `_matches_purnimanta_target` performs. Vriddhi -> first day; Kshaya ->
+    last day of the previous tithi in that same purnimanta fortnight; None if neither
+    exists."""
+    fortnight = [
+        s for s in snapshots
+        if s["date"].year == year
+        and _matches_purnimanta_target(s, amanta_month, paksha)
+        and s["paksha"] == paksha
+    ]
+    exact = sorted(s["date"] for s in fortnight if s["tithi_in_paksha"] == tithi)
+    if exact:
+        return exact[0]
+    prev = sorted(s["date"] for s in fortnight if s["tithi_in_paksha"] == tithi - 1)
+    return prev[-1] if prev else None
+
+
 def _first_of_two_jain_daystart_days(snaps: List[Dict[str, Any]], paksha: str, tithi: int):
     """First of two consecutive civil days on which `tithi` (paksha-relative) prevails at
     the Jain day-start (sunrise + 144 min / 6 ghatika). Returns that date, or None when
@@ -726,8 +746,10 @@ class ShodashkaranVratFestival(FestivalRule):
         ayanamsa = context.get("ayanamsa", "Lahiri")
         occurrences = []
         p_name = self.jain_month
+        # Amanta month whose Krishna Pratipada opens each (purnimanta-named) cycle.
+        # Krishna paksha of purnimanta Y == Krishna paksha of amanta Y-1.
         shodashkaran_amanta_starts = {
-            "BHADRAPADA_ASHVINA": "ASHADHA",
+            "BHADRAPADA_ASHVINA": "SHRAVANA",
             "MAGHA_PHALGUNA": "PAUSHA",
             "CHAITRA_VAISHAKHA": "PHALGUNA"
         }
@@ -1652,9 +1674,11 @@ class RaviVratFestival(FestivalRule):
 
 
 class SaptaRishiVratFestival(FestivalRule):
-    """Sapta Rishi Vrat: Ashadha Shukla 14 (Prarambh) to Shravana Krishna 5 (Nishthapan).
+    """Sapta Rishi Vrat: Ashadha Shukla 15 / Purnima (Prarambh) to Shravana Krishna 5
+    (Nishthapan).
 
-    Start: Ashadha Shukla 14. Vriddhi -> 2nd 14, Kshaya -> Ashadha Shukla 13.
+    Start: Ashadha Shukla Purnima (15), udaya (sunrise) tithi, subject to the 6-Ghati
+    pull-back; Kshaya -> Ashadha Shukla 14.
     End: Shravana Krishna 5. Vriddhi -> 2nd 5, Kshaya -> Shravana Krishna 4.
     Adhik Maas: Execute strictly during Adhik Maas if month repeats, skip Nija.
     """
@@ -1675,13 +1699,15 @@ class SaptaRishiVratFestival(FestivalRule):
         else:
             ashadha_snaps = [s for s in ashadha_snaps if not s["is_adhika"]]
 
-        # Start boundary: Shukla 14 (Vriddhi -> 2nd 14, Kshaya -> Shukla 13)
-        shukla_14 = [s for s in ashadha_snaps if s["paksha"] == "Shukla" and s["tithi_in_paksha"] == 14]
-        if shukla_14:
-            start_snap = shukla_14[-1]
+        # Start boundary: Shukla Purnima (15), udaya tithi + 6-Ghati pull-back
+        # (Kshaya -> Ashadha Shukla 14).
+        shukla_15 = [s for s in ashadha_snaps if s["paksha"] == "Shukla" and s["tithi_in_paksha"] == 15]
+        if shukla_15:
+            _s_date = _sixghati_pullback(shukla_15[0], ashadha_snaps, 15, "Shukla")
+            start_snap = next((s for s in ashadha_snaps if s["date"] == _s_date), shukla_15[0])
         else:
-            shukla_13 = [s for s in ashadha_snaps if s["paksha"] == "Shukla" and s["tithi_in_paksha"] == 13]
-            start_snap = shukla_13[-1] if shukla_13 else None
+            shukla_14 = [s for s in ashadha_snaps if s["paksha"] == "Shukla" and s["tithi_in_paksha"] == 14]
+            start_snap = shukla_14[-1] if shukla_14 else None
 
         if not start_snap:
             return []
@@ -2111,166 +2137,72 @@ class BhadrapadaKrishnaEkamMultiVratFestival(FestivalRule):
     5. Dhanda Kalash Vrat Prarambh
     6. Megh Mala Vrat Prarambh
 
-    Vriddhi: Assign strictly to 1st Ekam instance.
-    Kshaya : Trigger and render on Shravana Shukla Purnima (15).
-    Adhik  : Execute strictly during Adhik Bhadrapada if month repeats, skip Nija.
+    Start : purnimanta Bhadrapada Krishna Ekam (1) (Vriddhi -> 1st Ekam,
+            Kshaya -> that fortnight's Amavasya-side previous tithi).
+    End   : Mushti Vidhan + Dhanda Kalash end on purnimanta Bhadrapada Purnima (15);
+            the other four end one month later on purnimanta Ashvin Krishna 14.
+    Adhik : purnimanta resolution already skips an Adhik purnimanta fortnight.
     """
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         year = context["year"]
 
-        bhadra_snaps = [
-            s for s in snapshots
-            if s["date"].year == year
-            and s["hindu_month"].upper() in ["BHADRAPADA", "BHADWA", "BHADRA"]
-        ]
-        if not bhadra_snaps:
+        start = _purn_month_tithi_day(snapshots, year, "SHRAVANA", "Krishna", 1)
+        if not start:
             return []
+        end_purnima = _purn_month_tithi_day(snapshots, year, "BHADRAPADA", "Shukla", 15)
+        end_month = _purn_month_tithi_day(snapshots, year, "BHADRAPADA", "Krishna", 14)
 
-        if any(s["is_adhika"] for s in bhadra_snaps):
-            bhadra_snaps = [s for s in bhadra_snaps if s["is_adhika"]]
-        else:
-            bhadra_snaps = [s for s in bhadra_snaps if not s["is_adhika"]]
+        s_iso = start.isoformat()
 
-        ekam_days = [
-            s for s in bhadra_snaps
-            if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 1
-        ]
+        def _span_label(end):
+            return f"Span: {start.strftime('%b %d')} – {end.strftime('%b %d')}" if end else None
 
-        target_snap = None
-        if ekam_days:
-            target_snap = ekam_days[0]  # Vriddhi -> 1st Ekam
-        else:
-            # Kshaya: fallback to Shravana Shukla Purnima (15)
-            shravana_purnima = [
-                s for s in snapshots
-                if s["date"].year == year
-                and s["hindu_month"].upper() in ["SHRAVANA", "SAVAN", "SHRAVAN"]
-                and not s["is_adhika"]
-                and s["paksha"] == "Shukla"
-                and s["tithi_in_paksha"] == 15
-            ]
-            if shravana_purnima:
-                target_snap = shravana_purnima[-1]
-            else:
-                krishna_2 = [
-                    s for s in bhadra_snaps
-                    if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 2
-                ]
-                if krishna_2:
-                    first_dwitiya = krishna_2[0]
-                    idx = snapshots.index(first_dwitiya)
-                    target_snap = snapshots[idx - 1] if idx > 0 else first_dwitiya
-
-        if not target_snap:
-            return []
-
-        date_str = target_snap["date"].isoformat()
+        def _evt(vid, name, hindi, desc, obs, end, category="vrat"):
+            return {
+                "id": f"{vid}_{year}",
+                "occurrence_id": f"{vid}_{year}",
+                "name": name,
+                "title": name,
+                "name_hindi": hindi,
+                "category": category,
+                "badge": "Vrat Start",
+                "badge_color": "pink",
+                "start_date": s_iso,
+                "end_date": (end or start).isoformat(),
+                "status": "confirmed",
+                "is_span": True,
+                "span_label": _span_label(end),
+                "description": desc,
+                "meaning": desc,
+                "observance": obs,
+                "sources": ["Jain Traditions"],
+            }
 
         return [
-            {
-                "id": f"solah_karan_vrat_prarambh_{year}",
-                "occurrence_id": f"solah_karan_vrat_prarambh_{year}",
-                "name": "Solah Karan Vrat Prarambh",
-                "title": "Solah Karan Vrat Prarambh",
-                "name_hindi": "सोलह कारण व्रत प्रारम्भ",
-                "category": "mahaparv_vrat",
-                "badge": "Vrat Start",
-                "badge_color": "pink",
-                "start_date": date_str,
-                "end_date": date_str,
-                "status": "confirmed",
-                "is_span": True,
-                "description": "Commencement of 32-day Solah Karan Bhavna Aradhana",
-                "meaning": "Commencement of 32-day Solah Karan Bhavna Aradhana",
-                "observance": "Solah Karan Bhavna contemplation and fasting",
-                "sources": ["Jain Traditions"]
-            },
-            {
-                "id": f"shri_jin_mukhavlokan_vrat_prarambh_{year}",
-                "occurrence_id": f"shri_jin_mukhavlokan_vrat_prarambh_{year}",
-                "name": "Shri Jin Mukhavlokan Vrat Prarambh",
-                "title": "Shri Jin Mukhavlokan Vrat Prarambh",
-                "name_hindi": "श्री जिन मुखअवलोकन व्रत प्रारम्भ",
-                "category": "vrat",
-                "badge": "Vrat Start",
-                "badge_color": "pink",
-                "start_date": date_str,
-                "end_date": date_str,
-                "status": "confirmed",
-                "is_span": True,
-                "description": "Commencement of Jin Mukh Avlokan Vrat",
-                "meaning": "Commencement of Jin Mukh Avlokan Vrat",
-                "observance": "Jina Darshan before morning meals",
-                "sources": ["Jain Traditions"]
-            },
-            {
-                "id": f"shrut_skandha_vrat_prarambh_{year}",
-                "occurrence_id": f"shrut_skandha_vrat_prarambh_{year}",
-                "name": "Shrut Skandha Vrat Prarambh",
-                "title": "Shrut Skandha Vrat Prarambh",
-                "name_hindi": "श्रुत स्कंध व्रत प्रारम्भ",
-                "category": "vrat",
-                "badge": "Vrat Start",
-                "badge_color": "pink",
-                "start_date": date_str,
-                "end_date": date_str,
-                "status": "confirmed",
-                "description": "Commencement of Shrut Skandha Vrat dedicated to Jinvani",
-                "meaning": "Commencement of Shrut Skandha Vrat dedicated to Jinvani",
-                "observance": "Scripture reverence and Swadhyay",
-                "sources": ["Jain Traditions"]
-            },
-            {
-                "id": f"mushti_vidhan_vrat_prarambh_{year}",
-                "occurrence_id": f"mushti_vidhan_vrat_prarambh_{year}",
-                "name": "Mushti Vidhan Vrat Prarambh",
-                "title": "Mushti Vidhan Vrat Prarambh",
-                "name_hindi": "मुष्टि विधान व्रत प्रारम्भ",
-                "category": "vrat",
-                "badge": "Vrat Start",
-                "badge_color": "pink",
-                "start_date": date_str,
-                "end_date": date_str,
-                "status": "confirmed",
-                "description": "Commencement of Mushti Vidhan Aradhana",
-                "meaning": "Commencement of Mushti Vidhan Aradhana",
-                "observance": "Fistful grain donation/restriction fasting",
-                "sources": ["Jain Traditions"]
-            },
-            {
-                "id": f"dhanda_kalash_vrat_prarambh_{year}",
-                "occurrence_id": f"dhanda_kalash_vrat_prarambh_{year}",
-                "name": "Dhanda Kalash Vrat Prarambh",
-                "title": "Dhanda Kalash Vrat Prarambh",
-                "name_hindi": "धनद कलश व्रत प्रारम्भ",
-                "category": "vrat",
-                "badge": "Vrat Start",
-                "badge_color": "pink",
-                "start_date": date_str,
-                "end_date": date_str,
-                "status": "confirmed",
-                "description": "Commencement of Dhanda Kalash Vrat",
-                "meaning": "Commencement of Dhanda Kalash Vrat",
-                "observance": "Mangal Kalash worship and spiritual purification",
-                "sources": ["Jain Traditions"]
-            },
-            {
-                "id": f"megh_mala_vrat_prarambh_{year}",
-                "occurrence_id": f"megh_mala_vrat_prarambh_{year}",
-                "name": "Megh Mala Vrat Prarambh",
-                "title": "Megh Mala Vrat Prarambh",
-                "name_hindi": "मेघ माला व्रत प्रारम्भ",
-                "category": "vrat",
-                "badge": "Vrat Start",
-                "badge_color": "pink",
-                "start_date": date_str,
-                "end_date": date_str,
-                "status": "confirmed",
-                "description": "Commencement of Megh Mala Vrat during Varsha Ritu",
-                "meaning": "Commencement of Megh Mala Vrat during Varsha Ritu",
-                "observance": "Monsoon penance and Nirjara aradhana",
-                "sources": ["Jain Traditions"]
-            }
+            _evt("solah_karan_vrat_prarambh", "Solah Karan Vrat Prarambh",
+                 "सोलह कारण व्रत प्रारम्भ",
+                 "Commencement of Solah Karan Bhavna Aradhana",
+                 "Solah Karan Bhavna contemplation and fasting", end_month, "mahaparv_vrat"),
+            _evt("shri_jin_mukhavlokan_vrat_prarambh", "Shri Jin Mukhavlokan Vrat Prarambh",
+                 "श्री जिन मुखअवलोकन व्रत प्रारम्भ",
+                 "Commencement of Jin Mukh Avlokan Vrat",
+                 "Jina Darshan before morning meals", end_month),
+            _evt("shrut_skandha_vrat_prarambh", "Shrut Skandha Vrat Prarambh",
+                 "श्रुत स्कंध व्रत प्रारम्भ",
+                 "Commencement of Shrut Skandha Vrat dedicated to Jinvani",
+                 "Scripture reverence and Swadhyay", end_month),
+            _evt("mushti_vidhan_vrat_prarambh", "Mushti Vidhan Vrat Prarambh",
+                 "मुष्टि विधान व्रत प्रारम्भ",
+                 "Commencement of Mushti Vidhan Aradhana",
+                 "Fistful grain donation/restriction fasting", end_purnima),
+            _evt("dhanda_kalash_vrat_prarambh", "Dhanda Kalash Vrat Prarambh",
+                 "धनद कलश व्रत प्रारम्भ",
+                 "Commencement of Dhanda Kalash Vrat",
+                 "Mangal Kalash worship and spiritual purification", end_purnima),
+            _evt("megh_mala_vrat_prarambh", "Megh Mala Vrat Prarambh",
+                 "मेघ माला व्रत प्रारम्भ",
+                 "Commencement of Megh Mala Vrat during Varsha Ritu",
+                 "Monsoon penance and Nirjara aradhana", end_month),
         ]
 
 
@@ -2278,47 +2210,23 @@ class TeenChaubisiVratFestival(FestivalRule):
     """Bhadrapada Krishna Tritiya (3): Teen Chaubisi Vrat Prarambh.
 
     Commencement of the 72 Tirthankaras Vrat.
-    Vriddhi: Assign strictly to 1st Tritiya.
-    Kshaya : Trigger and render on Bhadrapada Krishna Dwitiya (2).
-    Adhik  : Execute strictly during Adhik Bhadrapada if month repeats, skip Nija.
+    Start : purnimanta Bhadrapada Krishna Tritiya (3) (Vriddhi -> 1st Tritiya,
+            Kshaya -> Bhadrapada Krishna Dwitiya 2).
+    End   : one month later on purnimanta Ashvin Krishna Chaturdashi (14).
+    Adhik : purnimanta resolution already skips an Adhik purnimanta fortnight.
     """
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         year = context["year"]
 
-        bhadra_snaps = [
-            s for s in snapshots
-            if s["date"].year == year
-            and s["hindu_month"].upper() in ["BHADRAPADA", "BHADWA", "BHADRA"]
-        ]
-        if not bhadra_snaps:
+        start = _purn_month_tithi_day(snapshots, year, "SHRAVANA", "Krishna", 3)
+        if not start:
             return []
+        end = _purn_month_tithi_day(snapshots, year, "BHADRAPADA", "Krishna", 14)
 
-        if any(s["is_adhika"] for s in bhadra_snaps):
-            bhadra_snaps = [s for s in bhadra_snaps if s["is_adhika"]]
-        else:
-            bhadra_snaps = [s for s in bhadra_snaps if not s["is_adhika"]]
-
-        tritiya_days = [
-            s for s in bhadra_snaps
-            if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 3
-        ]
-
-        target_snap = None
-        if tritiya_days:
-            target_snap = tritiya_days[0]  # Vriddhi -> 1st Tritiya
-        else:
-            # Kshaya: fallback to Bhadrapada Krishna Dwitiya (2)
-            dwitiya_days = [
-                s for s in bhadra_snaps
-                if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 2
-            ]
-            if dwitiya_days:
-                target_snap = dwitiya_days[-1]
-
-        if not target_snap:
-            return []
-
-        date_str = target_snap["date"].isoformat()
+        date_str = start.isoformat()
+        span_label = (
+            f"Span: {start.strftime('%b %d')} – {end.strftime('%b %d')}" if end else None
+        )
 
         return [
             {
@@ -2331,9 +2239,10 @@ class TeenChaubisiVratFestival(FestivalRule):
                 "badge": "Vrat Start",
                 "badge_color": "pink",
                 "start_date": date_str,
-                "end_date": date_str,
+                "end_date": (end or start).isoformat(),
                 "status": "confirmed",
                 "is_span": True,
+                "span_label": span_label,
                 "boundary_type": "START",
                 "description": "Commencement of Teen Chaubisi Vrat (Aradhana of 72 Tirthankaras: Bhoot, Vartaman, and Bhavishya)",
                 "meaning": "Commencement of Teen Chaubisi Vrat (Aradhana of 72 Tirthankaras: Bhoot, Vartaman, and Bhavishya)",
@@ -2584,48 +2493,23 @@ class ShvetambaraParyushan50DayFestival(FestivalRule):
 class BhayaHaranVratFestival(FestivalRule):
     """Bhadrapada Krishna Chaturthi (4): Bhaya Haran Vrat Engine Logic.
 
-    Target: Bhadrapada Krishna Chaturthi (4).
-    Vriddhi: Assign strictly to 1st Chaturthi.
-    Kshaya : Trigger and render on Bhadrapada Krishna Tritiya (3).
-    Adhik  : Execute strictly during Adhik Bhadrapada if month repeats, skip Nija.
+    Start : purnimanta Bhadrapada Krishna Chaturthi (4) (Vriddhi -> 1st Chaturthi,
+            Kshaya -> Bhadrapada Krishna Tritiya 3).
+    End   : one month later on purnimanta Ashvin Krishna Chaturdashi (14).
+    Adhik : purnimanta resolution already skips an Adhik purnimanta fortnight.
     """
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
         year = context["year"]
 
-        bhadra_snaps = [
-            s for s in snapshots
-            if s["date"].year == year
-            and s["hindu_month"].upper() in ["BHADRAPADA", "BHADWA", "BHADRA"]
-        ]
-        if not bhadra_snaps:
+        start = _purn_month_tithi_day(snapshots, year, "SHRAVANA", "Krishna", 4)
+        if not start:
             return []
+        end = _purn_month_tithi_day(snapshots, year, "BHADRAPADA", "Krishna", 14)
 
-        if any(s["is_adhika"] for s in bhadra_snaps):
-            bhadra_snaps = [s for s in bhadra_snaps if s["is_adhika"]]
-        else:
-            bhadra_snaps = [s for s in bhadra_snaps if not s["is_adhika"]]
-
-        chaturthi_days = [
-            s for s in bhadra_snaps
-            if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 4
-        ]
-
-        target_snap = None
-        if chaturthi_days:
-            target_snap = chaturthi_days[0]  # Vriddhi -> 1st Chaturthi
-        else:
-            # Kshaya: fallback to Bhadrapada Krishna Tritiya (3)
-            tritiya_days = [
-                s for s in bhadra_snaps
-                if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 3
-            ]
-            if tritiya_days:
-                target_snap = tritiya_days[-1]
-
-        if not target_snap:
-            return []
-
-        date_str = target_snap["date"].isoformat()
+        date_str = start.isoformat()
+        span_label = (
+            f"Span: {start.strftime('%b %d')} – {end.strftime('%b %d')}" if end else None
+        )
 
         return [
             {
@@ -2635,11 +2519,13 @@ class BhayaHaranVratFestival(FestivalRule):
                 "title": "Bhaya Haran Vrat",
                 "name_hindi": "भय हरण व्रत",
                 "category": "vrat",
-                "badge": "Vrat",
-                "badge_color": "green",
+                "badge": "Vrat Start",
+                "badge_color": "pink",
                 "start_date": date_str,
-                "end_date": date_str,
+                "end_date": (end or start).isoformat(),
                 "status": "confirmed",
+                "is_span": True,
+                "span_label": span_label,
                 "description": "Bhadrapada Krishna Chaturthi vrat dedicated to the aradhana of fearlessness (Abhaya) and dispelling worldly fears",
                 "meaning": "Bhadrapada Krishna Chaturthi vrat dedicated to the aradhana of fearlessness (Abhaya) and dispelling worldly fears",
                 "observance": "Fasting and Abhaya Aradhana",

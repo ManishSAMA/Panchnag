@@ -59,14 +59,16 @@ def calculate_shodashkaran_vrat(
     """
     KRISHNA_PRATIPADA = 16
     
-    # Map cycle name to Amanta month names for start and end verification
+    # Map cycle name to Amanta month names for start and end verification.
+    # Krishna paksha of purnimanta month Y == Krishna paksha of amanta month Y-1, so
+    # each anchor is the amanta month one before the purnimanta month named.
     purnimanta_to_amanta_start = {
-        "BHADRAPADA_ASHVINA": "ASHADHA",
+        "BHADRAPADA_ASHVINA": "SHRAVANA",
         "MAGHA_PHALGUNA": "PAUSHA",
         "CHAITRA_VAISHAKHA": "PHALGUNA"
     }
     purnimanta_to_amanta_end = {
-        "BHADRAPADA_ASHVINA": "SHRAVANA",
+        "BHADRAPADA_ASHVINA": "BHADRAPADA",
         "MAGHA_PHALGUNA": "MAGHA",
         "CHAITRA_VAISHAKHA": "CHAITRA"
     }
