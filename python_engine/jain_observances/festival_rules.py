@@ -3910,10 +3910,12 @@ class GyanDhanTrayodashiFestival(FestivalRule):
 
 
 class KartikaAmavasyaMahaviraNirvanaFestival(FestivalRule):
-    """Kartika Krishna Amavasya (30/15): Bhagwan Mahavira Nirvana, Varsha Yog Nishthapan & Gautam Swami Kevalgyan Engine Logic.
+    """Kartika Krishna Amavasya (30/15): Bhagwan Mahavira Nirvana Kalyanak + Varsha Yog
+    Nishthapan (Chaturmas conclusion). Gautam Swami Kevalgyan is NOT anchored here --
+    it belongs on Kartika Shukla Ekam (New Year day), emitted by
+    KartikaShuklaEkamNewYearFestival.
 
-    Target: Kartika Krishna Amavasya (30/15).
-    Vriddhi: 1st Amavasya for Nirvana Kalyanak & Varsha Yog Nishthapan; 2nd Amavasya for Gautam Gandhar Kevalgyan.
+    Target: Kartika Krishna Amavasya (30/15). Vriddhi -> 1st Amavasya.
     Kshaya : Fallback to Kartika Krishna Chaturdashi (14).
     Adhik  : Execute strictly during Adhik Kartika if month repeats, skip Nija.
     """
@@ -3939,72 +3941,22 @@ class KartikaAmavasyaMahaviraNirvanaFestival(FestivalRule):
             kartika_snaps = [s for s in kartika_snaps if not s["is_adhika"]]
 
         # Udaya (dawn / pratyush) Amavasya -- the Digambar Mahavir Nirvana convention.
-        # Printed Pt. Jaini Jiyalal panchang: 2026 Nirvana / Gautam Kevalgyan = 9 Nov
-        # (udaya-Amavasya), one day after the Hindu pradosh Lakshmi Puja (8 Nov).
+        # Printed Pt. Jaini Jiyalal panchang: 2026 Nirvana = 9 Nov (udaya-Amavasya),
+        # one day after the Hindu pradosh Lakshmi Puja (8 Nov). Vriddhi -> 1st Amavasya;
+        # Kshaya -> last Kartika Krishna Chaturdashi (14).
         amavasya_days = [s for s in kartika_snaps
                          if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 15]
-
-        events = []
-        if len(amavasya_days) >= 2:
-            # Vriddhi
-            d1_str = amavasya_days[0]["date"].isoformat()
-            d2_str = amavasya_days[1]["date"].isoformat()
-
-            events.append({
-                "id": f"mahavira_nirvana_kalyanak_{year}",
-                "occurrence_id": f"mahavira_nirvana_kalyanak_{year}",
-                "name": "Bhagwan Mahavira Nirvana Kalyanak (Diwali)",
-                "title": "Bhagwan Mahavira Nirvana Kalyanak (Diwali)",
-                "name_hindi": "भगवान महावीर निर्वाण कल्याणक (दीपावली)",
-                "category": "mahaparv",
-                "badge": "Moksha Kalyanak",
-                "badge_color": "pink",
-                "start_date": d1_str,
-                "end_date": d1_str,
-                "status": "confirmed",
-                "description": "Liberation (Moksha) of 24th Tirthankara Bhagwan Mahavira at Pavapuri; offering of the sacred Nirvana Laddu at dawn",
-                "meaning": "Liberation (Moksha) of 24th Tirthankara Bhagwan Mahavira at Pavapuri; offering of the sacred Nirvana Laddu at dawn",
-                "observance": "Nirvana Laddu Offering, Moksha Kalyan Pujan, Deepotsav",
-                "sources": ["Jain Traditions"]
-            })
-            events.append({
-                "id": f"varsha_yog_nishthapan_{year}",
-                "occurrence_id": f"varsha_yog_nishthapan_{year}",
-                "name": "Varsha Yog Nishthapan (Chaturmas Conclusion)",
-                "title": "Varsha Yog Nishthapan (Chaturmas Conclusion)",
-                "name_hindi": "वर्षा योग निष्ठापन (चातुर्मास समाप्ति)",
-                "category": "mahaparv",
-                "badge": "Nishthapan",
-                "badge_color": "pink",
-                "start_date": d1_str,
-                "end_date": d1_str,
-                "status": "confirmed",
-                "description": "Formal completion and conclusion of the 4-month monsoon ascetic stay (Varshayoga / Chaturmas) for Jain sadhus",
-                "meaning": "Formal completion and conclusion of the 4-month monsoon ascetic stay (Varshayoga / Chaturmas) for Jain sadhus",
-                "observance": "Varsha Yog Nishthapan Vidhi, Chaturmas Parana",
-                "sources": ["Jain Traditions"]
-            })
-            events.append({
-                "id": f"gautam_gandhar_kevalgyan_{year}",
-                "occurrence_id": f"gautam_gandhar_kevalgyan_{year}",
-                "name": "Gautam Gandhar Kevalgyan Mahotsav",
-                "title": "Gautam Gandhar Kevalgyan Mahotsav",
-                "name_hindi": "गौतम गणधर केवलज्ञान महोत्सव",
-                "category": "mahaparv",
-                "badge": "Kevalgyan",
-                "badge_color": "pink",
-                "start_date": d2_str,
-                "end_date": d2_str,
-                "status": "confirmed",
-                "description": "Attainment of supreme omniscience (Kevalgyana) by Pratham Gandhar Gautam Swami",
-                "meaning": "Attainment of supreme omniscience (Kevalgyana) by Pratham Gandhar Gautam Swami",
-                "observance": "Gautam Swami Pujan, Kevalgyan Aradhana",
-                "sources": ["Jain Traditions"]
-            })
-        elif len(amavasya_days) == 1:
-            # Normal
+        if amavasya_days:
             d_str = amavasya_days[0]["date"].isoformat()
-            events.append({
+        else:
+            chaturdashi_days = [s for s in kartika_snaps
+                                if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 14]
+            if not chaturdashi_days:
+                return []
+            d_str = chaturdashi_days[-1]["date"].isoformat()
+
+        events = [
+            {
                 "id": f"mahavira_nirvana_kalyanak_{year}",
                 "occurrence_id": f"mahavira_nirvana_kalyanak_{year}",
                 "name": "Bhagwan Mahavira Nirvana Kalyanak (Diwali)",
@@ -4020,8 +3972,8 @@ class KartikaAmavasyaMahaviraNirvanaFestival(FestivalRule):
                 "meaning": "Liberation (Moksha) of 24th Tirthankara Bhagwan Mahavira at Pavapuri; offering of the sacred Nirvana Laddu at dawn",
                 "observance": "Nirvana Laddu Offering, Moksha Kalyan Pujan, Deepotsav",
                 "sources": ["Jain Traditions"]
-            })
-            events.append({
+            },
+            {
                 "id": f"varsha_yog_nishthapan_{year}",
                 "occurrence_id": f"varsha_yog_nishthapan_{year}",
                 "name": "Varsha Yog Nishthapan (Chaturmas Conclusion)",
@@ -4037,81 +3989,8 @@ class KartikaAmavasyaMahaviraNirvanaFestival(FestivalRule):
                 "meaning": "Formal completion and conclusion of the 4-month monsoon ascetic stay (Varshayoga / Chaturmas) for Jain sadhus",
                 "observance": "Varsha Yog Nishthapan Vidhi, Chaturmas Parana",
                 "sources": ["Jain Traditions"]
-            })
-            events.append({
-                "id": f"gautam_gandhar_kevalgyan_{year}",
-                "occurrence_id": f"gautam_gandhar_kevalgyan_{year}",
-                "name": "Gautam Gandhar Kevalgyan Mahotsav",
-                "title": "Gautam Gandhar Kevalgyan Mahotsav",
-                "name_hindi": "गौतम गणधर केवलज्ञान महोत्सव",
-                "category": "mahaparv",
-                "badge": "Kevalgyan",
-                "badge_color": "pink",
-                "start_date": d_str,
-                "end_date": d_str,
-                "status": "confirmed",
-                "description": "Attainment of supreme omniscience (Kevalgyana) by Pratham Gandhar Gautam Swami",
-                "meaning": "Attainment of supreme omniscience (Kevalgyana) by Pratham Gandhar Gautam Swami",
-                "observance": "Gautam Swami Pujan, Kevalgyan Aradhana",
-                "sources": ["Jain Traditions"]
-            })
-        else:
-            # Kshaya: fallback to Kartika Krishna Chaturdashi (14)
-            chaturdashi_days = [s for s in kartika_snaps
-                               if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 14]
-            if chaturdashi_days:
-                d_str = chaturdashi_days[-1]["date"].isoformat()
-                events.append({
-                    "id": f"mahavira_nirvana_kalyanak_{year}",
-                    "occurrence_id": f"mahavira_nirvana_kalyanak_{year}",
-                    "name": "Bhagwan Mahavira Nirvana Kalyanak (Diwali)",
-                    "title": "Bhagwan Mahavira Nirvana Kalyanak (Diwali)",
-                    "name_hindi": "भगवान महावीर निर्वाण कल्याणक (दीपावली)",
-                    "category": "mahaparv",
-                    "badge": "Moksha Kalyanak",
-                    "badge_color": "pink",
-                    "start_date": d_str,
-                    "end_date": d_str,
-                    "status": "confirmed",
-                    "description": "Liberation (Moksha) of 24th Tirthankara Bhagwan Mahavira at Pavapuri; offering of the sacred Nirvana Laddu at dawn",
-                    "meaning": "Liberation (Moksha) of 24th Tirthankara Bhagwan Mahavira at Pavapuri; offering of the sacred Nirvana Laddu at dawn",
-                    "observance": "Nirvana Laddu Offering, Moksha Kalyan Pujan, Deepotsav",
-                    "sources": ["Jain Traditions"]
-                })
-                events.append({
-                    "id": f"varsha_yog_nishthapan_{year}",
-                    "occurrence_id": f"varsha_yog_nishthapan_{year}",
-                    "name": "Varsha Yog Nishthapan (Chaturmas Conclusion)",
-                    "title": "Varsha Yog Nishthapan (Chaturmas Conclusion)",
-                    "name_hindi": "वर्षा योग निष्ठापन (चातुर्मास समाप्ति)",
-                    "category": "mahaparv",
-                    "badge": "Nishthapan",
-                    "badge_color": "pink",
-                    "start_date": d_str,
-                    "end_date": d_str,
-                    "status": "confirmed",
-                    "description": "Formal completion and conclusion of the 4-month monsoon ascetic stay (Varshayoga / Chaturmas) for Jain sadhus",
-                    "meaning": "Formal completion and conclusion of the 4-month monsoon ascetic stay (Varshayoga / Chaturmas) for Jain sadhus",
-                    "observance": "Varsha Yog Nishthapan Vidhi, Chaturmas Parana",
-                    "sources": ["Jain Traditions"]
-                })
-                events.append({
-                    "id": f"gautam_gandhar_kevalgyan_{year}",
-                    "occurrence_id": f"gautam_gandhar_kevalgyan_{year}",
-                    "name": "Gautam Gandhar Kevalgyan Mahotsav",
-                    "title": "Gautam Gandhar Kevalgyan Mahotsav",
-                    "name_hindi": "गौतम गणधर केवलज्ञान महोत्सव",
-                    "category": "mahaparv",
-                    "badge": "Kevalgyan",
-                    "badge_color": "pink",
-                    "start_date": d_str,
-                    "end_date": d_str,
-                    "status": "confirmed",
-                    "description": "Attainment of supreme omniscience (Kevalgyana) by Pratham Gandhar Gautam Swami",
-                    "meaning": "Attainment of supreme omniscience (Kevalgyana) by Pratham Gandhar Gautam Swami",
-                    "observance": "Gautam Swami Pujan, Kevalgyan Aradhana",
-                    "sources": ["Jain Traditions"]
-                })
+            },
+        ]
 
         for e in events:
             e["tithi"] = "Amavasya (15)"
@@ -4176,19 +4055,19 @@ class KartikaShuklaEkamNewYearFestival(FestivalRule):
                 "sources": ["Jain Traditions"]
             },
             {
-                "id": f"gautam_swami_kevalgyan_pujan_{year}",
-                "occurrence_id": f"gautam_swami_kevalgyan_pujan_{year}",
-                "name": "Gautam Swami Kevalgyan Pujan",
-                "title": "Gautam Swami Kevalgyan Pujan",
-                "name_hindi": "गौतम स्वामी केवलज्ञान पूजन",
+                "id": f"gautam_swami_kevalgyan_{year}",
+                "occurrence_id": f"gautam_swami_kevalgyan_{year}",
+                "name": "Gautam Swami Kevalgyan",
+                "title": "Gautam Swami Kevalgyan",
+                "name_hindi": "गौतम स्वामी केवलज्ञान",
                 "category": "mahaparv",
                 "badge": "Kevalgyan",
                 "badge_color": "pink",
                 "start_date": date_str,
                 "end_date": date_str,
                 "status": "confirmed",
-                "description": "Morning celebration and aradhana of supreme omniscience (Kevalgyana) attained by Gautam Gandhar",
-                "meaning": "Morning celebration and aradhana of supreme omniscience (Kevalgyana) attained by Gautam Gandhar",
+                "description": "Mahotsav and aradhana of the supreme omniscience (Kevalgyana) attained by Pratham Gandhar Gautam Swami, celebrated on the New Year morning",
+                "meaning": "Mahotsav and aradhana of the supreme omniscience (Kevalgyana) attained by Pratham Gandhar Gautam Swami, celebrated on the New Year morning",
                 "observance": "Gautam Swami Pujan, Kevalgyan Aradhana",
                 "sources": ["Jain Traditions"]
             }

@@ -1521,15 +1521,12 @@ class KartikaAmavasyaMahaviraNirvanaTest(unittest.TestCase):
 
         mnk = [f for f in res["festivals"] if f["id"] == "mahavira_nirvana_kalyanak_2026"]
         vyn = [f for f in res["festivals"] if f["id"] == "varsha_yog_nishthapan_2026"]
-        ggk = [f for f in res["festivals"] if f["id"] == "gautam_gandhar_kevalgyan_2026"]
 
         self.assertEqual(len(mnk), 1)
         self.assertEqual(len(vyn), 1)
-        self.assertEqual(len(ggk), 1)
 
         m_evt = mnk[0]
         v_evt = vyn[0]
-        g_evt = ggk[0]
 
         self.assertEqual(m_evt["title"], "Bhagwan Mahavira Nirvana Kalyanak (Diwali)")
         self.assertEqual(m_evt["category"], "mahaparv")
@@ -1539,12 +1536,13 @@ class KartikaAmavasyaMahaviraNirvanaTest(unittest.TestCase):
         self.assertEqual(v_evt["category"], "mahaparv")
         self.assertEqual(v_evt["badge"], "Nishthapan")
 
-        self.assertEqual(g_evt["title"], "Gautam Gandhar Kevalgyan Mahotsav")
-        self.assertEqual(g_evt["category"], "mahaparv")
-        self.assertEqual(g_evt["badge"], "Kevalgyan")
-
         self.assertEqual(m_evt["start_date"], v_evt["start_date"])
-        self.assertEqual(v_evt["start_date"], g_evt["start_date"])
+
+        # Gautam Swami Kevalgyan is NOT on Amavasya -- it moved to Kartika Shukla Ekam.
+        self.assertEqual(
+            [f for f in res["festivals"] if "gautam" in f["id"].lower() and f["start_date"] == m_evt["start_date"]],
+            [],
+        )
 
 
 class KartikaShuklaEkamNewYearTest(unittest.TestCase):
@@ -1559,10 +1557,12 @@ class KartikaShuklaEkamNewYearTest(unittest.TestCase):
         )
 
         ny = [f for f in res["festivals"] if f["id"] == "jain_new_year_2026"]
-        gp = [f for f in res["festivals"] if f["id"] == "gautam_swami_kevalgyan_pujan_2026"]
+        gp = [f for f in res["festivals"] if f["id"] == "gautam_swami_kevalgyan_2026"]
 
         self.assertEqual(len(ny), 1)
         self.assertEqual(len(gp), 1)
+        # exactly one consolidated Gautam Kevalgyan event across the whole year
+        self.assertEqual(len([f for f in res["festivals"] if "gautam_swami_kevalgyan" in f["id"] or "gautam_gandhar_kevalgyan" in f["id"]]), 1)
 
         ny_evt = ny[0]
         gp_evt = gp[0]
@@ -1571,7 +1571,7 @@ class KartikaShuklaEkamNewYearTest(unittest.TestCase):
         self.assertEqual(ny_evt["category"], "mahaparv")
         self.assertEqual(ny_evt["badge"], "New Year")
 
-        self.assertEqual(gp_evt["title"], "Gautam Swami Kevalgyan Pujan")
+        self.assertEqual(gp_evt["title"], "Gautam Swami Kevalgyan")
         self.assertEqual(gp_evt["category"], "mahaparv")
         self.assertEqual(gp_evt["badge"], "Kevalgyan")
 
@@ -2211,7 +2211,7 @@ class KartikaKrishnaMonthResolutionTest(unittest.TestCase):
 
     def test_mahavir_nirvana_cluster_lands_on_kartika_amavasya_not_agrahayana(self):
         for fid in ("mahavira_nirvana_kalyanak_2026", "varsha_yog_nishthapan_2026",
-                    "gautam_gandhar_kevalgyan_2026", "diwali_2026", "chaturmas_nishthapan_2026"):
+                    "diwali_2026", "chaturmas_nishthapan_2026"):
             f = self.by_id_2026[fid]
             self.assertEqual(f["jain_month"], "Kartika", fid)
             self.assertEqual(f["paksha"], "Krishna", fid)
@@ -2224,7 +2224,7 @@ class KartikaKrishnaMonthResolutionTest(unittest.TestCase):
         agrahayana_dupes = [
             f for f in self.res_2026["festivals"]
             if f["id"] in ("mahavira_nirvana_kalyanak_2026", "diwali_2026", "chaturmas_nishthapan_2026",
-                            "varsha_yog_nishthapan_2026", "gautam_gandhar_kevalgyan_2026")
+                            "varsha_yog_nishthapan_2026")
             and f["jain_month"] == "Agrahayana"
         ]
         self.assertEqual(agrahayana_dupes, [])
@@ -2398,7 +2398,7 @@ class DiwaliClusterDateTest(unittest.TestCase):
 
     def test_mahavir_nirvana_cluster_on_udaya_amavasya_9_nov(self):
         for fid in ("mahavira_nirvana_kalyanak_2026", "varsha_yog_nishthapan_2026",
-                    "gautam_gandhar_kevalgyan_2026", "diwali_2026", "chaturmas_nishthapan_2026",
+                    "diwali_2026", "chaturmas_nishthapan_2026",
                     "mahavir_nirvana_deepavali",
                     "shri_mahavira_ji___liberation_kalyanak_15_vrindavan_uttarapurana_ashadhara",
                     "shri_mahavir_swami_ji___moksha_kalyanak__the_nirvana_liberation_of_lord_mahavira__celebrated_as_jain_diwali"):
