@@ -263,11 +263,22 @@ class KrishnaPakshaFestivalsTest(unittest.TestCase):
     def test_diwali_appears(self):
         self.assertIn("mahavir_nirvana_deepavali", self.ids)
 
-    def test_meru_trayodashi_appears(self):
-        self.assertIn("meru_trayodashi", self.ids)
+    def test_meru_trayodashi_is_purged(self):
+        # Meru Trayodashi (Shwetambar, Magha Krishna 13) was removed -- Rishabhdev's
+        # nirvana is modelled by shri_rishabhdev_ji___liberation_kalyanak_14 (Magha
+        # Krishna Chaturdashi) per the Digambar sources.
+        self.assertNotIn("meru_trayodashi", self.ids)
 
     def test_parshvanath_jayanti_appears(self):
-        self.assertIn("parshvanath_jayanti", self.ids)
+        # Calendar 2026 has NO Pausha Krishna Ekadashi (Adhik Jyeshtha 2026 shifts the
+        # winter observance from 2025-12-15 straight to 2027-01-03), so check 2027.
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(year=2027, lat=28.6139, lon=77.2090,
+                                      ayanamsa="Lahiri", profile="shwetambar_murtipujak_tapagachchha")
+        pj = [f for f in res["festivals"] if f["id"] == "parshvanath_jayanti"]
+        self.assertEqual(len(pj), 1)
+        self.assertEqual(pj[0]["start_date"], "2027-01-03")
+        self.assertEqual((pj[0]["paksha"], pj[0]["tithi"]), ("Krishna", "Ekadashi (11)"))
 
     def test_pakhi_chaudas_appears(self):
         self.assertTrue("pakhi_chaudas_shukla" in self.ids or "pakhi_chaudas_bhadrapada" in self.ids)
@@ -2105,12 +2116,13 @@ class KalyanakTithiVriddhiFirstDayTest(unittest.TestCase):
         f = self.by_id["mahavir_janma_kalyanak"]
         self.assertEqual(f["start_date"], "2026-03-31")
 
-    def test_non_kalyanak_single_tithi_festival_without_weak_udaya_is_untouched(self):
-        """Meru Trayodashi (Pausha Krishna 13, category 'festival'): its udaya tithi is
-        strong at the 6-ghatika mark, so neither the first-active-day override nor the
-        6-Ghati pull-back applies -- plain udaya resolution stands."""
-        f = self.by_id["meru_trayodashi"]
-        self.assertEqual(f["start_date"], "2026-01-16")
+    def test_first_active_day_override_is_scoped_to_kalyanak_categories(self):
+        """The first-active-day override applies only to kalyanak / janam_kalyanak /
+        garbha_kalyanak. A non-kalyanak SingleTithi parva keeps plain udaya
+        resolution: Pakhi Chaudas (Shukla 14) 2026-03 lands on the Chaturdashi day."""
+        f = self.by_id["pakhi_chaudas_shukla"]
+        self.assertEqual(f["paksha"], "Shukla")
+        self.assertEqual(f["tithi"], "Chaturdashi (14)")
 
 
 class SixGhatiPullbackTest(unittest.TestCase):
@@ -2484,6 +2496,35 @@ class ShodashkaranVratAnchorTest(unittest.TestCase):
     def test_no_shodashkaran_vrat_starts_on_2026_07_30(self):
         starts = [f["start_date"] for f in self.by_id.values() if f["id"].startswith("shodashkaran_")]
         self.assertNotIn("2026-07-30", starts)
+
+
+class MallinathOmniscienceKalyanakTest(unittest.TestCase):
+    """Shri Mallinath Ji Omniscience (Kevalgyan) Kalyanak -- purnimanta Pausha Krishna
+    Dwitiya (2), a December tithi. It was silently dropped every year: the 14-month
+    snapshot window holds both the prior-December and the target-December instance, and
+    SingleTithiFestival picked candidates[0] (prior December), which festival_service
+    then filtered out as out-of-year. SingleTithiFestival now constrains to the
+    requested year first."""
+
+    def _mallinath_omniscience(self, year):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(year=year, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all")
+        return [f for f in res["festivals"]
+                if f["id"] == "shri_mallinath_ji___omniscience_kalyanak_2_vrindavan_uttarapurana_ashadhara"]
+
+    def test_present_on_pausha_krishna_dwitiya_2026(self):
+        m = self._mallinath_omniscience(2026)
+        self.assertEqual(len(m), 1)
+        self.assertEqual(m[0]["start_date"], "2026-12-25")
+        self.assertEqual(m[0]["paksha"], "Krishna")
+        self.assertEqual(m[0]["tithi"], "Dwitiya (2)")
+        self.assertEqual(m[0]["category"], "kalyanak")
+
+    def test_present_every_year(self):
+        for year, expected in ((2025, "2025-12-06"), (2027, "2027-12-15")):
+            m = self._mallinath_omniscience(year)
+            self.assertEqual(len(m), 1, year)
+            self.assertEqual(m[0]["start_date"], expected)
 
 
 if __name__ == "__main__":

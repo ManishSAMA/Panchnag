@@ -194,7 +194,13 @@ class SingleTithiFestival(FestivalRule):
         return _first_of_two_jain_daystart_days(matches, self.paksha, self.tithi)
 
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
-        matches = snapshots
+        # The snapshot window spans 14 months (Dec of the prior year to Jan of the
+        # next), so a Krishna-paksha December tithi (e.g. Margashirsha/Pausha Krishna)
+        # appears TWICE. Constrain to the requested year first, otherwise candidates[0]
+        # lands on the prior-December instance and festival_service drops it as
+        # out-of-year -- which silently deleted the Mallinath Omniscience Kalyanak.
+        year = context.get("year")
+        matches = [s for s in snapshots if year is None or s["date"].year == year]
         if self.jain_month:
             matches = [s for s in matches if _matches_purnimanta_target(s, self.jain_month, self.paksha)]
         if self.paksha and self.day_rule != "pradosh":
@@ -213,7 +219,7 @@ class SingleTithiFestival(FestivalRule):
                         for cand in candidates:
                             occurrences.append(self._create_occurrence(cand["date"], cand["date"], self.tithi, self.jain_month, self.paksha, profile))
                     else:
-                        kalyanak_day = self._kalyanak_first_active_day(snapshots)
+                        kalyanak_day = self._kalyanak_first_active_day(matches)
                         if kalyanak_day is not None:
                             resolved_day = kalyanak_day
                         else:
