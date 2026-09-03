@@ -150,6 +150,10 @@ class FestivalRule:
         # "udaya" (sunrise tithi, default) or "pradosh" (tithi prevailing at sunset --
         # for evening-observed festivals like Diwali / Mahavir Nirvana).
         self.day_rule = config.get("day_rule", "udaya")
+        # Opt-in Day-1 Anchor: pull the observance back to the civil day the target
+        # tithi originates on when it began (was active by sunset) on the day before
+        # its sunrise day. Enabled per-entry, not globally.
+        self.origin_pullback = config.get("origin_pullback", False)
 
     def matches_profile(self, profile: str) -> bool:
         return profile in self.profiles or "all" in self.profiles
@@ -193,6 +197,23 @@ class SingleTithiFestival(FestivalRule):
         matches = [s for s in snapshots if _matches_purnimanta_target(s, self.jain_month, self.paksha)]
         return _first_of_two_jain_daystart_days(matches, self.paksha, self.tithi)
 
+    def _origin_pullback_day(self, resolved_day: date, snapshots: List[Dict[str, Any]]) -> date:
+        """Day-1 Anchor (opt-in via ``origin_pullback``): if the target tithi was
+        already active by sunset on the civil day *before* ``resolved_day`` -- i.e. it
+        originated during that previous day rather than pre-dawn of the sunrise day --
+        and that previous day is not itself a sunrise day for the tithi, map the
+        observance to that previous day."""
+        if not self.origin_pullback or not self.paksha or not isinstance(self.tithi, int):
+            return resolved_day
+        prev = resolved_day - timedelta(days=1)
+        ps = next((s for s in snapshots if s["date"] == prev), None)
+        if ps is None:
+            return resolved_day
+        already_udaya = ps["paksha"] == self.paksha and ps["tithi_in_paksha"] == self.tithi
+        active_by_sunset = (ps.get("evening_paksha", ps["paksha"]) == self.paksha
+                            and ps.get("evening_tithi_in_paksha") == self.tithi)
+        return prev if (active_by_sunset and not already_udaya) else resolved_day
+
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
         # The snapshot window spans 14 months (Dec of the prior year to Jan of the
         # next), so a Krishna-paksha December tithi (e.g. Margashirsha/Pausha Krishna)
@@ -228,6 +249,7 @@ class SingleTithiFestival(FestivalRule):
                             else:
                                 chosen = candidates[0]
                             resolved_day = _sixghati_pullback(chosen, matches, self.tithi, self.paksha)
+                        resolved_day = self._origin_pullback_day(resolved_day, snapshots)
                         occurrences.append(self._create_occurrence(resolved_day, resolved_day, self.tithi, self.jain_month, self.paksha, profile))
                 else:
                     resolved_day = _kshaya_backshift(matches, self.tithi)

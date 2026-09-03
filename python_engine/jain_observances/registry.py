@@ -1948,6 +1948,9 @@ FESTIVAL_REGISTRY = [
         "jain_month": "Magha",
         "paksha": "Shukla",
         "tithi": 13,
+        # Day-1 Anchor: Magha Shukla Trayodashi begins on the afternoon of Dwadashi;
+        # observe on that Dwadashi civil day, alongside the Abhinandan Kalyanaks.
+        "origin_pullback": True,
         "meaning": "Austerity Kalyanak of Lord Dharmanath",
         "observance": "Special prayers, pujas, and temple visits.",
         "sources": ["Vrindavan", "Uttarapurana", "Ashadhara"],
@@ -1961,6 +1964,9 @@ FESTIVAL_REGISTRY = [
         "jain_month": "Magha",
         "paksha": "Shukla",
         "tithi": 13,
+        # Day-1 Anchor: Magha Shukla Trayodashi begins on the afternoon of Dwadashi;
+        # observe on that Dwadashi civil day, alongside the Abhinandan Kalyanaks.
+        "origin_pullback": True,
         "meaning": "Birth Kalyanak of Lord Dharmanath",
         "observance": "Special prayers, pujas, and temple visits.",
         "sources": ["Vrindavan", "Uttarapurana", "Ashadhara"],

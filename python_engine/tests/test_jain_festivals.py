@@ -2165,6 +2165,22 @@ class SixGhatiPullbackTest(unittest.TestCase):
             "2026-01-30",
         )
 
+    def test_dharmanath_13_origin_pullback_2027(self):
+        """Day-1 Anchor (opt-in origin_pullback): 2027 Magha Shukla Trayodashi (13) is
+        STRONG at the 19 Feb sunrise, but the tithi originated ~14:30 on 18 Feb (the
+        Dwadashi civil day), so the Dharmanath Birth + Austerity Kalyanaks map to
+        2027-02-18 -- the same civil date as the Abhinandan (Dwadashi 12) Kalyanaks."""
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(year=2027, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all")
+        by_id = {f["id"]: f for f in res["festivals"]}
+        for fid in ("shri_dharmanath_ji___birth_kalyanak_13_vrindavan_uttarapurana_ashadhara",
+                    "shri_dharmanath_ji___austerity_kalyanak_13_vrindavan_uttarapurana_ashadhara"):
+            self.assertEqual(by_id[fid]["start_date"], "2027-02-18", fid)
+        self.assertEqual(
+            by_id["shri_abhinandan_ji___birth_kalyanak_12_vrindavan_uttarapurana_ashadhara"]["start_date"],
+            "2027-02-18",
+        )
+
 
 class KshayaBackshiftTest(unittest.TestCase):
     """Kshaya (-1) rule: a target tithi that is omitted (begins after a sunrise, ends
