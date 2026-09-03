@@ -2543,6 +2543,35 @@ class MallinathOmniscienceKalyanakTest(unittest.TestCase):
             self.assertEqual(m[0]["start_date"], expected)
 
 
+class MultiDayFestivalRegistryTest(unittest.TestCase):
+    """generate_jain_festivals returns a `multi_day_festivals` list -- every multi-day
+    observance collapsed to one {name, start_date, end_date} row (spans + the Navpad
+    Oli 'Day N' run) so callers stop repeating names across every civil day."""
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_observances.festival_service import generate_jain_festivals
+        cls.res = generate_jain_festivals(year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all")
+        cls.md = cls.res["multi_day_festivals"]
+
+    def test_navpad_oli_collapsed_to_one_span(self):
+        navpad = [m for m in self.md if m["name"] == "Navpad Oli"]
+        self.assertEqual(len(navpad), 2)  # spring + autumn
+        spring = min(navpad, key=lambda m: m["start_date"])
+        self.assertEqual((spring["start_date"], spring["end_date"]), ("2026-03-25", "2026-04-02"))
+        # and the per-day "Day N" occurrences are NOT in the multi-day list
+        self.assertFalse(any(" - Day" in m["name"] for m in self.md))
+
+    def test_span_festivals_present_once(self):
+        ashtahnika = [m for m in self.md if m["name"] == "Ashtahnika Mahaparv (Phalguna)"]
+        self.assertEqual(len(ashtahnika), 1)
+        self.assertEqual(ashtahnika[0]["start_date"], "2026-02-24")
+        self.assertNotEqual(ashtahnika[0]["start_date"], ashtahnika[0]["end_date"])
+
+    def test_single_day_festivals_are_not_listed(self):
+        self.assertFalse(any(m["start_date"] == m["end_date"] for m in self.md))
+
+
 class NativeTithiTagTest(unittest.TestCase):
     """When a Kalyanak is pulled onto a civil date whose primary tithi differs from
     its own native tithi, the UI event string is prefixed with the native tithi:

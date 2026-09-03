@@ -159,21 +159,36 @@ def generate_hindi_pdf_calendar(out_pdf_path: str, lat: float = 26.9124, lon: fl
     fest_2026 = generate_jain_festivals(2026, lat, lon, ayanamsa, profile)
     fest_2027 = generate_jain_festivals(2027, lat, lon, ayanamsa, profile)
 
+    # Daily log carries only genuine single-day events. Multi-day observances are
+    # pulled out into `multi_day_registry` (rendered as a separate table) and, in the
+    # daily grid, marked only on their first and last day with a prarambh/samapti tag.
     date_to_fests = {}
+    multi_day_registry = []
+    seen_multi = set()
     for res in [fest_2026, fest_2027]:
+        for m in res.get("multi_day_festivals", []):
+            key = (m["name"], m["start_date"], m["end_date"])
+            if key in seen_multi:
+                continue
+            seen_multi.add(key)
+            multi_day_registry.append(m)
         for f in res.get("festivals", []):
             try:
                 start_d = datetime.strptime(f["start_date"], "%Y-%m-%d").date()
                 end_d = datetime.strptime(f["end_date"], "%Y-%m-%d").date()
-                curr_d = start_d
-                while curr_d <= end_d:
-                    d_str = curr_d.isoformat()
-                    if d_str not in date_to_fests:
-                        date_to_fests[d_str] = []
-                    date_to_fests[d_str].append(f)
-                    curr_d += timedelta(days=1)
             except Exception:
-                pass
+                continue
+            if f.get("badge") == "Navpad Oli" and " - Day" in (f.get("name") or ""):
+                continue  # per-day Navpad Oli rows -> only in the multi-day table
+            if start_d == end_d:
+                date_to_fests.setdefault(start_d.isoformat(), []).append(f)
+            else:
+                s = dict(f); s["_tag"] = "प्रारंभ"
+                e = dict(f); e["_tag"] = "समाप्ति"
+                date_to_fests.setdefault(start_d.isoformat(), []).append(s)
+                date_to_fests.setdefault(end_d.isoformat(), []).append(e)
+
+    multi_day_registry.sort(key=lambda x: (x["start_date"], x["end_date"]))
 
     # Anchor dates for Samvat
     cs1_2026 = find_chaitra_shukla_1(2026, lat, lon, tz_offset, ayanamsa)
@@ -216,6 +231,24 @@ def generate_hindi_pdf_calendar(out_pdf_path: str, lat: float = 26.9124, lon: fl
     html_parts.append("<h1>जैन एवं वैदिक सम्पूर्ण पंचांग (मार्च 2026 – मार्च 2027)</h1>")
     html_parts.append("<p>सूर्योदय, सूर्यास्त, चंद्रोदय, चंद्रास्त, तिथि, पक्ष, वार एवं समस्त जैन/वैदिक पर्व एवं त्योहार</p>")
     html_parts.append("</div>")
+
+    # Multi-day festivals & observances -- one row each (start / end), not repeated
+    # across every civil day.
+    md_in_window = [m for m in multi_day_registry
+                    if "2026-03-01" <= m["start_date"] <= "2027-03-31"]
+    if md_in_window:
+        html_parts.append("<div class='month-header'><div class='month-title'>बहु-दिवसीय पर्व एवं व्रत</div></div>")
+        html_parts.append("<table class='panchang-table'>")
+        html_parts.append("<tr><th style='width:55%'>पर्व / व्रत</th><th style='width:22%'>प्रारंभ तिथि</th><th style='width:23%'>समाप्ति तिथि</th></tr>")
+        for m in md_in_window:
+            nm = translate_fest({"name": m["name"], "title": m["name"],
+                                 "name_hindi": m.get("name_hindi", "")})
+            nm = nm.replace("(MAGHA_PHALGUNA)", "(माघ-फाल्गुन)").replace("(CHAITRA_VAISHAKHA)", "(चैत्र-वैशाख)").replace("(BHADRAPADA_ASHVINA)", "(भाद्रपद-आश्विन)")
+            sd = datetime.strptime(m["start_date"], "%Y-%m-%d").strftime("%d-%m-%Y")
+            ed = datetime.strptime(m["end_date"], "%Y-%m-%d").strftime("%d-%m-%Y")
+            html_parts.append(f"<tr><td class='fest-cell'>{nm}</td><td>{sd}</td><td>{ed}</td></tr>")
+        html_parts.append("</table>")
+        html_parts.append("<div class='page-break'></div>")
 
     months_list = [
         (2026, 3), (2026, 4), (2026, 5), (2026, 6), (2026, 7), (2026, 8),
@@ -287,6 +320,8 @@ def generate_hindi_pdf_calendar(out_pdf_path: str, lat: float = 26.9124, lon: fl
             fest_titles = []
             for f in day_fests:
                 fn_h = translate_fest(f)
+                if f.get("_tag"):
+                    fn_h = f"{fn_h} ({f['_tag']})"
                 if fn_h and fn_h not in fest_titles:
                     fest_titles.append(fn_h)
             fest_str = " • ".join(fest_titles) if fest_titles else ""

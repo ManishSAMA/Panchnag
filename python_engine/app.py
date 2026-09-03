@@ -418,30 +418,48 @@ def create_app() -> Flask:
 
             profile = request.args.get("profile")
             date_to_festivals = {}
+            multi_day_festivals = []
             if profile:
                 from jain_observances.festival_service import generate_jain_festivals
                 fest_data = generate_jain_festivals(year, location.lat, location.lon, ayanamsa, profile)
+
+                multi_day_festivals = [
+                    m for m in fest_data.get("multi_day_festivals", [])
+                    if m["start_date"] <= f"{year:04d}-{month:02d}-31"
+                    and m["end_date"] >= f"{year:04d}-{month:02d}-01"
+                ]
+
+                def _place(d, f, tag):
+                    if d.year != year or d.month != month:
+                        return
+                    d_str = d.isoformat()
+                    bucket = date_to_festivals.setdefault(d_str, [])
+                    if any(x["occurrence_id"] == f["occurrence_id"] for x in bucket):
+                        return
+                    bucket.append({
+                        "occurrence_id": f["occurrence_id"],
+                        "name": f["name"],
+                        "category": f["category"],
+                        "status": f["status"],
+                        "title": f.get("title", f["name"]),
+                        "badge": f.get("badge", ""),
+                        "badge_color": f.get("badge_color", ""),
+                        "is_span": f.get("is_span", False),
+                        "span_boundary": tag,
+                    })
+
                 for f in fest_data.get("festivals", []):
                     start_d = datetime.strptime(f["start_date"], "%Y-%m-%d").date()
                     end_d = datetime.strptime(f["end_date"], "%Y-%m-%d").date()
-                    curr_d = start_d
-                    while curr_d <= end_d:
-                        if curr_d.year == year and curr_d.month == month:
-                            d_str = curr_d.isoformat()
-                            if d_str not in date_to_festivals:
-                                date_to_festivals[d_str] = []
-                            if not any(x["occurrence_id"] == f["occurrence_id"] for x in date_to_festivals[d_str]):
-                                date_to_festivals[d_str].append({
-                                    "occurrence_id": f["occurrence_id"],
-                                    "name": f["name"],
-                                    "category": f["category"],
-                                    "status": f["status"],
-                                    "title": f.get("title", f["name"]),
-                                    "badge": f.get("badge", ""),
-                                    "badge_color": f.get("badge_color", ""),
-                                    "is_span": f.get("is_span", False)
-                                })
-                        curr_d += timedelta(days=1)
+                    # Per-day Navpad Oli rows are represented by the multi-day list only.
+                    if f.get("badge") == "Navpad Oli" and " - Day" in (f.get("name") or ""):
+                        continue
+                    if start_d == end_d:
+                        _place(start_d, f, None)
+                    else:
+                        # Multi-day: mark first + last day only, not every day between.
+                        _place(start_d, f, "start")
+                        _place(end_d, f, "end")
 
             for day_num in range(1, num_days + 1):
                 date_str = f"{year:04d}-{month:02d}-{day_num:02d}"
@@ -505,6 +523,7 @@ def create_app() -> Flask:
                 "hindu_month_index": hindu_month_index,
                 "vikram_samvat": vikram_samvat,
                 "days": days,
+                "multi_day_festivals": multi_day_festivals,
             })
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400

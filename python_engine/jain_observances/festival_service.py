@@ -233,6 +233,8 @@ def generate_jain_festivals(
 
         panchang_tithi_map[s["date"].isoformat()] = f"{prefix}{base_month} {s['paksha']} {t_name}"
 
+    multi_day_festivals = _build_multi_day_registry(festivals)
+
     return {
         "year": year,
         "location": {
@@ -244,5 +246,52 @@ def generate_jain_festivals(
         "profile": profile,
         "upcoming": upcoming,
         "festivals": festivals,
+        "multi_day_festivals": multi_day_festivals,
         "panchang_tithi_map": panchang_tithi_map
     }
+
+
+def _build_multi_day_registry(festivals: list) -> list:
+    """Collapse every multi-day observance to a single {name, start_date, end_date}
+    row so callers can render a compact 'Multi-Day Festivals' section instead of
+    repeating the name on every civil day it spans.
+
+    Covers two shapes:
+      * one occurrence whose start_date != end_date (spans, e.g. Ashtahnika, Bhaktambar
+        Vrat, Shodashkaran, the Bhadrapada Krishna cluster);
+      * a run of consecutive single-day occurrences forming one observance -- currently
+        the Navpad Oli "Day N" series (badge "Navpad Oli"), grouped by badge + the
+        gap-free date sequence.
+    """
+    out = []
+    seen_span = set()
+    series = {}
+    for f in festivals:
+        sd, ed = f["start_date"], f["end_date"]
+        if sd != ed:
+            key = (f["name"], sd, ed)
+            if key in seen_span:
+                continue
+            seen_span.add(key)
+            out.append({"name": f["name"], "name_hindi": f.get("name_hindi", ""),
+                        "start_date": sd, "end_date": ed,
+                        "category": f.get("category", ""), "badge": f.get("badge", "")})
+        elif f.get("badge") == "Navpad Oli":
+            base = f["name"].split(" - Day")[0]
+            series.setdefault(base, []).append(f["start_date"])
+
+    for base, dates in series.items():
+        dates = sorted(dates)
+        run_start = prev = dates[0]
+        for d in dates[1:] + [None]:
+            if d is not None and (date.fromisoformat(d) - date.fromisoformat(prev)).days == 1:
+                prev = d
+                continue
+            out.append({"name": base, "name_hindi": "नवपद ओली (आयांबिल ओली)",
+                        "start_date": run_start, "end_date": prev,
+                        "category": "fast", "badge": "Navpad Oli"})
+            if d is not None:
+                run_start = prev = d
+
+    out.sort(key=lambda x: (x["start_date"], x["end_date"]))
+    return out
