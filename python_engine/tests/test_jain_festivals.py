@@ -2543,6 +2543,37 @@ class MallinathOmniscienceKalyanakTest(unittest.TestCase):
             self.assertEqual(m[0]["start_date"], expected)
 
 
+class NativeTithiTagTest(unittest.TestCase):
+    """When a Kalyanak is pulled onto a civil date whose primary tithi differs from
+    its own native tithi, the UI event string is prefixed with the native tithi:
+    '[Dwadashi] Shri Munisuvrat Ji - Liberation Kalyanak'."""
+
+    def _by_id(self, year):
+        from jain_observances.festival_service import generate_jain_festivals
+        res = generate_jain_festivals(year=year, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all")
+        return {f["id"]: f for f in res["festivals"]}, res["panchang_tithi_map"]
+
+    def test_munisuvrat_liberation_2027_is_tagged_dwadashi(self):
+        by_id, tmap = self._by_id(2027)
+        f = by_id["shri_munisuvrat_ji___liberation_kalyanak_12_vrindavan_uttarapurana_ashadhara"]
+        self.assertEqual(f["start_date"], "2027-03-04")
+        self.assertTrue(tmap["2027-03-04"].endswith("Ekadashi (11)"))
+        self.assertEqual(f["name"], "[Dwadashi] Shri Munisuvrat Ji - Liberation Kalyanak")
+        self.assertEqual(f["native_tithi"], "Dwadashi (12)")
+
+    def test_no_tag_when_native_tithi_matches_civil_date(self):
+        by_id, _ = self._by_id(2026)
+        f = by_id["shri_munisuvrat_ji___liberation_kalyanak_12_vrindavan_uttarapurana_ashadhara"]
+        self.assertEqual(f["start_date"], "2026-02-14")
+        self.assertFalse(f["name"].startswith("["))
+
+    def test_dharmanath_day1_anchor_kalyanaks_are_tagged_trayodashi(self):
+        by_id, _ = self._by_id(2027)
+        for fid in ("shri_dharmanath_ji___birth_kalyanak_13_vrindavan_uttarapurana_ashadhara",
+                    "shri_dharmanath_ji___austerity_kalyanak_13_vrindavan_uttarapurana_ashadhara"):
+            self.assertTrue(by_id[fid]["name"].startswith("[Trayodashi] "), fid)
+
+
 if __name__ == "__main__":
     unittest.main()
 

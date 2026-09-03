@@ -171,6 +171,7 @@ def generate_jain_festivals(
                 # Format Tithi
                 t_val = f.get("tithi")
                 t_num = snap["tithi_in_paksha"]
+                native_num = None
                 if isinstance(t_val, int) or not t_val:
                     # Use the snap's tithi if not provided, or format the integer provided.
                     # A raw index in the 16..30 range (some rules pass d["tithi"] straight
@@ -178,10 +179,26 @@ def generate_jain_festivals(
                     use_num = t_val if isinstance(t_val, int) else t_num
                     if use_num > 15:
                         use_num -= 15
+                    if isinstance(t_val, int):
+                        native_num = use_num
                     t_name = TITHI_LABEL_MAP.get(use_num, f"Tithi {use_num}")
                     if snap["paksha"] == "Krishna" and use_num == 15:
                         t_name = "Amavasya (15)"
                     f["tithi"] = t_name
+
+                # Native-Tithi UI tag: a Kalyanak pulled onto a civil date whose
+                # primary tithi differs from its own (Day-1 Anchor / 6-Ghati / first-
+                # active-day pull-backs) gets its native tithi prepended so the UI
+                # mismatch is explicit, e.g. "[Dwadashi] Shri Munisuvrat Ji - ...".
+                if (native_num is not None and native_num != t_num
+                        and f.get("category") in ("kalyanak", "janam_kalyanak", "garbha_kalyanak")
+                        and not str(f.get("name", "")).startswith("[")):
+                    short = TITHI_LABEL_MAP.get(native_num, f"Tithi {native_num}").split(" (")[0]
+                    tag = f"[{short}] "
+                    f["name"] = tag + f["name"]
+                    if f.get("title"):
+                        f["title"] = tag + f["title"]
+                    f["native_tithi"] = t_name
             else:
                 if not f.get("jain_month"): f["jain_month"] = "—"
                 if not f.get("paksha"): f["paksha"] = ""
