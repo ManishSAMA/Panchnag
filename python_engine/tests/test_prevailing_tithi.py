@@ -4,9 +4,10 @@ the single day-identity Tithi anchor introduced by the tithi-unification
 refactor (see plans/tithi_unification/design.md).
 """
 import unittest
+from datetime import date
 
 from astronomy import get_sunrise, local_time_to_jd
-from panchang import get_prevailing_tithi_index, get_tithi_at_jd, JAIN_TITHI_OFFSET_DAYS
+from panchang import get_prevailing_tithi_index, get_tithi_at_jd, JAIN_TITHI_OFFSET_DAYS, _find_tithi_in_range
 
 LAT, LON, TZ = 19.0760, 72.8777, 5.5  # Mumbai -- matches main.py's sample coords
 AYANAMSA = "Lahiri"
@@ -42,6 +43,26 @@ class GetPrevailingTithiIndexTests(unittest.TestCase):
             get_prevailing_tithi_index(sunrise_jd),
             get_prevailing_tithi_index(sunrise_jd, "Lahiri"),
         )
+
+
+class FindTithiInRangeUsesPrevailingTithiTests(unittest.TestCase):
+    def test_finds_amavasya_on_march_18_2026_not_march_19(self):
+        """Regression test for the parva_tithi_amavasya double-fire root cause
+        (see plans/tithi_unification/design.md): under the OLD sunrise rule
+        this returned March 19 (documented in the pre-refactor panchang.py
+        docstring). Under the prevailing (6-ghati) rule it returns March 18,
+        since Amavasya prevails at sunrise+144min on the 18th but not yet at
+        sunrise itself; by the 19th's sunrise+144min it has already advanced
+        to Shukla Pratipada.
+
+        NOTE: whether March 18 is the date a real Jain panchang would print
+        for this Amavasya is a SEPARATE question, verified via
+        plans/tithi_unification/samvat_anchors.xlsx (Task 1/5) with the user,
+        not asserted here. This test only pins the function's mechanics."""
+        result = _find_tithi_in_range(
+            2026, 3, 1, 52, 30, LAT, LON, TZ, AYANAMSA
+        )
+        self.assertEqual(result, date(2026, 3, 18))
 
 
 if __name__ == '__main__':

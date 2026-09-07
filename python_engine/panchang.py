@@ -666,9 +666,9 @@ def _find_tithi_in_range(
     tz_offset: float,
     ayanamsa_name: str,
 ) -> date:
-    """Scan a date range and return the first day whose sunrise Tithi matches.
+    """Scan a date range and return the first day whose PREVAILING Tithi
+    (sunrise + 6 ghati -- see get_prevailing_tithi_index) matches.
 
-    Uses the Udaya Tithi rule: Tithi evaluated at local sunrise determines the day.
     The search windows are chosen so that only one occurrence of the target
     Tithi exists in each window (no month-name filter is required).
     """
@@ -676,9 +676,7 @@ def _find_tithi_in_range(
         d = date(year, start_month, start_day) + timedelta(days=i)
         jd_start = local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset)
         jd_sr = get_sunrise(jd_start, lat, lon)
-        sun_lon = get_planetary_longitude(jd_sr, 'Sun', ayanamsa_name)
-        moon_lon = get_planetary_longitude(jd_sr, 'Moon', ayanamsa_name)
-        if get_tithi(sun_lon, moon_lon) == target_tithi:
+        if get_prevailing_tithi_index(jd_sr, ayanamsa_name) == target_tithi:
             return d
     raise ValueError(
         f"Could not find Tithi={target_tithi} in {year}-{start_month:02d}-{start_day:02d} "
@@ -698,13 +696,12 @@ def find_chaitra_shukla_1(
     In the amanta system, Chaitra Shukla Pratipada is defined as the civil day
     immediately after the Phalguna Amavasya — regardless of whether the Udaya
     Tithi at sunrise is 1 (Pratipada can be skipped when the New Moon falls
-    very close to sunrise, as in 2026 where March 19 Amavasya jumps directly
-    to Tithi=2 on March 20).
+    very close to sunrise).
 
-    The Phalguna Amavasya is the FIRST Tithi=30 in the March 1 – April 22
-    window (52 days). In most years there is only one Amavasya in this range;
-    in years with two (e.g. 2026: March 19 and April 17), the first one is
-    always the Phalguna Amavasya.
+    The Phalguna Amavasya is the FIRST Tithi=30 (by prevailing/6-ghati Tithi,
+    see get_prevailing_tithi_index) in the March 1 - April 22 window (52 days).
+    In most years there is only one Amavasya in this range; in years with two,
+    the first one is always the Phalguna Amavasya.
     """
     phalguna_amavasya = _find_tithi_in_range(
         year, 3, 1, 52, 30, lat, lon, tz_offset, ayanamsa_name
