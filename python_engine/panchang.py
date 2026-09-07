@@ -236,6 +236,20 @@ FIXED_KARANAS_END: list[str]   = ["Shakuni", "Chatushpada", "Naga"]  # indices 5
 JAIN_TITHI_OFFSET_DAYS = 144.0 / 1440.0
 
 
+def get_prevailing_tithi_index(sunrise_jd: float, ayanamsa_name: str = 'Lahiri') -> int:
+    """The single day-identity Tithi anchor: the Tithi index (1-30) prevailing
+    at sunrise + 2h24m (6 ghati / 144 minutes) -- the classical Jain day-start
+    moment. This is the function any caller should use to decide which Tithi
+    "owns" a civil day (month rollovers, Amavasya/Purnima detection, Samvat
+    boundaries, festival triggers). It deliberately does NOT evaluate at civil
+    sunrise itself -- see plans/tithi_unification/design.md for why, and for
+    the narrow, explicitly-flagged exception (festival_rules.py's Kalyanak/
+    vriddhi pullback machinery, unaffected by this phase).
+    """
+    reference_jd = sunrise_jd + JAIN_TITHI_OFFSET_DAYS
+    return get_tithi_at_jd(reference_jd, ayanamsa_name)
+
+
 def _get_karana_name_from_index(karana_index: int) -> str:
     """Map a Karana index (0–59) to its Karana name.
 
