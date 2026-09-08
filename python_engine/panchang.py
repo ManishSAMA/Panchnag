@@ -718,23 +718,26 @@ def find_diwali(
 ) -> date:
     """Return the Gregorian date of Diwali (Kartik Krishna Amavasya) for the given year.
 
-    The Kartika Amavasya (Diwali) is identified as the first Amavasya (Tithi=30)
-    in the October 10 – November 25 window where the Sun's sidereal longitude
-    is ≥ 179°.  This threshold cleanly separates Diwali from the preceding
-    Ashwin Amavasya (Mahalaya, max Sun ~178°) and avoids the subsequent
-    Margashirsha Amavasya (min Sun ~213°).
+    The Kartika Amavasya (Diwali) is identified as the first Amavasya (by
+    PREVAILING/6-ghati Tithi=30, see get_prevailing_tithi_index) in the
+    October 10 - November 25 window where the Sun's sidereal longitude
+    (evaluated at the same 6-ghati reference point) is >= 179 degrees. This
+    threshold cleanly separates Diwali from the preceding Ashwin Amavasya
+    (Mahalaya, max Sun ~178 degrees) and avoids the subsequent Margashirsha
+    Amavasya (min Sun ~213 degrees).
 
-    When there are two Amavasyas in the window (e.g. 2026: Ashwin Oct 10 at
-    172.5°, Diwali Nov 9 at 202.4°), the Ashwin one is excluded by the
-    sun-longitude filter and Diwali is returned as the first qualifying match.
+    NOTE: this function determines the SUNRISE-DAY-family (prevailing-tithi)
+    Diwali date. The registered "Mahavira Nirvana Kalyanak" festival in
+    festival_rules.py currently uses a separate PRADOSH (sunset) rule, which
+    is out of scope for this phase -- see plans/tithi_unification/design.md.
     """
-    for i in range(46):  # Oct 10 – Nov 24 inclusive
+    for i in range(46):  # Oct 10 - Nov 24 inclusive
         d = date(year, 10, 10) + timedelta(days=i)
         jd_start = local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset)
         jd_sr = get_sunrise(jd_start, lat, lon)
-        sun_lon = get_planetary_longitude(jd_sr, 'Sun', ayanamsa_name)
-        moon_lon = get_planetary_longitude(jd_sr, 'Moon', ayanamsa_name)
-        if get_tithi(sun_lon, moon_lon) == 30 and sun_lon >= 179.0:
+        reference_jd = jd_sr + JAIN_TITHI_OFFSET_DAYS
+        sun_lon = get_planetary_longitude(reference_jd, 'Sun', ayanamsa_name)
+        if get_prevailing_tithi_index(jd_sr, ayanamsa_name) == 30 and sun_lon >= 179.0:
             return d
     raise ValueError(f"Could not find Diwali (Kartika Amavasya) for year {year}")
 
