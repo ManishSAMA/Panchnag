@@ -250,6 +250,46 @@ def get_prevailing_tithi_index(sunrise_jd: float, ayanamsa_name: str = 'Lahiri')
     return get_tithi_at_jd(reference_jd, ayanamsa_name)
 
 
+def _tithi_owns_civil_day(
+    d: date,
+    target_tithi: int,
+    lat: float,
+    lon: float,
+    tz_offset: float,
+    ayanamsa_name: str,
+) -> bool:
+    """Whether ``target_tithi`` (1-30) governs civil day ``d`` under the 6-ghati
+    anchor -- including the kshaya case.
+
+    Normally ``target_tithi`` owns ``d`` when it is the prevailing Tithi at d's
+    sunrise + 6 ghati (see get_prevailing_tithi_index). When ``target_tithi`` is
+    omitted entirely -- it begins after d's 6-ghati mark and ends before the
+    next day's, so it prevails on no civil day at all -- it merges onto ``d``,
+    the preceding Tithi's day. That is the same -1 rule as
+    festival_rules._kshaya_backshift.
+
+    Both current callers (_find_tithi_in_range, find_diwali) only ever pass
+    target_tithi=30, whose preceding Tithi (29) is always present in their
+    search windows, so the Pratipada-kshaya forward fallback that
+    _kshaya_backshift carries is intentionally not implemented here.
+    """
+    jd_sr = get_sunrise(local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset), lat, lon)
+    prevailing = get_prevailing_tithi_index(jd_sr, ayanamsa_name)
+    if prevailing == target_tithi:
+        return True
+
+    preceding_tithi = (target_tithi - 2) % 30 + 1
+    if prevailing != preceding_tithi:
+        return False
+
+    following_tithi = target_tithi % 30 + 1
+    d_next = d + timedelta(days=1)
+    jd_sr_next = get_sunrise(
+        local_time_to_jd(d_next.year, d_next.month, d_next.day, 0.0, tz_offset), lat, lon
+    )
+    return get_prevailing_tithi_index(jd_sr_next, ayanamsa_name) == following_tithi
+
+
 def _get_karana_name_from_index(karana_index: int) -> str:
     """Map a Karana index (0–59) to its Karana name.
 
@@ -666,17 +706,17 @@ def _find_tithi_in_range(
     tz_offset: float,
     ayanamsa_name: str,
 ) -> date:
-    """Scan a date range and return the first day whose PREVAILING Tithi
-    (sunrise + 6 ghati -- see get_prevailing_tithi_index) matches.
+    """Scan a date range and return the first day the target Tithi OWNS by the
+    6-ghati anchor (see _tithi_owns_civil_day) -- the day it prevails at
+    sunrise + 6 ghati, or, when it is kshaya (omitted at that anchor), the
+    preceding Tithi's day it merges onto.
 
     The search windows are chosen so that only one occurrence of the target
     Tithi exists in each window (no month-name filter is required).
     """
     for i in range(search_days):
         d = date(year, start_month, start_day) + timedelta(days=i)
-        jd_start = local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset)
-        jd_sr = get_sunrise(jd_start, lat, lon)
-        if get_prevailing_tithi_index(jd_sr, ayanamsa_name) == target_tithi:
+        if _tithi_owns_civil_day(d, target_tithi, lat, lon, tz_offset, ayanamsa_name):
             return d
     raise ValueError(
         f"Could not find Tithi={target_tithi} in {year}-{start_month:02d}-{start_day:02d} "
@@ -718,11 +758,12 @@ def find_diwali(
 ) -> date:
     """Return the Gregorian date of Diwali (Kartik Krishna Amavasya) for the given year.
 
-    The Kartika Amavasya (Diwali) is identified as the first Amavasya (by
-    PREVAILING/6-ghati Tithi=30, see get_prevailing_tithi_index) in the
-    October 10 - November 25 window where the Sun's sidereal longitude
-    (evaluated at the same 6-ghati reference point) is >= 179 degrees. This
-    threshold cleanly separates Diwali from the preceding Ashwin Amavasya
+    The Kartika Amavasya (Diwali) is identified as the first Amavasya that OWNS
+    a civil day by the 6-ghati anchor (see _tithi_owns_civil_day -- it prevails
+    at sunrise + 6 ghati, or, when kshaya, merges onto the preceding Chaturdashi
+    day) in the October 10 - November 25 window where the Sun's sidereal
+    longitude (evaluated at the same 6-ghati reference point) is >= 179 degrees.
+    This threshold cleanly separates Diwali from the preceding Ashwin Amavasya
     (Mahalaya, max Sun ~178 degrees) and avoids the subsequent Margashirsha
     Amavasya (min Sun ~213 degrees).
 
@@ -737,7 +778,10 @@ def find_diwali(
         jd_sr = get_sunrise(jd_start, lat, lon)
         reference_jd = jd_sr + JAIN_TITHI_OFFSET_DAYS
         sun_lon = get_planetary_longitude(reference_jd, 'Sun', ayanamsa_name)
-        if get_prevailing_tithi_index(jd_sr, ayanamsa_name) == 30 and sun_lon >= 179.0:
+        if (
+            _tithi_owns_civil_day(d, 30, lat, lon, tz_offset, ayanamsa_name)
+            and sun_lon >= 179.0
+        ):
             return d
     raise ValueError(f"Could not find Diwali (Kartika Amavasya) for year {year}")
 

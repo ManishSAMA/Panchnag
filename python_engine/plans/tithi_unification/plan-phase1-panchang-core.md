@@ -466,15 +466,188 @@ git commit -m "Rewire find_diwali to the 6-ghati prevailing-tithi anchor"
 Run: `.venv-linux/bin/python plans/tithi_unification/snapshot_samvat_anchors.py --mode after`
 Expected: `Filled After_Date for 8 rows...`. Open the file — `chaitra_shukla_1`/2026 is expected to show `CHANGED` (per Task 3's regression test, Phalguna Amavasya moves from Mar 19 to Mar 18, so Chaitra Shukla 1 moves from Mar 20 to Mar 19); `diwali`/2026 is expected to show `SAME` (per Task 4's invariance test). The other years and the `diwali` rows are not predicted in advance — that is the point of generating the sheet.
 
-- [ ] **Step 2: Hand the sheet to the user**
+- [x] **Step 2: Hand the sheet to the user**
 
 Do not update, remove, or reinterpret any `CHANGED` row without the user confirming it against an external reference (printed panchang / acharya-approved calendar), per design.md's confirmed decision. This step has no code artifact — it is the handoff point back to the user, and the natural place to stop and wait rather than press on into the next phase.
 
-- [ ] **Step 3: Commit the updated sheet**
+**Handoff result (first run, before Task 6):**
+
+| Year | Anchor | Before | After | Status |
+|---|---|---|---|---|
+| 2026 | chaitra_shukla_1 | Mar 20 | Mar 19 | CHANGED — as predicted (Task 3) |
+| 2026 | diwali | Nov 9 | Nov 9 | SAME — as predicted (Task 4) |
+| 2028 | chaitra_shukla_1 | Mar 27 | Mar 26 | CHANGED — vriddhi (Amavasya prevails at 6-ghati on Mar 25 *and* 26; scan takes the first). Not a bug; needs user verification against a printed panchang. |
+| 2028 | diwali | Oct 18 | **Nov 16** | CHANGED — **BUG**. Kartik Amavasya 2028 is *kshaya* at the 6-ghati anchor (spans Oct 17 ~13:00 → Oct 18 ~08:30, missing both days' sunrise+144min marks). The scan skips it and returns the Margashirsha Amavasya. Fixed by Task 6 below. |
+| 2025, 2027 | both | — | — | SAME |
+
+- [x] **Step 3: No commit needed here**
+
+`samvat_anchors.xlsx` is gitignored (`.gitignore:13`, `*.xlsx`) — it's a regenerable local artifact, not tracked in git. Nothing to commit in this step; the file is simply left on disk for the user to open.
+
+---
+
+### Task 6: Kshaya-aware day ownership for `_find_tithi_in_range` / `find_diwali`
+
+Added after the Task 5 handoff surfaced the 2028 Diwali +29-day jump. The strict "prevailing 6-ghati tithi == target" match introduced in Tasks 3-4 silently skips a target tithi that is *kshaya* at the 6-ghati anchor (begins after one day's sunrise+144min and ends before the next day's), and falls through to the following month's occurrence of that tithi.
+
+**Decision:** apply this project's established kshaya convention — the same `-1` rule as `festival_rules.py::_kshaya_backshift` (commit `732e800`): an omitted target tithi merges onto the *preceding* tithi's civil day. For 2028 Diwali this yields Oct 17 (which also matches the old pradosh rule and the published calendars).
+
+**Scope:** kshaya only. Vriddhi (target prevails on two consecutive days) is deliberately left as-is — the forward scan returns the first day; 2028 `chaitra_shukla_1` = Mar 26 stays a user-verification item, not a code change. The Pratipada-kshaya forward-fallback branch of `_kshaya_backshift` is **not** ported: both callers only ever seek Amavasya (30), whose preceding tithi (29) is always present in the search window.
+
+**Files:**
+- Modify: `panchang.py` — add `_tithi_owns_civil_day()` near `get_prevailing_tithi_index` (panchang.py:239); rewire the match predicate in `_find_tithi_in_range` (panchang.py:658) and `find_diwali` (panchang.py:712).
+- Test: `tests/test_prevailing_tithi.py` (append).
+
+**Interfaces:**
+- Consumes: `get_prevailing_tithi_index()` (Task 2), `get_sunrise`, `local_time_to_jd`.
+- Produces: `_tithi_owns_civil_day(d: date, target_tithi: int, lat, lon, tz_offset, ayanamsa_name) -> bool` — private; the kshaya-aware replacement for a bare `get_prevailing_tithi_index(jd_sr) == target` check.
+
+- [x] **Step 1: Write the failing tests**
+
+Append to `tests/test_prevailing_tithi.py`:
+
+```python
+from panchang import _tithi_owns_civil_day
+
+
+class TithiOwnsCivilDayTests(unittest.TestCase):
+    def test_true_when_target_prevails_at_six_ghati(self):
+        """18 Mar 2026: Amavasya (30) prevails at sunrise+144min -> the day owns it."""
+        self.assertTrue(_tithi_owns_civil_day(date(2026, 3, 18), 30, LAT, LON, TZ, AYANAMSA))
+
+    def test_true_on_preceding_day_when_target_is_kshaya(self):
+        """Kartik Amavasya 2028 is kshaya at the 6-ghati anchor (spans
+        17 Oct ~13:00 -> 18 Oct ~08:30, touching neither day's sunrise+144min).
+        Under the -1 rule it merges onto 17 Oct, the Chaturdashi day."""
+        self.assertTrue(_tithi_owns_civil_day(date(2028, 10, 17), 30, LAT, LON, TZ, AYANAMSA))
+
+    def test_false_on_the_day_after_a_kshaya_target(self):
+        """18 Oct 2028: sunrise tithi is Amavasya but by sunrise+144min it has
+        rolled to Pratipada; the kshaya Amavasya belongs to the 17th, not here."""
+        self.assertFalse(_tithi_owns_civil_day(date(2028, 10, 18), 30, LAT, LON, TZ, AYANAMSA))
+
+    def test_false_on_an_unrelated_day(self):
+        self.assertFalse(_tithi_owns_civil_day(date(2026, 3, 10), 30, LAT, LON, TZ, AYANAMSA))
+
+
+class FindDiwaliKshayaTests(unittest.TestCase):
+    def test_2028_kshaya_kartik_amavasya_backshifts_to_oct_17(self):
+        """Regression for the Task 5 handoff finding: the strict 6-ghati match
+        skipped the kshaya Kartik Amavasya and returned 16 Nov (Margashirsha).
+        The -1 kshaya rule lands it on 17 Oct.
+
+        NOTE: 17 Oct 2028 is asserted here as the OUTPUT of this project's
+        established kshaya convention, not as independently religiously verified
+        -- that check is the samvat_anchors.xlsx re-run + user sign-off."""
+        self.assertEqual(find_diwali(2028, LAT, LON, TZ, AYANAMSA), date(2028, 10, 17))
+```
+
+Also append a `_find_tithi_in_range` kshaya case:
+
+```python
+    def test_find_tithi_in_range_backshifts_a_kshaya_amavasya(self):
+        """Same Kartik window, exercised through _find_tithi_in_range directly
+        (find_chaitra_shukla_1's own window never hits a kshaya Amavasya in
+        2025-2028, so this uses the October window like Task 3's test)."""
+        result = _find_tithi_in_range(2028, 10, 10, 46, 30, LAT, LON, TZ, AYANAMSA)
+        self.assertEqual(result, date(2028, 10, 17))
+```
+
+- [x] **Step 2: Run tests to verify they fail**
+
+Run: `.venv-linux/bin/python -m pytest tests/test_prevailing_tithi.py -v`
+Expected: the four `TithiOwnsCivilDayTests` error with `ImportError: cannot import name '_tithi_owns_civil_day'`; once the import resolves, `FindDiwaliKshayaTests` fails `date(2028, 11, 16) != date(2028, 10, 17)` and the `_find_tithi_in_range` case fails similarly.
+Actual: collection `ImportError: cannot import name '_tithi_owns_civil_day' from 'panchang'` — RED confirmed.
+
+- [x] **Step 3: Implement**
+
+In `panchang.py`, after `get_prevailing_tithi_index` (panchang.py:246):
+
+```python
+def _tithi_owns_civil_day(
+    d: date,
+    target_tithi: int,
+    lat: float,
+    lon: float,
+    tz_offset: float,
+    ayanamsa_name: str,
+) -> bool:
+    """Whether `target_tithi` (1-30) governs civil day `d` under the 6-ghati
+    anchor -- including the kshaya case. `target_tithi` normally owns `d` when
+    it is the prevailing tithi at d's sunrise + 6 ghati. When `target_tithi` is
+    omitted entirely (it begins after d's 6-ghati mark and ends before d+1's,
+    so it prevails on no civil day), it merges onto `d`, the preceding tithi's
+    day -- the same -1 rule as festival_rules._kshaya_backshift. Both callers
+    (_find_tithi_in_range, find_diwali) only ever pass target_tithi=30, whose
+    preceding tithi (29) is always present in their windows, so the Pratipada-
+    kshaya forward-fallback is intentionally not implemented here.
+    """
+    jd_sr = get_sunrise(local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset), lat, lon)
+    prevailing = get_prevailing_tithi_index(jd_sr, ayanamsa_name)
+    if prevailing == target_tithi:
+        return True
+    preceding_tithi = (target_tithi - 2) % 30 + 1
+    following_tithi = target_tithi % 30 + 1
+    if prevailing != preceding_tithi:
+        return False
+    d_next = d + timedelta(days=1)
+    jd_sr_next = get_sunrise(
+        local_time_to_jd(d_next.year, d_next.month, d_next.day, 0.0, tz_offset), lat, lon
+    )
+    return get_prevailing_tithi_index(jd_sr_next, ayanamsa_name) == following_tithi
+```
+
+Then in `_find_tithi_in_range`, replace the loop body's match check:
+
+```python
+    for i in range(search_days):
+        d = date(year, start_month, start_day) + timedelta(days=i)
+        if _tithi_owns_civil_day(d, target_tithi, lat, lon, tz_offset, ayanamsa_name):
+            return d
+```
+
+And in `find_diwali`, replace the tithi half of the condition (keep the Sun-longitude filter, still evaluated at the 6-ghati `reference_jd`):
+
+```python
+    for i in range(46):  # Oct 10 - Nov 24 inclusive
+        d = date(year, 10, 10) + timedelta(days=i)
+        jd_start = local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset)
+        jd_sr = get_sunrise(jd_start, lat, lon)
+        reference_jd = jd_sr + JAIN_TITHI_OFFSET_DAYS
+        sun_lon = get_planetary_longitude(reference_jd, 'Sun', ayanamsa_name)
+        if _tithi_owns_civil_day(d, 30, lat, lon, tz_offset, ayanamsa_name) and sun_lon >= 179.0:
+            return d
+    raise ValueError(f"Could not find Diwali (Kartika Amavasya) for year {year}")
+```
+
+Update both docstrings to note the kshaya (-1) behaviour.
+
+- [x] **Step 4: Run tests to verify they pass**
+
+Run: `.venv-linux/bin/python -m pytest tests/test_prevailing_tithi.py -v`
+Expected: all passed (10 tests).
+Actual: 11 passed (the plan under-counted — `TithiOwnsCivilDayTests` 4 + `FindTithiInRangeUsesPrevailingTithiTests` 2 + `FindDiwaliUsesPrevailingTithiTests` 2 + `GetPrevailingTithiIndexTests` 3).
+
+- [x] **Step 5: Full existing suite regression check**
+
+Run (two collision-free invocations — `./test_api.py` and `tests/test_api.py` share a basename and cannot be collected together):
+`.venv-linux/bin/python -m pytest tests/ -q`
+`.venv-linux/bin/python -m pytest test_panchang.py test_ravi_yog.py test_api.py test_bhaktambar.py test_rohini.py -q`
+Expected: same as Task 4 — 2 pre-existing unrelated failures (`test_ravi_yoga_is_always_ashubh_when_present`, `test_panchang KeyError: 'Sun_Dec'`), nothing newly failing.
+Actual: `tests/` 583 passed / 2 skipped / 1 failed (`test_ravi_yoga_is_always_ashubh_when_present`); root files 1 failed (`test_panchang KeyError: 'Sun_Dec'`). Both pre-existing (confirmed on `51f0502` with changes stashed). `577 -> 583` passed = the 6 new tests. No new failures.
+
+- [x] **Step 6: Re-run the Samvat AFTER snapshot**
+
+Delete the stale after-columns and re-run:
+`.venv-linux/bin/python plans/tithi_unification/snapshot_samvat_anchors.py --mode after`
+Expected: `2028 / diwali` row moves from `Nov 16` to `Oct 17` (still `CHANGED` vs the `Oct 18` before-value, now a -1 backshift rather than a +29 skip). Re-hand the sheet to the user; the `2028 / chaitra_shukla_1` -1 (vriddhi) and `2028 / diwali` -1 (kshaya) rows both need external-reference confirmation before any dependent test elsewhere is updated.
+Actual: after-snapshot now shows `2028 / diwali` Oct 18 -> Oct 17 (-1). Three CHANGED rows total, all -1d: `2026 / chaitra_shukla_1`, `2028 / chaitra_shukla_1`, `2028 / diwali`. All pending user verification against a printed panchang.
+
+- [x] **Step 7: Commit**
 
 ```bash
-git add plans/tithi_unification/samvat_anchors.xlsx
-git commit -m "Fill post-refactor Samvat anchor dates for manual review"
+git add panchang.py tests/test_prevailing_tithi.py plans/tithi_unification/plan-phase1-panchang-core.md
+git commit -m "Kshaya-aware day ownership for _find_tithi_in_range / find_diwali"
 ```
 
 ---
