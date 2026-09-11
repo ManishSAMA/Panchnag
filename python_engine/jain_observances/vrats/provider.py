@@ -42,17 +42,17 @@ class SwissEphTithiProvider:
         return get_tithi(sun_lon, moon_lon)
 
     def is_adhik_month(self, date_obj: datetime.date, lat: float, lon: float) -> bool:
-        from panchang import get_hindu_month
+        from panchang import get_hindu_month, JAIN_TITHI_OFFSET_DAYS
         tz_name = self._get_tz(lat, lon)
         anchor_jd = local_date_anchor_jd(date_obj, tz_name)
         sunrise_jd = get_sunrise(anchor_jd, lat, lon)
-        _, _, is_adhika = get_hindu_month(sunrise_jd, self.ayanamsa)
+        _, _, is_adhika = get_hindu_month(sunrise_jd + JAIN_TITHI_OFFSET_DAYS, self.ayanamsa)
         return is_adhika
 
     def get_hindu_month_name(self, date_obj: datetime.date, lat: float, lon: float) -> str:
-        from panchang import get_hindu_month
+        from panchang import get_hindu_month, JAIN_TITHI_OFFSET_DAYS
         tz_name = self._get_tz(lat, lon)
         anchor_jd = local_date_anchor_jd(date_obj, tz_name)
         sunrise_jd = get_sunrise(anchor_jd, lat, lon)
-        m_name, _, _ = get_hindu_month(sunrise_jd, self.ayanamsa)
+        m_name, _, _ = get_hindu_month(sunrise_jd + JAIN_TITHI_OFFSET_DAYS, self.ayanamsa)
         return m_name.removeprefix("Adhika ")
