@@ -293,6 +293,10 @@ def _element_payload(
             "name": panchang_data["Vara_Name"],
         },
     }
+    # NOTE: kept despite being the same 6-ghati value as structured.tithi now --
+    # app.py's range-export loop and static/app.js's home-page widget both read
+    # this specific key (the latter literally labels it "Today's Jain Tithi").
+    # Only remove once those call sites are migrated too.
     if "Jain_Tithi_Index" in panchang_data:
         payload["jain_tithi"] = {
             "index": panchang_data["Jain_Tithi_Index"],
@@ -301,41 +305,6 @@ def _element_payload(
             "continues_past_next_sunrise": panchang_data["Jain_Tithi_End_JD"] >= next_sunrise_jd,
             "reference": _serialize_event(panchang_data["Jain_Tithi_Reference_JD"], tz_name),
         }
-    return payload
-
-
-def _reference_snapshot_payload(reference_jd: float, ayanamsa_name: str, tz_name: str) -> dict:
-    """Compute Tithi and Nakshatra at an arbitrary reference JD for comparison."""
-    sun_lon = get_planetary_longitude(reference_jd, "Sun", ayanamsa_name)
-    moon_lon = get_planetary_longitude(reference_jd, "Moon", ayanamsa_name)
-    tithi_idx = get_tithi(sun_lon, moon_lon)
-    nakshatra_idx = get_nakshatra(moon_lon)
-    return {
-        "rule": "reference_check",
-        "reference": _serialize_event(reference_jd, tz_name),
-        "tithi": {
-            "index": tithi_idx,
-            "name": TITHI_NAMES[tithi_idx - 1],
-        },
-        "nakshatra": {
-            "index": nakshatra_idx,
-            "name": NAKSHATRA_NAMES[nakshatra_idx - 1],
-        },
-    }
-
-
-def _reference_check_payload(
-    sunrise_jd: float,
-    offset: timedelta,
-    rule_name: str,
-    ayanamsa_name: str,
-    tz_name: str,
-) -> dict:
-    """Build a named reference-check payload at a given offset from sunrise."""
-    reference_jd = sunrise_jd + (offset.total_seconds() / 86400.0)
-    payload = _reference_snapshot_payload(reference_jd, ayanamsa_name, tz_name)
-    payload["rule"] = rule_name
-    payload["offset_minutes"] = int(offset.total_seconds() // 60)
     return payload
 
 
@@ -520,20 +489,11 @@ def generate_location_panchang(
             "is_active_now": rahu_raw["start_jd"] <= jd_now <= rahu_raw["end_jd"],
         },
         "rules": {
-            "primary_day_rule": "udaya_tithi",
+            "primary_day_rule": "6_ghati_tithi",
             "notes": [
-                "Daily Tithi is determined from the Tithi active at local sunrise.",
-                "Jain Tithi is determined from the Tithi active 2 hours 24 minutes after local sunrise.",
-                "The reference snapshots are provided for comparison only and do not relabel the day's primary Tithi.",
-            ],
-            "reference_checks": [
-                _reference_check_payload(
-                    events.sunrise_jd,
-                    JAIN_OFFSET_CHECK,
-                    "sunrise_plus_2h24m",
-                    ayanamsa_name,
-                    tz_name,
-                ),
+                "Daily Tithi is determined from the Tithi active at sunrise + 2 hours "
+                "24 minutes (6 ghati) -- the classical Jain day-start moment -- not "
+                "from plain local sunrise.",
             ],
         },
         "structured": {
@@ -543,12 +503,11 @@ def generate_location_panchang(
             "date": local_date.isoformat(),
             "sunrise": jd_to_iso_local_string(events.sunrise_jd, tz_name),
             "sunset": jd_to_iso_local_string(events.sunset_jd, tz_name),
-            "tithi": daily_panchang["Tithi_Name"],
-            "jain_tithi": daily_panchang["Jain_Tithi_Name"],
-            "jain_tithi_reference": jd_to_iso_local_string(
-                events.sunrise_jd + JAIN_TITHI_OFFSET_DAYS,
-                tz_name,
-            ),
+            # Primary Tithi is the one prevailing at sunrise + 6 ghati (2h24m), not
+            # plain sunrise -- matching the 6-ghati hindu_month below. See
+            # plans/tithi_unification/design.md's Full Jain decision: there is only
+            # one Tithi now, so the separate jain_tithi reference-only field is gone.
+            "tithi": daily_panchang["Jain_Tithi_Name"],
             "sun_rashi": get_sun_rashi(events.sunrise_jd),
             "nakshatra": daily_panchang["Nakshatra_Name"],
             "yoga": daily_panchang["Yoga_Name"],

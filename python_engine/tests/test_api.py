@@ -50,9 +50,9 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
         self.assertEqual(payload["date"], "2025-01-01")
-        self.assertEqual(payload["rules"]["primary_day_rule"], "udaya_tithi")
+        self.assertEqual(payload["rules"]["primary_day_rule"], "6_ghati_tithi")
         self.assertIn("sunrise", payload["events"])
-        self.assertIn("jain_tithi", payload["panchang"])
+        self.assertIn("tithi", payload["structured"])
 
     @patch("app.generate_location_panchang")
     def test_generate_panchang_uses_city_if_coordinates_are_missing(self, mock_generate):
