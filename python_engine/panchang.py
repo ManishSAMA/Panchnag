@@ -236,6 +236,60 @@ FIXED_KARANAS_END: list[str]   = ["Shakuni", "Chatushpada", "Naga"]  # indices 5
 JAIN_TITHI_OFFSET_DAYS = 144.0 / 1440.0
 
 
+def get_prevailing_tithi_index(sunrise_jd: float, ayanamsa_name: str = 'Lahiri') -> int:
+    """The single day-identity Tithi anchor: the Tithi index (1-30) prevailing
+    at sunrise + 2h24m (6 ghati / 144 minutes) -- the classical Jain day-start
+    moment. This is the function any caller should use to decide which Tithi
+    "owns" a civil day (month rollovers, Amavasya/Purnima detection, Samvat
+    boundaries, festival triggers). It deliberately does NOT evaluate at civil
+    sunrise itself -- see plans/tithi_unification/design.md for why, and for
+    the narrow, explicitly-flagged exception (festival_rules.py's Kalyanak/
+    vriddhi pullback machinery, unaffected by this phase).
+    """
+    reference_jd = sunrise_jd + JAIN_TITHI_OFFSET_DAYS
+    return get_tithi_at_jd(reference_jd, ayanamsa_name)
+
+
+def _tithi_owns_civil_day(
+    d: date,
+    target_tithi: int,
+    lat: float,
+    lon: float,
+    tz_offset: float,
+    ayanamsa_name: str,
+) -> bool:
+    """Whether ``target_tithi`` (1-30) governs civil day ``d`` under the 6-ghati
+    anchor -- including the kshaya case.
+
+    Normally ``target_tithi`` owns ``d`` when it is the prevailing Tithi at d's
+    sunrise + 6 ghati (see get_prevailing_tithi_index). When ``target_tithi`` is
+    omitted entirely -- it begins after d's 6-ghati mark and ends before the
+    next day's, so it prevails on no civil day at all -- it merges onto ``d``,
+    the preceding Tithi's day. That is the same -1 rule as
+    festival_rules._kshaya_backshift.
+
+    Both current callers (_find_tithi_in_range, find_diwali) only ever pass
+    target_tithi=30, whose preceding Tithi (29) is always present in their
+    search windows, so the Pratipada-kshaya forward fallback that
+    _kshaya_backshift carries is intentionally not implemented here.
+    """
+    jd_sr = get_sunrise(local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset), lat, lon)
+    prevailing = get_prevailing_tithi_index(jd_sr, ayanamsa_name)
+    if prevailing == target_tithi:
+        return True
+
+    preceding_tithi = (target_tithi - 2) % 30 + 1
+    if prevailing != preceding_tithi:
+        return False
+
+    following_tithi = target_tithi % 30 + 1
+    d_next = d + timedelta(days=1)
+    jd_sr_next = get_sunrise(
+        local_time_to_jd(d_next.year, d_next.month, d_next.day, 0.0, tz_offset), lat, lon
+    )
+    return get_prevailing_tithi_index(jd_sr_next, ayanamsa_name) == following_tithi
+
+
 def _get_karana_name_from_index(karana_index: int) -> str:
     """Map a Karana index (0–59) to its Karana name.
 
@@ -652,19 +706,17 @@ def _find_tithi_in_range(
     tz_offset: float,
     ayanamsa_name: str,
 ) -> date:
-    """Scan a date range and return the first day whose sunrise Tithi matches.
+    """Scan a date range and return the first day the target Tithi OWNS by the
+    6-ghati anchor (see _tithi_owns_civil_day) -- the day it prevails at
+    sunrise + 6 ghati, or, when it is kshaya (omitted at that anchor), the
+    preceding Tithi's day it merges onto.
 
-    Uses the Udaya Tithi rule: Tithi evaluated at local sunrise determines the day.
     The search windows are chosen so that only one occurrence of the target
     Tithi exists in each window (no month-name filter is required).
     """
     for i in range(search_days):
         d = date(year, start_month, start_day) + timedelta(days=i)
-        jd_start = local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset)
-        jd_sr = get_sunrise(jd_start, lat, lon)
-        sun_lon = get_planetary_longitude(jd_sr, 'Sun', ayanamsa_name)
-        moon_lon = get_planetary_longitude(jd_sr, 'Moon', ayanamsa_name)
-        if get_tithi(sun_lon, moon_lon) == target_tithi:
+        if _tithi_owns_civil_day(d, target_tithi, lat, lon, tz_offset, ayanamsa_name):
             return d
     raise ValueError(
         f"Could not find Tithi={target_tithi} in {year}-{start_month:02d}-{start_day:02d} "
@@ -684,13 +736,12 @@ def find_chaitra_shukla_1(
     In the amanta system, Chaitra Shukla Pratipada is defined as the civil day
     immediately after the Phalguna Amavasya — regardless of whether the Udaya
     Tithi at sunrise is 1 (Pratipada can be skipped when the New Moon falls
-    very close to sunrise, as in 2026 where March 19 Amavasya jumps directly
-    to Tithi=2 on March 20).
+    very close to sunrise).
 
-    The Phalguna Amavasya is the FIRST Tithi=30 in the March 1 – April 22
-    window (52 days). In most years there is only one Amavasya in this range;
-    in years with two (e.g. 2026: March 19 and April 17), the first one is
-    always the Phalguna Amavasya.
+    The Phalguna Amavasya is the FIRST Tithi=30 (by prevailing/6-ghati Tithi,
+    see get_prevailing_tithi_index) in the March 1 - April 22 window (52 days).
+    In most years there is only one Amavasya in this range; in years with two,
+    the first one is always the Phalguna Amavasya.
     """
     phalguna_amavasya = _find_tithi_in_range(
         year, 3, 1, 52, 30, lat, lon, tz_offset, ayanamsa_name
@@ -707,23 +758,30 @@ def find_diwali(
 ) -> date:
     """Return the Gregorian date of Diwali (Kartik Krishna Amavasya) for the given year.
 
-    The Kartika Amavasya (Diwali) is identified as the first Amavasya (Tithi=30)
-    in the October 10 – November 25 window where the Sun's sidereal longitude
-    is ≥ 179°.  This threshold cleanly separates Diwali from the preceding
-    Ashwin Amavasya (Mahalaya, max Sun ~178°) and avoids the subsequent
-    Margashirsha Amavasya (min Sun ~213°).
+    The Kartika Amavasya (Diwali) is identified as the first Amavasya that OWNS
+    a civil day by the 6-ghati anchor (see _tithi_owns_civil_day -- it prevails
+    at sunrise + 6 ghati, or, when kshaya, merges onto the preceding Chaturdashi
+    day) in the October 10 - November 25 window where the Sun's sidereal
+    longitude (evaluated at the same 6-ghati reference point) is >= 179 degrees.
+    This threshold cleanly separates Diwali from the preceding Ashwin Amavasya
+    (Mahalaya, max Sun ~178 degrees) and avoids the subsequent Margashirsha
+    Amavasya (min Sun ~213 degrees).
 
-    When there are two Amavasyas in the window (e.g. 2026: Ashwin Oct 10 at
-    172.5°, Diwali Nov 9 at 202.4°), the Ashwin one is excluded by the
-    sun-longitude filter and Diwali is returned as the first qualifying match.
+    NOTE: this function determines the SUNRISE-DAY-family (prevailing-tithi)
+    Diwali date. The registered "Mahavira Nirvana Kalyanak" festival in
+    festival_rules.py currently uses a separate PRADOSH (sunset) rule, which
+    is out of scope for this phase -- see plans/tithi_unification/design.md.
     """
-    for i in range(46):  # Oct 10 – Nov 24 inclusive
+    for i in range(46):  # Oct 10 - Nov 24 inclusive
         d = date(year, 10, 10) + timedelta(days=i)
         jd_start = local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset)
         jd_sr = get_sunrise(jd_start, lat, lon)
-        sun_lon = get_planetary_longitude(jd_sr, 'Sun', ayanamsa_name)
-        moon_lon = get_planetary_longitude(jd_sr, 'Moon', ayanamsa_name)
-        if get_tithi(sun_lon, moon_lon) == 30 and sun_lon >= 179.0:
+        reference_jd = jd_sr + JAIN_TITHI_OFFSET_DAYS
+        sun_lon = get_planetary_longitude(reference_jd, 'Sun', ayanamsa_name)
+        if (
+            _tithi_owns_civil_day(d, 30, lat, lon, tz_offset, ayanamsa_name)
+            and sun_lon >= 179.0
+        ):
             return d
     raise ValueError(f"Could not find Diwali (Kartika Amavasya) for year {year}")
 
