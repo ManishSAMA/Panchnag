@@ -224,8 +224,23 @@ class SingleTithiFestival(FestivalRule):
         matches = [s for s in snapshots if year is None or s["date"].year == year]
         if self.jain_month:
             matches = [s for s in matches if _matches_purnimanta_target(s, self.jain_month, self.paksha)]
+
+        # "parva" tithis (Amavasya/Purnima/Ashtami/Pakhi Chaudas) select on the
+        # 6-ghati (jain_*) fields, matching the 6-ghati hindu_month grouping they're
+        # bucketed by below -- this is what prevents the double-fire regression (see
+        # ParvaTithiNoDoubleFireTest / plans/tithi_unification/design.md): a plain
+        # sunrise selection can disagree with the 6-ghati month grouping right at an
+        # amanta month boundary, counting the same Amavasya once under each month's
+        # bucket. Every other category (Kalyanak, mahaparv, vrat) keeps selecting on
+        # the plain-sunrise fields -- that's the "day_snap is the udaya day" precondition
+        # _sixghati_pullback / _kalyanak_first_active_day depend on; repointing it here
+        # too would make their weak/strong comparison compare 6-ghati to itself and
+        # silently disable already-verified Kalyanak pullback dates.
+        paksha_field = "jain_paksha" if self.category == "parva" else "paksha"
+        tithi_field = "jain_tithi_in_paksha" if self.category == "parva" else "tithi_in_paksha"
+
         if self.paksha and self.day_rule != "pradosh":
-            matches = [s for s in matches if s["paksha"] == self.paksha]
+            matches = [s for s in matches if s.get(paksha_field) == self.paksha]
 
         occurrences = []
         if isinstance(self.tithi, int):
@@ -234,7 +249,7 @@ class SingleTithiFestival(FestivalRule):
                 if self.day_rule == "pradosh":
                     candidates = _pradosh_days(matches, self.tithi, self.paksha or "Krishna")
                 else:
-                    candidates = [s for s in matches if s["tithi_in_paksha"] == self.tithi]
+                    candidates = [s for s in matches if s[tithi_field] == self.tithi]
                 if candidates:
                     if self.category == "parva":
                         for cand in candidates:
@@ -261,7 +276,7 @@ class SingleTithiFestival(FestivalRule):
                 keyed = sorted(matches, key=lambda s: (s["hindu_month"], s["date"]))
                 for _month_name, group_iter in groupby(keyed, key=lambda s: s["hindu_month"]):
                     group = list(group_iter)
-                    candidates = [s for s in group if s["tithi_in_paksha"] == self.tithi]
+                    candidates = [s for s in group if s[tithi_field] == self.tithi]
                     if candidates:
                         if self.category == "parva":
                             for cand in candidates:

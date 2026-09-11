@@ -327,6 +327,85 @@ class RecurringParvaCountTest(unittest.TestCase):
         self.assertGreaterEqual(self._count("parva_tithi_amavasya"), 10)
 
 
+class ParvaTithiNoDoubleFireTest(unittest.TestCase):
+    """Recurring 'parva' tithis (Amavasya/Purnima/Ashtami/Pakhi Chaudas) must fire
+    exactly once per lunar month, never twice for the same lunar occurrence.
+
+    Regression for the Mar 18/19 2026 double-fire (plans/tithi_unification/design.md):
+    festival_service._build_snapshots groups snapshots by hindu_month (6-ghati-based)
+    but SingleTithiFestival's parva-category candidate selection matched on the plain
+    sunrise tithi/paksha fields. At an amanta month boundary the two can disagree on
+    which civil day the Amavasya's sunrise-instant belongs to, so the SAME Amavasya
+    gets counted once as a direct sunrise hit in one month's bucket and once as a
+    phantom kshaya-backshift in the adjacent month's bucket.
+    """
+
+    # Amavasya and Purnima sit at/near the amanta month boundary, which is exactly
+    # the mechanism this fix targets (see class docstring). Ashtami and Pakhi Chaudas
+    # can ALSO show two candidates in a lunar month, but for a different, legitimate
+    # reason -- genuine 6-ghati vriddhi (the same tithi spans two consecutive civil
+    # days' 6-ghati marks) -- which is not this bug; see ParvaTithiVriddhiShowsBothDaysTest.
+    PARVA_IDS = ["parva_tithi_amavasya", "parva_tithi_purnima"]
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_observances.festival_service import generate_jain_festivals
+        cls.res = generate_jain_festivals(
+            year=2026,
+            lat=28.6139,
+            lon=77.2090,
+            ayanamsa="Lahiri",
+            profile="shwetambar_murtipujak_tapagachchha",
+        )
+
+    def test_no_parva_tithi_fires_twice_in_the_same_lunar_month(self):
+        for fid in self.PARVA_IDS:
+            dates = sorted(
+                date.fromisoformat(f["start_date"])
+                for f in self.res["festivals"] if f["id"] == fid
+            )
+            gaps = [(b - a).days for a, b in zip(dates, dates[1:])]
+            offenders = [(dates[i], dates[i + 1]) for i, g in enumerate(gaps) if g < 20]
+            self.assertEqual(offenders, [], f"{fid} double-fired within a lunar month: {offenders}")
+
+    def test_2026_march_amavasya_is_only_the_18th(self):
+        """Ground truth confirmed by the user against a printed panchang: the
+        Chaitra/Phalguna-boundary Amavasya is the 18th, not the 19th."""
+        dates = sorted(
+            f["start_date"] for f in self.res["festivals"]
+            if f["id"] == "parva_tithi_amavasya" and f["start_date"].startswith("2026-03")
+        )
+        self.assertEqual(dates, ["2026-03-18"])
+
+
+class ParvaTithiVriddhiShowsBothDaysTest(unittest.TestCase):
+    """Distinct from ParvaTithiNoDoubleFireTest's month-boundary bug: when a parva
+    tithi genuinely spans two consecutive civil days' 6-ghati marks (vriddhi), the
+    code emits an occurrence on BOTH days -- confirmed correct by the user against
+    a printed panchang (2026-09-11), unlike the non-parva `vriddhi_rule` convention
+    (which picks a single day). Do not "fix" this to collapse to one day without
+    re-confirming against a reference first."""
+
+    @classmethod
+    def setUpClass(cls):
+        from jain_observances.festival_service import generate_jain_festivals
+        cls.res = generate_jain_festivals(
+            year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri",
+            profile="shwetambar_murtipujak_tapagachchha",
+        )
+
+    def test_vriddhi_parva_tithi_shows_on_both_days(self):
+        known_vriddhi_pairs = {
+            "parva_tithi_ashtami_krishna": (date(2026, 1, 10), date(2026, 1, 11)),
+            "parva_tithi_ashtami_shukla": (date(2026, 10, 18), date(2026, 10, 19)),
+            "pakhi_chaudas_shukla": (date(2026, 8, 26), date(2026, 8, 27)),
+        }
+        for fid, (d1, d2) in known_vriddhi_pairs.items():
+            dates = {f["start_date"] for f in self.res["festivals"] if f["id"] == fid}
+            self.assertIn(d1.isoformat(), dates, f"{fid}: expected current (undecided) behavior to include {d1}")
+            self.assertIn(d2.isoformat(), dates, f"{fid}: expected current (undecided) behavior to include {d2}")
+
+
 class RaviVratTest(unittest.TestCase):
     def test_ravi_vrat_resolution(self):
         from jain_observances.festival_service import generate_jain_festivals
