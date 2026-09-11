@@ -15,13 +15,13 @@ from astronomy import (
 )
 from panchang import (
     generate_daily_panchang,
-    calculate_jain_tithi_from_sunrise,
     find_chaitra_shukla_1,
     find_diwali,
     get_vikram_samvat,
     get_vira_nirvana_samvat,
     get_vara_from_date,
-    get_hindu_month
+    get_hindu_month,
+    JAIN_TITHI_OFFSET_DAYS,
 )
 from jain_observances.festival_service import generate_jain_festivals
 
@@ -240,18 +240,23 @@ def generate_hindi_pdf_calendar_2027_2028(out_pdf_path: str, lat: float = 26.912
             jd_mr = get_moonrise(jd_start, lat, lon)
             jd_ms = get_moonset(jd_start, lat, lon)
 
-            moon_lon = get_planetary_longitude(jd_sr, 'Moon', ayanamsa)
-            sun_lon = get_planetary_longitude(jd_sr, 'Sun', ayanamsa)
+            # Tithi and Hindu month both come from sunrise + 6 ghati (2h24m), not
+            # plain sunrise -- otherwise the month header and the day's Tithi can
+            # contradict each other right at a month boundary (e.g. "Chaitra" shown
+            # with "Amavasya", which is the LAST day of the PREVIOUS month).
+            reference_jd = jd_sr + JAIN_TITHI_OFFSET_DAYS
+            moon_lon = get_planetary_longitude(reference_jd, 'Moon', ayanamsa)
+            sun_lon = get_planetary_longitude(reference_jd, 'Sun', ayanamsa)
 
             panchang = generate_daily_panchang(
-                jd_sr, ayanamsa, sun_lon=sun_lon, moon_lon=moon_lon, local_date=c_date
+                reference_jd, ayanamsa, sun_lon=sun_lon, moon_lon=moon_lon, local_date=c_date
             )
 
             vara_idx = get_vara_from_date(c_date)
             vara_hindi = WEEKDAYS_HINDI[vara_idx]
 
             # Hindu Month using get_hindu_month
-            h_month_raw, h_month_common, is_adhika = get_hindu_month(jd_sr, ayanamsa)
+            h_month_raw, h_month_common, is_adhika = get_hindu_month(reference_jd, ayanamsa)
             clean_m = h_month_common.replace("Adhika ", "").replace("Adhik ", "").strip()
             h_m_h = MONTH_NAMES_HINDI.get(clean_m.upper(), clean_m)
             if is_adhika:
