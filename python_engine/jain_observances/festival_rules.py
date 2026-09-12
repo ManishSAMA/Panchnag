@@ -60,24 +60,53 @@ def _pradosh_days(snaps: List[Dict[str, Any]], tithi: int, paksha: str = "Krishn
 def _sixghati_pullback(day_snap: Dict[str, Any], snaps: List[Dict[str, Any]], tithi: int, paksha: str) -> date:
     """6-Ghati pull-back for a single-tithi day-selection.
 
-    ``day_snap`` is the udaya day for ``tithi`` (its sunrise tithi is ``tithi``). If that
-    tithi is *weak* -- it does not survive to the Jain day-start (sunrise + 144 min /
-    6 ghatika), i.e. the tithi has already advanced by then -- and the immediately
-    preceding civil day is *strong* for ``tithi - 1`` (that day's sunrise tithi is
-    ``tithi - 1`` AND it still holds at its own Jain day-start), the observance moves
-    back to that previous day. Otherwise (the udaya day is itself strong, or it is weak
-    but the previous day is also weak -- a run of weak days) the udaya day stands."""
+    ``day_snap`` is the udaya day for ``tithi`` (its sunrise tithi is ``tithi``). If
+    that tithi is *weak* -- it does not survive to the Jain day-start (sunrise + 144
+    min / 6 ghatika), i.e. the tithi has already advanced by then -- the observance
+    moves back to the immediately preceding civil day when EITHER:
+
+    1. that previous day is *strong* for ``tithi - 1`` (its sunrise tithi is
+       ``tithi - 1`` AND it still holds at its own Jain day-start) -- it was still
+       building toward the target; or
+    2. ``tithi == 15`` (Amavasya/Purnima, the paksha-ending tithi) AND that previous
+       day's Jain day-start has ALREADY reached ``tithi`` itself -- a short tithi
+       that starts before the previous day's 6-ghati mark and ends shortly after
+       this day's sunrise, never surviving to this day's own 6-ghati mark (found
+       2026-09-11: 2026-03-18/19's Amavasya/Pratipada boundary is exactly this
+       shape, missed by case 1 alone since the 18th's sunrise tithi is Chaturdashi,
+       not Amavasya -- the 18th isn't "building toward" tithi 15, it already
+       reached it).
+
+       Case 2 is deliberately scoped to tithi 15 only, matching the existing
+       Amavasya/Purnima-specific kshaya convention in _kshaya_backshift and
+       panchang.py's _tithi_owns_civil_day (Task 6). Applying it to ANY tithi
+       breaks already-verified dates for ordinary (non-paksha-ending) tithis --
+       e.g. Mahavir Janma Kalyanak (Chaitra Shukla 13, 2026): 30 Mar's Jain
+       day-start also already shows 13, but the correct, verified day is the
+       udaya day 31 Mar, not a pullback to the 30th. The shape (previous day's
+       Jain day-start already at the target, both days otherwise weak) is
+       identical in both cases; only the paksha-ending-ness of the tithi
+       distinguishes them.
+
+    Otherwise (the udaya day is itself strong, or it is weak but the previous day
+    is also weak -- a run of weak days, for a non-paksha-ending tithi) the udaya
+    day stands."""
     weak = day_snap.get("jain_paksha") != paksha or day_snap.get("jain_tithi_in_paksha") != tithi
     if not weak:
         return day_snap["date"]
     prev = day_snap["date"] - timedelta(days=1)
-    prev_strong = any(
+    prev_building_toward = any(
         s["date"] == prev
         and s["paksha"] == paksha and s["tithi_in_paksha"] == tithi - 1
         and s.get("jain_paksha") == paksha and s.get("jain_tithi_in_paksha") == tithi - 1
         for s in snaps
     )
-    return prev if prev_strong else day_snap["date"]
+    prev_already_reached = tithi == 15 and any(
+        s["date"] == prev
+        and s.get("jain_paksha") == paksha and s.get("jain_tithi_in_paksha") == tithi
+        for s in snaps
+    )
+    return prev if (prev_building_toward or prev_already_reached) else day_snap["date"]
 
 
 def _kshaya_backshift(pool: List[Dict[str, Any]], tithi: int):
@@ -4976,7 +5005,6 @@ class ChaitraAmavasyaKalyanakVarshantFestival(FestivalRule):
         ]
         end_snap = shukla_4_days[-1] if shukla_4_days else first_amavasya
 
-        start_date_str = first_amavasya["date"].isoformat()
         end_date_str = last_amavasya["date"].isoformat()
 
         start_mm_dd = first_amavasya["date"].strftime("%b %d")
@@ -4985,46 +5013,15 @@ class ChaitraAmavasyaKalyanakVarshantFestival(FestivalRule):
 
         occurrences = []
 
-        # 1. First Amavasya events
-        occurrences.append({
-            "id": f"ananthnath_moksha_{year}",
-            "occurrence_id": f"ananthnath_moksha_{year}",
-            "name": "Bhagwan Ananthnath Ji Moksha Kalyanak",
-            "title": "Bhagwan Ananthnath Ji Moksha Kalyanak",
-            "name_hindi": "भगवान अनंतनाथ जी मोक्ष कल्याणक",
-            "category": "kalyanak",
-            "badge": "Moksha Kalyanak",
-            "badge_color": "red",
-            "start_date": start_date_str,
-            "end_date": start_date_str,
-            "status": "confirmed",
-            "description": "Nirvana / Moksha Kalyanak aradhana of the 14th Tirthankara Bhagwan Ananthnath from Sammed Shikharji",
-            "meaning": "Nirvana / Moksha Kalyanak aradhana of the 14th Tirthankara Bhagwan Ananthnath from Sammed Shikharji",
-            "observance": "Moksha Kalyanak Ladoo Offering, Shikharji Vandana, Jin Pujan",
-            "sources": ["Jain Traditions"]
-        })
+        # Ananthnath/Aranath Moksha Kalyanaks used to be hardcoded here too, on the
+        # same first-Amavasya date -- duplicating the generic, source-tagged Kalyanak
+        # registry entries for the exact same two Tirthankaras
+        # (shri_anantnath_ji___liberation_kalyanak_15_* / shri_arahnath_ji___..._15_*),
+        # which is why the calendar showed the same historical event twice under two
+        # different names/spellings. Removed (2026-09-11, user-confirmed): those
+        # generic entries are now the sole representation of these Kalyanaks.
 
-        occurrences.append({
-            "id": f"aranath_moksha_{year}",
-            "occurrence_id": f"aranath_moksha_{year}",
-            "name": "Bhagwan Aranath Ji Moksha Kalyanak",
-            "title": "Bhagwan Aranath Ji Moksha Kalyanak",
-            "name_hindi": "भगवान अरनाथ जी मोक्ष कल्याणक",
-            "category": "kalyanak",
-            "badge": "Moksha Kalyanak",
-            "badge_color": "red",
-            "start_date": start_date_str,
-            "end_date": start_date_str,
-            "status": "confirmed",
-            "description": "Nirvana / Moksha Kalyanak aradhana of the 18th Tirthankara Bhagwan Aranath from Sammed Shikharji",
-            "meaning": "Nirvana / Moksha Kalyanak aradhana of the 18th Tirthankara Bhagwan Aranath from Sammed Shikharji",
-            "observance": "Nirvana Ladoo Offering, Shikharji Aradhana, Jin Pujan",
-            "sources": ["Jain Traditions"]
-        })
-
-
-
-        # 2. Concluding/Second Amavasya event: Vikram Samvat Varsha-Ant Divas
+        # Concluding/Second Amavasya event: Vikram Samvat Varsha-Ant Divas
         occurrences.append({
             "id": f"vikram_samvat_varshant_{year}",
             "occurrence_id": f"vikram_samvat_varshant_{year}",
