@@ -2600,14 +2600,14 @@ FESTIVAL_REGISTRY = [
     },
     {
         "id": "gyan_dhan_trayodashi",
-        "name": "Gyan Trayodashi & Dhan Trayodashi (Dhanteras)",
-        "name_hindi": "ज्ञान त्रयोदशी एवं धन त्रयोदशी (धनतेरस)",
+        "name": "Gyan Trayodashi & Dhyan Teras",
+        "name_hindi": "ज्ञान त्रयोदशी एवं ध्यान तेरस",
         "category": "mahaparv_vrat",
         "profiles": ["all"],
         "rule_type": "GyanDhanTrayodashi",
         "jain_month": "Kartika",
-        "meaning": "Gyan Trayodashi and Dhan Trayodashi on Kartika Krishna 13",
-        "observance": "Samyak Jnana Aradhana, Shastra Pujan, Atma-Dhan Aradhana",
+        "meaning": "Gyan Trayodashi and Dhyan Teras on Kartika Krishna 13; Janam and Tap Kalyanak of Shri Padam Prabhu Bhagwan",
+        "observance": "Samyak Jnana Aradhana, Shastra Pujan, Dhyan and Atma-Dhan Aradhana",
         "sources": ["Jain Traditions"]
     },
     {

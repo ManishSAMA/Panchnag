@@ -49,7 +49,7 @@ _VALID_DAY_RULES = frozenset({"udaya", "pradosh"})
 
 def _pradosh_days(snaps: List[Dict[str, Any]], tithi: int, paksha: str = "Krishna") -> List[Dict[str, Any]]:
     """Days on which `tithi` (paksha-relative) prevails at sunset -- the pradosh-vyapini
-    day-selection used by Diwali / Mahavir Nirvana, Dhanteras, Ahoi Ashtami, etc.
+    day-selection used by Diwali / Mahavir Nirvana, Ahoi Ashtami, etc.
     Returns chronologically-sorted matches; empty if the tithi is a complete kshaya at
     sunset (callers fall back to the previous tithi, as with the udaya rule)."""
     out = [
@@ -3938,7 +3938,14 @@ class SplitDayAhoiKarwaDampatyaFestival(FestivalRule):
 
 
 class GyanDhanTrayodashiFestival(FestivalRule):
-    """Kartika Krishna Trayodashi (13): Gyan Trayodashi & Dhan Trayodashi Engine Logic.
+    """Kartika Krishna Trayodashi (13): Gyan Trayodashi & Dhyan Teras Engine Logic.
+
+    Dhyan Teras -- NOT "Dhanteras". The Hindu festival of wealth shares this tithi;
+    the Jain observance is a day of focus, meditation and detachment FROM material
+    wealth, carrying the Janam and Tap Kalyanak of Shri Padam Prabhu Bhagwan (6th
+    Tirthankara). There is no day/night split here, unlike Amavasya/Diwali: the
+    ordinary Jain anchor (sunrise + 2h24m) picks the single date and every
+    associated observance maps onto it.
 
     Target: Kartika Krishna Trayodashi (13).
     Vriddhi: Assign strictly to 1st Trayodashi.
@@ -3965,7 +3972,7 @@ class GyanDhanTrayodashiFestival(FestivalRule):
         else:
             kartika_snaps = [s for s in kartika_snaps if not s["is_adhika"]]
 
-        # Udaya Trayodashi -- the printed Pt. Jaini Jiyalal panchang puts Dhanteras on the
+        # Trayodashi at the Jain anchor -- the printed Pt. Jaini Jiyalal panchang puts it on the
         # udaya day (7 Nov 2026) and the pradosh Yama-Deepdaan rite the day before (6 Nov).
         trayodashi_days = [s for s in kartika_snaps
                            if s["paksha"] == "Krishna" and s["tithi_in_paksha"] == 13]
@@ -4006,18 +4013,18 @@ class GyanDhanTrayodashiFestival(FestivalRule):
             {
                 "id": f"dhan_teras_{year}",
                 "occurrence_id": f"dhan_teras_{year}",
-                "name": "Dhan Trayodashi (Dhanteras)",
-                "title": "Dhan Trayodashi (Dhanteras)",
-                "name_hindi": "धन त्रयोदशी (धनतेरस)",
+                "name": "Dhyan Teras",
+                "title": "Dhyan Teras",
+                "name_hindi": "ध्यान तेरस",
                 "category": "mahaparv",
-                "badge": "Dhanteras",
+                "badge": "Dhyan Teras",
                 "badge_color": "pink",
                 "start_date": date_str,
                 "end_date": date_str,
                 "status": "confirmed",
-                "description": "Aradhana of spiritual wealth (Ratnatraya / Atma-Dhan) and initiation of the 5-day Mahavira Nirvana Mahotsav",
-                "meaning": "Aradhana of spiritual wealth (Ratnatraya / Atma-Dhan) and initiation of the 5-day Mahavira Nirvana Mahotsav",
-                "observance": "Atma-Dhan Aradhana, Deepotsav Initiation, Lakshmi-Saraswati Pujan",
+                "description": "Day of dhyan (focus and meditation) and detachment from material wealth; Janam and Tap Kalyanak of Shri Padam Prabhu Bhagwan, the 6th Tirthankara, and initiation of the 5-day Mahavira Nirvana Mahotsav",
+                "meaning": "Day of dhyan (focus and meditation) and detachment from material wealth; Janam and Tap Kalyanak of Shri Padam Prabhu Bhagwan, the 6th Tirthankara",
+                "observance": "Dhyan and Samayik, Ratnatraya / Atma-Dhan Aradhana, Padam Prabhu Bhagwan Kalyanak Pujan, Deepotsav Initiation",
                 "sources": ["Jain Traditions"],
                 "tithi": "Trayodashi (13)",
             }

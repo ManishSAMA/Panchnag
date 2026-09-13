@@ -1613,9 +1613,9 @@ class GyanDhanTrayodashiTest(unittest.TestCase):
         self.assertEqual(gt_evt["category"], "mahaparv_vrat")
         self.assertEqual(gt_evt["badge"], "Gyan Trayodashi")
 
-        self.assertEqual(dt_evt["title"], "Dhan Trayodashi (Dhanteras)")
+        self.assertEqual(dt_evt["title"], "Dhyan Teras")
         self.assertEqual(dt_evt["category"], "mahaparv")
-        self.assertEqual(dt_evt["badge"], "Dhanteras")
+        self.assertEqual(dt_evt["badge"], "Dhyan Teras")
 
         self.assertEqual(gt_evt["start_date"], dt_evt["start_date"])
 
@@ -2535,7 +2535,7 @@ class AdhikMaasKrishnaKalyanakPlacementTest(unittest.TestCase):
 class DiwaliClusterDateTest(unittest.TestCase):
     """Ground truth = the printed Pt. Jaini Jiyalal panchang (p.18) for VS 2083:
         Ahoi + Dampatya Ashtami .... 1 Nov 2026  (pradosh Kartik Kr. Ashtami)
-        Dhanteras ................... 7 Nov 2026  (udaya Kartik Kr. Trayodashi)
+        Dhyan Teras ................. 7 Nov 2026  (Kartik Kr. Trayodashi at the Jain anchor)
         Hindu Lakshmi Puja ......... (8 Nov, pradosh Amavasya -- not modelled here)
         श्री महावीर स्वामी मोक्ष .... 9 Nov 2026  (udaya / pratyush Amavasya)
         वीर निर्वाण सं. 2553 प्रा. .. 10 Nov 2026 (udaya Kartik Sh. Pratipada)

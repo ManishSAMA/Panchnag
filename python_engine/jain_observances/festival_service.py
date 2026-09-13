@@ -61,7 +61,7 @@ def _build_snapshots(year: int, lat: float, lon: float, ayanamsa: str, tz_name: 
 
             # Evening (pradosh) tithi -- the one prevailing at sunset. Used for the
             # day-selection of pradosh-vyapini festivals (Diwali/Mahavir Nirvana,
-            # Dhanteras, Ahoi Ashtami, ...), which the udaya tithi gets wrong whenever
+            # Ahoi Ashtami, ...), which the udaya tithi gets wrong whenever
             # the target tithi starts during the day and ends before the next sunrise.
             sunset_jd = get_sunset(day_start_jd, lat, lon)
             sun_lon_e = get_planetary_longitude(sunset_jd, 'Sun', ayanamsa)
