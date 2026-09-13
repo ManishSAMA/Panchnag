@@ -72,13 +72,22 @@ def _build_snapshots(year: int, lat: float, lon: float, ayanamsa: str, tz_name: 
                 "date": curr,
                 "sunrise_jd": sunrise_jd,
                 "sunset_jd": sunset_jd,
-                "tithi": tithi_idx,
+                # Public day-identity Tithi == the 6-ghati (Jain day-start) Tithi, the
+                # single anchor of plans/tithi_unification/design.md. The plain-sunrise
+                # (udaya) values remain as private _sunrise_* fields: they are the
+                # precondition of _sixghati_pullback's weak/strong comparison and of
+                # Kalyanak candidate selection, which compare an udaya day against the
+                # 6-ghati one. Nothing outside that machinery may read them.
+                "tithi": jain_tithi_idx,
                 "jain_tithi": jain_tithi_idx,
                 "jain_tithi_name": "", # Unused by logic engine
                 "hindu_month": base_month,
                 "is_adhika": is_adhika,
-                "paksha": "Shukla" if tithi_idx <= 15 else "Krishna",
-                "tithi_in_paksha": tithi_idx if tithi_idx <= 15 else tithi_idx - 15,
+                "paksha": "Shukla" if jain_tithi_idx <= 15 else "Krishna",
+                "tithi_in_paksha": jain_tithi_idx if jain_tithi_idx <= 15 else jain_tithi_idx - 15,
+                "_sunrise_tithi": tithi_idx,
+                "_sunrise_paksha": "Shukla" if tithi_idx <= 15 else "Krishna",
+                "_sunrise_tithi_in_paksha": tithi_idx if tithi_idx <= 15 else tithi_idx - 15,
                 "jain_paksha": "Shukla" if jain_tithi_idx <= 15 else "Krishna",
                 "jain_tithi_in_paksha": jain_tithi_idx if jain_tithi_idx <= 15 else jain_tithi_idx - 15,
                 "evening_tithi": evening_tithi_idx,

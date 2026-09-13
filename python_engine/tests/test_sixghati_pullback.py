@@ -22,12 +22,14 @@ from jain_observances.festival_rules import _sixghati_pullback
 
 MAR_18 = {
     "date": date(2026, 3, 18),
-    "paksha": "Krishna", "tithi_in_paksha": 14,      # sunrise: Chaturdashi
+    "_sunrise_paksha": "Krishna", "_sunrise_tithi_in_paksha": 14,      # sunrise: Chaturdashi
+    "paksha": "Krishna", "tithi_in_paksha": 15,
     "jain_paksha": "Krishna", "jain_tithi_in_paksha": 15,  # 6-ghati: Amavasya
 }
 MAR_19 = {
     "date": date(2026, 3, 19),
-    "paksha": "Krishna", "tithi_in_paksha": 15,      # sunrise: Amavasya
+    "_sunrise_paksha": "Krishna", "_sunrise_tithi_in_paksha": 15,      # sunrise: Amavasya
+    "paksha": "Shukla", "tithi_in_paksha": 1,
     "jain_paksha": "Shukla", "jain_tithi_in_paksha": 1,    # 6-ghati: Pratipada
 }
 
@@ -45,13 +47,15 @@ class SixGhatiPullbackReachedTargetTests(unittest.TestCase):
         target-1 at both sunrise and 6-ghati. Must not regress."""
         day_snap = {
             "date": date(2026, 1, 2),
-            "paksha": "Shukla", "tithi_in_paksha": 5,
-            "jain_paksha": "Shukla", "jain_tithi_in_paksha": 6,  # weak: already Shashthi
+            "_sunrise_paksha": "Shukla", "_sunrise_tithi_in_paksha": 5,
+            "paksha": "Shukla", "tithi_in_paksha": 6,
+    "jain_paksha": "Shukla", "jain_tithi_in_paksha": 6,  # weak: already Shashthi
         }
         prev_snap = {
             "date": date(2026, 1, 1),
+            "_sunrise_paksha": "Shukla", "_sunrise_tithi_in_paksha": 4,
             "paksha": "Shukla", "tithi_in_paksha": 4,
-            "jain_paksha": "Shukla", "jain_tithi_in_paksha": 4,  # strong for Panchami-1
+    "jain_paksha": "Shukla", "jain_tithi_in_paksha": 4,  # strong for Panchami-1
         }
         result = _sixghati_pullback(day_snap, [prev_snap, day_snap], tithi=5, paksha="Shukla")
         self.assertEqual(result, date(2026, 1, 1))
@@ -59,8 +63,9 @@ class SixGhatiPullbackReachedTargetTests(unittest.TestCase):
     def test_udaya_day_stands_when_strong(self):
         strong_snap = {
             "date": date(2026, 5, 1),
+            "_sunrise_paksha": "Krishna", "_sunrise_tithi_in_paksha": 8,
             "paksha": "Krishna", "tithi_in_paksha": 8,
-            "jain_paksha": "Krishna", "jain_tithi_in_paksha": 8,
+    "jain_paksha": "Krishna", "jain_tithi_in_paksha": 8,
         }
         result = _sixghati_pullback(strong_snap, [strong_snap], tithi=8, paksha="Krishna")
         self.assertEqual(result, date(2026, 5, 1))
@@ -74,13 +79,15 @@ class SixGhatiPullbackReachedTargetTests(unittest.TestCase):
         31 Mar -- applying case 2 to any tithi silently moves this to the 30th."""
         mar_30 = {
             "date": date(2026, 3, 30),
-            "paksha": "Shukla", "tithi_in_paksha": 12,
-            "jain_paksha": "Shukla", "jain_tithi_in_paksha": 13,
+            "_sunrise_paksha": "Shukla", "_sunrise_tithi_in_paksha": 12,
+            "paksha": "Shukla", "tithi_in_paksha": 13,
+    "jain_paksha": "Shukla", "jain_tithi_in_paksha": 13,
         }
         mar_31 = {
             "date": date(2026, 3, 31),
-            "paksha": "Shukla", "tithi_in_paksha": 13,
-            "jain_paksha": "Shukla", "jain_tithi_in_paksha": 14,
+            "_sunrise_paksha": "Shukla", "_sunrise_tithi_in_paksha": 13,
+            "paksha": "Shukla", "tithi_in_paksha": 14,
+    "jain_paksha": "Shukla", "jain_tithi_in_paksha": 14,
         }
         result = _sixghati_pullback(mar_31, [mar_30, mar_31], tithi=13, paksha="Shukla")
         self.assertEqual(result, date(2026, 3, 31))
@@ -90,13 +97,15 @@ class SixGhatiPullbackReachedTargetTests(unittest.TestCase):
         already at it (e.g. previous day is two tithis back) -- no pullback."""
         day_snap = {
             "date": date(2026, 6, 10),
-            "paksha": "Shukla", "tithi_in_paksha": 10,
-            "jain_paksha": "Shukla", "jain_tithi_in_paksha": 11,  # weak
+            "_sunrise_paksha": "Shukla", "_sunrise_tithi_in_paksha": 10,
+            "paksha": "Shukla", "tithi_in_paksha": 11,
+    "jain_paksha": "Shukla", "jain_tithi_in_paksha": 11,  # weak
         }
         prev_snap = {
             "date": date(2026, 6, 9),
-            "paksha": "Shukla", "tithi_in_paksha": 8,
-            "jain_paksha": "Shukla", "jain_tithi_in_paksha": 9,  # neither 9 nor 10
+            "_sunrise_paksha": "Shukla", "_sunrise_tithi_in_paksha": 8,
+            "paksha": "Shukla", "tithi_in_paksha": 9,
+    "jain_paksha": "Shukla", "jain_tithi_in_paksha": 9,  # neither 9 nor 10
         }
         result = _sixghati_pullback(day_snap, [prev_snap, day_snap], tithi=10, paksha="Shukla")
         self.assertEqual(result, date(2026, 6, 10))

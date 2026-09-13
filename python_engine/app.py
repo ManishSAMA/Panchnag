@@ -451,9 +451,6 @@ def create_app() -> Flask:
                 for f in fest_data.get("festivals", []):
                     start_d = datetime.strptime(f["start_date"], "%Y-%m-%d").date()
                     end_d = datetime.strptime(f["end_date"], "%Y-%m-%d").date()
-                    # Per-day Navpad Oli rows are represented by the multi-day list only.
-                    if f.get("badge") == "Navpad Oli" and " - Day" in (f.get("name") or ""):
-                        continue
                     if start_d == end_d:
                         _place(start_d, f, None)
                     else:

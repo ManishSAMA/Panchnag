@@ -36,9 +36,52 @@ final call:
 | Question | Decision | Evidence considered |
 |---|---|---|
 | How does the Kalyanak weak/strong pullback survive collapsing sunrise-tithi and 6-ghati-tithi into one field? | Keep a **private, internal-only** `_sunrise_tithi()` helper used solely inside `_sixghati_pullback` / `_kalyanak_first_active_day`'s comparison. It is never exposed as a snapshot field or a public "Tithi" value anywhere. | — |
-| Should pradosh (sunset) tithi survive for evening festivals? | **No** — pradosh is eliminated too. All day-identity, everywhere, is 6-ghati. | Computed 2026 Mumbai data: 8 Nov sunset = Amavasya (pradosh), but 8 Nov sunrise AND 6-ghati = Krishna Chaturdashi; 9 Nov sunrise/6-ghati = Amavasya. Diwali/Mahavir Nirvana move from **8 Nov → 9 Nov 2026**, one day later than every published Jain/Hindu panchang for that year. User confirmed this explicitly, twice, after seeing the number. Recorded here so it is never mistaken for an unnoticed regression later. |
+| Should pradosh (sunset) tithi survive for evening festivals? | ~~**No** — pradosh is eliminated too.~~ **SUPERSEDED 2026-09-13 — pradosh MUST survive. See "Superseded decisions" below.** | Computed 2026 Mumbai data: 8 Nov sunset = Amavasya (pradosh), but 8 Nov sunrise AND 6-ghati = Krishna Chaturdashi; 9 Nov sunrise/6-ghati = Amavasya. Diwali/Mahavir Nirvana move from **8 Nov → 9 Nov 2026**, one day later than every published Jain/Hindu panchang for that year. User confirmed this explicitly, twice, after seeing the number. Recorded here so it is never mistaken for an unnoticed regression later. |
 | What's the source of truth for the new expected dates in tests? | **User verifies each changed date** against an external reference (printed panchang / acharya-approved calendar) before that test's expectation is updated. Not "whatever the new code outputs." | — |
 | Do the Vrat provider modules (`jain_observances/vrats/*.py`) get unified too? | **Yes**, included in scope. They run their own `SwissEphTithiProvider`/`SwissEphPanchangProvider` (`jain_observances/vrats/provider.py`), independently of `festival_rules.py`'s snapshots — leaving them out would just relocate the hybrid-state bug rather than remove it. | `provider.py` is a single choke point (`get_sunrise`, `get_tithi_at_time`, `is_adhik_month`, `get_hindu_month_name`), but each Vrat module (`daslakshan.py`, `ratnatraya.py`, `shodashkaran.py`, `ravivara.py`, `ashtahnika.py`) supplies its own `cutoff_time` expression to `get_tithi_at_time` — **not yet individually audited**. That audit is a required first step of the implementation plan for this part, not assumed here. |
+
+## Superseded decisions
+
+### Pradosh elimination — REVERSED (2026-09-13)
+
+The table above records "eliminate pradosh" as confirmed, on the strength of Diwali /
+Mahavir Nirvana moving 8 Nov -> 9 Nov 2026. **That premise was wrong and the decision
+must not be acted on.** The calendar owner has since ruled, and the ephemeris confirms:
+
+* **Diwali 2026 is 8 Nov** — it is the Amavasya *night*, a pradosh observance.
+* **Mahavir Swami Moksha Kalyanak 2026 is 9 Nov** — it is the Amavasya *morning*,
+  taken at the 6-ghati anchor.
+
+Amavasya runs **08 Nov 11:28 -> 09 Nov 12:32** at Delhi: it begins one afternoon and
+ends the next midday, so the night falls on one Gregorian date and the morning anchor
+on the next. The two observances legitimately fall on DIFFERENT dates, and no rule may
+force them onto the same one. Eliminating pradosh would permanently fix Diwali on the
+wrong day.
+
+What was actually broken was not that pradosh existed, but that it was unreachable:
+`day_rule` appeared **zero times** in `registry.py`, so every entry silently took the
+`"udaya"` default and the `"pradosh"` branch in `SingleTithiFestival.resolve` could
+never run. Fixed by resolving Diwali on the pradosh Amavasya day in
+`DiwaliChaturmasNishthapan`, and by making an unknown `day_rule` raise at construction
+instead of falling back in silence.
+
+**Standing conclusion: there is no single day-identity anchor.** Diwali needs sunset,
+Kalyanaks need the sunrise day plus the 6-ghati pullback, parva tithis need the
+6-ghati anchor. Any future plan that assumes one anchor for everything is wrong.
+
+### Phase 2 snapshot unification — IMPLEMENTED (2026-09-13)
+
+`_build_snapshots` now sources public `tithi`/`paksha`/`tithi_in_paksha` from the
+6-ghati `reference_jd`. The plain-sunrise values survive as private `_sunrise_*`
+fields, read only by Kalyanak candidate selection, `_sixghati_pullback` and
+`_origin_pullback_day`, whose weak/strong comparison needs an udaya day to compare
+against. `_kshaya_backshift` takes the field its pool was selected on.
+
+Verified consequence at the Chaitra/Vaishakh 2026 boundary (ruled correct by the
+calendar owner, pinned in `tests/test_chaitra_vaishakh_2026_anomalies.py`): Shukla 11
+is kshaya and merges onto 28 Mar; Purnima lands on **1 Apr**; Vaishakh Krishna Ekam is
+vriddhi across **2 and 3 Apr**.
+
 
 ## New architecture
 

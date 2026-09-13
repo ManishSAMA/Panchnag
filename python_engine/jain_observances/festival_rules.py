@@ -44,6 +44,9 @@ def _matches_purnimanta_target(s: Dict[str, Any], jain_month: str, paksha: str) 
     return not s.get("purnimanta_is_adhika", s["is_adhika"])
 
 
+_VALID_DAY_RULES = frozenset({"udaya", "pradosh"})
+
+
 def _pradosh_days(snaps: List[Dict[str, Any]], tithi: int, paksha: str = "Krishna") -> List[Dict[str, Any]]:
     """Days on which `tithi` (paksha-relative) prevails at sunset -- the pradosh-vyapini
     day-selection used by Diwali / Mahavir Nirvana, Dhanteras, Ahoi Ashtami, etc.
@@ -97,7 +100,7 @@ def _sixghati_pullback(day_snap: Dict[str, Any], snaps: List[Dict[str, Any]], ti
     prev = day_snap["date"] - timedelta(days=1)
     prev_building_toward = any(
         s["date"] == prev
-        and s["paksha"] == paksha and s["tithi_in_paksha"] == tithi - 1
+        and s["_sunrise_paksha"] == paksha and s["_sunrise_tithi_in_paksha"] == tithi - 1
         and s.get("jain_paksha") == paksha and s.get("jain_tithi_in_paksha") == tithi - 1
         for s in snaps
     )
@@ -109,17 +112,23 @@ def _sixghati_pullback(day_snap: Dict[str, Any], snaps: List[Dict[str, Any]], ti
     return prev if (prev_building_toward or prev_already_reached) else day_snap["date"]
 
 
-def _kshaya_backshift(pool: List[Dict[str, Any]], tithi: int):
+def _kshaya_backshift(pool: List[Dict[str, Any]], tithi: int,
+                      tithi_field: str = "tithi_in_paksha"):
     """Kshaya (-1) rule: the target tithi is omitted -- it begins after a civil sunrise
     and ends before the next, so it never carries a date -- and the observance moves
     BACK to the day that tithi begins on, i.e. the preceding tithi's (last) day. Both
     the preceding-tithi events and the kshaya-tithi events then share that civil date.
     Falls forward to the next tithi only when the preceding tithi is unavailable in the
-    pool (e.g. a Pratipada kshaya, whose tithi-1 sits in the prior paksha)."""
-    prev = sorted(s["date"] for s in pool if s["tithi_in_paksha"] == tithi - 1)
+    pool (e.g. a Pratipada kshaya, whose tithi-1 sits in the prior paksha).
+
+    ``tithi_field`` must be the SAME field the caller selected ``pool`` on -- the
+    private ``_sunrise_tithi_in_paksha`` for udaya-selected categories, the public
+    6-ghati ``tithi_in_paksha`` otherwise. Reading a different field than the pool was
+    filtered by picks the neighbouring day whenever the two anchors disagree."""
+    prev = sorted(s["date"] for s in pool if s[tithi_field] == tithi - 1)
     if prev:
         return prev[-1]
-    nxt = sorted(s["date"] for s in pool if s["tithi_in_paksha"] > tithi)
+    nxt = sorted(s["date"] for s in pool if s[tithi_field] > tithi)
     return nxt[0] if nxt else None
 
 
@@ -176,9 +185,22 @@ class FestivalRule:
         self.vriddhi_rule = config.get("vriddhi_rule")
         self.kshaya_rule = config.get("kshaya_rule")
         self.adhika_rule = config.get("adhika_rule")
-        # "udaya" (sunrise tithi, default) or "pradosh" (tithi prevailing at sunset --
-        # for evening-observed festivals like Diwali / Mahavir Nirvana).
+        # Which moment of the civil day decides the tithi for this observance:
+        #   "udaya"   -- the Jain day-start anchor, sunrise + 2h24m (6 ghati). Default.
+        #   "pradosh" -- the tithi prevailing at SUNSET, for night observances whose
+        #                tithi can begin after the morning anchor has already passed
+        #                (Diwali is the Amavasya NIGHT; its Moksha Kalyanak is the
+        #                Amavasya MORNING, and the two routinely fall on different
+        #                Gregorian dates).
+        # A typo here used to fall back to "udaya" in silence, which is how an
+        # evening observance could sit on the wrong day with nothing to show for it.
+        # Unknown values now fail loudly at registry-load time instead.
         self.day_rule = config.get("day_rule", "udaya")
+        if self.day_rule not in _VALID_DAY_RULES:
+            raise ValueError(
+                f"{self.id!r}: unknown day_rule {self.day_rule!r}; "
+                f"expected one of {sorted(_VALID_DAY_RULES)}"
+            )
         # Opt-in Day-1 Anchor: pull the observance back to the civil day the target
         # tithi originates on when it began (was active by sunset) on the day before
         # its sunrise day. Enabled per-entry, not globally.
@@ -238,7 +260,8 @@ class SingleTithiFestival(FestivalRule):
         ps = next((s for s in snapshots if s["date"] == prev), None)
         if ps is None:
             return resolved_day
-        already_udaya = ps["paksha"] == self.paksha and ps["tithi_in_paksha"] == self.tithi
+        already_udaya = (ps["_sunrise_paksha"] == self.paksha
+                         and ps["_sunrise_tithi_in_paksha"] == self.tithi)
         active_by_sunset = (ps.get("evening_paksha", ps["paksha"]) == self.paksha
                             and ps.get("evening_tithi_in_paksha") == self.tithi)
         return prev if (active_by_sunset and not already_udaya) else resolved_day
@@ -265,8 +288,8 @@ class SingleTithiFestival(FestivalRule):
         # _sixghati_pullback / _kalyanak_first_active_day depend on; repointing it here
         # too would make their weak/strong comparison compare 6-ghati to itself and
         # silently disable already-verified Kalyanak pullback dates.
-        paksha_field = "jain_paksha" if self.category == "parva" else "paksha"
-        tithi_field = "jain_tithi_in_paksha" if self.category == "parva" else "tithi_in_paksha"
+        paksha_field = "jain_paksha" if self.category == "parva" else "_sunrise_paksha"
+        tithi_field = "jain_tithi_in_paksha" if self.category == "parva" else "_sunrise_tithi_in_paksha"
 
         if self.paksha and self.day_rule != "pradosh":
             matches = [s for s in matches if s.get(paksha_field) == self.paksha]
@@ -296,7 +319,7 @@ class SingleTithiFestival(FestivalRule):
                         resolved_day = self._origin_pullback_day(resolved_day, snapshots)
                         occurrences.append(self._create_occurrence(resolved_day, resolved_day, self.tithi, self.jain_month, self.paksha, profile))
                 else:
-                    resolved_day = _kshaya_backshift(matches, self.tithi)
+                    resolved_day = _kshaya_backshift(matches, self.tithi, tithi_field)
                     if resolved_day:
                         occurrences.append(self._create_occurrence(resolved_day, resolved_day, self.tithi, self.jain_month, self.paksha, profile))
             else:
@@ -315,7 +338,7 @@ class SingleTithiFestival(FestivalRule):
                             resolved_day = _sixghati_pullback(chosen, group, self.tithi, self.paksha)
                             occurrences.append(self._create_occurrence(resolved_day, resolved_day, self.tithi, _month_name, self.paksha, profile))
                     else:
-                        resolved_day = _kshaya_backshift(group, self.tithi)
+                        resolved_day = _kshaya_backshift(group, self.tithi, tithi_field)
                         if resolved_day:
                             occurrences.append(self._create_occurrence(resolved_day, resolved_day, self.tithi, _month_name, self.paksha, profile))
         return occurrences
@@ -604,7 +627,13 @@ class BhaktambarVratFestival(FestivalRule):
 
             first_snap = block[0]
             jain_m = get_jain_month(first_snap)
-            prefix = "Adhik " if first_snap["is_adhika"] else ""
+            # get_jain_month returns the PURNIMANTA month, which for a Krishna paksha is
+            # the NEXT month -- so its adhika-ness is purnimanta_is_adhika. Using the
+            # snapshot's amanta is_adhika here crosses the two for Krishna pakshas: the
+            # fortnight labelled "Adhika Jyeshtha" would be tagged non-adhika, and the
+            # Nija one tagged adhika.
+            is_adhika_month = first_snap.get("purnimanta_is_adhika", first_snap["is_adhika"])
+            prefix = "Adhik " if is_adhika_month else ""
             month_title = f"{prefix}{jain_m.capitalize()}"
 
             p_hindi = "शुक्ल" if p.lower() == "shukla" else "कृष्ण"
@@ -612,14 +641,17 @@ class BhaktambarVratFestival(FestivalRule):
             end_mm_dd = end_day.strftime("%m-%d")
             span_label = f"Span: {start_mm_dd} – {end_mm_dd}"
 
-            occ_id = f"bhaktambar_vrat_{year}_{jain_m.lower()}_{p.lower()}"
+            # An adhika month carries its own Ashtami->Chaturdashi span, distinct from
+            # the nija month of the same name -- keep their identities apart.
+            adhika_seg = "adhika_" if is_adhika_month else ""
+            occ_id = f"bhaktambar_vrat_{year}_{adhika_seg}{jain_m.lower()}_{p.lower()}"
 
             occurrences.append({
                 "id": occ_id,
                 "occurrence_id": occ_id,
-                "name": f"{p} Bhaktambar Vrat",
+                "name": "Bhaktambar Vrat",
                 "title": f"{p} Bhaktambar Vrat ({month_title})",
-                "name_hindi": f"{p_hindi} भक्ताम्बर व्रत ({month_title})",
+                "name_hindi": "भक्ताम्बर व्रत",
                 "category": self.category or "vrat",
                 "badge": "Bhaktambar Vrat",
                 "badge_color": "purple",
@@ -1532,6 +1564,17 @@ class DiwaliChaturmasNishthapanFestival(FestivalRule):
         if not target_snap:
             return []
 
+        # Diwali is the Amavasya NIGHT, the Moksha Kalyanak the Amavasya MORNING, and a
+        # single Amavasya routinely spans two civil days -- beginning one afternoon and
+        # ending the next midday. The Kalyanak keeps ``target_snap`` (the Jain day-start
+        # / 6-ghati Amavasya day); Diwali takes the day whose SUNSET carries Amavasya.
+        # 2026: Amavasya runs 08 Nov 11:28 -> 09 Nov 12:32, so Diwali is 8 Nov and the
+        # Moksha Kalyanak 9 Nov -- matching the printed Pt. Jaini Jiyalal panchang noted
+        # above. The two must never be forced onto one date. Kshaya of the evening
+        # Amavasya falls back to the Kalyanak day.
+        pradosh_amavasya = _pradosh_days(month_snaps, 15, "Krishna")
+        diwali_snap = pradosh_amavasya[-1] if pradosh_amavasya else target_snap
+
         occurrences = [
             {
                 "id": f"{self.id}_{year}",
@@ -1542,8 +1585,8 @@ class DiwaliChaturmasNishthapanFestival(FestivalRule):
                 "category": "mahaparv",
                 "badge": "Diwali",
                 "badge_color": "pink",
-                "start_date": target_snap["date"].isoformat(),
-                "end_date": target_snap["date"].isoformat(),
+                "start_date": diwali_snap["date"].isoformat(),
+                "end_date": diwali_snap["date"].isoformat(),
                 "status": "confirmed",
                 "description": "Nirvan Kalyanak of 24th Tirthankara Bhagwan Mahavir",
                 "meaning": self.meaning or "Nirvan Kalyanak of 24th Tirthankara Bhagwan Mahavir",
@@ -5165,28 +5208,35 @@ class Namokar35VratFestival(FestivalRule):
             tithi_name = "Saptami" if tithi == 7 else ("Panchami" if tithi == 5 else ("Chaturdashi" if tithi == 14 else "Navami"))
 
             if step_num == 1:
-                title = "Namokar Mahamantra Vrat (Prarambh - 1/35)"
+                title = "Namokar Mahamantra Vrat (Prarambh)"
                 b_type = "START"
                 badge = "Namokar Vrat #1"
                 desc = f"Commencement of the 1.5-year 35-Namokar Vrat chain; First fasting observance (Pada: {pada} - {tithi_name} Vrat {sub_idx}/{sub_total})"
             elif step_num == 35:
-                title = "Namokar Mahamantra Vrat (Udyapan / Purna - 35/35)"
+                title = "Namokar Mahamantra Vrat (Udyapan / Purna)"
                 b_type = "END"
                 badge = "Namokar Vrat Purna"
                 desc = "Culmination, final Navami fasting observance, and Udyapan of the 1.5-year 35-Namokar Mahamantra Vrat chain"
             else:
-                title = f"Namokar Mahamantra Vrat ({step_num}/35)"
+                title = "Namokar Mahamantra Vrat"
                 b_type = "INTERMEDIATE"
                 badge = f"Namokar Vrat #{step_num}"
                 ord_str = self._ordinal(step_num)
                 desc = f"{ord_str} fasting observance of the Namokar Vrat chain (Pada: {pada} - {tithi_name} Vrat {sub_idx}/{sub_total})"
+
+            if step_num == 1:
+                name_hindi = "णमोकार महामंत्र व्रत (प्रारंभ)"
+            elif step_num == 35:
+                name_hindi = "णमोकार महामंत्र व्रत (उद्यापन / पूर्ण)"
+            else:
+                name_hindi = "णमोकार महामंत्र व्रत"
 
             occurrences.append({
                 "id": f"namokar_vrat_step_{step_num}_{year}",
                 "occurrence_id": f"namokar_vrat_step_{step_num}_{year}",
                 "name": title,
                 "title": title,
-                "name_hindi": f"णमोकार महामंत्र व्रत ({step_num}/35)",
+                "name_hindi": name_hindi,
                 "category": "mahaparv_vrat",
                 "badge": badge,
                 "badge_color": "orange",

@@ -10,6 +10,22 @@ def setUpModule():
         pass
 
 
+def _parva_tithi_is_registered():
+    """Parva Tithi entries are commented out in jain_observances/registry.py on request.
+    These tests describe behaviour that is correct whenever they are registered, so they
+    gate on the registry itself: uncomment the entries and every one of them runs again,
+    unchanged."""
+    from jain_observances import festival_rules as rules
+    return any(e["id"].startswith("parva_tithi_") for e in rules.FESTIVAL_REGISTRY)
+
+
+parva_tithi_contract = unittest.skipUnless(
+    _parva_tithi_is_registered(),
+    "Parva Tithi entries are commented out in jain_observances/registry.py; "
+    "uncomment them to re-enable this test as written.",
+)
+
+
 class JainFestivalsRegistryTest(unittest.TestCase):
     def test_registry_integrity(self):
         """Test that jain_festival_rules loads and has valid festival schemas."""
@@ -89,7 +105,7 @@ class JainFestivalServiceTest(unittest.TestCase):
             ayanamsa="Lahiri",
             profile="all"
         )
-        self.assertEqual(res["panchang_tithi_map"]["2026-03-29"], "Chaitra Shukla Ekadashi (11)")
+        self.assertEqual(res["panchang_tithi_map"]["2026-03-29"], "Chaitra Shukla Dwadashi (12)")
 
         sumati_fests = [f for f in res["festivals"] if "sumatinath" in f["id"] and f.get("jain_month") == "Chaitra"]
         # Vrindavan/Uttarapurana/Ashadhara agree on Birth+Omniscience+Liberation at Ekadashi (11);
@@ -127,19 +143,23 @@ class JainFestivalServiceTest(unittest.TestCase):
             profile="shwetambar_murtipujak_tapagachchha"
         )
         
-        # Chaitra Oli: Chaitra Shukla 7 (9 days)
-        chaitra_oli = [f for f in res["festivals"] if f["id"].startswith("navpad_ayambil_oli_spring")]
-        self.assertEqual(len(chaitra_oli), 9)
-        chaitra_oli.sort(key=lambda x: x["start_date"])
-        self.assertEqual(chaitra_oli[0]["start_date"], "2026-03-25")
-        self.assertEqual(chaitra_oli[-1]["start_date"], "2026-04-02")
-        
-        # Ashvin Oli: Ashwin Shukla 7 (10 days due to Vriddhi)
-        ashvin_oli = [f for f in res["festivals"] if f["id"].startswith("navpad_ayambil_oli_autumn")]
-        self.assertEqual(len(ashvin_oli), 10)
-        ashvin_oli.sort(key=lambda x: x["start_date"])
-        self.assertEqual(ashvin_oli[0]["start_date"], "2026-10-17")
-        self.assertEqual(ashvin_oli[-1]["start_date"], "2026-10-26")
+        # The Oli is published as a Prarambh/Purna pair, not as nine numbered days.
+        def _boundary(fid):
+            hits = [f for f in res["festivals"] if f["id"] == fid]
+            self.assertEqual(len(hits), 1, fid)
+            return hits[0]
+
+        # Chaitra Oli: Chaitra Shukla 7, running to Purnima
+        self.assertEqual(_boundary("navapad_oli_vrat_prarambh_chaitra_2026")["start_date"], "2026-03-25")
+        self.assertEqual(_boundary("navapad_oli_vrat_purna_chaitra_2026")["start_date"], "2026-04-01")
+
+        # Ashvin Oli: Ashwin Shukla 7, running to Purnima
+        self.assertEqual(_boundary("navapad_oli_vrat_prarambh_ashwin_2026")["start_date"], "2026-10-17")
+        self.assertEqual(_boundary("navapad_oli_vrat_purna_ashwin_2026")["start_date"], "2026-10-26")
+
+        # and no per-day rows survive
+        self.assertEqual([], [f["name"] for f in res["festivals"] if " - Day " in f["name"]
+                              and "Oli" in f["name"]])
 
     def test_parshvanath_conception_kalyanak_on_april_4(self):
         """Verify Shri Parshvanath Ji Conception Kalyanak falls on 2026-04-04 (Vaishakha Krishna Dwitiya / 2)."""
@@ -283,9 +303,11 @@ class KrishnaPakshaFestivalsTest(unittest.TestCase):
     def test_pakhi_chaudas_appears(self):
         self.assertTrue("pakhi_chaudas_shukla" in self.ids or "pakhi_chaudas_bhadrapada" in self.ids)
 
+    @parva_tithi_contract
     def test_parva_tithi_ashtami_krishna_appears(self):
         self.assertIn("parva_tithi_ashtami_krishna", self.ids)
 
+    @parva_tithi_contract
     def test_parva_tithi_amavasya_appears(self):
         self.assertIn("parva_tithi_amavasya", self.ids)
 
@@ -314,15 +336,19 @@ class RecurringParvaCountTest(unittest.TestCase):
     def test_pakhi_chaudas_at_least_10(self):
         self.assertGreaterEqual(self._count("pakhi_chaudas_shukla") + self._count("pakhi_chaudas_bhadrapada"), 10)
 
+    @parva_tithi_contract
     def test_ashtami_shukla_at_least_12(self):
         self.assertGreaterEqual(self._count("parva_tithi_ashtami_shukla"), 10)
 
+    @parva_tithi_contract
     def test_ashtami_krishna_at_least_12(self):
         self.assertGreaterEqual(self._count("parva_tithi_ashtami_krishna"), 10)
 
+    @parva_tithi_contract
     def test_purnima_at_least_12(self):
         self.assertGreaterEqual(self._count("parva_tithi_purnima"), 10)
 
+    @parva_tithi_contract
     def test_amavasya_at_least_12(self):
         self.assertGreaterEqual(self._count("parva_tithi_amavasya"), 10)
 
@@ -368,6 +394,7 @@ class ParvaTithiNoDoubleFireTest(unittest.TestCase):
             offenders = [(dates[i], dates[i + 1]) for i, g in enumerate(gaps) if g < 20]
             self.assertEqual(offenders, [], f"{fid} double-fired within a lunar month: {offenders}")
 
+    @parva_tithi_contract
     def test_2026_march_amavasya_is_only_the_18th(self):
         """Ground truth confirmed by the user against a printed panchang: the
         Chaitra/Phalguna-boundary Amavasya is the 18th, not the 19th."""
@@ -394,6 +421,7 @@ class ParvaTithiVriddhiShowsBothDaysTest(unittest.TestCase):
             profile="shwetambar_murtipujak_tapagachchha",
         )
 
+    @parva_tithi_contract
     def test_vriddhi_parva_tithi_shows_on_both_days(self):
         known_vriddhi_pairs = {
             "parva_tithi_ashtami_krishna": (date(2026, 1, 10), date(2026, 1, 11)),
@@ -541,54 +569,45 @@ class AshtahnikaMahaparvTest(unittest.TestCase):
         ashadha_events = [f for f in res["festivals"] if "ashtahnika" in f["id"] and "ashadha" in f["id"]]
         self.assertEqual(len(ashadha_events), 1)
         self.assertEqual(ashadha_events[0]["start_date"], "2007-07-22")
-        self.assertEqual(ashadha_events[0]["end_date"], "2007-07-30")
+        self.assertEqual(ashadha_events[0]["end_date"], "2007-07-29")
 
 
 class NavpadOliTest(unittest.TestCase):
-    def test_navpad_oli_resolution_2026(self):
-        from jain_observances.festival_service import generate_jain_festivals
-        res = generate_jain_festivals(
-            year=2026,
-            lat=28.6139,
-            lon=77.2090,
-            ayanamsa="Lahiri",
-            profile="all"
-        )
-        
-        # Look for navpad_ayambil_oli occurrences
-        events = [f for f in res["festivals"] if "navpad_ayambil_oli" in f["id"]]
-        
-        # Spring Oli (Chaitra Shukla 7-15) and Autumn Oli (Ashwin Shukla 7-15)
-        # Spring has 9 days, Autumn has 10 days (due to Vriddhi), so total 19 events
-        self.assertEqual(len(events), 19)
-        
-        # Verify Spring Oli (starts around late March / early April)
-        spring_events = [f for f in events if "spring" in f["id"]]
-        self.assertEqual(len(spring_events), 9)
-        # Verify sequential titles: Day 1 (Arihant) to Day 9 (Samyag Tapa)
-        spring_events.sort(key=lambda x: x["start_date"])
-        self.assertEqual(spring_events[0]["title"], "Navpad Oli - Day 1 (Arihant)")
-        self.assertEqual(spring_events[-1]["title"], "Navpad Oli - Day 9 (Samyag Tapa)")
+    """Navpad Ayambil Oli is published as a Prarambh/Purna boundary pair. The nine
+    numbered 'Day N (Pad)' rows the NavpadOli rule used to emit were retired; the
+    NavapadOliVrat rule carries the same spans via their start and end days."""
 
-        # Autumn Oli (Ashwin Shukla) -- 10 days in 2026 due to a Saptami sunrise-vriddhi.
-        # All 9 pads must still be assigned, with exactly one repeated day and Day 9
-        # (Samyag Tapa) landing on the final day (Ashwin Shukla Purnima, 2026-10-26).
-        autumn_events = [f for f in events if "autumn" in f["id"]]
-        self.assertEqual(len(autumn_events), 10)
-        autumn_events.sort(key=lambda x: x["start_date"])
-        autumn_days = [e["title"] for e in autumn_events]
-        self.assertEqual(autumn_days.count("Navpad Oli - Day 1 (Arihant)"), 2)
-        self.assertEqual(autumn_events[-1]["title"], "Navpad Oli - Day 9 (Samyag Tapa)")
-        self.assertEqual(autumn_events[-1]["start_date"], "2026-10-26")
-        distinct_pads = {t for t in autumn_days}
-        self.assertEqual(len(distinct_pads), 9)
-        
-        # Verify schema
-        for e in events:
-            self.assertEqual(e["category"], "mahaparv")
-            self.assertEqual(e["badge"], "Navpad Oli")
-            self.assertEqual(e["badge_color"], "gold")
-            self.assertEqual(e["is_span"], True)
+    @classmethod
+    def setUpClass(cls):
+        from jain_observances.festival_service import generate_jain_festivals
+        cls.res = generate_jain_festivals(
+            year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all"
+        )
+
+    def test_no_per_day_rows_are_emitted(self):
+        self.assertEqual([], [f["name"] for f in self.res["festivals"] if " - Day " in f["name"]
+                              and "Oli" in f["name"]])
+        self.assertEqual([], [f["id"] for f in self.res["festivals"]
+                              if f["id"].startswith("navpad_ayambil_oli")])
+
+    def test_both_olis_have_a_start_and_an_end(self):
+        oli = {f["id"]: f for f in self.res["festivals"] if "navapad_oli_vrat" in f["id"]}
+        self.assertEqual(
+            {"navapad_oli_vrat_prarambh_chaitra_2026", "navapad_oli_vrat_purna_chaitra_2026",
+             "navapad_oli_vrat_prarambh_ashwin_2026", "navapad_oli_vrat_purna_ashwin_2026"},
+            set(oli),
+        )
+        self.assertEqual(oli["navapad_oli_vrat_prarambh_chaitra_2026"]["start_date"], "2026-03-25")
+        self.assertEqual(oli["navapad_oli_vrat_purna_chaitra_2026"]["start_date"], "2026-04-01")
+        self.assertEqual(oli["navapad_oli_vrat_prarambh_ashwin_2026"]["start_date"], "2026-10-17")
+        self.assertEqual(oli["navapad_oli_vrat_purna_ashwin_2026"]["start_date"], "2026-10-26")
+
+    def test_boundary_schema(self):
+        oli = [f for f in self.res["festivals"] if "navapad_oli_vrat" in f["id"]]
+        for e in oli:
+            self.assertEqual(e["category"], "mahaparv_vrat")
+            self.assertIn(e["badge"], ("Vrat Start", "Vrat End"))
+            self.assertTrue(e["is_span"])
 
 
 class ChaitraShuklaEkamKalyanaksTest(unittest.TestCase):
@@ -745,7 +764,10 @@ class DiwaliChaturmasNishthapanTest(unittest.TestCase):
         self.assertEqual(n["badge_color"], "pink")
         self.assertEqual(n["description"], "Formal conclusion and completion of holy Chaturmas")
         
-        self.assertEqual(d["start_date"], n["start_date"])
+        # Diwali is the Amavasya night (8 Nov 2026); Chaturmas Nishthapan follows the
+        # Kalyanak's morning Amavasya (9 Nov). They are adjacent, not identical.
+        self.assertEqual(d["start_date"], "2026-11-08")
+        self.assertEqual(n["start_date"], "2026-11-09")
 
 
 class VeerShasanJayantiTest(unittest.TestCase):
@@ -1120,7 +1142,7 @@ class BhayaHaranVratTest(unittest.TestCase):
         self.assertEqual(evt["badge_color"], "pink")
         self.assertTrue(evt["is_span"])
         # purnimanta Bhadrapada Krishna Chaturthi (4) -> Ashvin Krishna 14, one month.
-        self.assertEqual(evt["start_date"], "2026-09-01")
+        self.assertEqual(evt["start_date"], "2026-08-31")
         self.assertEqual(evt["end_date"], "2026-10-09")
 
 
@@ -2020,18 +2042,11 @@ class ChaitraAmavasyaKalyanakVarshantTest(unittest.TestCase):
         # the day before Chaitra Shukla Pratipada (VS 2083 begins 2026-03-20), NOT the
         # amanta Chaitra Krishna Amavasya a lunar month later.
         #
-        # NOTE: 2026-03-19 is the plain-udaya (sunrise) Amavasya day; the user has
-        # confirmed against a printed panchang that this Amavasya is actually the
-        # 18th (6-ghati). ChaitraAmavasyaKalyanakVarshantFestival (this class) still
-        # selects its own Amavasya via plain-sunrise fields directly -- a THIRD
-        # independent occurrence of the same disease already fixed once in
-        # _sixghati_pullback (see test_sixghati_pullback.py) and once in
-        # SingleTithiFestival's parva-category selection (ParvaTithiNoDoubleFireTest).
-        # ChaitraLabdhiVidhanFestival has the identical bug for the same reason. Both
-        # are custom rule classes that never call _sixghati_pullback, so fixing that
-        # function doesn't reach them. This test pins CURRENT (still-wrong) behavior;
-        # update it once those two classes are migrated to the shared helper.
-        self.assertEqual(vs_evt["start_date"], "2026-03-19")
+        # FIXED by the Phase 2 snapshot unification: this class selects its own
+        # Amavasya from the snapshot's tithi fields, which are now the 6-ghati values,
+        # so it lands on the 18th -- the date the user confirmed against a printed
+        # panchang. It previously took the plain-udaya (sunrise) Amavasya, 19 Mar.
+        self.assertEqual(vs_evt["start_date"], "2026-03-18")
         self.assertEqual((vs_evt["jain_month"], vs_evt["paksha"]), ("Chaitra", "Krishna"))
 
         # The generic, source-tagged Kalyanak entries are the sole remaining
@@ -2078,7 +2093,7 @@ class Namokar35VratTest(unittest.TestCase):
         step_1 = [f for f in n_steps if f["step_index"] == 1]
         if step_1:
             s1 = step_1[0]
-            self.assertEqual(s1["title"], "Namokar Mahamantra Vrat (Prarambh - 1/35)")
+            self.assertEqual(s1["title"], "Namokar Mahamantra Vrat (Prarambh)")
             self.assertEqual(s1["boundary_type"], "START")
             self.assertEqual(s1["badge"], "Namokar Vrat #1")
             self.assertEqual(s1["mantra_pada"], "Ṇamō Arihantāṇaṁ")
@@ -2088,7 +2103,7 @@ class Namokar35VratTest(unittest.TestCase):
         step_9 = [f for f in n_steps if f["step_index"] == 9]
         if step_9:
             s9 = step_9[0]
-            self.assertEqual(s9["title"], "Namokar Mahamantra Vrat (9/35)")
+            self.assertEqual(s9["title"], "Namokar Mahamantra Vrat")
             self.assertEqual(s9["boundary_type"], "INTERMEDIATE")
             self.assertEqual(s9["badge"], "Namokar Vrat #9")
             self.assertEqual(s9["mantra_pada"], "Ṇamō Siddhāṇaṁ")
@@ -2096,7 +2111,7 @@ class Namokar35VratTest(unittest.TestCase):
         step_35 = [f for f in n_steps if f["step_index"] == 35]
         if step_35:
             s35 = step_35[0]
-            self.assertEqual(s35["title"], "Namokar Mahamantra Vrat (Udyapan / Purna - 35/35)")
+            self.assertEqual(s35["title"], "Namokar Mahamantra Vrat (Udyapan / Purna)")
             self.assertEqual(s35["boundary_type"], "END")
             self.assertEqual(s35["badge"], "Namokar Vrat Purna")
             self.assertEqual(s35["mantra_pada"], "Ṇamō Lōē Savvasāhūṇaṁ")
@@ -2236,10 +2251,15 @@ class SixGhatiPullbackTest(unittest.TestCase):
     the preceding day is strong for tithi - 1. A run of weak days keeps the udaya day."""
 
     def _snap(self, d, t, jt, paksha="Shukla"):
+        """``t`` is the plain-sunrise tithi, ``jt`` the 6-ghati one. Since the tithi
+        unification the public tithi field IS the 6-ghati value; the sunrise value the
+        pullback compares against lives on the private _sunrise_* fields."""
+        jain_paksha = paksha if jt <= 15 else ("Krishna" if paksha == "Shukla" else "Shukla")
         return {
             "date": date.fromisoformat(d),
-            "paksha": paksha, "tithi_in_paksha": t,
-            "jain_paksha": paksha if jt <= 15 else ("Krishna" if paksha == "Shukla" else "Shukla"),
+            "_sunrise_paksha": paksha, "_sunrise_tithi_in_paksha": t,
+            "paksha": jain_paksha, "tithi_in_paksha": jt,
+            "jain_paksha": jain_paksha,
             "jain_tithi_in_paksha": jt,
         }
 
@@ -2345,13 +2365,15 @@ class KartikaKrishnaMonthResolutionTest(unittest.TestCase):
     def test_mahavir_nirvana_cluster_lands_on_kartika_amavasya_not_agrahayana(self):
         for fid in ("mahavira_nirvana_kalyanak_2026", "varsha_yog_nishthapan_2026",
                     "diwali_2026", "chaturmas_nishthapan_2026"):
+            # month/paksha/tithi are the same Amavasya for all four; only the civil
+            # date differs (Diwali takes its night, the rest its morning).
             f = self.by_id_2026[fid]
             self.assertEqual(f["jain_month"], "Kartika", fid)
             self.assertEqual(f["paksha"], "Krishna", fid)
             self.assertEqual(f["tithi"], "Amavasya (15)", fid)
         # All land on the same date as the already-correct, independently-modeled entry
         reference = self.by_id_2026["mahavir_nirvana_deepavali"]
-        for fid in ("mahavira_nirvana_kalyanak_2026", "diwali_2026"):
+        for fid in ("mahavira_nirvana_kalyanak_2026",):
             self.assertEqual(self.by_id_2026[fid]["start_date"], reference["start_date"], fid)
         # No leftover duplicate cluster a month later
         agrahayana_dupes = [
@@ -2529,9 +2551,18 @@ class DiwaliClusterDateTest(unittest.TestCase):
         )
         cls.by_id = {f["id"]: f for f in cls.res["festivals"]}
 
+    def test_diwali_is_the_amavasya_night_8_nov(self):
+        """Diwali is the Amavasya NIGHT (pradosh); the Moksha Kalyanak is the Amavasya
+        MORNING (6-ghati). Amavasya runs 08 Nov 11:28 -> 09 Nov 12:32, so the two fall
+        on different Gregorian dates and must never be forced together."""
+        d = self.by_id["diwali_2026"]
+        self.assertEqual(d["start_date"], "2026-11-08")
+        self.assertNotEqual(d["start_date"],
+                            self.by_id["mahavira_nirvana_kalyanak_2026"]["start_date"])
+
     def test_mahavir_nirvana_cluster_on_udaya_amavasya_9_nov(self):
         for fid in ("mahavira_nirvana_kalyanak_2026", "varsha_yog_nishthapan_2026",
-                    "diwali_2026", "chaturmas_nishthapan_2026",
+                    "chaturmas_nishthapan_2026",
                     "mahavir_nirvana_deepavali",
                     "shri_mahavira_ji___liberation_kalyanak_15_vrindavan_uttarapurana_ashadhara",
                     "shri_mahavir_swami_ji___moksha_kalyanak__the_nirvana_liberation_of_lord_mahavira__celebrated_as_jain_diwali"):
@@ -2659,12 +2690,11 @@ class MultiDayFestivalRegistryTest(unittest.TestCase):
         cls.res = generate_jain_festivals(year=2026, lat=28.6139, lon=77.2090, ayanamsa="Lahiri", profile="all")
         cls.md = cls.res["multi_day_festivals"]
 
-    def test_navpad_oli_collapsed_to_one_span(self):
-        navpad = [m for m in self.md if m["name"] == "Navpad Oli"]
-        self.assertEqual(len(navpad), 2)  # spring + autumn
-        spring = min(navpad, key=lambda m: m["start_date"])
-        self.assertEqual((spring["start_date"], spring["end_date"]), ("2026-03-25", "2026-04-02"))
-        # and the per-day "Day N" occurrences are NOT in the multi-day list
+    def test_navpad_oli_is_no_longer_a_multi_day_run(self):
+        """The per-day Navpad Oli run was retired, so there is nothing left for the
+        multi-day list to collapse -- the Oli is carried by its Prarambh/Purna pair,
+        each a single-day occurrence."""
+        self.assertEqual([], [m for m in self.md if "Oli" in m["name"]])
         self.assertFalse(any(" - Day" in m["name"] for m in self.md))
 
     def test_span_festivals_present_once(self):
@@ -2691,9 +2721,25 @@ class NativeTithiTagTest(unittest.TestCase):
         by_id, tmap = self._by_id(2027)
         f = by_id["shri_munisuvrat_ji___liberation_kalyanak_12_vrindavan_uttarapurana_ashadhara"]
         self.assertEqual(f["start_date"], "2027-03-04")
-        self.assertTrue(tmap["2027-03-04"].endswith("Ekadashi (11)"))
-        self.assertEqual(f["name"], "[Dwadashi] Shri Munisuvrat Ji - Liberation Kalyanak")
-        self.assertEqual(f["native_tithi"], "Dwadashi (12)")
+        # NEGATIVE case. Under the 6-ghati anchor the day IS Dwadashi, so the Kalyanak's
+        # own tithi and the day's primary tithi agree -- no disambiguation is needed and
+        # the tag must NOT be applied. It carried a "[Dwadashi]" prefix only while the
+        # day was labelled Ekadashi by the old udaya tithi.
+        self.assertTrue(tmap["2027-03-04"].endswith("Dwadashi (12)"))
+        self.assertEqual(f["name"], "Shri Munisuvrat Ji - Liberation Kalyanak")
+        self.assertNotIn("native_tithi", f)
+
+    def test_kalyanak_pulled_onto_a_differing_day_keeps_its_native_tithi_tag(self):
+        """POSITIVE case. Pausha Shukla 11 is kshaya in Jan 2027 (18 Jan is Dashami at
+        the anchor, 19 Jan jumps to Dwadashi), so the Ekadashi Kalyanak is placed on
+        18 Jan -- a day whose primary tithi is Dashami. The tag is what tells a reader
+        the observance is Ekadashi even though the day reads Dashami."""
+        by_id, tmap = self._by_id(2027)
+        f = by_id["shri_ajitnath_ji___omniscience_kalyanak_11_vrindavan_uttarapurana_ashadhara"]
+        self.assertEqual(f["start_date"], "2027-01-18")
+        self.assertTrue(tmap["2027-01-18"].endswith("Dashami (10)"))
+        self.assertEqual(f["native_tithi"], "Ekadashi (11)")
+        self.assertEqual(f["name"], "[Ekadashi] Shri Ajitnath Ji - Omniscience Kalyanak")
 
     def test_no_tag_when_native_tithi_matches_civil_date(self):
         by_id, _ = self._by_id(2026)
