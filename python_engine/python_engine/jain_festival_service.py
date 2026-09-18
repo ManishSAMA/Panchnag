@@ -1,1 +1,0 @@
-from jain_observances.festival_service import generate_jain_festivals

@@ -150,15 +150,15 @@ flowchart TD
 flowchart TD
     Browser[Browser Form] --> Flask[app.py /generate-jain-festivals]
     Flask --> Parsing[request_parsing.py]
-    Parsing --> FestivalService[jain_festival_service.py]
-    FestivalService --> Rules[jain_festival_rules.py]
+    Parsing --> FestivalService[jain_observances/festival_service.py]
+    FestivalService --> Rules[jain_observances/registry.py]
     FestivalService --> Astro[astronomy.py]
     Astro --> Panchang[panchang.py]
     FestivalService --> Payload[Festival JSON Payload]
     Payload --> Browser
 ```
 
-The festival flow computes Tithi-based festival dates from astronomical first principles. The static rules registry (`jain_festival_rules.py`) defines which festivals belong to which profiles and their canonical Tithi anchors. The service layer applies vriddhi and kshaya adjustments for compressed or doubled Tithis, then returns dated entries.
+The festival flow computes Tithi-based festival dates from astronomical first principles. The static rules registry (`jain_observances/registry.py`) defines which festivals belong to which profiles and their canonical Tithi anchors. The service layer applies vriddhi and kshaya adjustments for compressed or doubled Tithis, then returns dated entries.
 
 Export behavior mirrors the range export path: the export endpoint resolves the location once, iterates across the requested year range, and writes files to a temporary directory for download.
 
@@ -169,7 +169,7 @@ flowchart TD
     Browser[Browser Form] --> Flask[app.py /dainika-muhurta]
     Flask --> Astro[astronomy.py]
     Astro --> Panchang[panchang.py]
-    Panchang --> MuhurtaService[dainika_muhurta_service.py]
+    Panchang --> MuhurtaService[yoga_service.py]
     MuhurtaService --> Payload[Muhurta JSON Payload]
     Payload --> Browser
 ```

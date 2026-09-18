@@ -4,7 +4,12 @@ from datetime import date, timedelta
 from zoneinfo import ZoneInfo
 
 from astronomy import get_planetary_longitude, get_sunrise, get_sunset, local_date_anchor_jd
-from panchang import get_tithi, get_hindu_month, calculate_jain_tithi_from_sunrise
+from panchang import (
+    JAIN_TITHI_OFFSET_DAYS,
+    calculate_jain_tithi_from_sunrise,
+    get_hindu_month,
+    get_tithi,
+)
 from panchang_service import resolve_location
 from .registry import FESTIVAL_REGISTRY
 from .festival_rules import RuleFactory
@@ -41,62 +46,58 @@ def _build_snapshots(year: int, lat: float, lon: float, ayanamsa: str, tz_name: 
     end_date = date(year + 1, 1, 31)
     curr = start_date
     while curr <= end_date:
-        try:
-            day_start_jd = local_date_anchor_jd(curr, tz_name, hour=0)
-            sunrise_jd = get_sunrise(day_start_jd, lat, lon)
-            sun_lon = get_planetary_longitude(sunrise_jd, 'Sun', ayanamsa)
-            moon_lon = get_planetary_longitude(sunrise_jd, 'Moon', ayanamsa)
-            tithi_idx = get_tithi(sun_lon, moon_lon)
+        day_start_jd = local_date_anchor_jd(curr, tz_name, hour=0)
+        sunrise_jd = get_sunrise(day_start_jd, lat, lon)
+        sun_lon = get_planetary_longitude(sunrise_jd, 'Sun', ayanamsa)
+        moon_lon = get_planetary_longitude(sunrise_jd, 'Moon', ayanamsa)
+        tithi_idx = get_tithi(sun_lon, moon_lon)
 
-            # Fast Jain tithi index and month
-            reference_jd = sunrise_jd + (2.4 / 24.0)
-            sun_lon_j = get_planetary_longitude(reference_jd, 'Sun', ayanamsa)
-            moon_lon_j = get_planetary_longitude(reference_jd, 'Moon', ayanamsa)
-            jain_tithi_idx = get_tithi(sun_lon_j, moon_lon_j)
+        # Fast Jain tithi index and month
+        reference_jd = sunrise_jd + JAIN_TITHI_OFFSET_DAYS
+        sun_lon_j = get_planetary_longitude(reference_jd, 'Sun', ayanamsa)
+        moon_lon_j = get_planetary_longitude(reference_jd, 'Moon', ayanamsa)
+        jain_tithi_idx = get_tithi(sun_lon_j, moon_lon_j)
 
-            hindu_month, _, is_adhika = get_hindu_month(reference_jd, ayanamsa)
+        hindu_month, _, is_adhika = get_hindu_month(reference_jd, ayanamsa)
 
-            # Clean month name (e.g. strip Adhika for standard matching)
-            base_month = hindu_month.removeprefix("Adhika ")
+        # Clean month name (e.g. strip Adhika for standard matching)
+        base_month = hindu_month.removeprefix("Adhika ")
 
-            # Evening (pradosh) tithi -- the one prevailing at sunset. Used for the
-            # day-selection of pradosh-vyapini festivals (Diwali/Mahavir Nirvana,
-            # Ahoi Ashtami, ...), which the udaya tithi gets wrong whenever
-            # the target tithi starts during the day and ends before the next sunrise.
-            sunset_jd = get_sunset(day_start_jd, lat, lon)
-            sun_lon_e = get_planetary_longitude(sunset_jd, 'Sun', ayanamsa)
-            moon_lon_e = get_planetary_longitude(sunset_jd, 'Moon', ayanamsa)
-            evening_tithi_idx = get_tithi(sun_lon_e, moon_lon_e)
+        # Evening (pradosh) tithi -- the one prevailing at sunset. Used for the
+        # day-selection of pradosh-vyapini festivals (Diwali/Mahavir Nirvana,
+        # Ahoi Ashtami, ...), which the udaya tithi gets wrong whenever
+        # the target tithi starts during the day and ends before the next sunrise.
+        sunset_jd = get_sunset(day_start_jd, lat, lon)
+        sun_lon_e = get_planetary_longitude(sunset_jd, 'Sun', ayanamsa)
+        moon_lon_e = get_planetary_longitude(sunset_jd, 'Moon', ayanamsa)
+        evening_tithi_idx = get_tithi(sun_lon_e, moon_lon_e)
 
-            snapshots.append({
-                "date": curr,
-                "sunrise_jd": sunrise_jd,
-                "sunset_jd": sunset_jd,
-                # Public day-identity Tithi == the 6-ghati (Jain day-start) Tithi, the
-                # single anchor of plans/tithi_unification/design.md. The plain-sunrise
-                # (udaya) values remain as private _sunrise_* fields: they are the
-                # precondition of _sixghati_pullback's weak/strong comparison and of
-                # Kalyanak candidate selection, which compare an udaya day against the
-                # 6-ghati one. Nothing outside that machinery may read them.
-                "tithi": jain_tithi_idx,
-                "jain_tithi": jain_tithi_idx,
-                "jain_tithi_name": "", # Unused by logic engine
-                "hindu_month": base_month,
-                "is_adhika": is_adhika,
-                "paksha": "Shukla" if jain_tithi_idx <= 15 else "Krishna",
-                "tithi_in_paksha": jain_tithi_idx if jain_tithi_idx <= 15 else jain_tithi_idx - 15,
-                "_sunrise_tithi": tithi_idx,
-                "_sunrise_paksha": "Shukla" if tithi_idx <= 15 else "Krishna",
-                "_sunrise_tithi_in_paksha": tithi_idx if tithi_idx <= 15 else tithi_idx - 15,
-                "jain_paksha": "Shukla" if jain_tithi_idx <= 15 else "Krishna",
-                "jain_tithi_in_paksha": jain_tithi_idx if jain_tithi_idx <= 15 else jain_tithi_idx - 15,
-                "evening_tithi": evening_tithi_idx,
-                "evening_paksha": "Shukla" if evening_tithi_idx <= 15 else "Krishna",
-                "evening_tithi_in_paksha": evening_tithi_idx if evening_tithi_idx <= 15 else evening_tithi_idx - 15,
-            })
-        except Exception:
-            # Fallback if astro fails
-            pass
+        snapshots.append({
+            "date": curr,
+            "sunrise_jd": sunrise_jd,
+            "sunset_jd": sunset_jd,
+            # Public day-identity Tithi == the 6-ghati (Jain day-start) Tithi, the
+            # single anchor of plans/tithi_unification/design.md. The plain-sunrise
+            # (udaya) values remain as private _sunrise_* fields: they are the
+            # precondition of _sixghati_pullback's weak/strong comparison and of
+            # Kalyanak candidate selection, which compare an udaya day against the
+            # 6-ghati one. Nothing outside that machinery may read them.
+            "tithi": jain_tithi_idx,
+            "jain_tithi": jain_tithi_idx,
+            "jain_tithi_name": "", # Unused by logic engine
+            "hindu_month": base_month,
+            "is_adhika": is_adhika,
+            "paksha": "Shukla" if jain_tithi_idx <= 15 else "Krishna",
+            "tithi_in_paksha": jain_tithi_idx if jain_tithi_idx <= 15 else jain_tithi_idx - 15,
+            "_sunrise_tithi": tithi_idx,
+            "_sunrise_paksha": "Shukla" if tithi_idx <= 15 else "Krishna",
+            "_sunrise_tithi_in_paksha": tithi_idx if tithi_idx <= 15 else tithi_idx - 15,
+            "jain_paksha": "Shukla" if jain_tithi_idx <= 15 else "Krishna",
+            "jain_tithi_in_paksha": jain_tithi_idx if jain_tithi_idx <= 15 else jain_tithi_idx - 15,
+            "evening_tithi": evening_tithi_idx,
+            "evening_paksha": "Shukla" if evening_tithi_idx <= 15 else "Krishna",
+            "evening_tithi_in_paksha": evening_tithi_idx if evening_tithi_idx <= 15 else evening_tithi_idx - 15,
+        })
         curr += timedelta(days=1)
 
     _assign_purnimanta(snapshots)

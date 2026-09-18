@@ -1,1 +1,0 @@
-from dainika_muhurta.yoga_rules import detect_yogas

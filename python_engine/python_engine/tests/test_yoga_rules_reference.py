@@ -1,5 +1,5 @@
 """
-Reference verification tests for YOGA_RULES in dainika_muhurta_service.py.
+Reference verification tests for YOGA_RULES in yoga_rules.py.
 
 Ground truth is the traditional panchang source table (photograph of printed reference).
 Every cell in the reference table is encoded here and asserted against detect_yogas().

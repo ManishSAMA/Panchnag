@@ -1,4 +1,3 @@
-from functools import lru_cache
 """
 astronomy.py — Core Swiss Ephemeris wrapper for the Panchang Generator.
 
@@ -11,6 +10,7 @@ Provides:
 """
 
 import math
+from functools import lru_cache
 from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -260,16 +260,12 @@ def _rise_set(julian_date: float, body: int,
         )
         if ret == 0 and tret[0] > 0:
             return tret[0]
-    except Exception:
-        pass
-
-    # Fallback without disc-center correction
-    try:
-        rsmi2 = swe.CALC_RISE if is_rise else swe.CALC_SET
-        ret, tret = swe.rise_trans(jd_start, body, rsmi2, geopos, 1013.25, 15.0, swe.FLG_SWIEPH)
-        if ret == 0 and tret[0] > 0:
-            return tret[0]
-    except Exception:
+    except swe.Error:
+        # Swiss Ephemeris itself failed (bad ephemeris path, unsupported date).
+        # The ordinary "no such event" case -- polar day/night, where the body
+        # never crosses the horizon -- is not an exception: rise_trans returns
+        # a negative code, which the guard above already rejects. Either way
+        # callers read 0.0 as "no event" and validate from there.
         pass
 
     return 0.0

@@ -61,12 +61,26 @@ def search_locations(query: str, limit: int = 5) -> list[dict]:
 
 
 @lru_cache(maxsize=128)
-def geocode_city(city_name: str) -> dict:
-    """Resolve a city/location string to coordinates."""
+def _geocode_city_cached(city_name: str) -> tuple[tuple[str, object], ...]:
+    """Memoised geocode lookup, stored immutably so the cache cannot be mutated."""
     matches = search_locations(city_name, limit=1)
     if not matches:
         raise ValueError(f"No coordinates found for '{city_name}'.")
-    return matches[0]
+    return tuple(matches[0].items())
+
+
+def geocode_city(city_name: str) -> dict:
+    """Resolve a city/location string to coordinates.
+
+    Returns a fresh dict on every call: the memoised value is held as an
+    immutable tuple so a caller adjusting the result cannot rewrite what later
+    callers receive.
+    """
+    return dict(_geocode_city_cached(city_name))
+
+
+geocode_city.cache_clear = _geocode_city_cached.cache_clear
+geocode_city.cache_info = _geocode_city_cached.cache_info
 
 
 def get_timezone_name(lat: float, lon: float) -> str:

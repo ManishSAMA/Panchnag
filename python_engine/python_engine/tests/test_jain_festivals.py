@@ -28,11 +28,11 @@ parva_tithi_contract = unittest.skipUnless(
 
 class JainFestivalsRegistryTest(unittest.TestCase):
     def test_registry_integrity(self):
-        """Test that jain_festival_rules loads and has valid festival schemas."""
+        """Test that the festival rules module loads and has valid festival schemas."""
         try:
             from jain_observances import festival_rules as rules
         except ImportError:
-            self.fail("Could not import jain_festival_rules.py")
+            self.fail("Could not import jain_observances.festival_rules")
         
         self.assertIsNotNone(rules.FESTIVAL_REGISTRY)
         self.assertTrue(len(rules.FESTIVAL_REGISTRY) > 0)
@@ -63,7 +63,7 @@ class JainFestivalServiceTest(unittest.TestCase):
         try:
             from jain_observances.festival_service import generate_jain_festivals
         except ImportError:
-            self.fail("Could not import jain_festival_service.py")
+            self.fail("Could not import jain_observances.festival_service")
             
         res = generate_jain_festivals(
             year=2026,
