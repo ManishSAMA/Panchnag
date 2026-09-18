@@ -50,6 +50,7 @@ from panchang import (
     find_diwali,
     generate_daily_panchang,
     get_hindu_month,
+    get_purnimanta_month,
     get_nakshatra,
     get_nakshatra_at_jd,
     get_tithi,
@@ -90,6 +91,25 @@ def _coerce_date(input_date: str | date) -> date:
     if isinstance(input_date, date):
         return input_date
     return datetime.strptime(input_date, "%Y-%m-%d").date()
+
+
+CALENDAR_SYSTEMS = ("purnimanta", "amanta")
+DEFAULT_CALENDAR_SYSTEM = "purnimanta"
+
+
+def _month_resolver(calendar_system: str):
+    """Return the month function for a convention name.
+
+    Purnimanta is the default: North Indian physical panchangs end the month at
+    Purnima, and the Amanta reading put month names ~15 days behind them.
+    Amanta stays available for Gujarati and South Indian use, where it is
+    correct. See plans/amanta-purnimanta-offset.md.
+    """
+    if calendar_system not in CALENDAR_SYSTEMS:
+        raise ValueError(
+            "calendar_system must be one of: " + ", ".join(CALENDAR_SYSTEMS)
+        )
+    return get_purnimanta_month if calendar_system == "purnimanta" else get_hindu_month
 
 
 def _validate_coordinates(lat: float, lon: float) -> tuple[float, float]:
@@ -330,6 +350,7 @@ def generate_location_panchang(
     lat: float | None = None,
     lon: float | None = None,
     ayanamsa_name: str = "Lahiri",
+    calendar_system: str = DEFAULT_CALENDAR_SYSTEM,
 ) -> dict:
     """Generate a daily Panchang JSON payload for a specific local date and location."""
     local_date = _coerce_date(input_date)
@@ -359,7 +380,8 @@ def generate_location_panchang(
     rahu_start = _serialize_event(rahu_raw["start_jd"], tz_name)
     rahu_end = _serialize_event(rahu_raw["end_jd"], tz_name)
     jain_ref_jd = events.sunrise_jd + JAIN_TITHI_OFFSET_DAYS
-    hindu_month, hindu_month_common, is_adhika = get_hindu_month(jain_ref_jd, ayanamsa_name)
+    resolve_month = _month_resolver(calendar_system)
+    hindu_month, hindu_month_common, is_adhika = resolve_month(jain_ref_jd, ayanamsa_name)
 
     tz = ZoneInfo(tz_name)
     tz_offset_float = (
@@ -469,15 +491,14 @@ def generate_location_panchang(
             "sun_rashi": get_sun_rashi(events.sunrise_jd),
             "moon_rashi": get_rashi_name(sunrise_planets["Moon"]),
             "hindu_month": {
-                "index": HINDU_MONTH_NAMES.index(
-                    hindu_month.removeprefix("Adhika ") if is_adhika else hindu_month
-                ),
+                "index": HINDU_MONTH_NAMES.index(hindu_month.removeprefix("Adhika ")),
                 "name": hindu_month,
                 "name_common": hindu_month_common,
                 "is_adhika": is_adhika,
             },
             "vikram_samvat": vikram_samvat,
             "vira_nirvana_samvat": vira_nirvana_samvat,
+            "calendar_system": calendar_system,
             "reference_time": _serialize_event(events.sunrise_jd, tz_name),
         },
         "rahu_kaal": {

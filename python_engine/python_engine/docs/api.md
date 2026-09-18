@@ -30,6 +30,34 @@ Supported ayanamsa names are:
 
 If `ayanamsa` is omitted, the app defaults to `Lahiri`.
 
+### Calendar system (`calendar_system`)
+
+`POST /generate-panchang` and `GET /month-overview` accept an optional
+`calendar_system` selecting how the lunar month is named:
+
+- `purnimanta` (**default**) — the month ends at Purnima, so a Krishna paksha
+  belongs to the following month. This is the North Indian convention and what
+  printed North Indian panchangs show.
+- `amanta` — the month ends at Amavasya. Correct for Gujarati and South Indian
+  reckoning.
+
+The two agree on every Shukla paksha and differ by one month name across every
+Krishna paksha. In an Adhika-Maas year the `is_adhika` flag also inverts across
+Krishna pakshas: 1 June 2026 is Nija Jyeshtha under Purnimanta and Adhika
+Jyeshtha under Amanta.
+
+Only the month fields are affected — `hindu_month.name`, `hindu_month.index`,
+`hindu_month.name_common`, `hindu_month.is_adhika`, and `structured.month` /
+`structured.month_common`. Tithi, Nakshatra, Yoga, Karana, Vara, Samvat years
+and all timing fields are identical under both. Responses echo the convention
+back as `panchang.calendar_system` (daily) and `calendar_system` (month
+overview).
+
+An unrecognised value is rejected with HTTP 400.
+
+Jain festival endpoints do not take this parameter: festival rules resolve their
+own month naming internally and already report Purnimanta months.
+
 ## `GET /search-location`
 
 Searches locations through Nominatim for autocomplete-style city selection.

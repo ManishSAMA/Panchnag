@@ -1,8 +1,12 @@
 # The 15-day Maha offset: diagnosis and validation prompt
 
-**Status:** diagnosed 2026-09-18. No code changed. Supersedes the generic
-"Amanta vs Purnimanta" briefing, which was right about the mechanism but wrong
-about this codebase's starting position.
+**Status:** diagnosed 2026-09-18. **Layer A fixed** the same day — the display
+layer now defaults to Purnimanta, with `calendar_system=amanta` as the opt-out.
+**Layer B (increment 5) remains open and deliberately untouched** — see §4 for
+why, and what it needs before anyone changes it.
+
+Supersedes the generic "Amanta vs Purnimanta" briefing, which was right about
+the mechanism but wrong about this codebase's starting position.
 
 ---
 
@@ -194,11 +198,67 @@ findings above rather than in generic calendar advice.
 
 ---
 
-## 3. Suggested next step
+## 3. Layer A — done
 
-Before fixing anything, build the regression net: snapshot every festival's
-resolved date across ~10 years × 3 profiles, plus the `hindu_month` reported by
-`/month-overview` for the same span. Then Layer A and the 7 Layer B classes can
-be changed with a byte-identical diff as the pass condition for the Shukla dates
-and an explicitly reviewed diff for the Krishna ones.
-`plans/tithi_unification/snapshot_festival_dates.py` is a working starting point.
+`panchang.get_purnimanta_month(jd, ayanamsa)` projects the amanta month onto the
+Purnimanta rule for a single instant, using the same derivation as
+`_assign_purnimanta`: a Shukla paksha is unchanged; a Krishna paksha takes the
+amanta month just after the next new moon, which is also where the adhika flag
+comes from. `get_hindu_month` itself is untouched — it remains the amanta rule,
+and `tests/test_hindu_month.py`'s ground truth still holds.
+
+`generate_location_panchang` takes `calendar_system`, defaulting to
+`purnimanta`, threaded through `/generate-panchang` and `/month-overview`.
+`hindu_month.index` now tracks the name actually reported rather than staying
+pinned to the amanta month. Verified against all ten physical-panchang dates in
+§1, including the adhika inversion. 667 tests pass — nothing in the existing
+suite moved, because its month assertions all sit on Shukla dates (invariant 1).
+
+Not changed: the PDF generators and `db_generator` still call `get_hindu_month`
+directly. They take no request parameters, so they need a decision about whether
+to hardcode Purnimanta or thread a setting through.
+
+## 4. Layer B — measured, and deliberately not changed
+
+`KALYANAK_AUDIT_NOTES.md` is explicit that this needs case-by-case checking, not
+a find-replace, because *"an incorrect blanket change could break a class that's
+currently right."* The trap it documents:
+
+> **Registry `jain_month` strings are Amanta. The hardcoded month literals
+> inside custom rule classes are Purnimanta.** The same-looking string means
+> different things in the two places.
+
+So "switch the 7 classes to `get_jain_month`" is not obviously correct. Measured
+by forcing every snapshot's `hindu_month`/`is_adhika` to its purnimanta value
+and diffing the whole festival list:
+
+| Year | Occurrences | Shifted | **Dropped** | Added |
+|---|---|---|---|---|
+| 2026 (adhik) | 374 | 21 | **3** | 0 |
+| 2027 (normal) | 378 | 22 | **1** | 0 |
+
+Two things make this a stop signal rather than a green light:
+
+1. **Occurrences disappear.** A correct convention fix relabels dates; it does
+   not stop a rule matching. Dropping 3–4 says the naive swap is wrong for at
+   least some of these classes.
+2. **It fires in 2027, a non-adhik year**, shifting `Namokar35VratFestival`
+   steps and `akshaya_nidhi_vrat_purna` by a full month. That matches the
+   signature of the Kartika-cluster bug the audit notes *did* confirm and fix —
+   so some of this is probably a genuine latent bug — but it equally matches
+   what an incorrect change would look like. Without book dates for these
+   specific vrats the two are indistinguishable from inside the code.
+
+**What unblocks it:** printed-panchang dates for `MonthlyVratFestival`,
+`SaptaRishiVratFestival`, `SaptaParamsthanVratFestival`,
+`AkshayaNidhiVratFestival`, `KshamavaniMahaparvFestival`, `ShraddhaVratFestival`
+and `Namokar35VratFestival`, across one adhik year and one normal year. With
+those, each class is a one-line decision and a regression test.
+
+## 5. Suggested next step
+
+Build the regression net before touching Layer B: snapshot every festival's
+resolved date across ~10 years × 3 profiles, so each class can be changed
+individually with an explicitly reviewed diff.
+`plans/tithi_unification/snapshot_festival_dates.py` is a working starting point,
+and the probe used for the table above is reproducible from §4's description.

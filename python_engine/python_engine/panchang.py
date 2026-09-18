@@ -253,6 +253,28 @@ def _resolve_hindu_month(
     base = HINDU_MONTH_NAMES[int(sun_lon / 30.0) % 12]
     return f"Adhika {base}", f"Adhika {HINDU_MONTH_COMMON_NAMES[base]}", True
 
+
+def get_purnimanta_month(jd: float, ayanamsa: str = 'Lahiri') -> tuple[str, str, bool]:
+    """Return (sanskrit_name, common_name, is_adhika) under the Purnimanta rule.
+
+    Purnimanta (North India) ends the month at Purnima rather than Amavasya, so
+    a Krishna paksha belongs to the *following* month: the one whose Shukla
+    paksha it runs into. A Shukla paksha is named identically in both systems.
+
+    Derivation matches festival_service._assign_purnimanta ("a Krishna paksha
+    takes the month of the next chronological Shukla paksha"), expressed for a
+    single instant: the next Shukla paksha begins at the next new moon, so the
+    answer is the amanta month just after it. In an Adhika-Maas year this also
+    inverts the adhika/nija flag, which is why is_adhika is taken from that
+    later month rather than from the current one.
+    """
+    if get_tithi_at_jd(jd, ayanamsa) <= 15:
+        return get_hindu_month(jd, ayanamsa)
+
+    next_nm = find_new_moon_after(jd, ayanamsa)
+    return get_hindu_month(next_nm + 1.0, ayanamsa)
+
+
 # ---------------------------------------------------------------------------
 # Karana Names & Cycle Logic
 # ---------------------------------------------------------------------------

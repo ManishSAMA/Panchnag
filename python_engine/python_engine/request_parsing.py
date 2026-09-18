@@ -14,6 +14,7 @@ class PanchangRequest:
     lat: float | None
     lon: float | None
     ayanamsa_name: str
+    calendar_system: str
 
 
 @dataclass(frozen=True)
@@ -59,6 +60,7 @@ def parse_panchang_request(payload: dict | None) -> PanchangRequest:
         lat=lat,
         lon=lon,
         ayanamsa_name=ayanamsa_name,
+        calendar_system=parse_calendar_system(payload.get("calendar_system")),
     )
 
 
@@ -123,6 +125,20 @@ def parse_pdf_generation_request(payload: dict | None) -> PdfGenerationRequest:
 # ---------------------------------------------------------------------------
 # Shared field parsers (private)
 # ---------------------------------------------------------------------------
+
+def parse_calendar_system(value: object) -> str:
+    """Validate the Amanta/Purnimanta selector, defaulting to Purnimanta."""
+    from panchang_service import CALENDAR_SYSTEMS, DEFAULT_CALENDAR_SYSTEM
+
+    if value in (None, ""):
+        return DEFAULT_CALENDAR_SYSTEM
+    normalized = str(value).strip().lower()
+    if normalized not in CALENDAR_SYSTEMS:
+        raise ValueError(
+            "calendar_system must be one of: " + ", ".join(CALENDAR_SYSTEMS)
+        )
+    return normalized
+
 
 def _parse_location_fields(payload: dict) -> tuple[str | None, float | None, float | None]:
     """Extract and validate city, lat, lon from a payload dict.

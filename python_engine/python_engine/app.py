@@ -19,6 +19,7 @@ from panchang import get_vara_from_date
 from panchang_service import generate_location_panchang, resolve_location
 from range_generation_service import generate_year_range_exports
 from request_parsing import (
+    parse_calendar_system,
     parse_panchang_request,
     parse_pdf_generation_request,
     parse_range_generation_request,
@@ -281,6 +282,7 @@ def create_app() -> Flask:
                 lat=parsed.lat,
                 lon=parsed.lon,
                 ayanamsa_name=parsed.ayanamsa_name,
+                calendar_system=parsed.calendar_system,
             )
             if profile:
                 from jain_observances.festival_service import generate_jain_festivals
@@ -403,6 +405,7 @@ def create_app() -> Flask:
             lat_str = request.args.get("lat")
             lon_str = request.args.get("lon")
             ayanamsa = request.args.get("ayanamsa", "Lahiri")
+            calendar_system = parse_calendar_system(request.args.get("calendar_system"))
 
             lat = float(lat_str) if lat_str else None
             lon = float(lon_str) if lon_str else None
@@ -465,6 +468,7 @@ def create_app() -> Flask:
                     lat=location.lat,
                     lon=location.lon,
                     ayanamsa_name=ayanamsa,
+                    calendar_system=calendar_system,
                 )
                 if first_result is None:
                     first_result = result
@@ -518,6 +522,7 @@ def create_app() -> Flask:
                 "timezone": location.timezone,
                 "hindu_month": hindu_month,
                 "hindu_month_index": hindu_month_index,
+                "calendar_system": calendar_system,
                 "vikram_samvat": vikram_samvat,
                 "days": days,
                 "multi_day_festivals": multi_day_festivals,
