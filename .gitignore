@@ -1,0 +1,43 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# --- Virtualenvs ---
+venv/
+venv*
+env/
+.env
+.venv*
+
+# --- Build / packaging artifacts ---
+build/
+dist/
+*.spec.bak
+
+# --- Vendored native dependency (built locally, see docs/setup_and_usage.md) ---
+pyswisseph/
+
+# --- Logs & scratch output ---
+*.log
+logs/
+output/
+debug_out.json
+diff_output.txt
+
+# --- Generated data files ---
+*.csv
+*.xlsx
+*.pdf
+*.png
+
+# Keep design-doc artifacts that are inputs, not generated output
+!**/plans/tithi_unification/festival_dates_2026.xlsx
+
+# --- Generated databases ---
+**/data/*.db
+
+# --- Editor / OS ---
+.vscode/
+.DS_Store

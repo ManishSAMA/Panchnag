@@ -1,5 +1,9 @@
 # Runtime dependencies (same as requirements.txt)
 -r requirements.txt
 
+# Test runner
+pytest>=8.0
+pytest-subtests>=0.12
+
 # Browser smoke testing
 playwright>=1.44
