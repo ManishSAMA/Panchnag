@@ -1,151 +1,192 @@
+"""Bhaktambar Vrat: two discrete days, never a span.
+
+The Vrat is observed on exactly two independent Tithis in each paksha --
+Ashtami (8) and Chaturdashi (14). They are separate observances that happen to
+share a fortnight, not the endpoints of a continuous fast.
+
+The two Tithis fall back differently, and the asymmetry is the point:
+
+  * Ashtami kshaya      -> observe on Saptami (7) instead
+  * Chaturdashi kshaya  -> not observed at all that cycle; no fallback
+
+This replaces an earlier reading that treated the Vrat as a continuous
+Ashtami->Chaturdashi span with a seven-day floor, which pulled the start back to
+Saptami whenever *any* Tithi in 8..14 was missing -- so a kshaya Chaturdashi
+moved the start day. See plans/case-study-bhaktambar-saptami.md.
+
+These tests drive festival_rules.BhaktambarVratFestival, the rule that actually
+runs. The previous suite exercised jain_observances/vrats/bhaktambar.py, which
+nothing imported.
+"""
+
 import unittest
 from datetime import date, timedelta
-from typing import Dict, Any, List
 
-from jain_observances.vrats.bhaktambar import (
-    calculate_bhaktambar_vrat,
-    VratSchedule,
-)
+from jain_observances.festival_rules import BhaktambarVratFestival
+from jain_observances.festival_service import generate_jain_festivals
 
 
-class MockTithiProvider:
-    """Mock provider for unit testing astronomical edge cases."""
-    def __init__(self, daily_tithis: Dict[date, int]):
-        self.daily_tithis = daily_tithis
-
-    def get_sunrise(self, d: date, lat: float, lon: float):
-        from datetime import datetime
-        return datetime(d.year, d.month, d.day, 6, 0)
-
-    def get_tithi_at_time(self, dt, lat: float, lon: float) -> int:
-        d = dt.date()
-        return self.daily_tithis.get(d, 1)
+LAT, LON = 26.9124, 75.7873
 
 
-class BhaktambarVratAlgorithmTest(unittest.TestCase):
-    def test_standard_shukla_span_7_days(self):
-        """Standard Shukla Paksha: Tithis 8 to 14 consecutive without Kshaya/Vriddhi -> exactly 7 days."""
-        start = date(2026, 4, 20)
-        daily_tithis = {start + timedelta(days=i): 8 + i for i in range(7)}
-        # Add boundary padding (7 and 15)
-        daily_tithis[start - timedelta(days=1)] = 7
-        daily_tithis[start + timedelta(days=7)] = 15
-
-        provider = MockTithiProvider(daily_tithis)
-        vrat = calculate_bhaktambar_vrat(2026, 4, "SHUKLA", 28.6139, 77.2090, provider)
-
-        self.assertIsNotNone(vrat)
-        self.assertEqual(vrat.start_date, "2026-04-20")
-        self.assertEqual(vrat.end_date, "2026-04-26")
-        self.assertEqual(vrat.total_fasting_days, 7)
-        self.assertFalse(vrat.has_kshaya)
-        self.assertFalse(vrat.has_vriddhi)
-
-    def test_kshaya_rule_enforces_7_days_from_saptami(self):
-        """If a Tithi in 8..14 is skipped (e.g. Navami 9 is skipped), start shifts back to Saptami to guarantee 7 days."""
-        start = date(2026, 5, 20)
-        # 8, 10, 11, 12, 13, 14 (6 days) -> Tithi 9 is skipped
-        daily_tithis = {
-            start - timedelta(days=1): 7,  # Saptami
-            start: 8,                      # Ashtami
-            start + timedelta(days=1): 10, # Dashami (Navami skipped)
-            start + timedelta(days=2): 11,
-            start + timedelta(days=3): 12,
-            start + timedelta(days=4): 13,
-            start + timedelta(days=5): 14, # Chaturdashi
-            start + timedelta(days=6): 15,
-        }
-        provider = MockTithiProvider(daily_tithis)
-        vrat = calculate_bhaktambar_vrat(2026, 5, "Shukla", 28.6139, 77.2090, provider)
-
-        self.assertIsNotNone(vrat)
-        # Starts on Saptami (May 19)
-        self.assertEqual(vrat.start_date, "2026-05-19")
-        self.assertEqual(vrat.end_date, "2026-05-25")
-        self.assertEqual(vrat.total_fasting_days, 7)
-        self.assertTrue(vrat.has_kshaya)
-        self.assertFalse(vrat.has_vriddhi)
-
-    def test_vriddhi_rule_extends_to_second_chaturdashi(self):
-        """If Chaturdashi repeats, span extends to 8 days and ends on 2nd Chaturdashi."""
-        start = date(2026, 6, 20)
-        # 8, 9, 10, 11, 12, 13, 14, 14 (8 days)
-        daily_tithis = {
-            start - timedelta(days=1): 7,
-            start: 8,
-            start + timedelta(days=1): 9,
-            start + timedelta(days=2): 10,
-            start + timedelta(days=3): 11,
-            start + timedelta(days=4): 12,
-            start + timedelta(days=5): 13,
-            start + timedelta(days=6): 14,
-            start + timedelta(days=7): 14,  # 2nd Chaturdashi
-            start + timedelta(days=8): 15,
-        }
-        provider = MockTithiProvider(daily_tithis)
-        vrat = calculate_bhaktambar_vrat(2026, 6, "shukla", 28.6139, 77.2090, provider)
-
-        self.assertIsNotNone(vrat)
-        self.assertEqual(vrat.start_date, "2026-06-20")
-        self.assertEqual(vrat.end_date, "2026-06-27")
-        self.assertEqual(vrat.total_fasting_days, 8)
-        self.assertFalse(vrat.has_kshaya)
-        self.assertTrue(vrat.has_vriddhi)
-
-    def test_krishna_paksha_case_insensitivity(self):
-        """Krishna Paksha targets Tithis 23..29 (Krishna 8 to Krishna 14) and accepts any casing."""
-        start = date(2026, 7, 5)
-        # Krishna 8 (23) to Krishna 14 (29)
-        daily_tithis = {
-            start - timedelta(days=1): 22,
-            start: 23,
-            start + timedelta(days=1): 24,
-            start + timedelta(days=2): 25,
-            start + timedelta(days=3): 26,
-            start + timedelta(days=4): 27,
-            start + timedelta(days=5): 28,
-            start + timedelta(days=6): 29,
-            start + timedelta(days=7): 30,
-        }
-        provider = MockTithiProvider(daily_tithis)
-        
-        # Test various casings: KRISHNA, Krishna, krishna
-        for paksha_input in ["KRISHNA", "Krishna", "krishna", "  kRiShNa  "]:
-            vrat = calculate_bhaktambar_vrat(2026, 7, paksha_input, 28.6139, 77.2090, provider)
-            self.assertIsNotNone(vrat, f"Failed for paksha casing: {paksha_input}")
-            self.assertEqual(vrat.start_date, "2026-07-05")
-            self.assertEqual(vrat.end_date, "2026-07-11")
-            self.assertEqual(vrat.total_fasting_days, 7)
+def make_snapshots(start: date, tithis: list[int], paksha: str = "Shukla",
+                   month: str = "Vaishakha") -> list[dict]:
+    """Snapshots for consecutive days carrying the given paksha-relative Tithis."""
+    snaps = []
+    for offset, tithi_in_paksha in enumerate(tithis):
+        absolute = tithi_in_paksha if paksha == "Shukla" else tithi_in_paksha + 15
+        snaps.append({
+            "date": start + timedelta(days=offset),
+            "paksha": paksha,
+            "tithi_in_paksha": tithi_in_paksha,
+            "tithi": absolute,
+            "jain_tithi": absolute,
+            "hindu_month": month,
+            "is_adhika": False,
+            "purnimanta_month": month,
+            "purnimanta_is_adhika": False,
+        })
+    return snaps
 
 
-class BhaktambarFestivalServiceIntegrationTest(unittest.TestCase):
-    def test_annual_bhaktambar_vrats_resolution_2026(self):
-        """Verify that generate_jain_festivals produces Bhaktambar Vrat spans for both pakshas across the year."""
-        from jain_observances.festival_service import generate_jain_festivals
+def resolve(snaps: list[dict], year: int = 2026) -> list[dict]:
+    rule = BhaktambarVratFestival({"id": "bhaktambar_vrat", "name": "Bhaktambar Vrat",
+                                   "category": "vrat", "profiles": ["all"],
+                                   "rule_type": "BhaktambarVrat"})
+    return rule.resolve(snaps, "all", {"year": year})
 
-        res = generate_jain_festivals(
-            year=2026,
-            lat=28.6139,
-            lon=77.2090,
-            ayanamsa="Lahiri",
-            profile="all"
+
+class DiscreteDayLogicTest(unittest.TestCase):
+    def test_a_normal_paksha_yields_exactly_two_single_day_observances(self):
+        snaps = make_snapshots(date(2026, 4, 18), list(range(1, 16)))
+        occurrences = resolve(snaps)
+
+        self.assertEqual(len(occurrences), 2)
+        for occurrence in occurrences:
+            self.assertEqual(occurrence["start_date"], occurrence["end_date"],
+                             "Bhaktambar days are discrete, never spans")
+            self.assertFalse(occurrence["is_span"])
+
+    def test_the_two_days_land_on_ashtami_and_chaturdashi(self):
+        snaps = make_snapshots(date(2026, 4, 18), list(range(1, 16)))
+        dates = sorted(o["start_date"] for o in resolve(snaps))
+
+        self.assertEqual(dates, ["2026-04-25", "2026-05-01"])  # 8th and 14th days
+
+    def test_no_span_fields_survive(self):
+        """Day-count enforcement is gone; nothing may still advertise a span."""
+        snaps = make_snapshots(date(2026, 4, 18), list(range(1, 16)))
+        for occurrence in resolve(snaps):
+            self.assertNotIn("duration_days", occurrence)
+            self.assertNotIn("span_label", occurrence)
+            self.assertNotIn("has_vriddhi", occurrence)
+
+
+class AshtamiKshayaTest(unittest.TestCase):
+    def test_a_missing_ashtami_falls_back_to_saptami(self):
+        # ... 6, 7, 9, 10 ... -- Ashtami never prevails
+        snaps = make_snapshots(date(2026, 4, 18), [1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15])
+        occurrences = sorted(resolve(snaps), key=lambda o: o["start_date"])
+
+        self.assertEqual(len(occurrences), 2)
+        self.assertEqual(occurrences[0]["start_date"], "2026-04-24")  # the Saptami day
+        self.assertTrue(occurrences[0]["has_kshaya"])
+        self.assertEqual(occurrences[0]["observed_tithi"], 7)
+
+    def test_a_present_ashtami_never_uses_the_saptami_fallback(self):
+        snaps = make_snapshots(date(2026, 4, 18), list(range(1, 16)))
+        ashtami = min(resolve(snaps), key=lambda o: o["start_date"])
+
+        self.assertEqual(ashtami["observed_tithi"], 8)
+        self.assertFalse(ashtami["has_kshaya"])
+
+    def test_a_doubled_ashtami_uses_the_first_day(self):
+        snaps = make_snapshots(date(2026, 4, 18), [1, 2, 3, 4, 5, 6, 7, 8, 8, 9, 10, 11, 12, 13, 14])
+        ashtami = min(resolve(snaps), key=lambda o: o["start_date"])
+
+        self.assertEqual(ashtami["start_date"], "2026-04-25")  # first of the two
+
+
+class ChaturdashiKshayaTest(unittest.TestCase):
+    def test_a_missing_chaturdashi_is_simply_not_observed(self):
+        """The key asymmetry: Chaturdashi has no fallback."""
+        snaps = make_snapshots(date(2026, 4, 18), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15])
+        occurrences = resolve(snaps)
+
+        self.assertEqual(len(occurrences), 1, "only the Ashtami observance remains")
+        self.assertEqual(occurrences[0]["observed_tithi"], 8)
+
+    def test_a_missing_chaturdashi_does_not_move_the_ashtami_day(self):
+        """The regression this rewrite exists to prevent."""
+        full = make_snapshots(date(2026, 4, 18), list(range(1, 16)))
+        without_14 = make_snapshots(
+            date(2026, 4, 18), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15]
         )
-        self.assertIn("festivals", res)
 
-        bhak_events = [f for f in res["festivals"] if "Bhaktambar" in f.get("name", "") or "bhaktambar" in f.get("id", "")]
-        # A standard year has at least 24 fortnights (12 Shukla + 12 Krishna)
-        self.assertGreaterEqual(len(bhak_events), 24)
+        ashtami_full = min(resolve(full), key=lambda o: o["start_date"])["start_date"]
+        ashtami_short = min(resolve(without_14), key=lambda o: o["start_date"])["start_date"]
 
-        for event in bhak_events:
-            self.assertTrue(event["is_span"])
-            self.assertEqual(event["badge"], "Bhaktambar Vrat")
-            self.assertEqual(event["badge_color"], "purple")
-            self.assertIn("duration_days", event)
-            self.assertGreaterEqual(event["duration_days"], 7)  # Guaranteed minimum 7 days
-            self.assertIn("has_kshaya", event)
-            self.assertIn("has_vriddhi", event)
-            self.assertIn("–", event["span_label"])
-            self.assertEqual(event["status"], "confirmed")
+        self.assertEqual(ashtami_full, ashtami_short)
+        self.assertEqual(ashtami_short, "2026-04-25")
+
+    def test_a_missing_chaturdashi_never_produces_a_trayodashi_observance(self):
+        snaps = make_snapshots(date(2026, 4, 18), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15])
+        self.assertNotIn(13, [o["observed_tithi"] for o in resolve(snaps)])
+
+
+class BothTithisMissingTest(unittest.TestCase):
+    def test_ashtami_kshaya_and_chaturdashi_kshaya_together(self):
+        snaps = make_snapshots(date(2026, 4, 18), [1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 15])
+        occurrences = resolve(snaps)
+
+        self.assertEqual(len(occurrences), 1)
+        self.assertEqual(occurrences[0]["observed_tithi"], 7)
+
+
+class IdentityTest(unittest.TestCase):
+    def test_the_two_days_have_distinct_occurrence_ids(self):
+        snaps = make_snapshots(date(2026, 4, 18), list(range(1, 16)))
+        ids = {o["occurrence_id"] for o in resolve(snaps)}
+        self.assertEqual(len(ids), 2)
+
+    def test_shukla_and_krishna_pakshas_do_not_collide(self):
+        shukla = resolve(make_snapshots(date(2026, 4, 18), list(range(1, 16)), "Shukla"))
+        krishna = resolve(make_snapshots(date(2026, 5, 3), list(range(1, 16)), "Krishna"))
+        self.assertFalse({o["occurrence_id"] for o in shukla}
+                         & {o["occurrence_id"] for o in krishna})
+
+
+class RealYearIntegrationTest(unittest.TestCase):
+    def setUp(self):
+        generate_jain_festivals.cache_clear()
+        result = generate_jain_festivals(2026, LAT, LON, "Lahiri", "all")
+        self.events = [f for f in result["festivals"] if f.get("name") == "Bhaktambar Vrat"]
+
+    def test_every_occurrence_is_a_single_day(self):
+        self.assertTrue(self.events)
+        for event in self.events:
+            self.assertEqual(event["start_date"], event["end_date"])
+            self.assertFalse(event["is_span"])
+
+    def test_roughly_two_per_paksha_across_the_year(self):
+        """~24 pakshas, up to 2 days each, minus Chaturdashi-kshaya cycles."""
+        self.assertGreater(len(self.events), 35)
+        self.assertLessEqual(len(self.events), 52)
+
+    def test_every_occurrence_sits_on_seven_eight_or_fourteen(self):
+        self.assertTrue(set(e["observed_tithi"] for e in self.events) <= {7, 8, 14})
+
+    def test_a_seven_only_appears_when_that_cycle_lost_its_ashtami(self):
+        for event in self.events:
+            if event["observed_tithi"] == 7:
+                self.assertTrue(event["has_kshaya"])
+
+    def test_the_may_2026_case_now_starts_on_ashtami(self):
+        """The reported anomaly: 9 May was Saptami with Ashtami present on the 10th."""
+        may = sorted(e["start_date"] for e in self.events
+                     if e["start_date"].startswith("2026-05"))
+        self.assertIn("2026-05-10", may)
+        self.assertNotIn("2026-05-09", may)
 
 
 if __name__ == "__main__":

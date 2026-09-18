@@ -550,124 +550,120 @@ class RohiniVratFestival(FestivalRule):
         return occurrences
 
 
+def _paksha_blocks(snapshots: List[Dict[str, Any]]) -> List[List[Dict[str, Any]]]:
+    """Split chronological snapshots into contiguous same-paksha fortnights.
+
+    A block breaks on any change of paksha, amanta month or adhika flag, or on a
+    gap in the dates -- so each block is exactly one fortnight of one month.
+    """
+    blocks: List[List[Dict[str, Any]]] = []
+    current: List[Dict[str, Any]] = []
+
+    for snap in snapshots:
+        if current:
+            previous = current[-1]
+            continues = (
+                snap["paksha"] == previous["paksha"]
+                and snap["hindu_month"] == previous["hindu_month"]
+                and snap["is_adhika"] == previous["is_adhika"]
+                and (snap["date"] - previous["date"]).days == 1
+            )
+            if not continues:
+                blocks.append(current)
+                current = []
+        current.append(snap)
+
+    if current:
+        blocks.append(current)
+    return blocks
+
+
 class BhaktambarVratFestival(FestivalRule):
-    def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
-        occurrences = []
+    """Two discrete observance days per paksha: Ashtami (8) and Chaturdashi (14).
+
+    Not a span. The two days are independent observances that share a fortnight,
+    and they fall back differently when their Tithi is kshaya:
+
+      * Ashtami missing     -> observe on Saptami (7) instead
+      * Chaturdashi missing -> not observed at all this cycle; no fallback
+
+    That asymmetry is the whole rule. An earlier implementation treated the Vrat
+    as a continuous Ashtami->Chaturdashi fast with a seven-day floor, so a kshaya
+    *Chaturdashi* pulled the *start* back onto Saptami -- which is how
+    9 May 2026 came to be flagged as Prarambh while Ashtami sat un-observed on
+    the 10th. See plans/case-study-bhaktambar-saptami.md.
+    """
+
+    _OBSERVANCE_DAYS = (
+        # (target tithi, fallback tithi or None, slug)
+        (8, 7, "ashtami"),
+        (14, None, "chaturdashi"),
+    )
+
+    def resolve(self, snapshots: List[Dict[str, Any]], profile: str,
+                context: Dict[str, Any]) -> List[Dict[str, Any]]:
         year = context["year"]
+        occurrences: List[Dict[str, Any]] = []
 
-        # Partition chronological snapshots into contiguous paksha blocks
-        blocks: List[List[Dict[str, Any]]] = []
-        curr_block: List[Dict[str, Any]] = []
-
-        for s in snapshots:
-            if not curr_block:
-                curr_block.append(s)
-            else:
-                prev = curr_block[-1]
-                if (
-                    s["paksha"] == prev["paksha"]
-                    and s["hindu_month"] == prev["hindu_month"]
-                    and s["is_adhika"] == prev["is_adhika"]
-                    and (s["date"] - prev["date"]).days == 1
-                ):
-                    curr_block.append(s)
-                else:
-                    blocks.append(curr_block)
-                    curr_block = [s]
-        if curr_block:
-            blocks.append(curr_block)
-
-        # Evaluate each paksha block for Bhaktambar Vrat span (Ashtami to Chaturdashi)
-        for block in blocks:
-            p = block[0]["paksha"]  # "Shukla" or "Krishna"
-            tithi_dates: Dict[int, List[date]] = {t: [] for t in range(7, 15)}
-            for s in block:
-                t_num = s["tithi_in_paksha"]
-                if t_num in tithi_dates:
-                    tithi_dates[t_num].append(s["date"])
-
-            target_dates = sorted([d for t in range(8, 15) for d in tithi_dates[t]])
-            if not target_dates:
-                continue
-
-            # Natural start: first Ashtami if present, else first active target date
-            if tithi_dates[8]:
-                start_day = tithi_dates[8][0]
-            else:
-                start_day = target_dates[0]
-
-            # Natural end: last Chaturdashi if present, else last active target date
-            if tithi_dates[14]:
-                end_day = tithi_dates[14][-1]
-            else:
-                end_day = target_dates[-1]
-
-            natural_days = (end_day - start_day).days + 1
-
-            # Kshaya Rule: minimum 7 days guarantee
-            has_kshaya = False
-            if natural_days < 7:
-                has_kshaya = True
-                if tithi_dates[7]:
-                    start_day = tithi_dates[7][0]
-                else:
-                    start_day = end_day - timedelta(days=6)
-                total_days = (end_day - start_day).days + 1
-                if total_days < 7:
-                    start_day = end_day - timedelta(days=6)
-                    total_days = 7
-            else:
-                total_days = natural_days
-
-            has_vriddhi = total_days > 7
-
-            # Only include if start_day is in requested year
-            if start_day.year != year:
-                continue
+        for block in _paksha_blocks(snapshots):
+            tithi_dates: Dict[int, List[date]] = {}
+            for snap in block:
+                tithi_dates.setdefault(snap["tithi_in_paksha"], []).append(snap["date"])
 
             first_snap = block[0]
-            jain_m = get_jain_month(first_snap)
-            # get_jain_month returns the PURNIMANTA month, which for a Krishna paksha is
-            # the NEXT month -- so its adhika-ness is purnimanta_is_adhika. Using the
-            # snapshot's amanta is_adhika here crosses the two for Krishna pakshas: the
-            # fortnight labelled "Adhika Jyeshtha" would be tagged non-adhika, and the
-            # Nija one tagged adhika.
+            paksha = first_snap["paksha"]
+            jain_month = get_jain_month(first_snap)
             is_adhika_month = first_snap.get("purnimanta_is_adhika", first_snap["is_adhika"])
-            prefix = "Adhik " if is_adhika_month else ""
-            month_title = f"{prefix}{jain_m.capitalize()}"
 
-            p_hindi = "शुक्ल" if p.lower() == "shukla" else "कृष्ण"
-            start_mm_dd = start_day.strftime("%m-%d")
-            end_mm_dd = end_day.strftime("%m-%d")
-            span_label = f"Span: {start_mm_dd} – {end_mm_dd}"
+            for target, fallback, slug in self._OBSERVANCE_DAYS:
+                # A vriddhi Tithi holds two day-starts; the observance takes the
+                # first, matching the Kalyanak first-active-day convention.
+                if tithi_dates.get(target):
+                    observed_date = tithi_dates[target][0]
+                    observed_tithi = target
+                    has_kshaya = False
+                elif fallback is not None and tithi_dates.get(fallback):
+                    observed_date = tithi_dates[fallback][0]
+                    observed_tithi = fallback
+                    has_kshaya = True
+                else:
+                    # Chaturdashi kshaya, or no usable fallback: not observed.
+                    continue
 
-            # An adhika month carries its own Ashtami->Chaturdashi span, distinct from
-            # the nija month of the same name -- keep their identities apart.
-            adhika_seg = "adhika_" if is_adhika_month else ""
-            occ_id = f"bhaktambar_vrat_{year}_{adhika_seg}{jain_m.lower()}_{p.lower()}"
+                if observed_date.year != year:
+                    continue
 
-            occurrences.append({
-                "id": occ_id,
-                "occurrence_id": occ_id,
-                "name": "Bhaktambar Vrat",
-                "title": f"{p} Bhaktambar Vrat ({month_title})",
-                "name_hindi": "भक्ताम्बर व्रत",
-                "category": self.category or "vrat",
-                "badge": "Bhaktambar Vrat",
-                "badge_color": "purple",
-                "is_span": True,
-                "span_label": span_label,
-                "start_date": start_day.isoformat(),
-                "end_date": end_day.isoformat(),
-                "duration_days": total_days,
-                "has_kshaya": has_kshaya,
-                "has_vriddhi": has_vriddhi,
-                "status": "confirmed",
-                "meaning": self.meaning or "Bhaktambar Vrat from Ashtami (8) to Chaturdashi (14) of every Paksha.",
-                "observance": self.observance or "Fasting and Bhaktambar Stotra Aradhana",
-                "sources": self.sources or ["Jain Traditions"]
-            })
+                prefix = "Adhik " if is_adhika_month else ""
+                month_title = f"{prefix}{jain_month.capitalize()}"
+                adhika_seg = "adhika_" if is_adhika_month else ""
+                occ_id = (f"bhaktambar_vrat_{year}_{adhika_seg}"
+                          f"{jain_month.lower()}_{paksha.lower()}_{slug}")
+
+                occurrences.append({
+                    "id": occ_id,
+                    "occurrence_id": occ_id,
+                    "name": "Bhaktambar Vrat",
+                    "title": f"{paksha} Bhaktambar Vrat ({month_title})",
+                    "name_hindi": "भक्ताम्बर व्रत",
+                    "category": self.category or "vrat",
+                    "badge": "Bhaktambar Vrat",
+                    "badge_color": "purple",
+                    "is_span": False,
+                    "start_date": observed_date.isoformat(),
+                    "end_date": observed_date.isoformat(),
+                    "observed_tithi": observed_tithi,
+                    "has_kshaya": has_kshaya,
+                    "status": "confirmed",
+                    "meaning": self.meaning or (
+                        "Bhaktambar Vrat, observed on Ashtami (8) and Chaturdashi (14) "
+                        "of every paksha as two independent days."
+                    ),
+                    "observance": self.observance or "Fasting and Bhaktambar Stotra Aradhana",
+                    "sources": self.sources or ["Jain Traditions"],
+                })
+
         return occurrences
+
 
 class DaslakshanVratFestival(FestivalRule):
     def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -769,68 +765,76 @@ class RatnatrayaVratFestival(FestivalRule):
         return occurrences
 
 class AshtahnikaVratFestival(FestivalRule):
-    def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
-        year = context["year"]
-        target_month = self.jain_month # e.g. "ASHADHA", "KARTIKA", "PHALGUNA"
-        
-        season_months = ["ASHADHA", "KARTIKA", "PHALGUNA"]
-        if target_month and target_month.upper() not in season_months:
-            return []
+    """Ashtami (8) to Purnima (15) of Shukla paksha, three times a year.
 
-        months_to_process = [target_month.upper()] if target_month else season_months
+    A strict span whose boundaries expand and never contract:
+
+      * Ashtami kshaya  -> commence early on Saptami (7)
+      * Ashtami vriddhi -> commence on the FIRST Ashtami
+      * Purnima vriddhi -> conclude on the SECOND Purnima
+
+    A kshaya anywhere inside the span shortens the civil day-count but must not
+    move either boundary inward.
+    """
+
+    _SEASON_MONTHS = ("ASHADHA", "KARTIKA", "PHALGUNA")
+
+    def resolve(self, snapshots: List[Dict[str, Any]], profile: str,
+                context: Dict[str, Any]) -> List[Dict[str, Any]]:
+        year = context["year"]
+        target_month = self.jain_month
+
+        if target_month and target_month.upper() not in self._SEASON_MONTHS:
+            return []
+        months = [target_month.upper()] if target_month else list(self._SEASON_MONTHS)
 
         occurrences = []
-        for m in months_to_process:
+        for month in months:
             month_snaps = [
                 s for s in snapshots
                 if s["date"].year == year
-                and s["hindu_month"].upper() in [m, "KARTIK" if m == "KARTIKA" else m]
+                and _canonical_month(s["hindu_month"]) == _canonical_month(month)
             ]
-            
             if not month_snaps:
                 continue
 
-            has_adhik_month_in_year = any(s["is_adhika"] for s in month_snaps)
-            if has_adhik_month_in_year:
-                month_snaps = [s for s in month_snaps if s["is_adhika"]]
-            else:
-                month_snaps = [s for s in month_snaps if not s["is_adhika"]]
+            # An adhika month carries its own observance, distinct from the nija one.
+            is_adhika_month = any(s["is_adhika"] for s in month_snaps)
+            month_snaps = [s for s in month_snaps if s["is_adhika"] == is_adhika_month]
 
-            tithi_dates = {t: [] for t in range(7, 16)}
-            for s in month_snaps:
-                for t in range(7, 16):
-                    if s["tithi"] == t or s["jain_tithi"] == t or (s["paksha"] == "Shukla" and s["tithi_in_paksha"] == t):
-                        tithi_dates[t].append(s["date"])
+            tithi_dates: Dict[int, List[date]] = {t: [] for t in range(7, 16)}
+            for snap in month_snaps:
+                if snap["paksha"] != "Shukla":
+                    continue
+                if snap["tithi_in_paksha"] in tithi_dates:
+                    tithi_dates[snap["tithi_in_paksha"]].append(snap["date"])
 
-            skipped_tithis = [t for t in range(8, 16) if not tithi_dates[t]]
-            repeated_tithis = [t for t in range(8, 16) if len(tithi_dates[t]) > 1]
-            active_dates = sorted(list({d for t in range(8, 16) for d in tithi_dates[t]}))
-            if not active_dates:
+            span_dates = sorted({d for t in range(8, 16) for d in tithi_dates[t]})
+            if not span_dates:
                 continue
 
-            has_only_kshaya = len(skipped_tithis) > 0 and len(repeated_tithis) == 0
-
-            if has_only_kshaya:
-                start_date = tithi_dates[7][0] if tithi_dates[7] else active_dates[0] - timedelta(days=1)
-                end_date = active_dates[-1]
+            # Start: first Ashtami; if Ashtami is kshaya, commence early on Saptami.
+            ashtami_kshaya = not tithi_dates[8]
+            if tithi_dates[8]:
+                start_date = tithi_dates[8][0]
+            elif tithi_dates[7]:
+                start_date = tithi_dates[7][0]
             else:
-                start_date = active_dates[0]
-                end_date = active_dates[-1]
+                start_date = span_dates[0] - timedelta(days=1)
 
-            if has_adhik_month_in_year:
-                prefix = "Adhik "
-            else:
-                prefix = ""
-            month_title = prefix + m.capitalize()
+            # End: last Purnima, so a doubled Purnima concludes on the second.
+            end_date = tithi_dates[15][-1] if tithi_dates[15] else span_dates[-1]
+
+            has_kshaya = ashtami_kshaya or any(not tithi_dates[t] for t in range(8, 16))
+            has_vriddhi = len(tithi_dates[8]) > 1 or len(tithi_dates[15]) > 1
+
+            month_title = ("Adhik " if is_adhika_month else "") + month.capitalize()
             title = f"Ashtahnika Mahaparv ({month_title})"
-
-            start_mm_dd = start_date.strftime("%m-%d")
-            end_mm_dd = end_date.strftime("%m-%d")
-            span_label = f"Span: {start_mm_dd} – {end_mm_dd}"
+            occ_id = f"ashtahnika_{month.lower()}_{year}"
 
             occurrences.append({
-                "id": f"ashtahnika_{m.lower()}_{year}",
-                "occurrence_id": f"ashtahnika_{m.lower()}_{year}",
+                "id": occ_id,
+                "occurrence_id": occ_id,
                 "name": title,
                 "title": title,
                 "name_hindi": self.name_hindi or title,
@@ -841,10 +845,14 @@ class AshtahnikaVratFestival(FestivalRule):
                 "badge": "Mahaparv",
                 "badge_color": "blue",
                 "is_span": True,
-                "span_label": span_label,
+                "span_label": f"Span: {start_date:%m-%d} – {end_date:%m-%d}",
+                "start_label": "प्रारंभ",
+                "end_label": "पारणा",
+                "has_kshaya": has_kshaya,
+                "has_vriddhi": has_vriddhi,
                 "meaning": self.meaning or "An 8-day Jain festival of fasting and worship.",
                 "observance": self.observance or "Special pujas, fasting, and reading scriptures.",
-                "sources": self.sources or ["Jain Traditions"]
+                "sources": self.sources or ["Jain Traditions"],
             })
         return occurrences
 

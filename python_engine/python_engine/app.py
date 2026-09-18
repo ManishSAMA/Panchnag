@@ -15,7 +15,7 @@ from choghadiya_service import calculate_choghadiya_slots
 from yoga_service import detect_all_yogas_for_day
 from location_service import geocode_city, get_timezone_name, search_locations
 from pdf_generation_service import generate_pdf_export
-from panchang import get_vara_from_date
+from panchang import format_tithi_pair_name, get_vara_from_date, kshaya_tithi_between
 from panchang_service import generate_location_panchang, resolve_location
 from range_generation_service import generate_year_range_exports
 from request_parsing import (
@@ -492,6 +492,7 @@ def create_app() -> Flask:
                     "date": date_str,
                     "tithi_index": tithi_index,
                     "tithi_name": tithi_name,
+                    "kshaya_tithi": None,
                     "tithi_end_time": tithi_end_raw[:5] if tithi_end_raw else "",
                     "nakshatra_index": nakshatra_index,
                     "nakshatra_name": result["panchang"]["nakshatra"]["name"],
@@ -510,6 +511,39 @@ def create_app() -> Flask:
                 if profile:
                     day_payload["jain_festivals"] = date_to_festivals.get(date_str, [])
                 days.append(day_payload)
+
+            # Kshaya pass: a Tithi that prevails at no 6-ghati mark shows up as a
+            # gap in the sequence, which reads as a broken calendar. Mark the
+            # preceding day so it renders "Dashami/Ekadashi".
+            following_first = None
+            next_month_year, next_month_num = (
+                (year + 1, 1) if month == 12 else (year, month + 1)
+            )
+            try:
+                following_first = generate_location_panchang(
+                    f"{next_month_year:04d}-{next_month_num:02d}-01",
+                    lat=location.lat, lon=location.lon,
+                    ayanamsa_name=ayanamsa, calendar_system=calendar_system,
+                )
+            except ValueError:
+                following_first = None
+
+            def _day_tithi_index(payload):
+                jain = payload["panchang"].get("jain_tithi")
+                return jain["index"] if jain else payload["panchang"]["tithi"][0]["index"]
+
+            next_indices = [d["tithi_index"] for d in days[1:]]
+            if following_first is not None:
+                next_indices.append(_day_tithi_index(following_first))
+
+            for day_entry, following_index in zip(days, next_indices):
+                skipped = kshaya_tithi_between(day_entry["tithi_index"], following_index)
+                if skipped is None:
+                    continue
+                day_entry["kshaya_tithi"] = skipped
+                day_entry["tithi_name"] = format_tithi_pair_name(
+                    day_entry["tithi_index"], skipped
+                )
 
             hindu_month_index = first_result["panchang"]["hindu_month"]["index"] if first_result else 0
             hindu_month = first_result["panchang"]["hindu_month"]["name"] if first_result else ""

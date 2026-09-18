@@ -48,10 +48,19 @@ class BhaktambarVratNameTest(unittest.TestCase):
                      and f["name"] != "Bhaktambar Vrat"]
         self.assertEqual([], offenders)
 
-    def test_both_pakshas_still_produce_an_occurrence(self):
+    def test_both_pakshas_still_produce_observances(self):
+        """Two discrete days per paksha -- Ashtami and Chaturdashi -- not one span.
+
+        A cycle whose Chaturdashi is kshaya contributes only its Ashtami day and
+        no fallback, so the total sits just under 2 x the fortnight count.
+        """
         bhaktambar = [f for f in _festivals() if f["name"] == "Bhaktambar Vrat"]
         self.assertEqual({"Shukla", "Krishna"}, {f["paksha"] for f in bhaktambar})
-        self.assertEqual(25, len(bhaktambar))
+
+        fortnights = {f["occurrence_id"].rsplit("_", 1)[0] for f in bhaktambar}
+        self.assertGreaterEqual(len(bhaktambar), len(fortnights))
+        self.assertLessEqual(len(bhaktambar), 2 * len(fortnights))
+        self.assertTrue(all(f["start_date"] == f["end_date"] for f in bhaktambar))
 
     def test_adhika_and_nija_months_get_distinct_occurrence_ids(self):
         """An adhika month is a real fortnight of its own: its Bhaktambar Vrat is a
@@ -75,13 +84,15 @@ class BhaktambarVratNameTest(unittest.TestCase):
 
     def test_adhika_fortnights_are_identified_separately(self):
         """2026 has an Adhika Jyeshtha. Each of its two fortnights carries its own
-        Bhaktambar Vrat, identified apart from the nija Jyeshtha ones."""
+        Bhaktambar days, identified apart from the nija Jyeshtha ones."""
         jyeshtha = [f for f in _festivals()
                     if f["name"] == "Bhaktambar Vrat" and "yeshtha" in (f.get("jain_month") or "")]
-        self.assertEqual(4, len(jyeshtha))
         ids = [f["occurrence_id"] for f in jyeshtha]
         self.assertEqual(sorted(ids), sorted(set(ids)))
-        self.assertEqual(2, sum("adhika" in i for i in ids))
+
+        fortnights = {i.rsplit("_", 1)[0] for i in ids}
+        self.assertEqual(4, len(fortnights), "2 adhika + 2 nija Jyeshtha fortnights")
+        self.assertEqual(2, sum("adhika" in f for f in fortnights))
 
 
 class NamokarVratNameTest(unittest.TestCase):

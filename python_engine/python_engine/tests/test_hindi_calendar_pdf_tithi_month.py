@@ -2,18 +2,18 @@
 tests/test_hindi_calendar_pdf_tithi_month.py -- Regression for the same
 sunrise/6-ghati mismatch fixed elsewhere this session (parva-tithi double-fire,
 panchang_service.py's primary Tithi, vrats/provider.py), now for the Hindi
-calendar PDF generators (generate_hindi_calendar_pdf.py and its 2027-2028 /
-2028-2029 siblings).
+calendar PDF.
 
-All three build each calendar cell from the SAME jd_sr (plain sunrise) for
-both the Tithi (via generate_daily_panchang) and the Hindu month header (via
-get_hindu_month) -- see plans/tithi_unification/design.md's flag on these
-files specifically. This doesn't call into the PDF scripts directly (their
-logic isn't factored into a testable unit; running the real function
-generates a full multi-month PDF to disk) -- it pins the SAME primitive
-computation those scripts perform, so a future refactor of those scripts to
-use sunrise + JAIN_TITHI_OFFSET_DAYS instead of plain sunrise_jd is verified
-against a concrete, user-confirmed date.
+RESOLVED: the three generate_hindi_calendar_pdf*.py scripts this file was
+written against are gone, replaced by hindi_calendar_pdf.py, which computes the
+month and the Jain Tithi at the 6-ghati reference (and now also reports a
+separate plain-sunrise Hindu Tithi column). See tests/test_hindi_calendar_pdf.py
+for the tests that exercise that module directly.
+
+These two tests are kept because they pin the underlying primitive against a
+concrete, user-confirmed date (2026-03-19, Chaitra Shukla 1): the first records
+what plain sunrise produces, the second what the 6-ghati reference produces.
+They are the arithmetic the PDF depends on, independent of how it is packaged.
 """
 import unittest
 

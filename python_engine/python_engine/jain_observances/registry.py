@@ -53,8 +53,8 @@ FESTIVAL_REGISTRY = [
 
     {
         "id": "rohini_nakshatra_parv_vrat",
-        "name": "Rohini Nakshatra Parv Vrat",
-        "name_hindi": "रोहिणी नक्षत्र पर्व व्रत",
+        "name": "Rohini Nakshatra Vrat",
+        "name_hindi": "रोहिणी नक्षत्र व्रत",
         "category": "parva",
         "profiles": ["all"],
         "rule_type": "RohiniVrat",
@@ -2768,8 +2768,8 @@ FESTIVAL_REGISTRY = [
     },
     {
         "id": "namokar_35_vrat",
-        "name": "Namokar Mahamantra 35-Vrat Chain",
-        "name_hindi": "णमोकार महामंत्र 35-व्रत श्रृंखला",
+        "name": "Namokar Mahamantra Vrat Chain",
+        "name_hindi": "णमोकार महामंत्र व्रत श्रृंखला",
         "category": "mahaparv_vrat",
         "profiles": ["all"],
         "rule_type": "Namokar35Vrat",

@@ -310,6 +310,46 @@ def get_prevailing_tithi_index(sunrise_jd: float, ayanamsa_name: str = 'Lahiri')
     return get_tithi_at_jd(reference_jd, ayanamsa_name)
 
 
+def kshaya_tithi_between(current_tithi: int, following_tithi: int) -> int | None:
+    """Return the Tithi lost between two consecutive day-starts, or None.
+
+    A Tithi that both begins and ends inside one Jain day (between two 6-ghati
+    marks) prevails at neither, so it never gets a civil day and the printed
+    sequence jumps -- 13 to 15, or Navami to Ekadashi. That omitted Tithi is
+    kshaya, and callers render it alongside the preceding day ("13/14") so the
+    calendar does not look broken.
+
+    Only a gap of exactly one counts. Two Tithis cannot both vanish between
+    consecutive day-starts -- a Tithi is ~23-26 hours, so a wider jump means a
+    missing day or a bad sunrise, and quietly printing a pair would hide it.
+
+    Both arguments and the result are 1-30 absolute Tithi indices; the
+    comparison wraps at the month boundary, so 30 -> 2 loses Shukla Pratipada.
+    """
+    if (following_tithi - current_tithi) % 30 == 2:
+        return (current_tithi % 30) + 1
+    return None
+
+
+def format_tithi_pair_name(tithi_index: int, kshaya_index: int | None) -> str:
+    """English Tithi name, with any kshaya Tithi appended after a slash.
+
+    "Shukla Dashami/Ekadashi" when both share a paksha; the second paksha is
+    spelled out when they do not ("Amavasya/Shukla Pratipada"). Purnima and
+    Amavasya carry no paksha prefix of their own, so they always print in full.
+    """
+    name = TITHI_NAMES[tithi_index - 1]
+    if kshaya_index is None:
+        return name
+
+    lost = TITHI_NAMES[kshaya_index - 1]
+    paksha = name.split(" ")[0] if name.startswith(("Shukla ", "Krishna ")) else ""
+    lost_paksha = lost.split(" ")[0] if lost.startswith(("Shukla ", "Krishna ")) else ""
+
+    tail = lost.removeprefix(f"{paksha} ") if paksha and paksha == lost_paksha else lost
+    return f"{name}/{tail}"
+
+
 def _tithi_owns_civil_day(
     d: date,
     target_tithi: int,
