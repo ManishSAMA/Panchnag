@@ -1330,3 +1330,344 @@ html[data-theme="dark"] .theme-toggle-btn .theme-icon-sun { display: inline-bloc
   color: #b91c1c;
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Dainika Panchang page
+   The renderer in app.js emits this markup, but the rules were never written,
+   so every row collapsed to an unstyled block stack. Everything below is
+   expressed in the theme tokens so light and dark both work.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Card shell ── */
+.panchang-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 4px 16px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+/* ── Sunrise / sunset / moonrise / moonset strip ── */
+.panchang-sun-moon {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin: 0 -16px;
+  padding: 0;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.panchang-sun-moon:first-child .sun-moon-cell {
+  background: linear-gradient(180deg, var(--accent-soft) 0%, var(--surface) 100%);
+}
+
+.sun-moon-cell {
+  background: var(--surface);
+  padding: 14px 16px 12px;
+  text-align: center;
+}
+
+.sun-moon-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.sun-moon-time {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ── Label / value rows ── */
+.panchang-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.panchang-card > .panchang-row:last-child {
+  border-bottom: none;
+}
+
+.panchang-label {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.panchang-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.panchang-endtime {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Panchak row is a link through to the Panchak page. */
+.panchak-table-row .panchang-value::after {
+  content: "›";
+  margin-left: 8px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.panchak-table-row:active { background: var(--surface-muted); }
+
+/* ── Card titles ── */
+.rahu-kaal-title,
+.bhadra-kaal-title,
+.panchak-kaal-title,
+.agni-vaas-title,
+.aaj-ka-panchang-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--brand);
+  letter-spacing: -0.01em;
+  padding: 14px 0 10px;
+}
+
+.agni-vaas-title { padding: 0; }
+
+/* ── Accent rails, so the advisory cards read apart from the data card ── */
+.rahu-kaal-card   { border-left: 3px solid var(--red); }
+.bhadra-kaal-card { border-left: 3px solid var(--accent-strong); }
+.panchak-kaal-card{ border-left: 3px solid #7C5CBF; }
+.agni-vaas-card   { border-left: 3px solid var(--accent); }
+
+.bhadra-kaal-card--inactive,
+.panchak-kaal-card--inactive { border-left-color: var(--border-strong); }
+
+.bhadra-kaal-card--inactive .bhadra-kaal-title,
+.panchak-kaal-card--inactive .panchak-kaal-title { color: var(--text-secondary); }
+
+/* ── Notes ── */
+.rahu-kaal-note {
+  padding: 10px 0 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ── Badges ── */
+.rahu-badge,
+.bhadra-badge,
+.panchak-badge,
+.agni-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.rahu-badge--active,
+.bhadra-badge--active,
+.panchak-badge--active {
+  background: var(--red-bg);
+  color: var(--red);
+}
+
+.rahu-badge--inactive,
+.panchak-badge--inactive {
+  background: var(--gray-bg);
+  color: var(--text-muted);
+}
+
+.bhadra-badge--risk-high { background: var(--red-bg);   color: var(--red); }
+.bhadra-badge--risk-low  { background: var(--green-bg); color: var(--green); }
+
+.agni-vaas-header { gap: 10px; }
+
+/* ── Segments inside the Bhadra / Panchak cards ── */
+.bhadra-segment,
+.panchak-segment {
+  border-top: 1px solid var(--border) !important;
+}
+
+.bhadra-segment:first-of-type,
+.panchak-segment:first-of-type {
+  border-top: none !important;
+}
+
+/* ── Aaj Ka Panchang / Muhurta ── */
+.aaj-ka-panchang-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 4px 16px 14px;
+  margin-bottom: 14px;
+}
+
+.aaj-ka-panchang-loading {
+  padding: 6px 0 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.akp-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 0 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.akp-section-header--shubh  { color: var(--green); }
+.akp-section-header--ashubh { color: var(--red); }
+
+.akp-muhurta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  margin-bottom: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  border-left: 3px solid var(--border-strong);
+}
+
+.akp-muhurta-row.akp-shubh  { border-left-color: var(--green); background: var(--green-bg); }
+.akp-muhurta-row.akp-ashubh { border-left-color: var(--red);   background: var(--red-bg); }
+
+.akp-muhurta-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.akp-muhurta-time {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.akp-active-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 0 0 var(--red);
+  animation: akp-pulse 1.8s infinite;
+}
+
+@keyframes akp-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(185, 28, 28, 0.5); }
+  70%  { box-shadow: 0 0 0 7px rgba(185, 28, 28, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(185, 28, 28, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .akp-active-dot { animation: none; }
+}
+
+/* ── Home: today's Jain Tithi panel ── */
+.home-daily-content { margin-bottom: 4px; }
+
+.home-daily-panel {
+  position: relative;
+  display: block;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--accent-soft) 0%, var(--surface) 70%);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.home-daily-panel:active {
+  transform: scale(0.99);
+  box-shadow: var(--shadow-md);
+}
+
+.home-daily-panel::after {
+  content: "›";
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.home-daily-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.home-daily-tithi {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--brand);
+  letter-spacing: -0.01em;
+  padding-right: 20px;
+}
+
+.home-daily-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-daily-empty {
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  border: 1px dashed var(--border-strong);
+  font-size: 13.5px;
+  color: var(--text-secondary);
+}
