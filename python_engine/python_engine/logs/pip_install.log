@@ -1,0 +1,41 @@
+Collecting pyswisseph>=2.10.3 (from -r requirements.txt (line 1))
+  Using cached pyswisseph-2.10.3.2.tar.gz (6.9 MB)
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+  Installing backend dependencies: started
+  Installing backend dependencies: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: pandas>=2.0.0 in /home/Manu/.local/lib/python3.14/site-packages (from -r requirements.txt (line 2)) (3.0.1)
+Collecting openpyxl>=3.1.2 (from -r requirements.txt (line 3))
+  Using cached openpyxl-3.1.5-py2.py3-none-any.whl.metadata (2.5 kB)
+Requirement already satisfied: matplotlib>=3.7.0 in /home/Manu/.local/lib/python3.14/site-packages (from -r requirements.txt (line 4)) (3.10.8)
+Collecting tqdm>=4.65.0 (from -r requirements.txt (line 5))
+  Using cached tqdm-4.67.3-py3-none-any.whl.metadata (57 kB)
+Requirement already satisfied: numpy>=2.3.3 in /home/Manu/.local/lib/python3.14/site-packages (from pandas>=2.0.0->-r requirements.txt (line 2)) (2.4.3)
+Requirement already satisfied: python-dateutil>=2.8.2 in /usr/lib/python3.14/site-packages (from pandas>=2.0.0->-r requirements.txt (line 2)) (2.9.0.post0)
+Collecting et-xmlfile (from openpyxl>=3.1.2->-r requirements.txt (line 3))
+  Using cached et_xmlfile-2.0.0-py3-none-any.whl.metadata (2.7 kB)
+Requirement already satisfied: contourpy>=1.0.1 in /home/Manu/.local/lib/python3.14/site-packages (from matplotlib>=3.7.0->-r requirements.txt (line 4)) (1.3.3)
+Requirement already satisfied: cycler>=0.10 in /home/Manu/.local/lib/python3.14/site-packages (from matplotlib>=3.7.0->-r requirements.txt (line 4)) (0.12.1)
+Requirement already satisfied: fonttools>=4.22.0 in /home/Manu/.local/lib/python3.14/site-packages (from matplotlib>=3.7.0->-r requirements.txt (line 4)) (4.62.1)
+Requirement already satisfied: kiwisolver>=1.3.1 in /home/Manu/.local/lib/python3.14/site-packages (from matplotlib>=3.7.0->-r requirements.txt (line 4)) (1.5.0)
+Requirement already satisfied: packaging>=20.0 in /usr/lib/python3.14/site-packages (from matplotlib>=3.7.0->-r requirements.txt (line 4)) (25.0)
+Requirement already satisfied: pillow>=8 in /usr/lib64/python3.14/site-packages (from matplotlib>=3.7.0->-r requirements.txt (line 4)) (11.3.0)
+Requirement already satisfied: pyparsing>=3 in /home/Manu/.local/lib/python3.14/site-packages (from matplotlib>=3.7.0->-r requirements.txt (line 4)) (3.3.2)
+Requirement already satisfied: six>=1.5 in /usr/lib/python3.14/site-packages (from python-dateutil>=2.8.2->pandas>=2.0.0->-r requirements.txt (line 2)) (1.17.0)
+Using cached openpyxl-3.1.5-py2.py3-none-any.whl (250 kB)
+Using cached tqdm-4.67.3-py3-none-any.whl (78 kB)
+Using cached et_xmlfile-2.0.0-py3-none-any.whl (18 kB)
+Building wheels for collected packages: pyswisseph
+  Building wheel for pyswisseph (pyproject.toml): started
+  Building wheel for pyswisseph (pyproject.toml): still running...
+  Building wheel for pyswisseph (pyproject.toml): finished with status 'done'
+  Created wheel for pyswisseph: filename=pyswisseph-2.10.3.2-cp314-cp314-linux_x86_64.whl size=1275994 sha256=9c81b6afaf327f8ff8debc179769b7f5372276878bff5341075955aa46373b10
+  Stored in directory: /home/Manu/.cache/pip/wheels/e2/b7/1b/b69efebc46a3161b30906626fc075c3da079ffe00401c9f8b9
+Successfully built pyswisseph
+Installing collected packages: tqdm, pyswisseph, et-xmlfile, openpyxl
+
+Successfully installed et-xmlfile-2.0.0 openpyxl-3.1.5 pyswisseph-2.10.3.2 tqdm-4.67.3

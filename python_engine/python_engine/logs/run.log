@@ -1,0 +1,19 @@
+=================================================================
+  🪐  Panchang Generator — Swiss Ephemeris
+=================================================================
+  Date range : 2025-01-01 → 2026-12-31 (730 days)
+  Location   : Lat 26.9124°, Lon 75.7873°
+  Timezone   : UTC+5.5 (IST)
+  Ayanamsa   : Lahiri
+  Format     : excel
+  Workers    : 4
+  Monthly    : False
+=================================================================
+  Computing 730 days with 4 worker(s) …
+
+  ✓ Computed 730 days
+  Exporting …
+  ✓ Excel→ /run/media/Manu/Data/Workwork/panchang_generator/panchang_2025_2026.xlsx
+
+  ✅ Done!
+

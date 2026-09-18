@@ -1,0 +1,306 @@
+import calendar
+from functools import lru_cache
+from datetime import date, timedelta
+from zoneinfo import ZoneInfo
+
+from astronomy import get_planetary_longitude, get_sunrise, get_sunset, local_date_anchor_jd
+from panchang import get_tithi, get_hindu_month, calculate_jain_tithi_from_sunrise
+from panchang_service import resolve_location
+from .registry import FESTIVAL_REGISTRY
+from .festival_rules import RuleFactory
+from .months import next_month
+
+def _assign_purnimanta(snapshots: list) -> None:
+    """Attach purnimanta_month / purnimanta_is_adhika to each snapshot.
+
+    A paksha's purnimanta month is the month of the Shukla paksha that ends at its
+    Purnima. For a Shukla paksha that is its own amanta month/adhika. For a Krishna
+    paksha it is the *next* chronological Shukla paksha's amanta month/adhika -- which,
+    in an Adhik-Maas year, inverts the adhik/nija tag relative to the amanta reading.
+    """
+    next_shukla_month = None
+    next_shukla_adhika = None
+    for snap in reversed(snapshots):
+        if snap["paksha"] == "Shukla":
+            snap["purnimanta_month"] = snap["hindu_month"]
+            snap["purnimanta_is_adhika"] = snap["is_adhika"]
+            next_shukla_month = snap["hindu_month"]
+            next_shukla_adhika = snap["is_adhika"]
+        elif next_shukla_month is not None:
+            snap["purnimanta_month"] = next_shukla_month
+            snap["purnimanta_is_adhika"] = next_shukla_adhika
+        else:
+            snap["purnimanta_month"] = next_month(snap["hindu_month"])
+            snap["purnimanta_is_adhika"] = snap["is_adhika"]
+
+
+def _build_snapshots(year: int, lat: float, lon: float, ayanamsa: str, tz_name: str) -> list:
+    """Daily Panchang snapshots for a 14-month window (Dec 1 of prev year to Jan 31 of next)."""
+    snapshots = []
+    start_date = date(year - 1, 12, 1)
+    end_date = date(year + 1, 1, 31)
+    curr = start_date
+    while curr <= end_date:
+        try:
+            day_start_jd = local_date_anchor_jd(curr, tz_name, hour=0)
+            sunrise_jd = get_sunrise(day_start_jd, lat, lon)
+            sun_lon = get_planetary_longitude(sunrise_jd, 'Sun', ayanamsa)
+            moon_lon = get_planetary_longitude(sunrise_jd, 'Moon', ayanamsa)
+            tithi_idx = get_tithi(sun_lon, moon_lon)
+
+            # Fast Jain tithi index and month
+            reference_jd = sunrise_jd + (2.4 / 24.0)
+            sun_lon_j = get_planetary_longitude(reference_jd, 'Sun', ayanamsa)
+            moon_lon_j = get_planetary_longitude(reference_jd, 'Moon', ayanamsa)
+            jain_tithi_idx = get_tithi(sun_lon_j, moon_lon_j)
+
+            hindu_month, _, is_adhika = get_hindu_month(reference_jd, ayanamsa)
+
+            # Clean month name (e.g. strip Adhika for standard matching)
+            base_month = hindu_month.removeprefix("Adhika ")
+
+            # Evening (pradosh) tithi -- the one prevailing at sunset. Used for the
+            # day-selection of pradosh-vyapini festivals (Diwali/Mahavir Nirvana,
+            # Ahoi Ashtami, ...), which the udaya tithi gets wrong whenever
+            # the target tithi starts during the day and ends before the next sunrise.
+            sunset_jd = get_sunset(day_start_jd, lat, lon)
+            sun_lon_e = get_planetary_longitude(sunset_jd, 'Sun', ayanamsa)
+            moon_lon_e = get_planetary_longitude(sunset_jd, 'Moon', ayanamsa)
+            evening_tithi_idx = get_tithi(sun_lon_e, moon_lon_e)
+
+            snapshots.append({
+                "date": curr,
+                "sunrise_jd": sunrise_jd,
+                "sunset_jd": sunset_jd,
+                # Public day-identity Tithi == the 6-ghati (Jain day-start) Tithi, the
+                # single anchor of plans/tithi_unification/design.md. The plain-sunrise
+                # (udaya) values remain as private _sunrise_* fields: they are the
+                # precondition of _sixghati_pullback's weak/strong comparison and of
+                # Kalyanak candidate selection, which compare an udaya day against the
+                # 6-ghati one. Nothing outside that machinery may read them.
+                "tithi": jain_tithi_idx,
+                "jain_tithi": jain_tithi_idx,
+                "jain_tithi_name": "", # Unused by logic engine
+                "hindu_month": base_month,
+                "is_adhika": is_adhika,
+                "paksha": "Shukla" if jain_tithi_idx <= 15 else "Krishna",
+                "tithi_in_paksha": jain_tithi_idx if jain_tithi_idx <= 15 else jain_tithi_idx - 15,
+                "_sunrise_tithi": tithi_idx,
+                "_sunrise_paksha": "Shukla" if tithi_idx <= 15 else "Krishna",
+                "_sunrise_tithi_in_paksha": tithi_idx if tithi_idx <= 15 else tithi_idx - 15,
+                "jain_paksha": "Shukla" if jain_tithi_idx <= 15 else "Krishna",
+                "jain_tithi_in_paksha": jain_tithi_idx if jain_tithi_idx <= 15 else jain_tithi_idx - 15,
+                "evening_tithi": evening_tithi_idx,
+                "evening_paksha": "Shukla" if evening_tithi_idx <= 15 else "Krishna",
+                "evening_tithi_in_paksha": evening_tithi_idx if evening_tithi_idx <= 15 else evening_tithi_idx - 15,
+            })
+        except Exception:
+            # Fallback if astro fails
+            pass
+        curr += timedelta(days=1)
+
+    _assign_purnimanta(snapshots)
+    return snapshots
+
+
+@lru_cache(maxsize=32)
+def generate_jain_festivals(
+    year: int,
+    lat: float,
+    lon: float,
+    ayanamsa: str = "Lahiri",
+    profile: str = "shwetambar_murtipujak_tapagachchha"
+) -> dict:
+    """Generate all Jain festivals for a given year and location, filtered by profile."""
+    location = resolve_location(lat=lat, lon=lon)
+    tz_name = location.timezone
+
+    # 1. Generate daily Panchang snapshots
+    snapshots = _build_snapshots(year, lat, lon, ayanamsa, tz_name)
+
+    festivals = []
+    context = {"lat": lat, "lon": lon, "ayanamsa": ayanamsa, "year": year}
+
+    # 2. Process rules
+    rules = [RuleFactory.create(conf) for conf in FESTIVAL_REGISTRY]
+    
+    independent_rules = [r for r in rules if r.config.get("rule_type") != "Relative"]
+    relative_rules = [r for r in rules if r.config.get("rule_type") == "Relative"]
+
+    for rule in independent_rules:
+        if not rule.matches_profile(profile):
+            continue
+        occurrences = rule.resolve(snapshots, profile, context)
+        context[rule.id] = occurrences
+        festivals.extend(occurrences)
+
+    for rule in relative_rules:
+        if not rule.matches_profile(profile):
+            continue
+        occurrences = rule.resolve(snapshots, profile, context)
+        context[rule.id] = occurrences
+        festivals.extend(occurrences)
+
+    # Filter occurrences to strictly match the requested year
+    festivals = [f for f in festivals if f["start_date"].startswith(str(year))]
+
+    # Post-process: ensure all occurrences have valid jain_month, paksha, tithi, and metadata
+    date_to_snap = {s["date"].isoformat(): s for s in snapshots}
+    TITHI_LABEL_MAP = {
+        1: "Ekam (1)", 2: "Dwitiya (2)", 3: "Tritiya (3)", 4: "Chaturthi (4)", 5: "Panchami (5)",
+        6: "Shasthi (6)", 7: "Saptami (7)", 8: "Ashtami (8)", 9: "Navami (9)", 10: "Dashami (10)",
+        11: "Ekadashi (11)", 12: "Dwadashi (12)", 13: "Trayodashi (13)", 14: "Chaturdashi (14)",
+        15: "Purnima (15)"
+    }
+
+    for f in festivals:
+        f["id"] = f.get("id", f.get("occurrence_id", f.get("name", "")))
+        f.setdefault("name_hindi", f.get("name_hindi", f["name"]))
+        f.setdefault("meaning", f.get("meaning", f["name"]))
+        f.setdefault("observance", f.get("observance", "Vrat observance and prayer"))
+        f.setdefault("sources", f.get("sources", []))
+        
+        # Normalize jain_month, paksha, and format tithi if possible. `skip_relabel`
+        # occurrences (e.g. a pradosh-vyapini festival landing on a day whose udaya
+        # paksha differs from the observance's) carry their own final labels.
+        if f.get("jain_month") != "Nakshatra:" and not f.get("skip_relabel"):
+            snap = date_to_snap.get(f["start_date"])
+            if snap:
+                base_month = snap["purnimanta_month"]
+                is_adhika = snap["purnimanta_is_adhika"]
+                prefix = ""
+                if is_adhika:
+                    prefix = "Adhika "
+                elif any(s["purnimanta_month"] == base_month and s["purnimanta_is_adhika"] and s["date"].year == snap["date"].year for s in snapshots):
+                    prefix = "Nija "
+
+                f["jain_month"] = prefix + base_month
+                f["paksha"] = snap["paksha"]
+                
+                # Format Tithi
+                t_val = f.get("tithi")
+                t_num = snap["tithi_in_paksha"]
+                native_num = None
+                if isinstance(t_val, int) or not t_val:
+                    # Use the snap's tithi if not provided, or format the integer provided.
+                    # A raw index in the 16..30 range (some rules pass d["tithi"] straight
+                    # through) is a Krishna-paksha tithi -- fold it back to 1..15.
+                    use_num = t_val if isinstance(t_val, int) else t_num
+                    if use_num > 15:
+                        use_num -= 15
+                    if isinstance(t_val, int):
+                        native_num = use_num
+                    t_name = TITHI_LABEL_MAP.get(use_num, f"Tithi {use_num}")
+                    if snap["paksha"] == "Krishna" and use_num == 15:
+                        t_name = "Amavasya (15)"
+                    f["tithi"] = t_name
+
+                # Native-Tithi UI tag: a Kalyanak pulled onto a civil date whose
+                # primary tithi differs from its own (Day-1 Anchor / 6-Ghati / first-
+                # active-day pull-backs) gets its native tithi prepended so the UI
+                # mismatch is explicit, e.g. "[Dwadashi] Shri Munisuvrat Ji - ...".
+                if (native_num is not None and native_num != t_num
+                        and f.get("category") in ("kalyanak", "janam_kalyanak", "garbha_kalyanak")
+                        and not str(f.get("name", "")).startswith("[")):
+                    short = TITHI_LABEL_MAP.get(native_num, f"Tithi {native_num}").split(" (")[0]
+                    tag = f"[{short}] "
+                    f["name"] = tag + f["name"]
+                    if f.get("title"):
+                        f["title"] = tag + f["title"]
+                    f["native_tithi"] = t_name
+            else:
+                if not f.get("jain_month"): f["jain_month"] = "—"
+                if not f.get("paksha"): f["paksha"] = ""
+                if not f.get("tithi"): f["tithi"] = "—"
+
+    festivals.sort(key=lambda x: x["start_date"])
+
+    # 3. Calculate upcoming section
+    ref_date = date.today()
+    if ref_date.year != year:
+        ref_date = date(year, 1, 1)
+        
+    upcoming_limit = ref_date + timedelta(days=30)
+    upcoming = [
+        f for f in festivals
+        if ref_date.isoformat() <= f["start_date"] <= upcoming_limit.isoformat()
+    ]
+
+    panchang_tithi_map = {}
+    for s in snapshots:
+        t_num = s["tithi_in_paksha"]
+        t_name = TITHI_LABEL_MAP.get(t_num, f"Tithi {t_num}")
+        if s["paksha"] == "Krishna" and t_num == 15:
+            t_name = "Amavasya (15)"
+        
+        base_month = s["purnimanta_month"]
+        prefix = ""
+        if s["purnimanta_is_adhika"]:
+            prefix = "Adhika "
+        elif any(x["purnimanta_month"] == base_month and x["purnimanta_is_adhika"] and x["date"].year == s["date"].year for x in snapshots):
+            prefix = "Nija "
+
+        panchang_tithi_map[s["date"].isoformat()] = f"{prefix}{base_month} {s['paksha']} {t_name}"
+
+    multi_day_festivals = _build_multi_day_registry(festivals)
+
+    return {
+        "year": year,
+        "location": {
+            "name": location.name,
+            "lat": location.lat,
+            "lon": location.lon,
+            "timezone": tz_name
+        },
+        "profile": profile,
+        "upcoming": upcoming,
+        "festivals": festivals,
+        "multi_day_festivals": multi_day_festivals,
+        "panchang_tithi_map": panchang_tithi_map
+    }
+
+
+def _build_multi_day_registry(festivals: list) -> list:
+    """Collapse every multi-day observance to a single {name, start_date, end_date}
+    row so callers can render a compact 'Multi-Day Festivals' section instead of
+    repeating the name on every civil day it spans.
+
+    Covers two shapes:
+      * one occurrence whose start_date != end_date (spans, e.g. Ashtahnika, Bhaktambar
+        Vrat, Shodashkaran, the Bhadrapada Krishna cluster);
+      * a run of consecutive single-day occurrences forming one observance -- currently
+        the Navpad Oli "Day N" series (badge "Navpad Oli"), grouped by badge + the
+        gap-free date sequence.
+    """
+    out = []
+    seen_span = set()
+    series = {}
+    for f in festivals:
+        sd, ed = f["start_date"], f["end_date"]
+        if sd != ed:
+            key = (f["name"], sd, ed)
+            if key in seen_span:
+                continue
+            seen_span.add(key)
+            out.append({"name": f["name"], "name_hindi": f.get("name_hindi", ""),
+                        "start_date": sd, "end_date": ed,
+                        "category": f.get("category", ""), "badge": f.get("badge", "")})
+        elif f.get("badge") == "Navpad Oli":
+            base = f["name"].split(" - Day")[0]
+            series.setdefault(base, []).append(f["start_date"])
+
+    for base, dates in series.items():
+        dates = sorted(dates)
+        run_start = prev = dates[0]
+        for d in dates[1:] + [None]:
+            if d is not None and (date.fromisoformat(d) - date.fromisoformat(prev)).days == 1:
+                prev = d
+                continue
+            out.append({"name": base, "name_hindi": "नवपद ओली (आयांबिल ओली)",
+                        "start_date": run_start, "end_date": prev,
+                        "category": "fast", "badge": "Navpad Oli"})
+            if d is not None:
+                run_start = prev = d
+
+    out.sort(key=lambda x: (x["start_date"], x["end_date"]))
+    return out

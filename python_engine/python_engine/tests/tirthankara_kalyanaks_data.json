@@ -1,0 +1,3992 @@
+{
+  "_meta": {
+    "description": "Test dataset for a Jain Panchang (24 Tirthankara Kalyanaka) full-year calendar generator. Derived by parsing the source .docx table-by-table (source > month > fortnight > date > tirthankara > event). Use `full_expected_dataset` as ground truth for exhaustive comparison, and `test_cases` for specific assertions to implement.",
+    "generated_from": "Jain_Panchang_-_24_Tirthankara_Kalyanaks_-_Compact_English_Version.docx",
+    "total_records_parsed": 288,
+    "sources": [
+      "Vrindavan",
+      "Uttarapurana",
+      "Sanskrit Jin Kalyanaka Mala by Ashadhara"
+    ],
+    "months_in_order": [
+      "Chaitra",
+      "Vaishakha",
+      "Jyeshtha",
+      "Ashadha",
+      "Shravana",
+      "Bhadrapada",
+      "Ashwin",
+      "Kartika",
+      "Margashirsha",
+      "Pausha",
+      "Magha",
+      "Phalguna"
+    ],
+    "fortnights": [
+      "Krishna",
+      "Shukla"
+    ],
+    "valid_events": [
+      "Conception",
+      "Birth",
+      "Austerity",
+      "Omniscience",
+      "Liberation"
+    ],
+    "special_day_markers": {
+      "amavasya": "New moon. Normally falls on Krishna fortnight day 30, but the source data also tags one Krishna day 15 as purnima (see known_data_issues) — do not hardcode 'amavasya only on day 30'.",
+      "purnima": "Full moon. Normally falls on Shukla fortnight day 15, with one exception on Krishna day 15 in the source data."
+    }
+  },
+  "known_data_issues": [
+    {
+      "issue": "Inconsistent tirthankara spelling across the source document",
+      "detail": "'Munisuvrat' and 'Munisuvratnath' both appear referring to the same Tirthankara (19th). 'Pushpadanta' and 'Pushpadanta (Suvidhinath)' both appear referring to the same Tirthankara (9th).",
+      "impact": "If your generator or tests do exact string matching on tirthankara name, decide on a canonicalization rule first (e.g. normalize to one spelling) or these will show up as 24+ distinct names instead of 24.",
+      "raw_names_found": [
+        "Munisuvrat",
+        "Munisuvratnath",
+        "Pushpadanta",
+        "Pushpadanta (Suvidhinath)"
+      ]
+    },
+    {
+      "issue": "Purnima tag appears on a Krishna-fortnight day 15, not just Shukla day 15",
+      "detail": "Source 'Uttarapurana', month Chaitra, Krishna fortnight, day 15 is marked (पूर्णिमा) purnima, unlike every other purnima tag which is on Shukla day 15.",
+      "impact": "Confirm with the source data whether this is intentional before assuming purnima always = Shukla day 15."
+    },
+    {
+      "issue": "Entry counts differ slightly per source",
+      "detail": "Vrindavan has 97 tirthankara-event records, Uttarapurana has 96, Ashadhara's Sanskrit Jin Kalyanaka Mala has 95, after fully expanding multi-tirthankara/multi-event cells.",
+      "impact": "Don't assume all 3 sources have identical entry counts — the calendar generator legitimately renders different data per source."
+    }
+  ],
+  "schema": {
+    "record": {
+      "source": "string, one of `sources` in _meta",
+      "month": "string, one of `months_in_order`",
+      "fortnight": "string, 'Krishna' or 'Shukla'",
+      "day": "integer, 1-15 for Shukla, 1-30 for Krishna",
+      "special": "string|null, 'amavasya' | 'purnima' | null",
+      "tirthankara": "string, name as it appears in source (see known_data_issues re: spelling)",
+      "events": "array of strings, each one of `valid_events`, in the order printed in the source"
+    }
+  },
+  "full_expected_dataset": [
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Anantnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Parshvanath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 1,
+      "special": null,
+      "tirthankara": "Mallinath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 5,
+      "special": null,
+      "tirthankara": "Chandraprabha",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 3,
+      "special": null,
+      "tirthankara": "Kunthunath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Sheetalnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 5,
+      "special": null,
+      "tirthankara": "Ajitnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Rishabhdev (Adinath)",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 30,
+      "special": "amavasya",
+      "tirthankara": "Anantnath",
+      "events": [
+        "Liberation",
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 30,
+      "special": "amavasya",
+      "tirthankara": "Arahnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Sumatinath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Padmaprabha",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Sumatinath",
+      "events": [
+        "Birth",
+        "Omniscience",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 13,
+      "special": null,
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Birth"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Padmaprabha",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Vaishakha",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Parshvanath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Vaishakha",
+      "fortnight": "Shukla",
+      "day": 1,
+      "special": null,
+      "tirthankara": "Kunthunath",
+      "events": [
+        "Birth",
+        "Austerity",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Vaishakha",
+      "fortnight": "Krishna",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Munisuvrat",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Vaishakha",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Abhinandan",
+      "events": [
+        "Conception",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Vaishakha",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Munisuvrat",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Vaishakha",
+      "fortnight": "Shukla",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Dharmanath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Vaishakha",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Naminath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Vaishakha",
+      "fortnight": "Shukla",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Sumatinath",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Vaishakha",
+      "fortnight": "Shukla",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Shreyansnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Jyeshtha",
+      "fortnight": "Shukla",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Dharmanath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Vimalnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Jyeshtha",
+      "fortnight": "Shukla",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Suparshvanath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Anantnath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Shantinath",
+      "events": [
+        "Birth",
+        "Austerity",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 30,
+      "special": "amavasya",
+      "tirthankara": "Ajitnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Ashadha",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Rishabhdev (Adinath)",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Ashadha",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Ashadha",
+      "fortnight": "Krishna",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Vasupujya",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Ashadha",
+      "fortnight": "Krishna",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Vimalnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Ashadha",
+      "fortnight": "Shukla",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Neminath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Ashadha",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Naminath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Shravana",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Munisuvrat",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Shravana",
+      "fortnight": "Shukla",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Sumatinath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Shravana",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Kunthunath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Shravana",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Neminath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Shravana",
+      "fortnight": "Shukla",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Parshvanath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Shravana",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Shreyansnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Bhadrapada",
+      "fortnight": "Krishna",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Shantinath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Bhadrapada",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Suparshvanath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Bhadrapada",
+      "fortnight": "Shukla",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Pushpadanta (Suvidhinath)",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Bhadrapada",
+      "fortnight": "Shukla",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Vasupujya",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Ashwin",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Naminath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Ashwin",
+      "fortnight": "Shukla",
+      "day": 1,
+      "special": null,
+      "tirthankara": "Neminath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Ashwin",
+      "fortnight": "Shukla",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Sheetalnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Kartika",
+      "fortnight": "Krishna",
+      "day": 1,
+      "special": null,
+      "tirthankara": "Anantnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Kartika",
+      "fortnight": "Shukla",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Pushpadanta",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Kartika",
+      "fortnight": "Krishna",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Kartika",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Neminath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Kartika",
+      "fortnight": "Krishna",
+      "day": 13,
+      "special": null,
+      "tirthankara": "Padmaprabha",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Kartika",
+      "fortnight": "Shukla",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Arahnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Kartika",
+      "fortnight": "Krishna",
+      "day": 30,
+      "special": "amavasya",
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Kartika",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Birth"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Margashirsha",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 1,
+      "special": null,
+      "tirthankara": "Pushpadanta (Suvidhinath)",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Arahnath",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Naminath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Mallinath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Arahnath",
+      "events": [
+        "Birth"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Pausha",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Mallinath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Pausha",
+      "fortnight": "Shukla",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Shantinath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Pausha",
+      "fortnight": "Krishna",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Chandraprabha",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Pausha",
+      "fortnight": "Krishna",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Parshvanath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Pausha",
+      "fortnight": "Shukla",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Ajitnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Pausha",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Sheetalnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Pausha",
+      "fortnight": "Shukla",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Abhinandan",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Pausha",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Dharmanath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Magha",
+      "fortnight": "Krishna",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Padmaprabha",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Vasupujya",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Magha",
+      "fortnight": "Krishna",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Sheetalnath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Vimalnath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Magha",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Rishabhdev (Adinath)",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Vimalnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Magha",
+      "fortnight": "Krishna",
+      "day": 30,
+      "special": "amavasya",
+      "tirthankara": "Shreyansnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Ajitnath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Abhinandan",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 13,
+      "special": null,
+      "tirthankara": "Dharmanath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Padmaprabha",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Phalguna",
+      "fortnight": "Shukla",
+      "day": 3,
+      "special": null,
+      "tirthankara": "Arahnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Suparshvanath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Phalguna",
+      "fortnight": "Shukla",
+      "day": 5,
+      "special": null,
+      "tirthankara": "Mallinath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Chandraprabha",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Suparshvanath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Phalguna",
+      "fortnight": "Shukla",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Chandraprabha",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Pushpadanta (Suvidhinath)",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Phalguna",
+      "fortnight": "Shukla",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Rishabhdev (Adinath)",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Shreyansnath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Munisuvrat",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Vrindavan",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Vasupujya",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 5,
+      "special": null,
+      "tirthankara": "Chandraprabha",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 1,
+      "special": null,
+      "tirthankara": "Mallinath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Sheetalnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 3,
+      "special": null,
+      "tirthankara": "Kunthunath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Rishabhdev (Adinath)",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 5,
+      "special": null,
+      "tirthankara": "Ajitnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Parshvanath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Anantnath",
+      "events": [
+        "Omniscience",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Arahnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Sumatinath",
+      "events": [
+        "Birth",
+        "Omniscience",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 13,
+      "special": null,
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Birth"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Padmaprabha",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Vaishakha",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Parshvanath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Vaishakha",
+      "fortnight": "Shukla",
+      "day": 1,
+      "special": null,
+      "tirthankara": "Kunthunath",
+      "events": [
+        "Birth",
+        "Austerity",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Vaishakha",
+      "fortnight": "Krishna",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Munisuvratnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Vaishakha",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Abhinandan",
+      "events": [
+        "Conception",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Vaishakha",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Munisuvratnath",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Vaishakha",
+      "fortnight": "Shukla",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Sumatinath",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Vaishakha",
+      "fortnight": "Krishna",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Munisuvratnath",
+      "events": [
+        "Birth"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Vaishakha",
+      "fortnight": "Shukla",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Vaishakha",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Naminath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Vaishakha",
+      "fortnight": "Shukla",
+      "day": 13,
+      "special": null,
+      "tirthankara": "Dharmanath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Shreyansnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Jyeshtha",
+      "fortnight": "Shukla",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Dharmanath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Vimalnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Jyeshtha",
+      "fortnight": "Shukla",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Suparshvanath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Anantnath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Shantinath",
+      "events": [
+        "Birth",
+        "Austerity",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 30,
+      "special": "amavasya",
+      "tirthankara": "Ajitnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Ashadha",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Rishabhdev (Adinath)",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Ashadha",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Ashadha",
+      "fortnight": "Krishna",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Vasupujya",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Ashadha",
+      "fortnight": "Shukla",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Neminath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Ashadha",
+      "fortnight": "Krishna",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Vimalnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Ashadha",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Naminath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Shravana",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Munisuvrat",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Shravana",
+      "fortnight": "Shukla",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Sumatinath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Shravana",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Kunthunath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Shravana",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Neminath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Shravana",
+      "fortnight": "Shukla",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Parshvanath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Shravana",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Shreyansnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Bhadrapada",
+      "fortnight": "Krishna",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Shantinath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Bhadrapada",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Suparshvanath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Bhadrapada",
+      "fortnight": "Shukla",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Pushpadanta (Suvidhinath)",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Bhadrapada",
+      "fortnight": "Shukla",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Vasupujya",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Ashwin",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Naminath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Ashwin",
+      "fortnight": "Shukla",
+      "day": 1,
+      "special": null,
+      "tirthankara": "Neminath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Ashwin",
+      "fortnight": "Shukla",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Sheetalnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Kartika",
+      "fortnight": "Krishna",
+      "day": 1,
+      "special": null,
+      "tirthankara": "Anantnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Kartika",
+      "fortnight": "Shukla",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Pushpadanta",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Kartika",
+      "fortnight": "Krishna",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Kartika",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Neminath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Kartika",
+      "fortnight": "Krishna",
+      "day": 13,
+      "special": null,
+      "tirthankara": "Padmaprabha",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Kartika",
+      "fortnight": "Shukla",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Arahnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Kartika",
+      "fortnight": "Krishna",
+      "day": 30,
+      "special": "amavasya",
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Kartika",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Birth"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Margashirsha",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 1,
+      "special": null,
+      "tirthankara": "Pushpadanta (Suvidhinath)",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Arahnath",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Mallinath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Naminath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Arahnath",
+      "events": [
+        "Birth"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Pausha",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Mallinath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Pausha",
+      "fortnight": "Shukla",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Shantinath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Pausha",
+      "fortnight": "Krishna",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Chandraprabha",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Pausha",
+      "fortnight": "Krishna",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Parshvanath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Pausha",
+      "fortnight": "Shukla",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Ajitnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Pausha",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Sheetalnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Pausha",
+      "fortnight": "Shukla",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Abhinandan",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Pausha",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Dharmanath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Magha",
+      "fortnight": "Krishna",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Padmaprabha",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Vasupujya",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Magha",
+      "fortnight": "Krishna",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Sheetalnath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Vimalnath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Magha",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Rishabhdev (Adinath)",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Vimalnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Magha",
+      "fortnight": "Krishna",
+      "day": 30,
+      "special": "amavasya",
+      "tirthankara": "Shreyansnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Ajitnath",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Ajitnath",
+      "events": [
+        "Birth"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Abhinandan",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 13,
+      "special": null,
+      "tirthankara": "Dharmanath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Arahnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Phalguna",
+      "fortnight": "Shukla",
+      "day": 5,
+      "special": null,
+      "tirthankara": "Mallinath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Padmaprabha",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Phalguna",
+      "fortnight": "Shukla",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Chandraprabha",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Suparshvanath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Phalguna",
+      "fortnight": "Shukla",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Chandraprabha",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Suparshvanath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Pushpadanta (Suvidhinath)",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Rishabhdev (Adinath)",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Shreyansnath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Munisuvrat",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Uttarapurana",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Vasupujya",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Parshvanath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 1,
+      "special": null,
+      "tirthankara": "Mallinath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 5,
+      "special": null,
+      "tirthankara": "Chandraprabha",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 3,
+      "special": null,
+      "tirthankara": "Kunthunath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Sheetalnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 5,
+      "special": null,
+      "tirthankara": "Ajitnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Rishabhdev (Adinath)",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 30,
+      "special": "amavasya",
+      "tirthankara": "Anantnath",
+      "events": [
+        "Omniscience",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Chaitra",
+      "fortnight": "Krishna",
+      "day": 30,
+      "special": "amavasya",
+      "tirthankara": "Arahnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Sumatinath",
+      "events": [
+        "Birth",
+        "Omniscience",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 13,
+      "special": null,
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Birth"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Chaitra",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Padmaprabha",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Vaishakha",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Parshvanath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Vaishakha",
+      "fortnight": "Shukla",
+      "day": 1,
+      "special": null,
+      "tirthankara": "Kunthunath",
+      "events": [
+        "Birth",
+        "Austerity",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Vaishakha",
+      "fortnight": "Krishna",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Munisuvratnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Vaishakha",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Abhinandan",
+      "events": [
+        "Conception",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Vaishakha",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Munisuvratnath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Vaishakha",
+      "fortnight": "Shukla",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Sumatinath",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Vaishakha",
+      "fortnight": "Krishna",
+      "day": 13,
+      "special": null,
+      "tirthankara": "Dharmanath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Vaishakha",
+      "fortnight": "Shukla",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Vaishakha",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Naminath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Shreyansnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Jyeshtha",
+      "fortnight": "Shukla",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Dharmanath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Vimalnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Jyeshtha",
+      "fortnight": "Shukla",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Suparshvanath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Anantnath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Shantinath",
+      "events": [
+        "Birth",
+        "Austerity",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Jyeshtha",
+      "fortnight": "Krishna",
+      "day": 30,
+      "special": "amavasya",
+      "tirthankara": "Ajitnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Ashadha",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Rishabhdev (Adinath)",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Ashadha",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Ashadha",
+      "fortnight": "Krishna",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Vasupujya",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Ashadha",
+      "fortnight": "Shukla",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Neminath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Ashadha",
+      "fortnight": "Krishna",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Vimalnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Ashadha",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Naminath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Shravana",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Munisuvrat",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Shravana",
+      "fortnight": "Shukla",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Sumatinath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Shravana",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Kunthunath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Shravana",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Neminath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Shravana",
+      "fortnight": "Shukla",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Parshvanath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Shravana",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Shreyansnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Bhadrapada",
+      "fortnight": "Krishna",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Shantinath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Bhadrapada",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Suparshvanath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Bhadrapada",
+      "fortnight": "Shukla",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Pushpadanta (Suvidhinath)",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Bhadrapada",
+      "fortnight": "Shukla",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Vasupujya",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Ashwin",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Naminath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Ashwin",
+      "fortnight": "Shukla",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Sheetalnath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Ashwin",
+      "fortnight": "Shukla",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Neminath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Kartika",
+      "fortnight": "Krishna",
+      "day": 1,
+      "special": null,
+      "tirthankara": "Anantnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Kartika",
+      "fortnight": "Shukla",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Pushpadanta",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Kartika",
+      "fortnight": "Krishna",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Kartika",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Neminath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Kartika",
+      "fortnight": "Krishna",
+      "day": 13,
+      "special": null,
+      "tirthankara": "Padmaprabha",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Kartika",
+      "fortnight": "Shukla",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Arahnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Kartika",
+      "fortnight": "Krishna",
+      "day": 30,
+      "special": "amavasya",
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Kartika",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Birth"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Margashirsha",
+      "fortnight": "Krishna",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Mahavira Swami",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 1,
+      "special": null,
+      "tirthankara": "Pushpadanta (Suvidhinath)",
+      "events": [
+        "Birth"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Pushpadanta (Suvidhinath)",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Arahnath",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Mallinath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Naminath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Arahnath",
+      "events": [
+        "Birth"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Margashirsha",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Pausha",
+      "fortnight": "Krishna",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Mallinath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Pausha",
+      "fortnight": "Shukla",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Shantinath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Pausha",
+      "fortnight": "Krishna",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Chandraprabha",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Pausha",
+      "fortnight": "Krishna",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Parshvanath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Pausha",
+      "fortnight": "Shukla",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Ajitnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Pausha",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Sheetalnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Pausha",
+      "fortnight": "Shukla",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Abhinandan",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Pausha",
+      "fortnight": "Shukla",
+      "day": 15,
+      "special": "purnima",
+      "tirthankara": "Dharmanath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Magha",
+      "fortnight": "Krishna",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Padmaprabha",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 2,
+      "special": null,
+      "tirthankara": "Vasupujya",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Magha",
+      "fortnight": "Krishna",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Sheetalnath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Vimalnath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Magha",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Rishabhdev (Adinath)",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Vimalnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Magha",
+      "fortnight": "Krishna",
+      "day": 30,
+      "special": "amavasya",
+      "tirthankara": "Shreyansnath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Ajitnath",
+      "events": [
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 10,
+      "special": null,
+      "tirthankara": "Ajitnath",
+      "events": [
+        "Birth"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Abhinandan",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Magha",
+      "fortnight": "Shukla",
+      "day": 13,
+      "special": null,
+      "tirthankara": "Dharmanath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 4,
+      "special": null,
+      "tirthankara": "Padmaprabha",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Phalguna",
+      "fortnight": "Shukla",
+      "day": 3,
+      "special": null,
+      "tirthankara": "Arahnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 6,
+      "special": null,
+      "tirthankara": "Suparshvanath",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Phalguna",
+      "fortnight": "Shukla",
+      "day": 5,
+      "special": null,
+      "tirthankara": "Mallinath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Chandraprabha",
+      "events": [
+        "Omniscience",
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 7,
+      "special": null,
+      "tirthankara": "Suparshvanath",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Phalguna",
+      "fortnight": "Shukla",
+      "day": 8,
+      "special": null,
+      "tirthankara": "Sambhavnath",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 9,
+      "special": null,
+      "tirthankara": "Pushpadanta (Suvidhinath)",
+      "events": [
+        "Conception"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Rishabhdev (Adinath)",
+      "events": [
+        "Omniscience"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 11,
+      "special": null,
+      "tirthankara": "Shreyansnath",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 12,
+      "special": null,
+      "tirthankara": "Munisuvrat",
+      "events": [
+        "Liberation"
+      ]
+    },
+    {
+      "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+      "month": "Phalguna",
+      "fortnight": "Krishna",
+      "day": 14,
+      "special": null,
+      "tirthankara": "Vasupujya",
+      "events": [
+        "Birth",
+        "Austerity"
+      ]
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "TC001",
+      "category": "aggregate_count",
+      "description": "Total Kalyanaka records rendered for source 'Vrindavan' across the full year",
+      "input": {
+        "source": "Vrindavan"
+      },
+      "expected": {
+        "total_records": 97
+      }
+    },
+    {
+      "id": "TC002",
+      "category": "aggregate_count",
+      "description": "Total Kalyanaka records rendered for source 'Uttarapurana' across the full year",
+      "input": {
+        "source": "Uttarapurana"
+      },
+      "expected": {
+        "total_records": 96
+      }
+    },
+    {
+      "id": "TC003",
+      "category": "aggregate_count",
+      "description": "Total Kalyanaka records rendered for source 'Sanskrit Jin Kalyanaka Mala by Ashadhara' across the full year",
+      "input": {
+        "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara"
+      },
+      "expected": {
+        "total_records": 95
+      }
+    },
+    {
+      "id": "TC004",
+      "category": "coverage",
+      "description": "All 12 months are present in the generated calendar for source 'Vrindavan'",
+      "input": {
+        "source": "Vrindavan"
+      },
+      "expected": {
+        "months_present": [
+          "Chaitra",
+          "Vaishakha",
+          "Jyeshtha",
+          "Ashadha",
+          "Shravana",
+          "Bhadrapada",
+          "Ashwin",
+          "Kartika",
+          "Margashirsha",
+          "Pausha",
+          "Magha",
+          "Phalguna"
+        ],
+        "count": 12
+      }
+    },
+    {
+      "id": "TC005",
+      "category": "coverage",
+      "description": "All 12 months are present in the generated calendar for source 'Uttarapurana'",
+      "input": {
+        "source": "Uttarapurana"
+      },
+      "expected": {
+        "months_present": [
+          "Chaitra",
+          "Vaishakha",
+          "Jyeshtha",
+          "Ashadha",
+          "Shravana",
+          "Bhadrapada",
+          "Ashwin",
+          "Kartika",
+          "Margashirsha",
+          "Pausha",
+          "Magha",
+          "Phalguna"
+        ],
+        "count": 12
+      }
+    },
+    {
+      "id": "TC006",
+      "category": "coverage",
+      "description": "All 12 months are present in the generated calendar for source 'Sanskrit Jin Kalyanaka Mala by Ashadhara'",
+      "input": {
+        "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara"
+      },
+      "expected": {
+        "months_present": [
+          "Chaitra",
+          "Vaishakha",
+          "Jyeshtha",
+          "Ashadha",
+          "Shravana",
+          "Bhadrapada",
+          "Ashwin",
+          "Kartika",
+          "Margashirsha",
+          "Pausha",
+          "Magha",
+          "Phalguna"
+        ],
+        "count": 12
+      }
+    },
+    {
+      "id": "TC007",
+      "category": "single_day_lookup",
+      "description": "Kalyanak(s) rendered for Vrindavan / Chaitra Krishna / day 4",
+      "input": {
+        "source": "Vrindavan",
+        "month": "Chaitra",
+        "fortnight": "Krishna",
+        "day": 4
+      },
+      "expected": {
+        "kalyanaks": [
+          {
+            "tirthankara": "Anantnath",
+            "events": [
+              "Liberation"
+            ]
+          },
+          {
+            "tirthankara": "Parshvanath",
+            "events": [
+              "Omniscience"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "TC008",
+      "category": "single_day_lookup",
+      "description": "Kalyanak(s) rendered for Vrindavan / Chaitra Krishna / day 30",
+      "input": {
+        "source": "Vrindavan",
+        "month": "Chaitra",
+        "fortnight": "Krishna",
+        "day": 30
+      },
+      "expected": {
+        "kalyanaks": [
+          {
+            "tirthankara": "Anantnath",
+            "events": [
+              "Liberation",
+              "Omniscience"
+            ]
+          },
+          {
+            "tirthankara": "Arahnath",
+            "events": [
+              "Liberation"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "TC009",
+      "category": "single_day_lookup",
+      "description": "Kalyanak(s) rendered for Vrindavan / Chaitra Shukla / day 11",
+      "input": {
+        "source": "Vrindavan",
+        "month": "Chaitra",
+        "fortnight": "Shukla",
+        "day": 11
+      },
+      "expected": {
+        "kalyanaks": [
+          {
+            "tirthankara": "Sumatinath",
+            "events": [
+              "Birth",
+              "Omniscience",
+              "Liberation"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "TC010",
+      "category": "single_day_lookup",
+      "description": "Kalyanak(s) rendered for Vrindavan / Chaitra Shukla / day 15",
+      "input": {
+        "source": "Vrindavan",
+        "month": "Chaitra",
+        "fortnight": "Shukla",
+        "day": 15
+      },
+      "expected": {
+        "kalyanaks": [
+          {
+            "tirthankara": "Padmaprabha",
+            "events": [
+              "Omniscience"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "TC011",
+      "category": "single_day_lookup",
+      "description": "Kalyanak(s) rendered for Vrindavan / Vaishakha Shukla / day 1",
+      "input": {
+        "source": "Vrindavan",
+        "month": "Vaishakha",
+        "fortnight": "Shukla",
+        "day": 1
+      },
+      "expected": {
+        "kalyanaks": [
+          {
+            "tirthankara": "Kunthunath",
+            "events": [
+              "Birth",
+              "Austerity",
+              "Liberation"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "TC012",
+      "category": "single_day_lookup",
+      "description": "Kalyanak(s) rendered for Vrindavan / Jyeshtha Krishna / day 14",
+      "input": {
+        "source": "Vrindavan",
+        "month": "Jyeshtha",
+        "fortnight": "Krishna",
+        "day": 14
+      },
+      "expected": {
+        "kalyanaks": [
+          {
+            "tirthankara": "Shantinath",
+            "events": [
+              "Birth",
+              "Austerity",
+              "Liberation"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "TC013",
+      "category": "single_day_lookup",
+      "description": "Kalyanak(s) rendered for Vrindavan / Ashadha Krishna / day 6",
+      "input": {
+        "source": "Vrindavan",
+        "month": "Ashadha",
+        "fortnight": "Krishna",
+        "day": 6
+      },
+      "expected": {
+        "kalyanaks": [
+          {
+            "tirthankara": "Vasupujya",
+            "events": [
+              "Conception"
+            ]
+          },
+          {
+            "tirthankara": "Vimalnath",
+            "events": [
+              "Liberation"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "TC014",
+      "category": "single_day_lookup",
+      "description": "Kalyanak(s) rendered for Vrindavan / Kartika Krishna / day 30",
+      "input": {
+        "source": "Vrindavan",
+        "month": "Kartika",
+        "fortnight": "Krishna",
+        "day": 30
+      },
+      "expected": {
+        "kalyanaks": [
+          {
+            "tirthankara": "Mahavira Swami",
+            "events": [
+              "Liberation"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "TC015",
+      "category": "single_day_lookup",
+      "description": "Kalyanak(s) rendered for Uttarapurana / Chaitra Krishna / day 15",
+      "input": {
+        "source": "Uttarapurana",
+        "month": "Chaitra",
+        "fortnight": "Krishna",
+        "day": 15
+      },
+      "expected": {
+        "kalyanaks": [
+          {
+            "tirthankara": "Anantnath",
+            "events": [
+              "Omniscience",
+              "Liberation"
+            ]
+          },
+          {
+            "tirthankara": "Arahnath",
+            "events": [
+              "Liberation"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "TC016",
+      "category": "single_day_lookup",
+      "description": "Kalyanak(s) rendered for Uttarapurana / Vaishakha Shukla / day 13",
+      "input": {
+        "source": "Uttarapurana",
+        "month": "Vaishakha",
+        "fortnight": "Shukla",
+        "day": 13
+      },
+      "expected": {
+        "kalyanaks": [
+          {
+            "tirthankara": "Dharmanath",
+            "events": [
+              "Conception"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "TC017",
+      "category": "single_day_lookup",
+      "description": "Kalyanak(s) rendered for Sanskrit Jin Kalyanaka Mala by Ashadhara / Ashwin Shukla / day 9",
+      "input": {
+        "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+        "month": "Ashwin",
+        "fortnight": "Shukla",
+        "day": 9
+      },
+      "expected": {
+        "kalyanaks": [
+          {
+            "tirthankara": "Neminath",
+            "events": [
+              "Omniscience"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "TC018",
+      "category": "single_day_lookup",
+      "description": "Kalyanak(s) rendered for Sanskrit Jin Kalyanaka Mala by Ashadhara / Margashirsha Shukla / day 1",
+      "input": {
+        "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+        "month": "Margashirsha",
+        "fortnight": "Shukla",
+        "day": 1
+      },
+      "expected": {
+        "kalyanaks": [
+          {
+            "tirthankara": "Pushpadanta (Suvidhinath)",
+            "events": [
+              "Birth"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "TC019",
+      "category": "single_day_lookup",
+      "description": "Kalyanak(s) rendered for Sanskrit Jin Kalyanaka Mala by Ashadhara / Phalguna Krishna / day 7",
+      "input": {
+        "source": "Sanskrit Jin Kalyanaka Mala by Ashadhara",
+        "month": "Phalguna",
+        "fortnight": "Krishna",
+        "day": 7
+      },
+      "expected": {
+        "kalyanaks": [
+          {
+            "tirthankara": "Chandraprabha",
+            "events": [
+              "Omniscience",
+              "Liberation"
+            ]
+          },
+          {
+            "tirthankara": "Suparshvanath",
+            "events": [
+              "Liberation"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "TC020",
+      "category": "cross_source_consistency",
+      "description": "Cross-source comparison for Chaitra Shukla day 1",
+      "input": {
+        "month": "Chaitra",
+        "fortnight": "Shukla",
+        "day": 1
+      },
+      "expected": {
+        "per_source": {
+          "Vrindavan": [
+            {
+              "tirthankara": "Mallinath",
+              "events": [
+                "Conception"
+              ]
+            }
+          ],
+          "Uttarapurana": [
+            {
+              "tirthankara": "Mallinath",
+              "events": [
+                "Conception"
+              ]
+            }
+          ],
+          "Sanskrit Jin Kalyanaka Mala by Ashadhara": [
+            {
+              "tirthankara": "Mallinath",
+              "events": [
+                "Conception"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "TC021",
+      "category": "cross_source_consistency",
+      "description": "Cross-source comparison for Vaishakha Shukla day 1",
+      "input": {
+        "month": "Vaishakha",
+        "fortnight": "Shukla",
+        "day": 1
+      },
+      "expected": {
+        "per_source": {
+          "Vrindavan": [
+            {
+              "tirthankara": "Kunthunath",
+              "events": [
+                "Birth",
+                "Austerity",
+                "Liberation"
+              ]
+            }
+          ],
+          "Uttarapurana": [
+            {
+              "tirthankara": "Kunthunath",
+              "events": [
+                "Birth",
+                "Austerity",
+                "Liberation"
+              ]
+            }
+          ],
+          "Sanskrit Jin Kalyanaka Mala by Ashadhara": [
+            {
+              "tirthankara": "Kunthunath",
+              "events": [
+                "Birth",
+                "Austerity",
+                "Liberation"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "TC022",
+      "category": "cross_source_consistency",
+      "description": "Cross-source comparison for Kartika Krishna day 30",
+      "input": {
+        "month": "Kartika",
+        "fortnight": "Krishna",
+        "day": 30
+      },
+      "expected": {
+        "per_source": {
+          "Vrindavan": [
+            {
+              "tirthankara": "Mahavira Swami",
+              "events": [
+                "Liberation"
+              ]
+            }
+          ],
+          "Uttarapurana": [
+            {
+              "tirthankara": "Mahavira Swami",
+              "events": [
+                "Liberation"
+              ]
+            }
+          ],
+          "Sanskrit Jin Kalyanaka Mala by Ashadhara": [
+            {
+              "tirthankara": "Mahavira Swami",
+              "events": [
+                "Liberation"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "TC023",
+      "category": "boundary",
+      "description": "Krishna fortnight days never exceed 30",
+      "input": {
+        "fortnight": "Krishna"
+      },
+      "expected": {
+        "max_day": 30
+      }
+    },
+    {
+      "id": "TC024",
+      "category": "boundary",
+      "description": "Shukla fortnight days never exceed 15",
+      "input": {
+        "fortnight": "Shukla"
+      },
+      "expected": {
+        "max_day": 15
+      }
+    },
+    {
+      "id": "TC025",
+      "category": "boundary",
+      "description": "No day value is 0 or negative",
+      "input": {},
+      "expected": {
+        "min_day": 1
+      }
+    },
+    {
+      "id": "TC026",
+      "category": "special_marker",
+      "description": "Every entry tagged 'amavasya' is on a Krishna-fortnight day 30",
+      "input": {
+        "special": "amavasya"
+      },
+      "expected": {
+        "all_on_krishna_day_30": true,
+        "count": 13
+      }
+    },
+    {
+      "id": "TC027",
+      "category": "special_marker",
+      "description": "Every entry tagged 'purnima' is on day 15 (Shukla, except one documented Krishna exception)",
+      "input": {
+        "special": "purnima"
+      },
+      "expected": {
+        "all_on_day_15": true,
+        "count": 17,
+        "fortnight_breakdown": {
+          "Krishna": 2,
+          "Shukla": 15
+        }
+      }
+    },
+    {
+      "id": "TC028",
+      "category": "vocabulary",
+      "description": "Every event string used is one of the 5 canonical Kalyanaka events",
+      "input": {},
+      "expected": {
+        "valid_events": [
+          "Conception",
+          "Birth",
+          "Austerity",
+          "Omniscience",
+          "Liberation"
+        ],
+        "violations_found": []
+      }
+    },
+    {
+      "id": "TC029",
+      "category": "data_quality",
+      "description": "Distinct tirthankara name strings found in source data",
+      "input": {},
+      "expected": {
+        "distinct_name_count": 26,
+        "distinct_names": [
+          "Abhinandan",
+          "Ajitnath",
+          "Anantnath",
+          "Arahnath",
+          "Chandraprabha",
+          "Dharmanath",
+          "Kunthunath",
+          "Mahavira Swami",
+          "Mallinath",
+          "Munisuvrat",
+          "Munisuvratnath",
+          "Naminath",
+          "Neminath",
+          "Padmaprabha",
+          "Parshvanath",
+          "Pushpadanta",
+          "Pushpadanta (Suvidhinath)",
+          "Rishabhdev (Adinath)",
+          "Sambhavnath",
+          "Shantinath",
+          "Sheetalnath",
+          "Shreyansnath",
+          "Sumatinath",
+          "Suparshvanath",
+          "Vasupujya",
+          "Vimalnath"
+        ]
+      }
+    },
+    {
+      "id": "TC030",
+      "category": "rendering",
+      "description": "Days where more than one Tirthankara shares the same date",
+      "input": {},
+      "expected": {
+        "count_of_such_days": 18
+      }
+    },
+    {
+      "id": "TC031",
+      "category": "rendering",
+      "description": "Entries with multiple events for one Tirthankara on one date",
+      "input": {},
+      "expected": {
+        "count_of_such_entries": 66
+      }
+    }
+  ]
+}

@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Jain Panchang | जैन पंचांग</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans for UI/Numbers, Noto Sans Devanagari for Hindi text -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     DRAWER (hamburger menu — shared across pages)
+═══════════════════════════════════════════════ -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer" aria-label="Navigation Menu">
+  <div class="drawer-header">
+    <div class="drawer-brand-icon">🪔</div>
+    <div class="drawer-brand-text">
+      <span class="drawer-title">Jain Panchang</span>
+      <span class="drawer-subtitle">जैन पंचांग</span>
+    </div>
+  </div>
+  <nav class="drawer-nav">
+    <button class="drawer-link active" data-nav="home"><span class="icon">🏠</span> Home</button>
+    <button class="drawer-link" data-nav="calendar"><span class="icon">🗓️</span> Hindu Calendar</button>
+    <button class="drawer-link" data-nav="panchang"><span class="icon">📜</span> Dainika Panchang</button>
+    <button class="drawer-link" data-nav="muhurta"><span class="icon">🕐</span> Dainika Muhurta</button>
+    <button class="drawer-link" data-nav="festivals"><span class="icon">🎡</span> Jain Festivals</button>
+    <button class="drawer-link" data-nav="location"><span class="icon">📍</span> Change Location</button>
+    <button class="drawer-link" data-nav="settings"><span class="icon">⚙️</span> Settings</button>
+  </nav>
+  <div class="drawer-footer">
+    <div class="theme-switch-wrapper">
+      <span>Theme Mode</span>
+      <button class="theme-toggle-btn" id="themeToggleDrawer" aria-label="Toggle Theme">
+        <span class="theme-icon-sun">☀️</span>
+        <span class="theme-icon-moon">🌙</span>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════
+     APP SHELL
+═══════════════════════════════════════════════ -->
+<div id="app">
+
+<!-- ─────────────────── HOME PAGE ─────────────────── -->
+<section class="page active" id="page-home">
+  <nav class="navbar">
+    <button class="navbar-btn" id="homeMenuBtn" aria-label="Open Menu">☰</button>
+    <span class="navbar-title">Jain Panchang</span>
+    <div class="navbar-right">
+      <button class="navbar-btn theme-toggle-btn" id="themeToggleHome" aria-label="Toggle Dark Mode">
+        <span class="theme-icon-sun">☀️</span>
+        <span class="theme-icon-moon">🌙</span>
+      </button>
+      <button class="navbar-btn" data-nav="location" title="Change Location" aria-label="Location">📍</button>
+      <button class="navbar-btn" data-nav="settings" title="Settings" aria-label="Settings">⚙️</button>
+    </div>
+  </nav>
+
+  <div class="date-banner" id="homeBanner">
+    <div class="date-banner-moon">🌙</div>
+    <div class="date-banner-info">
+      <div class="date-banner-gregorian" id="homeGregorianDate">Loading…</div>
+      <div class="date-banner-details" id="homeBannerDetails">—</div>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div id="homeDailyContent" class="home-daily-content">
+      <div class="skeleton-card">
+        <div class="skeleton-line title"></div>
+        <div class="skeleton-line short"></div>
+      </div>
+    </div>
+    
+    <div class="section-heading">Quick Features</div>
+
+    <div class="card-grid">
+      <button class="card" data-nav="calendar">
+        <div class="card-icon-wrapper">🗓️</div>
+        <div class="card-body">
+          <div class="card-title">Hindu Calendar</div>
+          <div class="card-desc">Monthly calendar with Tithi & Nakshatra</div>
+        </div>
+      </button>
+      <button class="card" data-nav="panchang">
+        <div class="card-icon-wrapper">📜</div>
+        <div class="card-body">
+          <div class="card-title">Dainika Panchang</div>
+          <div class="card-desc">Detailed daily Panchang for any date</div>
+        </div>
+      </button>
+      <button class="card" data-nav="muhurta">
+        <div class="card-icon-wrapper">🕐</div>
+        <div class="card-body">
+          <div class="card-title">Dainika Muhurta</div>
+          <div class="card-desc">Choghadiya, Hora & auspicious timings</div>
+        </div>
+      </button>
+      <button class="card" data-nav="panchang">
+        <div class="card-icon-wrapper">🌙</div>
+        <div class="card-body">
+          <div class="card-title">Nakshatra</div>
+          <div class="card-desc">Daily Nakshatra & Yoga details</div>
+        </div>
+      </button>
+      <button class="card" data-nav="festivals">
+        <div class="card-icon-wrapper">🎡</div>
+        <div class="card-body">
+          <div class="card-title">Jain Festivals</div>
+          <div class="card-desc">Shwetambar festivals & Parva Tithis</div>
+        </div>
+      </button>
+      <button class="card" data-nav="location">
+        <div class="card-icon-wrapper">📍</div>
+        <div class="card-body">
+          <div class="card-title">Change Location</div>
+          <div class="card-desc">Set your city for accurate timings</div>
+        </div>
+      </button>
+      <button class="card" data-nav="settings">
+        <div class="card-icon-wrapper">⚙️</div>
+        <div class="card-body">
+          <div class="card-title">Settings</div>
+          <div class="card-desc">Ayanamsa, language & export options</div>
+        </div>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── CALENDAR PAGE ─────────────────── -->
+<section class="page" id="page-calendar">
+  <nav class="navbar">
+    <button class="navbar-btn" data-nav="home" aria-label="Back to Home">←</button>
+    <span class="navbar-title">Hindu Calendar</span>
+    <div class="navbar-right">
+      <button class="navbar-btn" id="calMenuBtn" aria-label="Menu">☰</button>
+    </div>
+  </nav>
+
+  <div class="cal-month-banner" id="calMonthBanner">
+    <h2 id="calMonthTitle">April 2026</h2>
+    <small id="calSamvat">Vikram Samvat 2083</small>
+  </div>
+
+  <div class="cal-toolbar">
+    <button class="toolbar-btn active">Calendar</button>
+    <button class="toolbar-btn">Vertical</button>
+    <button class="toolbar-btn">Purnimanta</button>
+    <button class="toolbar-btn" id="calTodayBtn">Today</button>
+  </div>
+
+  <div class="cal-nav-row">
+    <button class="nav-arrow" id="calPrev" aria-label="Previous Month">‹</button>
+    <h3 id="calNavTitle">April 2026</h3>
+    <button class="nav-arrow" id="calNext" aria-label="Next Month">›</button>
+  </div>
+
+  <div class="cal-weekdays">
+    <div class="cal-weekday">Sun</div>
+    <div class="cal-weekday">Mon</div>
+    <div class="cal-weekday">Tue</div>
+    <div class="cal-weekday">Wed</div>
+    <div class="cal-weekday">Thu</div>
+    <div class="cal-weekday">Fri</div>
+    <div class="cal-weekday">Sat</div>
+  </div>
+
+  <div class="page-content">
+    <div class="cal-grid" id="calGrid">
+      <div class="cal-loading">Loading calendar…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── PANCHANG PAGE ─────────────────── -->
+<section class="page" id="page-panchang">
+  <nav class="navbar">
+    <button class="navbar-btn" id="panchangBack" aria-label="Back">←</button>
+    <span class="navbar-title">Dainika Panchang</span>
+    <div class="navbar-right">
+      <button class="navbar-btn" id="panchangMenuBtn" aria-label="Menu">☰</button>
+    </div>
+  </nav>
+
+  <div class="date-banner" id="panchangBanner">
+    <div class="date-banner-moon" id="panchangMoon">🌙</div>
+    <div class="date-banner-info">
+      <div class="date-banner-gregorian" id="panchangGregorianDate">—</div>
+      <div class="date-banner-details" id="panchangBannerDetails">—</div>
+    </div>
+  </div>
+
+  <div class="chog-date-nav">
+    <button class="nav-arrow" id="panchangPrev" aria-label="Previous Day">‹</button>
+    <span class="chog-date-label" id="panchangDateLabel">—</span>
+    <button class="nav-arrow" id="panchangNext" aria-label="Next Day">›</button>
+  </div>
+
+  <div class="time-toggle-wrapper">
+    <div class="time-toggle">
+      <button class="time-toggle-btn active" data-fmt="12h">12 Hour</button>
+      <button class="time-toggle-btn" data-fmt="24h">24 Hour</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div id="panchangContent">
+      <div class="skeleton-card">
+        <div class="skeleton-line title"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line short"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── MUHURTA PAGE ─────────────────── -->
+<section class="page" id="page-muhurta">
+  <nav class="navbar">
+    <button class="navbar-btn" data-nav="home" aria-label="Back to Home">←</button>
+    <span class="navbar-title">Dainika Muhurta</span>
+    <div class="navbar-right">
+      <button class="navbar-btn" id="muhurtaMenuBtn" aria-label="Menu">☰</button>
+    </div>
+  </nav>
+
+  <div class="page-content">
+    <div class="card-grid">
+      <button class="card" data-nav="choghadiya">
+        <div class="card-icon-wrapper">🪔</div>
+        <div class="card-body">
+          <div class="card-title">Choghadiya Muhurta</div>
+          <div class="card-desc">Day & night Choghadiya slots</div>
+        </div>
+      </button>
+      <button class="card" id="horaCard">
+        <div class="card-icon-wrapper">⏰</div>
+        <div class="card-body">
+          <div class="card-title">Hora Muhurta</div>
+          <div class="card-desc">Hora table for the day</div>
+        </div>
+      </button>
+      <button class="card" id="lagnaCard">
+        <div class="card-icon-wrapper">✨</div>
+        <div class="card-body">
+          <div class="card-title">Lagna Muhurta</div>
+          <div class="card-desc">Udaya Lagna table</div>
+        </div>
+      </button>
+      <button class="card" id="chandraCard">
+        <div class="card-icon-wrapper">🌙</div>
+        <div class="card-body">
+          <div class="card-title">Chandrabalam</div>
+          <div class="card-desc">Lagna & Moon compatibility</div>
+        </div>
+      </button>
+      <button class="card" id="taraCard">
+        <div class="card-icon-wrapper">⭐</div>
+        <div class="card-body">
+          <div class="card-title">Tarabalam</div>
+          <div class="card-desc">For all 27 Nakshatras</div>
+        </div>
+      </button>
+      <button class="card" id="panchakCard">
+        <div class="card-icon-wrapper">🌑</div>
+        <div class="card-body">
+          <div class="card-title">Panchak Kaal (पंचक काल)</div>
+          <div class="card-desc">5-Nakshatra inauspicious period</div>
+        </div>
+      </button>
+      <button class="card" data-nav="yoga-muhurta">
+        <div class="card-icon-wrapper">🔱</div>
+        <div class="card-body">
+          <div class="card-title">Yoga Muhurta</div>
+          <div class="card-desc">Vara / Tithi / Nakshatra yogas</div>
+        </div>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── YOGA MUHURTA PAGE ─────────────────── -->
+<section class="page" id="page-yoga-muhurta">
+  <nav class="navbar">
+    <button class="navbar-btn" data-nav="muhurta" aria-label="Back to Muhurta">←</button>
+    <span class="navbar-title">Yoga Muhurta</span>
+    <div class="navbar-right">
+      <button class="navbar-btn" id="yogaMuhurtaMenuBtn" aria-label="Menu">☰</button>
+    </div>
+  </nav>
+
+  <div class="chog-date-nav">
+    <button class="nav-arrow" id="yogaMuhurtaPrev" aria-label="Previous Day">‹</button>
+    <span class="chog-date-label" id="yogaMuhurtaDateLabel">—</span>
+    <button class="nav-arrow" id="yogaMuhurtaNext" aria-label="Next Day">›</button>
+  </div>
+
+  <div id="yogaMuhurtaBadge" class="yoga-badge-container"></div>
+
+  <div class="page-content" id="yogaMuhurtaContent">
+    <div class="loading-spinner">Calculating…</div>
+  </div>
+
+  <div class="action-footer">
+    <button class="time-toggle-btn btn-export" id="yogaExportBtn">⬇ Export Month Excel</button>
+  </div>
+</section>
+
+<!-- ─────────────────── CHOGHADIYA PAGE ─────────────────── -->
+<section class="page" id="page-choghadiya">
+  <nav class="navbar">
+    <button class="navbar-btn" data-nav="muhurta" aria-label="Back to Muhurta">←</button>
+    <span class="navbar-title">Choghadiya Muhurta</span>
+    <div class="navbar-right">
+      <button class="navbar-btn" id="chogMenuBtn" aria-label="Menu">☰</button>
+    </div>
+  </nav>
+
+  <div class="chog-banner">
+    <div class="chog-banner-left">
+      <div class="chog-banner-time" id="chogCurrentTime">— to —</div>
+      <div class="chog-banner-countdown" id="chogCountdown">--:--:--</div>
+      <div class="chog-banner-date" id="chogBannerDate">—</div>
+    </div>
+    <div class="chog-banner-right" id="chogCurrentSlot">
+      <div class="chog-banner-name" id="chogCurrentName">—</div>
+      <div class="chog-banner-quality" id="chogCurrentQuality">—</div>
+    </div>
+  </div>
+
+  <div class="time-toggle-wrapper">
+    <div class="chog-time-toggle">
+      <button class="time-toggle-btn active" data-chog-fmt="12h">12 Hour</button>
+      <button class="time-toggle-btn" data-chog-fmt="24h">24 Hour</button>
+      <button class="time-toggle-btn" data-chog-fmt="24plus">24 Plus</button>
+    </div>
+  </div>
+
+  <div class="chog-date-nav">
+    <button class="nav-arrow" id="chogPrev" aria-label="Previous Day">‹</button>
+    <span class="chog-date-label" id="chogDateLabel">—</span>
+    <button class="nav-arrow" id="chogNext" aria-label="Next Day">›</button>
+  </div>
+
+  <div class="weekday-tabs" id="weekdayTabs"></div>
+
+  <div class="page-content" id="chogContent">
+    <div class="loading-spinner">Loading Choghadiya…</div>
+  </div>
+</section>
+
+<!-- ─────────────────── PANCHAK PAGE ─────────────────── -->
+<section class="page" id="page-panchak">
+  <nav class="navbar">
+    <button class="navbar-btn" id="panchakBack" aria-label="Back">←</button>
+    <span class="navbar-title">Panchak Kaal (पंचक काल)</span>
+    <div class="navbar-right"></div>
+  </nav>
+
+  <div class="chog-date-nav panchak-nav-bar">
+    <button class="nav-arrow" id="panchakPrev" aria-label="Previous">‹</button>
+    <div id="panchakDateTabs" class="panchak-date-tabs"></div>
+    <button class="nav-arrow" id="panchakNext" aria-label="Next">›</button>
+  </div>
+
+  <div class="page-content">
+    <div id="panchakContent">
+      <div class="loading-spinner">Calculating…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── JAIN FESTIVALS PAGE ─────────────────── -->
+<section class="page" id="page-festivals">
+  <nav class="navbar">
+    <button class="navbar-btn" data-nav="home" aria-label="Back to Home">←</button>
+    <span class="navbar-title">Jain Festivals</span>
+    <div class="navbar-right">
+      <button class="navbar-btn" id="festMenuBtn" aria-label="Menu">☰</button>
+    </div>
+  </nav>
+
+  <div class="cal-month-banner festival-hero-banner">
+    <h2>🎡 Shwetambar Jain Calendar</h2>
+    <div class="fest-location-subtitle" id="festLocationHeader">Loading coordinates...</div>
+  </div>
+
+  <div class="page-content">
+    <!-- Controls section -->
+    <div class="settings-card year-controls-card">
+      <div class="year-controls-row">
+        <span class="settings-label">Year Selection</span>
+        <div class="year-stepper">
+          <button class="nav-arrow" id="festPrev" aria-label="Previous Year">‹</button>
+          <span id="festYearLabel" class="year-label-text">2026</span>
+          <button class="nav-arrow" id="festNext" aria-label="Next Year">›</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upcoming Section -->
+    <div class="settings-section-title">Important Observances (Next 30 Days)</div>
+    <div class="upcoming-festivals-scroll" id="festUpcomingList">
+      <div class="empty-state-text">Calculating upcoming events...</div>
+    </div>
+
+    <!-- Toolbar / Toggle -->
+    <div class="cal-toolbar festival-toolbar">
+      <div class="toggle-group" id="festViewToggle">
+        <button class="toggle-btn active" data-view="calendar">Grid View</button>
+        <button class="toggle-btn" data-view="list">List View</button>
+      </div>
+      <button class="toolbar-btn btn-export-small" id="festExportBtn">📥 Export</button>
+    </div>
+
+    <!-- Exports Options Drawer (Hidden by default) -->
+    <div class="settings-card hidden" id="festExportDrawer">
+      <div class="export-drawer-header">
+        <strong>Dedicated Jain Festival Export</strong>
+        <button class="modal-close" id="festExportDrawerClose" aria-label="Close Export Drawer">×</button>
+      </div>
+      <div class="export-btn-group">
+        <button class="btn-primary fmt-csv" data-expfmt="csv">CSV</button>
+        <button class="btn-primary fmt-excel" data-expfmt="excel">Excel</button>
+        <button class="btn-primary fmt-json" data-expfmt="json">JSON</button>
+        <button class="btn-primary fmt-pdf" data-expfmt="pdf">Print PDF</button>
+      </div>
+      <div id="festExportResult" class="export-result"></div>
+    </div>
+
+    <!-- Search / Filter section -->
+    <div class="filter-search-container">
+      <div class="search-row" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 4px;">
+        <div style="flex: 2; min-width: 250px;">
+          <input type="text" class="search-input" id="festSearchInput" placeholder="🔍 Search festivals (e.g. Mahavir, Oli, Paryushan…)">
+        </div>
+        <div style="flex: 1; min-width: 200px;">
+          <select class="form-select" id="festSourceSelect" style="height: 100%; min-height: 44px; padding: 0 14px; border-radius: var(--radius-md); box-sizing: border-box; width: 100%;">
+            <option value="all">All Sources / Schools</option>
+            <option value="Vrindavan">Vrindavan</option>
+            <option value="Uttarapurana">Uttarapurana</option>
+            <option value="Ashadhara">Sanskrit Jin Kalyanaka Mala by Ashadhara</option>
+          </select>
+        </div>
+      </div>
+      <div class="weekday-tabs" id="festFilterChips">
+        <button class="weekday-tab active" data-filter="all">All</button>
+        <button class="weekday-tab" data-filter="vrats">Vrats & Fasts</button>
+        <button class="weekday-tab" data-filter="kalyanaks">Kalyanaks</button>
+        <button class="weekday-tab" data-filter="parva">Parva Tithis</button>
+      </div>
+    </div>
+
+    <!-- Calendar View Grid -->
+    <div id="festCalendarContainer">
+      <div class="cal-weekdays">
+        <div class="cal-weekday">Sun</div>
+        <div class="cal-weekday">Mon</div>
+        <div class="cal-weekday">Tue</div>
+        <div class="cal-weekday">Wed</div>
+        <div class="cal-weekday">Thu</div>
+        <div class="cal-weekday">Fri</div>
+        <div class="cal-weekday">Sat</div>
+      </div>
+      <div class="cal-grid" id="festGrid">
+        <div class="cal-loading">Loading festival grid...</div>
+      </div>
+    </div>
+
+    <!-- List View Container (Month-grouped list) -->
+    <div id="festListContainer" class="hidden">
+      <div id="festList">
+        <div class="cal-loading">Loading month list...</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     FESTIVAL DETAIL MODAL
+═══════════════════════════════════════════════ -->
+<div class="bottom-sheet-overlay hidden" id="festModalOverlay"></div>
+<div class="bottom-sheet hidden" id="festModal" role="dialog" aria-modal="true">
+  <div class="bottom-sheet-handle"></div>
+  <div class="bottom-sheet-header">
+    <h3 id="festModalTitle" class="bottom-sheet-title"></h3>
+    <button class="bottom-sheet-close" id="festModalClose" aria-label="Close Modal">×</button>
+  </div>
+  <div class="bottom-sheet-body" id="festModalBody">
+    <!-- Dynamic contents -->
+  </div>
+</div>
+
+<!-- ─────────────────── LOCATION PAGE ─────────────────── -->
+<section class="page" id="page-location">
+  <nav class="navbar">
+    <button class="navbar-btn" id="locationBack" aria-label="Back">←</button>
+    <span class="navbar-title">Change Location</span>
+    <div class="navbar-right"></div>
+  </nav>
+
+  <div class="page-content">
+    <div class="location-form">
+      <div class="location-current" id="locationCurrent">
+        <div class="location-current-header">
+          <span class="location-pin-icon">📍</span>
+          <strong id="locationCurrentName">No location set</strong>
+        </div>
+        <p class="location-subtext">Set a location to compute accurate Panchang & Choghadiya times.</p>
+      </div>
+
+      <div class="search-box">
+        <label for="locationSearch" class="form-label">Search City Name</label>
+        <input type="text" class="search-input" id="locationSearch"
+          placeholder="Search city (e.g. Jaipur, Mumbai, Ahmedabad…)" autocomplete="off">
+        <div class="search-results hidden" id="locationResults"></div>
+      </div>
+
+      <div class="form-divider"><span>or enter coordinates manually</span></div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="latInput">Latitude</label>
+          <input type="number" step="any" class="form-input" id="latInput" placeholder="26.9124">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="lonInput">Longitude</label>
+          <input type="number" step="any" class="form-input" id="lonInput" placeholder="75.7873">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="locationNameInput">Location Display Name</label>
+        <input type="text" class="form-input" id="locationNameInput" placeholder="e.g. Jaipur, Rajasthan">
+      </div>
+
+      <button class="btn-primary" id="locationSaveBtn">Save Location</button>
+      <div class="error-msg hidden" id="locationError"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────── SETTINGS PAGE ─────────────────── -->
+<section class="page" id="page-settings">
+  <nav class="navbar">
+    <button class="navbar-btn" data-nav="home" aria-label="Back to Home">←</button>
+    <span class="navbar-title">Settings</span>
+    <div class="navbar-right"></div>
+  </nav>
+
+  <div class="page-content">
+    <div class="settings-section">
+      <div class="settings-section-title">Display Preferences</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <span class="settings-label">Language</span>
+          <div class="toggle-group">
+            <button class="toggle-btn active" data-lang="en">EN</button>
+            <button class="toggle-btn" data-lang="hi">हि</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Time Format</span>
+          <div class="toggle-group">
+            <button class="toggle-btn active" data-timefmt="12h">12h</button>
+            <button class="toggle-btn" data-timefmt="24h">24h</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Ayanamsa</span>
+          <select class="form-select" id="ayanamsaSelect">
+            <option value="Lahiri">Lahiri (Chitra Paksha)</option>
+            <option value="Raman">Raman</option>
+            <option value="Krishnamurti">Krishnamurti</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Export Panchang Data</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <span class="settings-label">PDF Export (Single Year)</span>
+        </div>
+        <div class="form-row align-end">
+          <div class="form-group">
+            <label class="form-label" for="pdfYear">Year</label>
+            <input type="number" class="form-input" id="pdfYear" value="2026" min="1900" max="2200">
+          </div>
+          <div class="form-group">
+            <button class="btn-primary" id="pdfExportBtn">Generate PDF</button>
+          </div>
+        </div>
+        <div class="export-result" id="pdfResult"></div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-row">
+          <span class="settings-label">CSV / Excel / JSON Multi-Year Range</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="rangeStart">Start Year</label>
+            <input type="number" class="form-input" id="rangeStart" value="2025" min="1900" max="2200">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="rangeEnd">End Year</label>
+            <input type="number" class="form-input" id="rangeEnd" value="2026" min="1900" max="2200">
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">Format</span>
+          <select class="form-select" id="rangeFormat">
+            <option value="csv">CSV File</option>
+            <option value="excel">Excel (.xlsx)</option>
+            <option value="json">JSON File</option>
+          </select>
+        </div>
+        <button class="btn-primary" id="rangeExportBtn">Generate Range Export</button>
+        <div class="export-result" id="rangeResult"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- #app -->
+
+<script src="/static/app.js"></script>
+</body>
+</html>

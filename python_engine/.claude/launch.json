@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "panchang-web",
+      "runtimeExecutable": "C:/Users/manis/Projects/Jain_Panchang/python_engine/python_engine/.venv-win/Scripts/python.exe",
+      "runtimeArgs": ["C:/Users/manis/Projects/Jain_Panchang/python_engine/run_app.py"],
+      "port": 5000
+    }
+  ]
+}
