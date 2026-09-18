@@ -1,4 +1,3 @@
-from functools import lru_cache
 """
 panchang.py — Vedic Panchang element calculations.
 
@@ -190,15 +189,54 @@ def find_sankrantis_in_range(
     return results
 
 
+# Resolved lunar months, as (low_jd, high_jd, ayanamsa, result) intervals.
+# get_hindu_month's answer is constant across [prev_new_moon, next_new_moon) by
+# definition, so once an interval is resolved every JD inside it is a lookup
+# rather than another pair of new-moon bisections. Most-recently-used order:
+# callers walk time roughly monotonically, so a hit is almost always at index 0.
+_HINDU_MONTH_CACHE: list[tuple[float, float, str, tuple[str, str, bool]]] = []
+_HINDU_MONTH_CACHE_MAX = 64
+
+
+def clear_hindu_month_cache() -> None:
+    """Drop every cached lunar-month interval."""
+    _HINDU_MONTH_CACHE.clear()
+
+
+def hindu_month_cache_size() -> int:
+    """Number of lunar-month intervals currently cached."""
+    return len(_HINDU_MONTH_CACHE)
+
+
 def get_hindu_month(jd: float, ayanamsa: str = 'Lahiri') -> tuple[str, str, bool]:
     """Return (sanskrit_name, common_name, is_adhika) for the lunar month containing jd.
 
     Amanta rule: the month is named after the Sankranti (Sun sign ingress) that
     falls within the lunar month (prev Amavasya → next Amavasya).
     Zero Sankrantis in a month → Adhika (leap) masa, named after the next month's Sankranti.
+
+    Results are cached per lunar month -- see _HINDU_MONTH_CACHE. Call
+    clear_hindu_month_cache() if the ephemeris configuration changes underneath.
     """
+    for position, (low, high, cached_ayanamsa, cached) in enumerate(_HINDU_MONTH_CACHE):
+        if cached_ayanamsa == ayanamsa and low <= jd < high:
+            if position:
+                _HINDU_MONTH_CACHE.insert(0, _HINDU_MONTH_CACHE.pop(position))
+            return cached
+
     prev_nm = find_new_moon_before(jd, ayanamsa)
     next_nm = find_new_moon_after(prev_nm + 1.0, ayanamsa)
+    result = _resolve_hindu_month(jd, prev_nm, next_nm, ayanamsa)
+
+    _HINDU_MONTH_CACHE.insert(0, (prev_nm, next_nm, ayanamsa, result))
+    del _HINDU_MONTH_CACHE[_HINDU_MONTH_CACHE_MAX:]
+    return result
+
+
+def _resolve_hindu_month(
+    jd: float, prev_nm: float, next_nm: float, ayanamsa: str
+) -> tuple[str, str, bool]:
+    """Name the lunar month spanning [prev_nm, next_nm). See get_hindu_month."""
     sankrantis = find_sankrantis_in_range(prev_nm, next_nm, ayanamsa)
 
     if sankrantis:
