@@ -248,6 +248,38 @@ Response includes:
 - resolved location
 - PDF filename and download URL
 
+## `POST /generate-hindi-pdf`
+
+Generates the Hindi Jain/Vedic calendar (the same output as
+`python hindi_calendar_pdf.py`) as a download.
+
+Request:
+
+```json
+{
+  "start_year": 2026,
+  "start_month": 3,
+  "months": 13,
+  "lat": 26.9124,
+  "lon": 75.7873,
+  "ayanamsa": "Lahiri",
+  "calendar_system": "purnimanta"
+}
+```
+
+Only `start_year` and a location are required. `start_month` (1–12) defaults
+to 3, `months` (1–24) to 13, `calendar_system` to `purnimanta`.
+
+Response includes:
+
+- ayanamsa
+- resolved location
+- `file.name`, `file.download_url`, and `file.format`: `pdf`, or `html` when
+  the server has neither Playwright nor Microsoft Edge to print the PDF (the
+  HTML prints to PDF from any browser with Ctrl+P)
+
+Takes about 15 seconds for 13 months.
+
 ## `POST /generate-jain-festivals`
 
 Generates all Jain festival occurrences for a given year, location, and sectarian profile.

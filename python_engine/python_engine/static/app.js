@@ -1401,6 +1401,35 @@ document.getElementById('pdfExportBtn').addEventListener('click', async () => {
   }
 });
 
+// Hindi Calendar PDF
+document.getElementById('hindiPdfBtn').addEventListener('click', async () => {
+  const state  = getState();
+  const result = document.getElementById('hindiPdfResult');
+  result.innerHTML = 'Generating… (about 15 seconds for a full year)';
+  result.classList.add('visible');
+
+  if (!state.lat || !state.lon) {
+    result.innerHTML = 'Please set a location first.';
+    return;
+  }
+
+  try {
+    const data = await apiFetch('/generate-hindi-pdf', 'POST', {
+      start_year:  parseInt(document.getElementById('hindiStartYear').value, 10),
+      start_month: parseInt(document.getElementById('hindiStartMonth').value, 10),
+      months:      parseInt(document.getElementById('hindiMonths').value, 10),
+      lat: state.lat, lon: state.lon, ayanamsa: state.ayanamsa || 'Lahiri'
+    });
+    const link = `<a href="${data.file.download_url}" target="_blank">⬇ Download ${data.file.name}</a>`;
+    // No headless browser on the server means no PDF; the HTML prints to one.
+    result.innerHTML = data.file.format === 'html'
+      ? `${link}<br>Open the file in your browser and press Ctrl+P → Save as PDF.`
+      : link;
+  } catch (e) {
+    result.innerHTML = `Error: ${e.message}`;
+  }
+});
+
 // Range Export
 document.getElementById('rangeExportBtn').addEventListener('click', async () => {
   const state  = getState();

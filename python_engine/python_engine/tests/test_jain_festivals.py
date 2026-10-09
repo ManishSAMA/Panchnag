@@ -45,7 +45,7 @@ class JainFestivalsRegistryTest(unittest.TestCase):
             for key in required_keys:
                 self.assertIn(key, fest, f"Missing key '{key}' in festival registry entry")
                 
-            self.assertIn(fest["category"], ["kalyanak", "festival", "fast", "parva", "mahaparv", "parva_vrat", "monthly_vrat", "jayanti", "vrat", "poojan", "parv_vidhi", "mahaparv_vrat", "punyatithi", "punya_tithi", "tap_vrat", "auspicious", "shastra", "utsav"])
+            self.assertIn(fest["category"], ["kalyanak", "janam_kalyanak", "festival", "fast", "parva", "mahaparv", "parva_vrat", "monthly_vrat", "jayanti", "vrat", "poojan", "parv_vidhi", "mahaparv_vrat", "punyatithi", "punya_tithi", "tap_vrat", "auspicious", "shastra", "utsav"])
             self.assertIsInstance(fest["profiles"], list)
             self.assertTrue(len(fest["profiles"]) > 0)
             for p in fest["profiles"]:
@@ -109,9 +109,8 @@ class JainFestivalServiceTest(unittest.TestCase):
 
         sumati_fests = [f for f in res["festivals"] if "sumatinath" in f["id"] and f.get("jain_month") == "Chaitra"]
         # Vrindavan/Uttarapurana/Ashadhara agree on Birth+Omniscience+Liberation at Ekadashi (11);
-        # Vrindavan additionally records a separate, earlier Liberation Kalyanak at Navami (9);
         # Pt. Jaini Jiyalal Panchang adds Janma-Tapa together at Dashami (10).
-        self.assertEqual(len(sumati_fests), 6)
+        self.assertEqual(len(sumati_fests), 5)
         dashami_fests = [sf for sf in sumati_fests if sf["tithi"] == "Dashami (10)"]
         self.assertEqual(len(dashami_fests), 2)
         for sf in dashami_fests:
@@ -125,11 +124,7 @@ class JainFestivalServiceTest(unittest.TestCase):
             self.assertEqual(sf["paksha"], "Shukla")
             self.assertEqual(sf["jain_month"], "Chaitra")
 
-        navami_fests = [sf for sf in sumati_fests if sf["tithi"] == "Navami (9)"]
-        self.assertEqual(len(navami_fests), 1)
-        self.assertEqual(navami_fests[0]["id"], "shri_sumatinath_ji___liberation_kalyanak_9_vrindavan")
-        self.assertEqual(navami_fests[0]["paksha"], "Shukla")
-        self.assertEqual(navami_fests[0]["jain_month"], "Chaitra")
+        self.assertFalse([sf for sf in sumati_fests if sf["tithi"] == "Navami (9)"])
 
     def test_ayambil_oli_ranges(self):
         """Verify Chaitra and Ashvin Ayambil Oli start dates."""
@@ -611,35 +606,62 @@ class NavpadOliTest(unittest.TestCase):
 
 
 class ChaitraShuklaEkamKalyanaksTest(unittest.TestCase):
-    def test_kalyanaks_resolution_2026(self):
+    """Chaitra Shukla 1 carries Shri Mallinath Ji's Conception (Garbha) Kalyanak and
+    Gautam Swami Janam Divas, both as ordinary registry entries. Vrindavan,
+    Uttarapurana and Ashadhara all place the Conception on Chaitra Shukla 1
+    (tests/tirthankara_kalyanaks_data.json)."""
+
+    MALLINATH_ID = "shri_mallinath_ji___conception_kalyanak_1_vrindavan_uttarapurana_ashadhara"
+    GAUTAM_ID = "gautam_swami_janam_divas"
+
+    def _festivals(self, year):
         from jain_observances.festival_service import generate_jain_festivals
-        res = generate_jain_festivals(
-            year=2026,
-            lat=28.6139,
-            lon=77.2090,
-            ayanamsa="Lahiri",
-            profile="all"
-        )
-        
-        # Verify both events are resolved
-        gautam = [f for f in res["festivals"] if f["id"] == "gautam_swami_janam_divas_2026"]
-        mallinath = [f for f in res["festivals"] if f["id"] == "shri_mallinath_ji___garbh_2026"]
-        
-        self.assertEqual(len(gautam), 1)
-        self.assertEqual(len(mallinath), 1)
-        
-        self.assertEqual(gautam[0]["category"], "janam_kalyanak")
-        self.assertEqual(gautam[0]["badge"], "Janam Kalyan")
-        self.assertEqual(gautam[0]["badge_color"], "green")
-        self.assertEqual(gautam[0]["description"], "Birth anniversary of Gandhar Gautam Swami")
-        
-        self.assertEqual(mallinath[0]["category"], "garbha_kalyanak")
-        self.assertEqual(mallinath[0]["badge"], "Garbha Kalyan")
-        self.assertEqual(mallinath[0]["badge_color"], "saffron")
-        self.assertEqual(mallinath[0]["description"], "Garbha Kalyanak of 19th Tirthankara Shri Mallinath Bhagwan")
-        
-        # Confirm they fall on the same day
-        self.assertEqual(gautam[0]["start_date"], mallinath[0]["start_date"])
+        return generate_jain_festivals(
+            year=year, lat=27.5650, lon=77.6593, ayanamsa="Lahiri", profile="vrindavan"
+        )["festivals"]
+
+    def _only(self, festivals, fid):
+        matches = [f for f in festivals if f["id"] == fid]
+        self.assertEqual(len(matches), 1, fid)
+        return matches[0]
+
+    def test_both_fall_once_on_chaitra_shukla_pratipada(self):
+        for year in (2026, 2027):
+            with self.subTest(year=year):
+                festivals = self._festivals(year)
+                mallinath = self._only(festivals, self.MALLINATH_ID)
+                gautam = self._only(festivals, self.GAUTAM_ID)
+                self.assertEqual(mallinath["start_date"], gautam["start_date"])
+                self.assertEqual(mallinath["jain_month"].upper(), "CHAITRA")
+                self.assertEqual(mallinath["paksha"], "Shukla")
+
+    def test_kshaya_pratipada_moves_back_to_the_day_it_begins(self):
+        """2026: Chaitra Shukla Pratipada is kshaya at sunrise -- it begins just after
+        sunrise on 19 Mar (Amavasya at sunrise) and Dwitiya already prevails at sunrise
+        on 20 Mar. A kshaya tithi is observed on the day it begins: 19 Mar 2026, the
+        same day standard panchangs list Gudi Padwa / Chaitra Navratri Pratipada."""
+        festivals = self._festivals(2026)
+        for fid in (self.MALLINATH_ID, self.GAUTAM_ID):
+            with self.subTest(fid=fid):
+                self.assertEqual(self._only(festivals, fid)["start_date"], "2026-03-19")
+
+    def test_mallinath_matches_his_other_registry_kalyanaks(self):
+        mallinath = self._only(self._festivals(2026), self.MALLINATH_ID)
+        self.assertEqual(mallinath["name"], "Shri Mallinath Ji - Conception Kalyanak")
+        self.assertEqual(mallinath["category"], "kalyanak")
+
+    def test_gautam_keeps_its_janam_kalyan_presentation(self):
+        gautam = self._only(self._festivals(2026), self.GAUTAM_ID)
+        self.assertEqual(gautam["name"], "Gautam Swami Janam Divas")
+        self.assertEqual(gautam["name_hindi"], "गौतम स्वामी जन्म दिवस")
+        self.assertEqual(gautam["category"], "janam_kalyanak")
+        self.assertEqual(gautam["badge"], "Janam Kalyan")
+        self.assertEqual(gautam["badge_color"], "green")
+
+    def test_legacy_year_suffixed_entries_are_gone(self):
+        ids = {f["id"] for f in self._festivals(2026)}
+        self.assertNotIn("shri_mallinath_ji___garbh_2026", ids)
+        self.assertNotIn("gautam_swami_janam_divas_2026", ids)
 
 
 class PushpanjaliVratTest(unittest.TestCase):
@@ -2176,15 +2198,17 @@ class KalyanakAmantaMonthCorrectionTest(unittest.TestCase):
         diwali = self.by_id["mahavir_nirvana_deepavali"]
         self.assertEqual(f["start_date"], diwali["start_date"])
 
-    def test_newly_added_sumatinath_liberation_on_navami(self):
-        """Vrindavan uniquely records a second, earlier Sumatinath Liberation Kalyanak on
-        Chaitra Shukla Navami (9), distinct from the Ekadashi (11) one shared by all three
-        sources. Previously absent from the registry entirely."""
-        f = self.by_id["shri_sumatinath_ji___liberation_kalyanak_9_vrindavan"]
-        self.assertEqual(f["jain_month"], "Chaitra")
-        self.assertEqual(f["paksha"], "Shukla")
-        self.assertEqual(f["tithi"], "Navami (9)")
-        self.assertEqual(f["sources"], ["Vrindavan"])
+    def test_sumatinath_and_padmaprabha_liberation_observed_once(self):
+        """Vrindavan alone also lists Sumatinath and Padmaprabha Liberation on Chaitra
+        Shukla Navami (9). Both already have a Liberation Kalyanak agreed by all three
+        sources (Sumatinath: Chaitra Shukla 11; Padmaprabha: Phalguna Krishna 4), so the
+        Navami repeats are not observed (project decision)."""
+        for name in ("Shri Sumatinath Ji - Liberation Kalyanak",
+                     "Shri Padmaprabha Ji - Liberation Kalyanak"):
+            with self.subTest(name=name):
+                matches = [f for f in self.by_id.values() if f["name"].endswith(name)]
+                self.assertEqual(len(matches), 1)
+                self.assertNotEqual(matches[0]["tithi"], "Navami (9)")
 
     def test_newly_added_parshvanath_omniscience_and_anantnath_liberation_on_chaitra_krishna_4(self):
         """Vrindavan (and Ashadhara for Parshvanath) record a Chaitra Krishna Chaturthi (4)
@@ -2648,6 +2672,28 @@ class ShodashkaranVratAnchorTest(unittest.TestCase):
     def test_no_shodashkaran_vrat_starts_on_2026_07_30(self):
         starts = [f["start_date"] for f in self.by_id.values() if f["id"].startswith("shodashkaran_")]
         self.assertNotIn("2026-07-30", starts)
+
+
+class NaminathOmniscienceKalyanakTest(unittest.TestCase):
+    """Shri Naminath Ji Omniscience (Kevalgyan) Kalyanak is observed once, on
+    Margashirsha Shukla 11 per Uttarapurana and Ashadhara. Vrindavan's Shukla 10
+    variant is deliberately not observed (project decision), so the Kalyanak no
+    longer appears on two consecutive days."""
+
+    def _omniscience(self, year):
+        from jain_observances.festival_service import generate_jain_festivals
+        festivals = generate_jain_festivals(
+            year=year, lat=27.5650, lon=77.6593, ayanamsa="Lahiri", profile="vrindavan"
+        )["festivals"]
+        return [f for f in festivals if f["name"].endswith("Shri Naminath Ji - Omniscience Kalyanak")]
+
+    def test_observed_once_on_margashirsha_shukla_ekadashi(self):
+        for year in (2025, 2026, 2027):
+            with self.subTest(year=year):
+                occurrences = self._omniscience(year)
+                self.assertEqual(len(occurrences), 1)
+                self.assertEqual(occurrences[0]["paksha"], "Shukla")
+                self.assertTrue(occurrences[0]["tithi"].startswith("Ekadashi"))
 
 
 class MallinathOmniscienceKalyanakTest(unittest.TestCase):

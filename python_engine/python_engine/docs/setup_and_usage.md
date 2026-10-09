@@ -264,6 +264,46 @@ The PDF renders landscape monthly tables for the selected year, including Tithi,
 
 Like the range generator, the PDF path uses a fixed timezone offset snapshot for the selected year rather than a full per-date timezone conversion.
 
+## 10b. Using the Hindi Calendar PDF
+
+Settings → Export Panchang Data → **Hindi Calendar PDF (हिन्दी पंचांग)**.
+
+It uses the current location and ayanamsa. You choose:
+
+- start year and start month (default March, the Chaitra-to-Chaitra edition)
+- number of months (1–24, default 13)
+
+The PDF is printed by headless Playwright if it is installed, otherwise by
+Microsoft Edge. Edge runs with a throwaway profile, so it works even while the
+user has Edge open. When neither is available the app offers the `.html`
+instead; open it and press Ctrl+P → Save as PDF.
+
+## 10c. Building the Client Release
+
+Clients get a self-contained folder instead of this repository:
+
+```bash
+python scripts/build_client_bundle.py
+```
+
+This writes `client_release/` and `client_release.zip` at the repo root (both
+gitignored). The folder contains:
+
+- `start.bat`: on first run, finds Python 3.11–3.14, creates `.venv`, and
+  installs `requirements.txt`. Every run starts the app and opens the browser.
+- `README.txt`: client-facing instructions
+- `panchang_app/`: the web app, the modules it imports, `templates/`, `static/`,
+  and `wheels/` (bundled pre-compiled wheels for `pyswisseph` so no C++ compiler is needed).
+
+The module list is found by following imports from `client_files/run_client.py`,
+so there is no file list to maintain. Re-run the script after every change.
+`tests/test_client_bundle.py` checks that every import in the bundle resolves
+from the bundle itself.
+
+The bundle supports standard Windows Python 3.11, 3.12, 3.13, and 3.14. Pre-built
+wheels for `pyswisseph` are included directly in the bundle so setup runs cleanly
+without Microsoft Visual C++ Build Tools.
+
 ## 11. CLI Usage
 
 The CLI is useful when:

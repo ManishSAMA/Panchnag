@@ -34,6 +34,10 @@ only shows up if you cross-check against the source. Shukla-paksha entries need 
   Omniscience (Chaitra Krishna 4, Vrindavan+Ashadhara — Uttarapurana already had its own
   divergent day-14 version), Anantnath Liberation (Chaitra Krishna 4, Vrindavan only — distinct
   from the existing Amavasya-day entry).
+  *Later reversed:* the Vrindavan-only Chaitra Shukla 9 Liberation entries for Sumatinath
+  and Padmaprabha were removed as repeats of their three-source Liberation dates (Chaitra
+  Shukla 11; Phalguna Krishna 4). Likewise Naminath Omniscience is observed only on the
+  Uttarapurana/Ashadhara Margashirsha Shukla 11, not Vrindavan's Shukla 10.
 - **2 stale test fixtures corrected** (not code bugs — the tests' own tithi assertions already
   agreed with the app; only the hardcoded `start_date` was wrong): `test_mahavir_jayanti_resolution`
   (2026-03-30 → 2026-03-31) and `test_paryushan_profile_specific_dates`'s Tapagachchha Samvatsari

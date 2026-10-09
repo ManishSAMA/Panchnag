@@ -41,3 +41,7 @@ diff_output.txt
 # --- Editor / OS ---
 .vscode/
 .DS_Store
+
+# --- Client release bundle (python_engine/python_engine/scripts/build_client_bundle.py) ---
+client_release/
+client_release*.zip

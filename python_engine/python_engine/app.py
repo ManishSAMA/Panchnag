@@ -14,12 +14,13 @@ from astronomy import get_sunrise, get_sunset, jd_to_zoned_datetime, local_date_
 from choghadiya_service import calculate_choghadiya_slots
 from yoga_service import detect_all_yogas_for_day
 from location_service import geocode_city, get_timezone_name, search_locations
-from pdf_generation_service import generate_pdf_export
+from pdf_generation_service import generate_hindi_pdf_export, generate_pdf_export
 from panchang import format_tithi_pair_name, get_vara_from_date, kshaya_tithi_between
 from panchang_service import generate_location_panchang, resolve_location
 from range_generation_service import generate_year_range_exports
 from request_parsing import (
     parse_calendar_system,
+    parse_hindi_pdf_request,
     parse_panchang_request,
     parse_pdf_generation_request,
     parse_range_generation_request,
@@ -370,6 +371,39 @@ def create_app() -> Flask:
                     "location": result["location"],
                     "file": {
                         "name": result["file"]["name"],
+                        "download_url": f"/downloads/{token}",
+                    },
+                }
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except Exception as exc:
+            return jsonify({"error": str(exc)}), 500
+
+    @app.post("/generate-hindi-pdf")
+    def generate_hindi_pdf():
+        try:
+            parsed = parse_hindi_pdf_request(request.get_json(silent=True))
+            result = generate_hindi_pdf_export(
+                start_year=parsed.start_year,
+                start_month=parsed.start_month,
+                month_count=parsed.month_count,
+                city=parsed.city,
+                lat=parsed.lat,
+                lon=parsed.lon,
+                ayanamsa_name=parsed.ayanamsa_name,
+                calendar_system=parsed.calendar_system,
+            )
+            token = uuid4().hex
+            GENERATED_EXPORTS[token] = result["file"]["path"]
+
+            return jsonify(
+                {
+                    "ayanamsa": result["ayanamsa"],
+                    "location": result["location"],
+                    "file": {
+                        "name": result["file"]["name"],
+                        "format": result["file"]["format"],
                         "download_url": f"/downloads/{token}",
                     },
                 }

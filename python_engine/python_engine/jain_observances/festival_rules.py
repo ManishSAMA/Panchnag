@@ -118,8 +118,11 @@ def _kshaya_backshift(pool: List[Dict[str, Any]], tithi: int,
     and ends before the next, so it never carries a date -- and the observance moves
     BACK to the day that tithi begins on, i.e. the preceding tithi's (last) day. Both
     the preceding-tithi events and the kshaya-tithi events then share that civil date.
-    Falls forward to the next tithi only when the preceding tithi is unavailable in the
-    pool (e.g. a Pratipada kshaya, whose tithi-1 sits in the prior paksha).
+    A Pratipada kshaya's preceding tithi (Amavasya/Purnima) sits in the prior paksha,
+    outside a paksha-filtered pool, so its day is taken as the eve of the first later
+    tithi -- e.g. Chaitra Shukla 1 of 2026 lands on 19 Mar (Amavasya at sunrise), not
+    20 Mar (Dwitiya at sunrise). Other tithis fall forward to the next tithi only when
+    the preceding tithi is unavailable in the pool.
 
     ``tithi_field`` must be the SAME field the caller selected ``pool`` on -- the
     private ``_sunrise_tithi_in_paksha`` for udaya-selected categories, the public
@@ -129,7 +132,9 @@ def _kshaya_backshift(pool: List[Dict[str, Any]], tithi: int,
     if prev:
         return prev[-1]
     nxt = sorted(s["date"] for s in pool if s[tithi_field] > tithi)
-    return nxt[0] if nxt else None
+    if not nxt:
+        return None
+    return nxt[0] - timedelta(days=1) if tithi == 1 else nxt[0]
 
 
 def _purn_month_tithi_day(snapshots: List[Dict[str, Any]], year: int, amanta_month: str,
@@ -229,7 +234,8 @@ class FestivalRule:
             "status": "confirmed",
             "meaning": self.meaning,
             "observance": self.observance,
-            "sources": self.sources
+            "sources": self.sources,
+            **{k: self.config[k] for k in ("badge", "badge_color") if k in self.config},
         }
 
 class SingleTithiFestival(FestivalRule):
@@ -413,8 +419,6 @@ class RuleFactory:
             return RaviVratFestival(config)
         elif r_type == "NavpadOli":
             return NavpadOliFestival(config)
-        elif r_type == "ChaitraShuklaEkamKalyanaks":
-            return ChaitraShuklaEkamKalyanaksFestival(config)
         elif r_type == "PushpanjaliVrat":
             return PushpanjaliVratFestival(config)
         elif r_type == "AkshayaTritiya":
@@ -1164,84 +1168,6 @@ class NavpadOliFestival(FestivalRule):
             })
             
         return occurrences
-
-
-class ChaitraShuklaEkamKalyanaksFestival(FestivalRule):
-    def resolve(self, snapshots: List[Dict[str, Any]], profile: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
-        year = context["year"]
-        
-        month_snaps = [
-            s for s in snapshots
-            if s["date"].year == year
-            and s["hindu_month"].upper() == "CHAITRA"
-        ]
-        
-        if not month_snaps:
-            return []
-
-        month_snaps = [s for s in month_snaps if not s["is_adhika"]]
-        
-        if not month_snaps:
-            return []
-
-        ekam_days = [
-            s for s in month_snaps
-            if s["paksha"] == "Shukla" and s["tithi_in_paksha"] == 1
-        ]
-
-        target_snap = None
-        if ekam_days:
-            target_snap = ekam_days[0]
-        else:
-            dwitiya_days = [
-                s for s in month_snaps
-                if s["paksha"] == "Shukla" and s["tithi_in_paksha"] == 2
-            ]
-            if dwitiya_days:
-                first_dwitiya = dwitiya_days[0]
-                idx = snapshots.index(first_dwitiya)
-                if idx > 0:
-                    target_snap = snapshots[idx - 1]
-
-        if not target_snap:
-            return []
-
-        return [
-            {
-                "id": f"gautam_swami_janam_divas_{year}",
-                "occurrence_id": f"gautam_swami_janam_divas_{year}",
-                "name": "Gautam Swami Janam Divas",
-                "title": "Gautam Swami Janam Divas",
-                "name_hindi": "गौतम स्वामी जन्म दिवस",
-                "category": "janam_kalyanak",
-                "badge": "Janam Kalyan",
-                "badge_color": "green",
-                "start_date": target_snap["date"].isoformat(),
-                "end_date": target_snap["date"].isoformat(),
-                "status": "confirmed",
-                "description": "Birth anniversary of Gandhar Gautam Swami",
-                "meaning": "Birth anniversary of Gandhar Gautam Swami",
-                "observance": "Special prayers and reading of scriptures",
-                "sources": ["Jain Traditions"]
-            },
-            {
-                "id": f"shri_mallinath_ji___garbh_{year}",
-                "occurrence_id": f"shri_mallinath_ji___garbh_{year}",
-                "name": "Shri Mallinath Bhagwan Garbha Kalyanak",
-                "title": "Shri Mallinath Bhagwan Garbha Kalyanak",
-                "name_hindi": "श्री मल्लिनाथ भगवान गर्भ कल्याणक",
-                "category": "garbha_kalyanak",
-                "badge": "Garbha Kalyan",
-                "badge_color": "saffron",
-                "start_date": target_snap["date"].isoformat(),
-                "end_date": target_snap["date"].isoformat(),
-                "status": "confirmed",
-                "description": "Garbha Kalyanak of 19th Tirthankara Shri Mallinath Bhagwan",
-                "meaning": "Garbha Kalyanak of 19th Tirthankara Shri Mallinath Bhagwan",
-                "observance": "Special prayers and reading of scriptures",
-                "sources": ["Jain Traditions"]
-            }
-        ]
 
 
 class PushpanjaliVratFestival(FestivalRule):

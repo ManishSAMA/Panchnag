@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import calendar
 from datetime import datetime, timedelta
 from pathlib import Path
+import tempfile
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
@@ -61,7 +62,7 @@ def generate_year_range_exports(
     monthly: bool,
     workers: int,
     profile: str = "shwetambar_murtipujak_tapagachchha",
-    output_dir: str = "/tmp",
+    output_dir: str | None = None,
 ) -> dict:
     location = resolve_location(city=city, lat=lat, lon=lon)
     tz_info = _timezone_snapshot(location.timezone, start_year)
@@ -78,7 +79,7 @@ def generate_year_range_exports(
         "festival_profile": profile,
     }
 
-    target_dir = Path(output_dir) / "jain_panchang_exports" / uuid4().hex
+    target_dir = Path(output_dir or tempfile.gettempdir()) / "jain_panchang_exports" / uuid4().hex
     target_dir.mkdir(parents=True, exist_ok=True)
 
     start_date = datetime(start_year, 1, 1).date()

@@ -3,8 +3,14 @@
   "configurations": [
     {
       "name": "panchang-web",
-      "runtimeExecutable": "C:/Users/manis/Projects/Jain_Panchang/python_engine/python_engine/.venv-win/Scripts/python.exe",
-      "runtimeArgs": ["C:/Users/manis/Projects/Jain_Panchang/python_engine/run_app.py"],
+      "runtimeExecutable": "python_engine/.venv-win/Scripts/python.exe",
+      "runtimeArgs": ["run_app.py"],
+      "port": 5000
+    },
+    {
+      "name": "client-bundle",
+      "runtimeExecutable": "python_engine/.venv-win/Scripts/python.exe",
+      "runtimeArgs": ["../client_release/panchang_app/run_client.py"],
       "port": 5000
     }
   ]

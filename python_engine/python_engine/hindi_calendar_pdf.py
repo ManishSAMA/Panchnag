@@ -27,6 +27,8 @@ from __future__ import annotations
 import calendar
 import os
 import subprocess
+import tempfile
+import time
 from datetime import date, datetime, timedelta
 
 from astronomy import (
@@ -537,17 +539,36 @@ def _html_to_pdf(html_path: str, pdf_path: str) -> bool:
 
     for edge in (r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
                  r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"):
-        try:
-            subprocess.run(
-                [edge, "--headless", "--disable-gpu",
-                 f"--print-to-pdf={target}", file_uri],
-                capture_output=True, text=True, timeout=600,
-            )
-        except (OSError, subprocess.SubprocessError):
-            continue
-        if os.path.exists(target):
-            return True
+        # A throwaway profile keeps Edge from handing the job to an Edge window
+        # the user already has open, which exits at once without printing.
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as profile_dir:
+            try:
+                subprocess.run(
+                    [edge, "--headless=new", "--disable-gpu", "--no-first-run",
+                     f"--user-data-dir={profile_dir}", "--no-pdf-header-footer",
+                     f"--print-to-pdf={target}", file_uri],
+                    capture_output=True, text=True, timeout=600,
+                )
+            except (OSError, subprocess.SubprocessError):
+                continue
+            # msedge.exe returns immediately; a child process prints afterwards,
+            # so wait for it while its profile directory still exists.
+            if _wait_for_finished_file(target):
+                return True
 
+    return False
+
+
+def _wait_for_finished_file(path: str, timeout_s: float = 120.0) -> bool:
+    """Whether ``path`` appears and stops growing within ``timeout_s``."""
+    deadline = time.monotonic() + timeout_s
+    last_size = -1
+    while time.monotonic() < deadline:
+        size = os.path.getsize(path) if os.path.exists(path) else -1
+        if size > 0 and size == last_size:
+            return True
+        last_size = size
+        time.sleep(0.5)
     return False
 
 
@@ -564,7 +585,11 @@ def generate_hindi_pdf_calendar(
     profile: str = "all",
     calendar_system: str = "purnimanta",
 ) -> str:
-    """Write the Hindi Panchang calendar. Returns the PDF path."""
+    """Write the Hindi Panchang calendar.
+
+    Returns the path actually written: the PDF, or the HTML when no headless
+    browser was available to print it.
+    """
     months = month_sequence(start_year, start_month, month_count)
     years = sorted({year for year, _ in months})
 
@@ -601,12 +626,12 @@ def generate_hindi_pdf_calendar(
     with open(html_path, "w", encoding="utf-8") as handle:
         handle.write(html)
 
-    if _html_to_pdf(html_path, out_pdf_path):
-        size = os.path.getsize(out_pdf_path)
-        print(f"Generated PDF: {os.path.abspath(out_pdf_path)} ({size:,} bytes)")
-    else:
+    if not _html_to_pdf(html_path, out_pdf_path):
         print(f"Edge not available; wrote HTML only: {os.path.abspath(html_path)}")
+        return html_path
 
+    size = os.path.getsize(out_pdf_path)
+    print(f"Generated PDF: {os.path.abspath(out_pdf_path)} ({size:,} bytes)")
     return out_pdf_path
 
 

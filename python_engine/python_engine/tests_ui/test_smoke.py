@@ -227,6 +227,64 @@ class TestSettingsPersistence(BrowserTestCase):
         page.context.close()
 
 
+class TestHindiCalendarExport(BrowserTestCase):
+    """The Hindi calendar card posts the chosen range and offers the download."""
+
+    def _open_settings_with_location(self, page, *, file_format: str, captured: list):
+        def fulfil(route):
+            captured.append(route.request.post_data_json)
+            name = f"Jain_Vedic_Panchang_Hindi.{file_format}"
+            route.fulfill(json={
+                "ayanamsa": "Lahiri",
+                "location": {"name": "Ahmedabad", "lat": 23.0225, "lon": 72.5714,
+                             "timezone": "Asia/Kolkata"},
+                "file": {"name": name, "format": file_format,
+                         "download_url": "/downloads/stub"},
+            })
+
+        page.route("**/generate-hindi-pdf", fulfil)
+        page.goto(self.base_url)
+        page.evaluate("""
+            localStorage.setItem('jain_panchang_v2', JSON.stringify({
+                lat: 23.0225, lon: 72.5714, locationName: 'Ahmedabad',
+                ayanamsa: 'Lahiri', timeFormat: '24h'
+            }))
+        """)
+        page.goto(f"{self.base_url}#settings")
+        page.wait_for_load_state("networkidle")
+
+    def test_generate_posts_the_chosen_range_and_shows_the_download(self):
+        page = self.new_page()
+        captured: list = []
+        self._open_settings_with_location(page, file_format="pdf", captured=captured)
+
+        page.fill("#hindiStartYear", "2027")
+        page.select_option("#hindiStartMonth", "4")
+        page.fill("#hindiMonths", "6")
+        page.click("#hindiPdfBtn")
+        page.wait_for_selector("#hindiPdfResult a")
+
+        self.assertEqual(len(captured), 1)
+        body = captured[0]
+        self.assertEqual((body["start_year"], body["start_month"], body["months"]), (2027, 4, 6))
+        self.assertEqual((body["lat"], body["lon"]), (23.0225, 72.5714))
+        link = page.locator("#hindiPdfResult a")
+        self.assertIn("Jain_Vedic_Panchang_Hindi.pdf", link.inner_text())
+        self.assertEqual(link.get_attribute("href"), "/downloads/stub")
+        self.assertEqual(page._js_errors, [], f"Uncaught JS errors: {page._js_errors}")
+        page.context.close()
+
+    def test_html_fallback_tells_the_user_how_to_save_a_pdf(self):
+        page = self.new_page()
+        self._open_settings_with_location(page, file_format="html", captured=[])
+
+        page.click("#hindiPdfBtn")
+        page.wait_for_selector("#hindiPdfResult a")
+
+        self.assertIn("Ctrl+P", page.locator("#hindiPdfResult").inner_text())
+        page.context.close()
+
+
 class TestNoConsoleErrors(BrowserTestCase):
     """Navigate every page and assert there are no uncaught JS exceptions."""
 

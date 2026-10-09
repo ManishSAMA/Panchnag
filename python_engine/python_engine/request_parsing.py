@@ -40,6 +40,18 @@ class PdfGenerationRequest:
     ayanamsa_name: str
 
 
+@dataclass(frozen=True)
+class HindiPdfRequest:
+    start_year: int
+    start_month: int
+    month_count: int
+    city: str | None
+    lat: float | None
+    lon: float | None
+    ayanamsa_name: str
+    calendar_system: str
+
+
 # ---------------------------------------------------------------------------
 # Public parsers
 # ---------------------------------------------------------------------------
@@ -119,6 +131,36 @@ def parse_pdf_generation_request(payload: dict | None) -> PdfGenerationRequest:
         lat=lat,
         lon=lon,
         ayanamsa_name=ayanamsa_name,
+    )
+
+
+def parse_hindi_pdf_request(payload: dict | None) -> HindiPdfRequest:
+    payload = payload or {}
+
+    start_year = _parse_required_int(payload.get("start_year"), "start_year")
+
+    # Chaitra-to-Chaitra (March + 13 months) is the edition printed each year.
+    start_month = _parse_optional_int(payload.get("start_month"), "start_month")
+    start_month = 3 if start_month is None else start_month
+    if not 1 <= start_month <= 12:
+        raise ValueError("start_month must be between 1 and 12.")
+
+    month_count = _parse_optional_int(payload.get("months"), "months")
+    month_count = 13 if month_count is None else month_count
+    if not 1 <= month_count <= 24:
+        raise ValueError("months must be between 1 and 24.")
+
+    city, lat, lon = _parse_location_fields(payload)
+
+    return HindiPdfRequest(
+        start_year=start_year,
+        start_month=start_month,
+        month_count=month_count,
+        city=city,
+        lat=lat,
+        lon=lon,
+        ayanamsa_name=payload.get("ayanamsa", "Lahiri"),
+        calendar_system=parse_calendar_system(payload.get("calendar_system")),
     )
 
 

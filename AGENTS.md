@@ -14,6 +14,7 @@ Jain Panchang is a sunrise-based Panchang generator: a Flask web app plus CLI ov
 - **Environment:** `python_engine/.venv-win` (Python 3.14). `pyswisseph` has no cp314 wheel — see `docs/setup_and_usage.md`.
 - **Tests:** `pytest tests` and `pytest tests_ui` must be run separately.
 - **Docs:** `docs/` is long-form and kept accurate; `plans/` holds design docs for in-flight work.
+- **Client release:** `python scripts/build_client_bundle.py` writes the gitignored `client_release/` + zip at the repo root (Windows, `start.bat`, Python 3.11–3.14 with bundled wheels). Launcher files live in `client_files/`; see `docs/setup_and_usage.md` §10c.
 
 ## Core Philosophy
 
