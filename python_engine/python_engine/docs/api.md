@@ -204,9 +204,17 @@ Request:
   "format": "csv",
   "monthly": false,
   "workers": 1,
-  "ayanamsa": "Lahiri"
+  "ayanamsa": "Lahiri",
+  "language": "en"
 }
 ```
+
+`language` is `en` (default) or `hi`. With `hi` the same columns are written with
+Hindi headers and Hindi text values (वार, तिथि, नक्षत्र, योग, करण, राशि, मास,
+festival names, Bhadra/Panchak text). Numbers, dates and 24-hour times stay in Latin
+digits so spreadsheets still sort. File names get a `_hi` suffix
+(`panchang_2027_2027_hi.xlsx`). Any other value returns 400. Translations live in
+`hindi_export.py` and are machine-drafted.
 
 Supported formats:
 

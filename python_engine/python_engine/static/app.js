@@ -1436,6 +1436,7 @@ document.getElementById('rangeExportBtn').addEventListener('click', async () => 
   const start  = parseInt(document.getElementById('rangeStart').value, 10);
   const end    = parseInt(document.getElementById('rangeEnd').value, 10);
   const format = document.getElementById('rangeFormat').value;
+  const language = document.getElementById('rangeLanguage').value;
   const result = document.getElementById('rangeResult');
   result.innerHTML = 'Generating…';
   result.classList.add('visible');
@@ -1450,7 +1451,7 @@ document.getElementById('rangeExportBtn').addEventListener('click', async () => 
       start_year: start, end_year: end,
       lat: state.lat, lon: state.lon,
       ayanamsa: state.ayanamsa || 'Lahiri',
-      format, monthly: false
+      format, language, monthly: false
     });
     result.innerHTML = data.files.map(f =>
       `<a href="${f.download_url}" target="_blank">⬇ ${f.name}</a>`

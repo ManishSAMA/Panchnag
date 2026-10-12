@@ -29,6 +29,7 @@ class RangeGenerationRequest:
     monthly: bool
     workers: int
     profile: str
+    language: str = "en"
 
 
 @dataclass(frozen=True)
@@ -91,6 +92,10 @@ def parse_range_generation_request(payload: dict | None) -> RangeGenerationReque
     if output_format not in {"csv", "excel", "json", "all"}:
         raise ValueError("format must be one of: csv, excel, json, all.")
 
+    language = payload.get("language", "en")
+    if language not in {"en", "hi"}:
+        raise ValueError("language must be one of: en, hi.")
+
     workers = _parse_optional_int(payload.get("workers"), "workers") or 1
     if workers < 1:
         raise ValueError("workers must be at least 1.")
@@ -115,6 +120,7 @@ def parse_range_generation_request(payload: dict | None) -> RangeGenerationReque
         monthly=bool(payload.get("monthly", False)),
         workers=workers,
         profile=profile,
+        language=language,
     )
 
 

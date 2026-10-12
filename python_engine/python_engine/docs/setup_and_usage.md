@@ -336,6 +336,15 @@ python main.py --start_year 2025 --end_year 2026 --lat 26.9124 --lon 75.7873 --f
 python main.py --start_year 2025 --end_year 2025 --lat 26.9124 --lon 75.7873 --format all
 ```
 
+### Hindi Excel example
+
+`--language hi` writes Hindi headers and text values to a `_hi` file. The web UI's
+range export has the same choice (Language: English / हिंदी).
+
+```bash
+python main.py --start_year 2027 --end_year 2027 --lat 40.2203 --lon -74.7658 --tz_offset -5 --tz_label EST --format excel --language hi
+```
+
 ## 12. API Overview
 
 If you want to use the app programmatically, the main endpoints are:

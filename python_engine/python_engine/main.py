@@ -48,6 +48,7 @@ from panchang import (
     get_vira_nirvana_samvat,
 )
 from export import apply_element_continuity_formatting, export_data, format_row_data
+from hindi_export import translate_rows_to_hindi
 
 # ---------------------------------------------------------------------------
 # Progress bar (optional tqdm, fallback to simple print)
@@ -258,6 +259,8 @@ def main():
                         help="Base filename (without extension) for output files")
     parser.add_argument("--monthly", action="store_true",
                         help="Generate one output file per month instead of one large file")
+    parser.add_argument("--language", type=str, choices=["en", "hi"], default="en",
+                        help="Language of headers and text values (hi files get a _hi suffix)")
 
     parser.add_argument("--profile", type=str,
                         default="shwetambar_murtipujak_tapagachchha",
@@ -336,6 +339,11 @@ def main():
     print(f"  Computing {len(all_dates)} days with {workers} worker(s)...")
     results = run_generation(config, all_dates, workers)
     formatted_results = apply_element_continuity_formatting(results, tz_offset=args.tz_offset)
+    suffix = "_hi" if args.language == "hi" else ""
+
+    def write(rows: list[dict], base_name: str) -> None:
+        out_rows = translate_rows_to_hindi(rows) if args.language == "hi" else rows
+        export_data(out_rows, f"{base_name}{suffix}", args.format)
 
     print(f"\n  [OK] Computed {len(results)} days")
     print("  Exporting...")
@@ -353,11 +361,9 @@ def main():
 
                 month_name = calendar.month_abbr[month]
                 print(f"  -> {year}-{month_name} ({len(month_rows)} days)...")
-                fname = f"{args.output}_{year}_{month:02d}_{month_name}"
-                export_data(month_rows, fname, args.format)
+                write(month_rows, f"{args.output}_{year}_{month:02d}_{month_name}")
     else:
-        out_base = f"{args.output}_{args.start_year}_{args.end_year}"
-        export_data(formatted_results, out_base, args.format)
+        write(formatted_results, f"{args.output}_{args.start_year}_{args.end_year}")
 
     print("\n  [DONE] Completed!\n")
 

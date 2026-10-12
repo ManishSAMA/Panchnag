@@ -143,6 +143,9 @@ def format_row_data(
     
     parva_str = "; ".join(f["name"] for f in jain_parva_tithis) if jain_parva_tithis else ""
     row['Jain_Parva_Tithis'] = parva_str
+    # Whole festival records, so a translated export can use each one's registry name_hindi.
+    row['__Jain_Festivals'] = list(jain_festivals or [])
+    row['__Jain_Parva_Tithis'] = list(jain_parva_tithis or [])
     
     row['Festival_Profile'] = festival_profile or "None"
     row['Festival_Review_Needed'] = festival_review_needed if festival_review_needed is not None else False

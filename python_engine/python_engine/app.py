@@ -326,6 +326,7 @@ def create_app() -> Flask:
                 monthly=parsed.monthly,
                 workers=parsed.workers,
                 profile=parsed.profile,
+                language=parsed.language,
             )
 
             files = []

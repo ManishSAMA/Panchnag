@@ -159,6 +159,8 @@ OBSERVANCE_HI = {
 # Festival names translate_fest() leaves partly in Latin.
 NAME_HI = {
     "☀️ Ravi Vrat": "☀️ रवि व्रत",
+    "☀️ Ravi Pushya Vrat": "☀️ रवि पुष्य व्रत",
+    "☀️ Ravi Saptami Vrat": "☀️ रवि सप्तमी व्रत",
     "Karma Nirjara Vrat (Ashadha)": "कर्म निर्जरा व्रत (आषाढ़)",
     "Karma Nirjara Vrat (Shravana)": "कर्म निर्जरा व्रत (श्रावण)",
     "Karma Nirjara Vrat (Bhadrapada)": "कर्म निर्जरा व्रत (भाद्रपद)",

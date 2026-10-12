@@ -9,6 +9,7 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 from export import apply_element_continuity_formatting, export_data
+from hindi_export import translate_rows_to_hindi
 from main import _dates_in_range, run_generation
 from panchang_service import resolve_location
 
@@ -39,7 +40,12 @@ def _build_festival_date_index(
                 d_str = curr.isoformat()
                 if d_str not in index:
                     index[d_str] = {"festivals": [], "parva_tithis": []}
-                entry = {"name": f["name"], "category": f["category"], "occurrence_id": f["occurrence_id"]}
+                entry = {
+                    "name": f["name"],
+                    "name_hindi": f.get("name_hindi", ""),
+                    "category": f["category"],
+                    "occurrence_id": f["occurrence_id"],
+                }
                 if f["category"] == "parva":
                     if not any(x["occurrence_id"] == f["occurrence_id"] for x in index[d_str]["parva_tithis"]):
                         index[d_str]["parva_tithis"].append(entry)
@@ -63,6 +69,7 @@ def generate_year_range_exports(
     workers: int,
     profile: str = "shwetambar_murtipujak_tapagachchha",
     output_dir: str | None = None,
+    language: str = "en",
 ) -> dict:
     location = resolve_location(city=city, lat=lat, lon=lon)
     tz_info = _timezone_snapshot(location.timezone, start_year)
@@ -87,6 +94,11 @@ def generate_year_range_exports(
     all_dates = list(_dates_in_range(start_date, end_date))
     rows = run_generation(config, all_dates, workers)
     formatted_rows = apply_element_continuity_formatting(rows, tz_offset=tz_info["offset_hours"])
+    suffix = "_hi" if language == "hi" else ""
+
+    def write(scoped_rows: list[dict], base_name: Path) -> None:
+        out_rows = translate_rows_to_hindi(scoped_rows) if language == "hi" else scoped_rows
+        export_data(out_rows, f"{base_name}{suffix}", output_format)
     rows_generated = 0
     if monthly:
         for year in range(start_year, end_year + 1):
@@ -106,12 +118,10 @@ def generate_year_range_exports(
                 ]
                 rows_generated += len(month_rows)
 
-                base_name = target_dir / f"panchang_{year}_{month:02d}_{calendar.month_abbr[month]}"
-                export_data(month_rows, str(base_name), output_format)
+                write(month_rows, target_dir / f"panchang_{year}_{month:02d}_{calendar.month_abbr[month]}")
     else:
         rows_generated = len(formatted_rows)
-        base_name = target_dir / f"panchang_{start_year}_{end_year}"
-        export_data(formatted_rows, str(base_name), output_format)
+        write(formatted_rows, target_dir / f"panchang_{start_year}_{end_year}")
 
     generated_paths = sorted(path for path in target_dir.iterdir() if path.is_file())
 

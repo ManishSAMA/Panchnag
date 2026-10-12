@@ -142,6 +142,26 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(payload["files"][0]["name"], "panchang_2025_2026.csv")
         self.assertTrue(payload["files"][0]["download_url"].startswith("/downloads/"))
 
+    @patch("app.generate_year_range_exports")
+    def test_generate_range_endpoint_passes_language(self, mock_generate_range):
+        mock_generate_range.return_value = {"files": []}
+        base = {"start_year": 2027, "end_year": 2027, "lat": 40.2203, "lon": -74.7658}
+
+        for payload, expected in ((base, "en"), ({**base, "language": "hi"}, "hi")):
+            with self.subTest(expected=expected):
+                response = self.client.post("/generate-range-panchang", json=payload)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(mock_generate_range.call_args.kwargs["language"], expected)
+
+    def test_generate_range_endpoint_rejects_unknown_language(self):
+        response = self.client.post(
+            "/generate-range-panchang",
+            json={"start_year": 2027, "end_year": 2027, "lat": 40.2203, "lon": -74.7658, "language": "fr"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json()["error"], "language must be one of: en, hi.")
+
     def test_generate_range_endpoint_validates_years(self):
         response = self.client.post(
             "/generate-range-panchang",

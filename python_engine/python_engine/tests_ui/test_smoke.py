@@ -285,6 +285,43 @@ class TestHindiCalendarExport(BrowserTestCase):
         page.context.close()
 
 
+class TestRangeExportLanguage(BrowserTestCase):
+    """The range export posts the chosen language (English / Hindi)."""
+
+    def test_hindi_choice_reaches_the_request(self):
+        page = self.new_page()
+        captured: list = []
+
+        def fulfil(route):
+            captured.append(route.request.post_data_json)
+            route.fulfill(json={"files": [{"name": "panchang_2027_2027_hi.xlsx",
+                                           "download_url": "/downloads/stub"}]})
+
+        page.route("**/generate-range-panchang", fulfil)
+        page.goto(self.base_url)
+        page.evaluate("""
+            localStorage.setItem('jain_panchang_v2', JSON.stringify({
+                lat: 40.2203, lon: -74.7658, locationName: 'Trenton',
+                ayanamsa: 'Lahiri', timeFormat: '24h'
+            }))
+        """)
+        page.goto(f"{self.base_url}#settings")
+        page.wait_for_load_state("networkidle")
+
+        page.fill("#rangeStart", "2027")
+        page.fill("#rangeEnd", "2027")
+        page.select_option("#rangeFormat", "excel")
+        page.select_option("#rangeLanguage", "hi")
+        page.click("#rangeExportBtn")
+        page.wait_for_selector("#rangeResult a")
+
+        self.assertEqual(len(captured), 1)
+        self.assertEqual((captured[0]["format"], captured[0]["language"]), ("excel", "hi"))
+        self.assertIn("panchang_2027_2027_hi.xlsx", page.locator("#rangeResult a").inner_text())
+        self.assertEqual(page._js_errors, [], f"Uncaught JS errors: {page._js_errors}")
+        page.context.close()
+
+
 class TestNoConsoleErrors(BrowserTestCase):
     """Navigate every page and assert there are no uncaught JS exceptions."""
 
