@@ -646,6 +646,30 @@
 
       <div class="settings-card">
         <div class="settings-row">
+          <span class="settings-label">Laghu Panchang (लघु पंचांग) — January to December</span>
+        </div>
+        <div class="form-row align-end">
+          <div class="form-group">
+            <label class="form-label" for="laghuYear">Year</label>
+            <input type="number" class="form-input" id="laghuYear" value="2027" min="1900" max="2100">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="laghuFormat">Format</label>
+            <select class="form-select" id="laghuFormat">
+              <option value="pdf" selected>PDF</option>
+              <option value="excel">Excel</option>
+              <option value="both">PDF + Excel</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <button class="btn-primary" id="laghuBtn">Generate Laghu Panchang</button>
+          </div>
+        </div>
+        <div class="export-result" id="laghuResult"></div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-row">
           <span class="settings-label">CSV / Excel / JSON Multi-Year Range</span>
         </div>
         <div class="form-row">

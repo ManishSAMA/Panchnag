@@ -351,3 +351,48 @@ class TestNoConsoleErrors(BrowserTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestLaghuPanchangExport(BrowserTestCase):
+    """The Laghu Panchang card posts year, format, location and profile, then links each file."""
+
+    def test_generate_posts_the_year_format_and_profile_and_links_every_file(self):
+        page = self.new_page()
+        captured: list = []
+
+        def fulfil(route):
+            captured.append(route.request.post_data_json)
+            route.fulfill(json={
+                "year": 2027, "ayanamsa": "Lahiri", "profile": "shwetambar_terapanthi",
+                "location": {"name": "Jaipur", "lat": 26.9124, "lon": 75.7873, "timezone": "Asia/Kolkata"},
+                "files": [
+                    {"name": "Laghu_Panchang_2027_Jaipur.pdf", "format": "pdf", "download_url": "/downloads/a"},
+                    {"name": "Laghu_Panchang_2027_Jaipur.xlsx", "format": "xlsx", "download_url": "/downloads/b"},
+                ],
+            })
+
+        page.route("**/generate-laghu-panchang", fulfil)
+        page.goto(self.base_url)
+        page.evaluate("""
+            localStorage.setItem('jain_panchang_v2', JSON.stringify({
+                lat: 26.9124, lon: 75.7873, locationName: 'Jaipur',
+                ayanamsa: 'Lahiri', timeFormat: '24h', jainProfile: 'shwetambar_terapanthi'
+            }))
+        """)
+        page.goto(f"{self.base_url}#settings")
+        page.wait_for_load_state("networkidle")
+
+        page.fill("#laghuYear", "2027")
+        page.select_option("#laghuFormat", "both")
+        page.click("#laghuBtn")
+        page.wait_for_selector("#laghuResult a >> nth=1")
+
+        self.assertEqual(captured, [{
+            "year": 2027, "format": "both", "lat": 26.9124, "lon": 75.7873, "city": "Jaipur",
+            "ayanamsa": "Lahiri", "profile": "shwetambar_terapanthi",
+        }])
+        links = page.locator("#laghuResult a")
+        self.assertEqual([links.nth(i).get_attribute("href") for i in range(2)], ["/downloads/a", "/downloads/b"])
+        self.assertIn("Laghu_Panchang_2027_Jaipur.xlsx", links.nth(1).inner_text())
+        self.assertEqual(page._js_errors, [], f"Uncaught JS errors: {page._js_errors}")
+        page.context.close()

@@ -14,13 +14,18 @@ from astronomy import get_sunrise, get_sunset, jd_to_zoned_datetime, local_date_
 from choghadiya_service import calculate_choghadiya_slots
 from yoga_service import detect_all_yogas_for_day
 from location_service import geocode_city, get_timezone_name, search_locations
-from pdf_generation_service import generate_hindi_pdf_export, generate_pdf_export
+from pdf_generation_service import (
+    generate_hindi_pdf_export,
+    generate_laghu_panchang_export,
+    generate_pdf_export,
+)
 from panchang import format_tithi_pair_name, get_vara_from_date, kshaya_tithi_between
 from panchang_service import generate_location_panchang, resolve_location
 from range_generation_service import generate_year_range_exports
 from request_parsing import (
     parse_calendar_system,
     parse_hindi_pdf_request,
+    parse_laghu_panchang_request,
     parse_panchang_request,
     parse_pdf_generation_request,
     parse_range_generation_request,
@@ -409,6 +414,41 @@ def create_app() -> Flask:
                     },
                 }
             )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except Exception as exc:
+            return jsonify({"error": str(exc)}), 500
+
+    @app.post("/generate-laghu-panchang")
+    def generate_laghu_panchang():
+        try:
+            parsed = parse_laghu_panchang_request(request.get_json(silent=True))
+            result = generate_laghu_panchang_export(
+                year=parsed.year,
+                city=parsed.city,
+                lat=parsed.lat,
+                lon=parsed.lon,
+                ayanamsa_name=parsed.ayanamsa_name,
+                profile=parsed.profile,
+                output_format=parsed.output_format,
+            )
+            files = []
+            for generated in result["files"]:
+                token = uuid4().hex
+                GENERATED_EXPORTS[token] = generated["path"]
+                files.append({
+                    "name": generated["name"],
+                    "format": generated["format"],
+                    "download_url": f"/downloads/{token}",
+                })
+
+            return jsonify({
+                "year": result["year"],
+                "ayanamsa": result["ayanamsa"],
+                "profile": result["profile"],
+                "location": result["location"],
+                "files": files,
+            })
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
         except Exception as exc:

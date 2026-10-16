@@ -278,6 +278,40 @@ Microsoft Edge. Edge runs with a throwaway profile, so it works even while the
 user has Edge open. When neither is available the app offers the `.html`
 instead; open it and press Ctrl+P → Save as PDF.
 
+## 10d. Using the Laghu Panchang (yearly booklet)
+
+Settings → **Laghu Panchang (लघु पंचांग) — January to December**. Choose the year
+and the format (PDF, Excel, or both). It uses the location, ayanamsa and Jain
+profile currently set in the app.
+
+The layout follows the printed *laghu panchang* booklet: one 8 × 5 inch landscape
+page per month, two half-month tables per page. Each half has a four-line header
+(Vira Nirvana and Vikram Samvat, the date span, the Hindu month/tithi span, and
+sunrise/sunset on its first day) and these columns:
+
+| Column | Meaning |
+|---|---|
+| शुभ दि. | `卍` when a *highly auspicious* yoga (Aanandadi, Dainika or Ravi; e.g. Amrit Siddhi, Sarvartha Siddhi, Guru Pushya) is in force at sunrise, else `-` |
+| जैन तिथि / उदय तिथि | Tithi at sunrise + 2h24m (Jain) and at sunrise; 1–14, 15 = Purnima, 30 = Amavasya; Pratipada shows the Purnimanta month, e.g. `पौ.शु. 01`; a kshaya tithi shows as `3-4` |
+| तिथि / नक्षत्र समाप्ति समय | End time counted from that day's midnight, so `25:47` means 01:47 the next morning; `अहोरात्र` when it outlasts the next sunrise |
+| योग | Yoga at sunrise (abbreviated) |
+| चन्द्र राशि प्रवेश | The Moon's sign, or the new sign and entry time (`वृ.-28:21`) when it changes before the next sunrise |
+| पर्व, त्यौहार, पंचक आदि | The app's festivals and Kalyanaks for the profile, Bhadra (`भ. 25:47 से`), Panchak start/end |
+
+Not included, because the app has no data for them: acharya/muni diksha and
+samadhi anniversaries, and melas.
+
+The PDF holds real Unicode Hindi text, so it can be searched and copied. Printing
+uses Playwright or Edge as for the Hindi Calendar PDF. The Excel workbook has one
+sheet per month with both halves side by side.
+
+```bash
+python main.py laghu --year 2027 --city Delhi --format both --output ./booklets
+python main.py laghu --year 2027 --lat 40.2203 --lon -74.7658 --city Trenton --format pdf
+```
+
+Times follow the location's own clock, including daylight saving time.
+
 ## 10c. Building the Client Release
 
 Clients get a self-contained folder instead of this repository:
@@ -356,6 +390,7 @@ If you want to use the app programmatically, the main endpoints are:
 - `POST /choghadiya` — day and night Choghadiya slots
 - `POST /generate-range-panchang` — multi-year export files
 - `POST /generate-pdf-panchang` — year PDF
+- `POST /generate-laghu-panchang` — yearly Laghu Panchang booklet (PDF / Excel)
 - `POST /generate-jain-festivals` — Jain festival list for a year and profile
 - `POST /generate-jain-festival-exports` — Jain festival export files
 - `POST /dainika-muhurta` — daily Yoga detection and recommendation

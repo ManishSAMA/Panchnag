@@ -6,6 +6,8 @@ from uuid import uuid4
 
 import hindi_calendar_pdf
 from export_pdf import generate_pdf_calendar
+from laghu_panchang import build_laghu_year
+from laghu_panchang_render import write_excel, write_pdf
 from range_generation_service import _timezone_snapshot
 from panchang_service import resolve_location
 
@@ -106,4 +108,58 @@ def generate_hindi_pdf_export(
             "path": str(written_path),
             "format": written_path.suffix.lstrip("."),
         },
+    }
+
+
+def generate_laghu_panchang_export(
+    *,
+    year: int,
+    city: str | None,
+    lat: float | None,
+    lon: float | None,
+    ayanamsa_name: str,
+    profile: str,
+    output_format: str,
+    output_dir: str | None = None,
+) -> dict:
+    """Write the yearly Laghu Panchang as PDF, Excel or both.
+
+    The PDF falls back to HTML when no headless browser is available to print it.
+    """
+    location = resolve_location(city=city, lat=lat, lon=lon)
+    halves = build_laghu_year(
+        year=year, lat=location.lat, lon=location.lon, tz_name=location.timezone,
+        ayanamsa=ayanamsa_name, profile=profile,
+    )
+
+    target_dir = (
+        Path(output_dir) if output_dir
+        else Path(tempfile.gettempdir()) / "jain_panchang_exports" / uuid4().hex
+    )
+    target_dir.mkdir(parents=True, exist_ok=True)
+    place = "".join(ch for ch in (city or location.name) if ch.isalnum()) or "Location"
+    stem = target_dir / f"Laghu_Panchang_{year}_{place}"
+    title = f"लघु पंचांग {year}"
+
+    writers = {
+        "pdf": lambda: write_pdf(halves, stem.with_suffix(".pdf"), title=title, location_name=location.name),
+        "excel": lambda: write_excel(halves, stem.with_suffix(".xlsx"), title=title, location_name=location.name),
+    }
+    formats = ("pdf", "excel") if output_format == "both" else (output_format,)
+    written = [Path(writers[fmt]()) for fmt in formats]
+
+    return {
+        "year": year,
+        "ayanamsa": ayanamsa_name,
+        "profile": profile,
+        "location": {
+            "name": location.name,
+            "lat": location.lat,
+            "lon": location.lon,
+            "timezone": location.timezone,
+        },
+        "files": [
+            {"name": path.name, "path": str(path), "format": path.suffix.lstrip(".")}
+            for path in written
+        ],
     }

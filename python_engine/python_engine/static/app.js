@@ -1430,6 +1430,40 @@ document.getElementById('hindiPdfBtn').addEventListener('click', async () => {
   }
 });
 
+// Laghu Panchang (yearly booklet)
+document.getElementById('laghuBtn').addEventListener('click', async () => {
+  const state  = getState();
+  const result = document.getElementById('laghuResult');
+  result.innerHTML = 'Generating… (about 30–60 seconds for the year)';
+  result.classList.add('visible');
+
+  if (!state.lat || !state.lon) {
+    result.innerHTML = 'Please set a location first.';
+    return;
+  }
+
+  try {
+    const data = await apiFetch('/generate-laghu-panchang', 'POST', {
+      year:     parseInt(document.getElementById('laghuYear').value, 10),
+      format:   document.getElementById('laghuFormat').value,
+      lat: state.lat, lon: state.lon,
+      // The name only labels the files; the coordinates drive the calculation.
+      ...(state.locationName ? { city: state.locationName } : {}),
+      ayanamsa: state.ayanamsa || 'Lahiri',
+      profile:  state.jainProfile || 'shwetambar_murtipujak_tapagachchha'
+    });
+    const links = data.files.map(f =>
+      `<a href="${f.download_url}" target="_blank">⬇ Download ${f.name}</a>`).join('<br>');
+    // No headless browser on the server means no PDF; the HTML prints to one.
+    const printHint = data.files.some(f => f.format === 'html')
+      ? '<br>Open the HTML file in your browser and press Ctrl+P → Save as PDF (paper 8×5 in).'
+      : '';
+    result.innerHTML = links + printHint;
+  } catch (e) {
+    result.innerHTML = `Error: ${e.message}`;
+  }
+});
+
 // Range Export
 document.getElementById('rangeExportBtn').addEventListener('click', async () => {
   const state  = getState();

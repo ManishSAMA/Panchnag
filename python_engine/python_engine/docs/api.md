@@ -288,6 +288,38 @@ Response includes:
 
 Takes about 15 seconds for 13 months.
 
+## `POST /generate-laghu-panchang`
+
+Generates the yearly **Laghu Panchang** (लघु पंचांग) booklet, January to December:
+one 8in × 5in landscape page per month with two half-month tables (1–15, 16–end),
+eleven columns per day (दि., शुभ दि., जैन तिथि, उदय तिथि, वा., तिथि समाप्ति समय,
+नक्षत्र, नक्षत्र समाप्ति समय, योग, चन्द्र राशि प्रवेश, पर्व/त्यौहार/पंचक). The same
+command-line output is `python main.py laghu`.
+
+Request:
+
+```json
+{
+  "year": 2027,
+  "lat": 28.6139,
+  "lon": 77.2090,
+  "city": "Delhi",
+  "ayanamsa": "Lahiri",
+  "profile": "shwetambar_murtipujak_tapagachchha",
+  "format": "both"
+}
+```
+
+Only `year` (1900–2100) and a location are required. `format` is `pdf` (default),
+`excel` or `both`; `profile` defaults to `shwetambar_murtipujak_tapagachchha`. When
+coordinates are given, `city` only labels the file names.
+
+Response includes `year`, `ayanamsa`, `profile`, the resolved `location`, and
+`files`: one `{name, format, download_url}` per file. `format` is `pdf`, `xlsx`, or
+`html` when the server has neither Playwright nor Microsoft Edge to print the PDF.
+
+Takes about 40 seconds for a year.
+
 ## `POST /generate-jain-festivals`
 
 Generates all Jain festival occurrences for a given year, location, and sectarian profile.

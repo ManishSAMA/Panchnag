@@ -7,3 +7,6 @@ pytest-subtests>=0.12
 
 # Browser smoke testing
 playwright>=1.44
+
+# PDF text extraction (Laghu Panchang searchability test)
+pypdf>=4.0

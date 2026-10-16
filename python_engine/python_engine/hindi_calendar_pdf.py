@@ -509,12 +509,15 @@ def render_calendar_html(
     return "\n".join(parts)
 
 
-def _html_to_pdf(html_path: str, pdf_path: str) -> bool:
+def _html_to_pdf(html_path: str, pdf_path: str, *, css_page_size: bool = False) -> bool:
     """Render the HTML to PDF. Returns whether the PDF was produced.
 
     Playwright first: it is already a dev dependency (tests_ui drives it), it
     honours the @page rules, and it works the same on every platform. Headless
     Edge stays as a fallback for a runtime that has Edge but no Playwright.
+
+    css_page_size lets the document's own @page size and margins win over the
+    A4-landscape default (the Laghu Panchang prints on 8in x 5in).
     """
     file_uri = "file:///" + os.path.abspath(html_path).replace("\\", "/")
     target = os.path.abspath(pdf_path)
@@ -527,9 +530,12 @@ def _html_to_pdf(html_path: str, pdf_path: str) -> bool:
             try:
                 page = browser.new_page()
                 page.goto(file_uri, wait_until="load")
-                page.pdf(path=target, format="A4", landscape=True, print_background=True,
-                         margin={"top": "10mm", "bottom": "10mm",
-                                 "left": "8mm", "right": "8mm"})
+                if css_page_size:
+                    page.pdf(path=target, print_background=True, prefer_css_page_size=True)
+                else:
+                    page.pdf(path=target, format="A4", landscape=True, print_background=True,
+                             margin={"top": "10mm", "bottom": "10mm",
+                                     "left": "8mm", "right": "8mm"})
             finally:
                 browser.close()
         if os.path.exists(target):

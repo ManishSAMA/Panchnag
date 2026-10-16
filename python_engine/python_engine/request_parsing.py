@@ -41,6 +41,26 @@ class PdfGenerationRequest:
     ayanamsa_name: str
 
 
+VALID_PROFILES = (
+    "shwetambar_murtipujak_tapagachchha",
+    "shwetambar_sthanakvasi",
+    "shwetambar_terapanthi",
+)
+DEFAULT_PROFILE = VALID_PROFILES[0]
+LAGHU_FORMATS = ("pdf", "excel", "both")
+
+
+@dataclass(frozen=True)
+class LaghuPanchangRequest:
+    year: int
+    city: str | None
+    lat: float | None
+    lon: float | None
+    ayanamsa_name: str
+    profile: str
+    output_format: str
+
+
 @dataclass(frozen=True)
 class HindiPdfRequest:
     start_year: int
@@ -100,14 +120,7 @@ def parse_range_generation_request(payload: dict | None) -> RangeGenerationReque
     if workers < 1:
         raise ValueError("workers must be at least 1.")
 
-    valid_profiles = {
-        "shwetambar_murtipujak_tapagachchha",
-        "shwetambar_sthanakvasi",
-        "shwetambar_terapanthi",
-    }
-    profile = payload.get("profile", "shwetambar_murtipujak_tapagachchha")
-    if profile not in valid_profiles:
-        raise ValueError("Invalid profile. Must be one of: " + ", ".join(sorted(valid_profiles)))
+    profile = _parse_profile(payload)
 
     return RangeGenerationRequest(
         start_year=start_year,
@@ -170,9 +183,41 @@ def parse_hindi_pdf_request(payload: dict | None) -> HindiPdfRequest:
     )
 
 
+def parse_laghu_panchang_request(payload: dict | None) -> LaghuPanchangRequest:
+    payload = payload or {}
+
+    year = _parse_required_int(payload.get("year"), "year")
+    if not 1900 <= year <= 2100:
+        raise ValueError("year must be between 1900 and 2100.")
+
+    output_format = payload.get("format", "pdf")
+    if output_format not in LAGHU_FORMATS:
+        raise ValueError("format must be one of: " + ", ".join(LAGHU_FORMATS))
+
+    city, lat, lon = _parse_location_fields(payload)
+
+    return LaghuPanchangRequest(
+        year=year,
+        city=city,
+        lat=lat,
+        lon=lon,
+        ayanamsa_name=payload.get("ayanamsa", "Lahiri"),
+        profile=_parse_profile(payload),
+        output_format=output_format,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Shared field parsers (private)
 # ---------------------------------------------------------------------------
+
+def _parse_profile(payload: dict) -> str:
+    profile = payload.get("profile", DEFAULT_PROFILE)
+    if profile not in VALID_PROFILES:
+        raise ValueError("Invalid profile. Must be one of: " + ", ".join(VALID_PROFILES))
+    return profile
+
+
 
 def parse_calendar_system(value: object) -> str:
     """Validate the Amanta/Purnimanta selector, defaulting to Purnimanta."""
@@ -252,15 +297,7 @@ def parse_jain_festivals_request(payload: dict | None) -> JainFestivalsRequest:
 
     city, lat, lon = _parse_location_fields(payload)
     ayanamsa_name = payload.get("ayanamsa", "Lahiri")
-    
-    profile = payload.get("profile", "shwetambar_murtipujak_tapagachchha")
-    valid_profiles = {
-        "shwetambar_murtipujak_tapagachchha",
-        "shwetambar_sthanakvasi",
-        "shwetambar_terapanthi"
-    }
-    if profile not in valid_profiles:
-        raise ValueError("Invalid profile. Must be one of: shwetambar_murtipujak_tapagachchha, shwetambar_sthanakvasi, shwetambar_terapanthi")
+    profile = _parse_profile(payload)
 
     return JainFestivalsRequest(
         year=year,

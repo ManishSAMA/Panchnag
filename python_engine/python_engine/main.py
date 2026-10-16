@@ -220,7 +220,50 @@ def run_generation(config: dict, date_tuples: list, workers: int) -> list[dict]:
 # Main entry point
 # ---------------------------------------------------------------------------
 
-def main():
+def laghu_cli(argv: list[str]) -> None:
+    """`python main.py laghu --year 2027 --city Delhi --format both`"""
+    # Imported here: pdf_generation_service imports range_generation_service,
+    # which imports this module.
+    from pdf_generation_service import generate_laghu_panchang_export
+    from request_parsing import DEFAULT_PROFILE, LAGHU_FORMATS, VALID_PROFILES
+
+    parser = argparse.ArgumentParser(
+        prog="main.py laghu",
+        description="Laghu Panchang booklet (Jan-Dec) as Hindi PDF and/or Excel.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("--year", type=int, required=True)
+    parser.add_argument("--city", type=str, help="City name (geocoded), or use --lat/--lon")
+    parser.add_argument("--lat", type=float)
+    parser.add_argument("--lon", type=float)
+    parser.add_argument("--ayanamsa", type=str, default="Lahiri", choices=list(AYANAMSA_SYSTEMS.keys()))
+    parser.add_argument("--profile", type=str, default=DEFAULT_PROFILE, choices=VALID_PROFILES)
+    parser.add_argument("--format", type=str, default="pdf", choices=LAGHU_FORMATS)
+    parser.add_argument("--output", type=str, default=".", help="Directory to write into")
+    args = parser.parse_args(argv)
+
+    if args.city is None and (args.lat is None or args.lon is None):
+        parser.error("give --city, or both --lat and --lon")
+
+    print(f"\n  Laghu Panchang {args.year} — building the year...")
+    result = generate_laghu_panchang_export(
+        year=args.year, city=args.city, lat=args.lat, lon=args.lon,
+        ayanamsa_name=args.ayanamsa, profile=args.profile,
+        output_format=args.format, output_dir=args.output,
+    )
+    location = result["location"]
+    print(f"  Location: {location['name']} ({location['lat']:.4f}, {location['lon']:.4f}) {location['timezone']}")
+    for generated in result["files"]:
+        print(f"  -> {generated['path']}")
+    print("\n  [DONE]\n")
+
+
+def main(argv: list[str] | None = None):
+    argv = sys.argv[1:] if argv is None else argv
+    if argv[:1] == ["laghu"]:
+        laghu_cli(argv[1:])
+        return
+
     parser = argparse.ArgumentParser(
         description="Panchang Ephemeris Generator — Swiss Ephemeris based",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -271,7 +314,7 @@ def main():
                         help=f"Number of CPU workers for parallel generation "
                              f"(max on this machine: {cpu_count()})")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Validate
     if args.start_year > args.end_year:

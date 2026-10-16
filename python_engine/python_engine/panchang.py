@@ -916,6 +916,37 @@ def get_bhadra_residence_and_risk(rashi_index: int) -> tuple[str, str]:
         raise ValueError(f"Invalid Rashi index {rashi_index}")
 
 
+def _moon_rashi_at(jd: float, ayanamsa_name: str) -> int:
+    return int(get_planetary_longitude(jd, 'Moon', ayanamsa_name) / 30.0) % 12
+
+
+def find_moon_rashi_change(
+    start_jd: float,
+    end_jd: float,
+    ayanamsa_name: str = 'Lahiri',
+) -> tuple[int, int | None, float | None]:
+    """Moon's sign (0-based) at start_jd, and the sign it enters before end_jd.
+
+    Returns (rashi_at_start, new_rashi, entry_jd), with new_rashi and entry_jd
+    None when the Moon holds one sign all window. The Moon covers ~13° a day,
+    so over one solar day it crosses at most one 30° boundary.
+    """
+    rashi_start = _moon_rashi_at(start_jd, ayanamsa_name)
+    if _moon_rashi_at(end_jd, ayanamsa_name) == rashi_start:
+        return rashi_start, None, None
+
+    low, high = start_jd, end_jd
+    for _ in range(40):
+        mid = (low + high) / 2.0
+        if _moon_rashi_at(mid, ayanamsa_name) == rashi_start:
+            low = mid
+        else:
+            high = mid
+        if (high - low) < 0.00001:
+            break
+    return rashi_start, (rashi_start + 1) % 12, high
+
+
 def calculate_bhadra_kaal(
     sunrise_jd: float,
     next_sunrise_jd: float,
@@ -962,27 +993,10 @@ def calculate_bhadra_kaal(
         s_jd = seg["start_jd"]
         e_jd = seg["end_jd"]
         
-        moon_lon_start = get_planetary_longitude(s_jd, 'Moon', ayanamsa_name)
-        moon_lon_end = get_planetary_longitude(e_jd, 'Moon', ayanamsa_name)
-        
-        rashi_start = int(moon_lon_start / 30.0) % 12
-        rashi_end = int(moon_lon_end / 30.0) % 12
-        
-        if rashi_start != rashi_end:
-            # Bisection to find exact transition point
-            low = s_jd
-            high = e_jd
-            for _ in range(25):
-                mid = (low + high) / 2.0
-                r_mid = int(get_planetary_longitude(mid, 'Moon', ayanamsa_name) / 30.0) % 12
-                if r_mid == rashi_start:
-                    low = mid
-                else:
-                    high = mid
-                if (high - low) < 0.00001:
-                    break
-            jd_transition = high
-            
+        rashi_start, rashi_end, jd_transition = find_moon_rashi_change(s_jd, e_jd, ayanamsa_name)
+
+        if jd_transition is not None:
+
             from astronomy import RASHI_NAMES
             res1, risk1 = get_bhadra_residence_and_risk(rashi_start)
             final_windows.append({

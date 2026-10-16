@@ -14,6 +14,7 @@ Jain Panchang is a sunrise-based Panchang generator: a Flask web app plus CLI ov
 - **Environment:** `python_engine/.venv-win` (Python 3.14). `pyswisseph` has no cp314 wheel — see `docs/setup_and_usage.md`.
 - **Tests:** `pytest tests` and `pytest tests_ui` must be run separately.
 - **Docs:** `docs/` is long-form and kept accurate; `plans/` holds design docs for in-flight work.
+- **Laghu Panchang booklet:** `laghu_panchang.py` (data + cell text) and `laghu_panchang_render.py` (HTML→PDF, Excel); `python main.py laghu --year Y --city X`; `POST /generate-laghu-panchang`. Times are clock readings from the civil day's midnight (`25:47` = 01:47 next day). Per-day UTC offsets come from `zoneinfo`, unlike `_timezone_snapshot`'s fixed Jan-1 offset, so DST locations are right. `_html_to_pdf(css_page_size=True)` keeps the booklet's 8in×5in `@page`. Design: `plans/laghu-panchang-export.md`.
 - **Client release:** `python scripts/build_client_bundle.py` writes the gitignored `client_release/` + zip at the repo root (Windows, `start.bat`, Python 3.11–3.14 with bundled wheels). Launcher files live in `client_files/`; see `docs/setup_and_usage.md` §10c.
 
 ## Core Philosophy
