@@ -35,7 +35,10 @@ from astronomy import (
     get_sunrise, get_sunset,
     get_moonrise, get_moonset,
     jd_to_local_time_string,
+    utc_offset_hours,
     AYANAMSA_SYSTEMS,
+    CLOCK_MODES,
+    SUNRISE_RULES,
 )
 from panchang import (
     calculate_bhadra_kaal,
@@ -92,17 +95,26 @@ def _compute_day(args_tuple) -> dict | None:
     year, month, day = args_tuple
     lat         = _G['lat']
     lon         = _G['lon']
-    tz_offset   = _G['tz_offset']
     tz_label    = _G['tz_label']
     ayanamsa    = _G['ayanamsa']
+    rule        = _G.get('sunrise_rule', 'modern')
+    civil_date  = date(year, month, day)
+    # A named zone gives each day its own offset under the clock setting; the
+    # CLI's bare --tz_offset keeps one fixed offset.
+    tz_offset = (
+        utc_offset_hours(_G['tz_name'], civil_date, clock=_G.get('clock', 'standard'))
+        if _G.get('tz_name') else _G['tz_offset']
+    )
 
     try:
-        # 05:30 local time → JD anchor for the civil day.
-        jd = local_time_to_jd(year, month, day, local_hour=5.5, tz_offset=tz_offset)
+        # Local midnight anchors the civil day: sunrise is searched forward from it.
+        # (A 05:30 anchor skipped any sunrise earlier than 05:30 -- Trenton in summer,
+        # Delhi in June -- and the whole row described the next morning.)
+        jd = local_time_to_jd(year, month, day, local_hour=0.0, tz_offset=tz_offset)
 
         # Sunrise / Sunset / Moonrise / Moonset
-        jd_sr = get_sunrise(jd, lat, lon)
-        jd_ss = get_sunset(jd, lat, lon)
+        jd_sr = get_sunrise(jd, lat, lon, rule)
+        jd_ss = get_sunset(jd, lat, lon, rule)
         jd_mr = get_moonrise(jd, lat, lon)
         jd_ms = get_moonset(jd, lat, lon)
 
@@ -113,7 +125,6 @@ def _compute_day(args_tuple) -> dict | None:
         planets = get_all_planet_positions(jd_sr, ayanamsa)
 
         # Panchang elements are sunrise-bound for the daily label.
-        civil_date = date(year, month, day)
         panchang = generate_daily_panchang(
             jd_sr,
             ayanamsa,
@@ -129,8 +140,8 @@ def _compute_day(args_tuple) -> dict | None:
         vs = get_vikram_samvat(civil_date, cs1) if cs1 else None
         vns = get_vira_nirvana_samvat(civil_date, diwali) if diwali else None
 
-        jd_next_day = local_time_to_jd(year, month, day, local_hour=5.5, tz_offset=tz_offset) + 1.0
-        jd_next_sr = get_sunrise(jd_next_day, lat, lon)
+        jd_next_day = jd + 1.0
+        jd_next_sr = get_sunrise(jd_next_day, lat, lon, rule)
         bhadra_kaal = calculate_bhadra_kaal(jd_sr, jd_next_sr, ayanamsa)
         panchak_raw = calculate_panchak_kaal(jd_sr, jd_next_sr, ayanamsa)
         panchak_segs = panchak_raw["windows"]
@@ -160,7 +171,7 @@ def _compute_day(args_tuple) -> dict | None:
             jain_parva_tithis   = day_fests.get("parva_tithis") or None,
             festival_profile    = _G.get("festival_profile"),
         )
-        return row
+        return {**row, "__tz_offset": tz_offset}
 
     except Exception as exc:
         print(f"\n  [WARNING] {year}-{month:02d}-{day:02d}: {exc}", file=sys.stderr)
@@ -220,11 +231,20 @@ def run_generation(config: dict, date_tuples: list, workers: int) -> list[dict]:
 # Main entry point
 # ---------------------------------------------------------------------------
 
+def add_time_setting_arguments(parser: argparse.ArgumentParser) -> None:
+    """--clock and --sunrise, shared by every command."""
+    parser.add_argument("--clock", type=str, default="standard", choices=CLOCK_MODES,
+                        help="standard: the zone's standard time all year; daylight: the wall clock with DST")
+    parser.add_argument("--sunrise", type=str, default="modern", choices=SUNRISE_RULES,
+                        help="modern: upper limb with refraction; traditional: disc centre, no refraction")
+
+
 def laghu_cli(argv: list[str]) -> None:
     """`python main.py laghu --year 2027 --city Delhi --format both`"""
     # Imported here: pdf_generation_service imports range_generation_service,
     # which imports this module.
     from pdf_generation_service import generate_laghu_panchang_export
+    from hindi_calendar_pdf import SCHOOL_CHOICES
     from request_parsing import DEFAULT_PROFILE, LAGHU_FORMATS, VALID_PROFILES
 
     parser = argparse.ArgumentParser(
@@ -240,6 +260,9 @@ def laghu_cli(argv: list[str]) -> None:
     parser.add_argument("--profile", type=str, default=DEFAULT_PROFILE, choices=VALID_PROFILES)
     parser.add_argument("--format", type=str, default="pdf", choices=LAGHU_FORMATS)
     parser.add_argument("--output", type=str, default=".", help="Directory to write into")
+    parser.add_argument("--school", type=str, default="all", choices=SCHOOL_CHOICES,
+                        help="Kalyanak school: all, or one of Vrindavan (1), Uttarapurana (2), Ashadhara (3)")
+    add_time_setting_arguments(parser)
     args = parser.parse_args(argv)
 
     if args.city is None and (args.lat is None or args.lon is None):
@@ -250,6 +273,7 @@ def laghu_cli(argv: list[str]) -> None:
         year=args.year, city=args.city, lat=args.lat, lon=args.lon,
         ayanamsa_name=args.ayanamsa, profile=args.profile,
         output_format=args.format, output_dir=args.output,
+        clock=args.clock, sunrise_rule=args.sunrise, school=args.school,
     )
     location = result["location"]
     print(f"  Location: {location['name']} ({location['lat']:.4f}, {location['lon']:.4f}) {location['timezone']}")
@@ -309,6 +333,12 @@ def main(argv: list[str] | None = None):
                         default="shwetambar_murtipujak_tapagachchha",
                         help="Jain sect profile (e.g. shwetambar_murtipujak_tapagachchha, digambar, etc.)")
 
+    # --- Clock and sunrise rule ---
+    parser.add_argument("--tz_name", type=str, default=None,
+                        help="IANA zone (e.g. America/New_York). Overrides --tz_offset/--tz_label "
+                             "and lets --clock choose standard time or the wall clock per day.")
+    add_time_setting_arguments(parser)
+
     # --- Performance ---
     parser.add_argument("--workers", type=int, default=1,
                         help=f"Number of CPU workers for parallel generation "
@@ -320,6 +350,11 @@ def main(argv: list[str] | None = None):
     if args.start_year > args.end_year:
         parser.error("--start_year must be <= --end_year")
     workers = max(1, min(args.workers, cpu_count()))
+    if args.tz_name:
+        from range_generation_service import export_timezone
+
+        zone = export_timezone(args.tz_name, args.start_year, clock=args.clock)
+        args.tz_offset, args.tz_label = zone["offset_hours"], zone["label"]
 
     # Precompute festival dates for Samvat calculations (once per year, before workers start)
     print("  Computing festival dates for Samvat years...")
@@ -329,13 +364,15 @@ def main(argv: list[str] | None = None):
     for year in range(args.start_year, args.end_year + 1):
         festival_dates[year] = {
             'chaitra_shukla_1': find_chaitra_shukla_1(
-                year, args.lat, args.lon, args.tz_offset, args.ayanamsa
+                year, args.lat, args.lon, args.tz_offset, args.ayanamsa, sunrise_rule=args.sunrise
             ),
             'diwali': find_diwali(
-                year, args.lat, args.lon, args.tz_offset, args.ayanamsa
+                year, args.lat, args.lon, args.tz_offset, args.ayanamsa, sunrise_rule=args.sunrise
             ),
         }
-        fest_data = generate_jain_festivals(year, args.lat, args.lon, args.ayanamsa, args.profile)
+        fest_data = generate_jain_festivals(
+            year, args.lat, args.lon, args.ayanamsa, args.profile, sunrise_rule=args.sunrise
+        )
         for f in fest_data.get("festivals", []):
             start_d = datetime.strptime(f["start_date"], "%Y-%m-%d").date()
             end_d = datetime.strptime(f.get("end_date", f["start_date"]), "%Y-%m-%d").date()
@@ -356,6 +393,9 @@ def main(argv: list[str] | None = None):
         'lon':              args.lon,
         'tz_offset':        args.tz_offset,
         'tz_label':         args.tz_label,
+        'tz_name':          args.tz_name,
+        'clock':            args.clock,
+        'sunrise_rule':     args.sunrise,
         'ayanamsa':         args.ayanamsa,
         'festival_dates':   festival_dates,
         'festival_index':   festival_index,

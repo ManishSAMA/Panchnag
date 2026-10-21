@@ -37,7 +37,7 @@ class HinduMonthUsesSixGhatiTests(unittest.TestCase):
         from location_service import get_timezone_name
 
         tz_name = get_timezone_name(LAT, LON)
-        anchor_jd = local_date_anchor_jd(date(2026, 3, 19), tz_name)
+        anchor_jd = local_date_anchor_jd(date(2026, 3, 19), tz_name, clock="standard")
         sunrise_jd = get_sunrise(anchor_jd, LAT, LON)
         _, _, expected = get_hindu_month(sunrise_jd + (2.4 / 24.0), "Lahiri")
 

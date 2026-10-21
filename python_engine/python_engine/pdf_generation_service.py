@@ -5,10 +5,11 @@ from pathlib import Path
 from uuid import uuid4
 
 import hindi_calendar_pdf
+from hindi_calendar_pdf import SCHOOL_NAMES_HI
 from export_pdf import generate_pdf_calendar
 from laghu_panchang import build_laghu_year
 from laghu_panchang_render import write_excel, write_pdf
-from range_generation_service import _timezone_snapshot
+from range_generation_service import export_timezone
 from panchang_service import resolve_location
 
 
@@ -20,9 +21,11 @@ def generate_pdf_export(
     lon: float | None,
     ayanamsa_name: str,
     output_dir: str | None = None,
+    clock: str = "standard",
+    sunrise_rule: str = "modern",
 ) -> dict:
     location = resolve_location(city=city, lat=lat, lon=lon)
-    tz_info = _timezone_snapshot(location.timezone, year)
+    tz_info = export_timezone(location.timezone, year, clock=clock)
 
     target_dir = Path(output_dir or tempfile.gettempdir()) / "jain_panchang_exports" / uuid4().hex
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -35,6 +38,10 @@ def generate_pdf_export(
         lon=location.lon,
         tz_offset=tz_info["offset_hours"],
         ayanamsa=ayanamsa_name,
+        tz_name=location.timezone,
+        clock=clock,
+        sunrise_rule=sunrise_rule,
+        tz_label=tz_info["label"],
     )
 
     return {
@@ -66,10 +73,12 @@ def generate_hindi_pdf_export(
     ayanamsa_name: str,
     calendar_system: str,
     output_dir: str | None = None,
+    clock: str = "standard",
+    sunrise_rule: str = "modern",
 ) -> dict:
     """Write the Hindi calendar; the file is HTML when no PDF renderer exists."""
     location = resolve_location(city=city, lat=lat, lon=lon)
-    tz_info = _timezone_snapshot(location.timezone, start_year)
+    tz_info = export_timezone(location.timezone, start_year, clock=clock)
 
     target_dir = (
         Path(output_dir or tempfile.gettempdir()) / "jain_panchang_exports" / uuid4().hex
@@ -93,6 +102,9 @@ def generate_hindi_pdf_export(
         tz_offset=tz_info["offset_hours"],
         ayanamsa=ayanamsa_name,
         calendar_system=calendar_system,
+        tz_name=location.timezone,
+        clock=clock,
+        sunrise_rule=sunrise_rule,
     ))
 
     return {
@@ -121,6 +133,9 @@ def generate_laghu_panchang_export(
     profile: str,
     output_format: str,
     output_dir: str | None = None,
+    clock: str = "standard",
+    sunrise_rule: str = "modern",
+    school: str = "all",
 ) -> dict:
     """Write the yearly Laghu Panchang as PDF, Excel or both.
 
@@ -129,7 +144,7 @@ def generate_laghu_panchang_export(
     location = resolve_location(city=city, lat=lat, lon=lon)
     halves = build_laghu_year(
         year=year, lat=location.lat, lon=location.lon, tz_name=location.timezone,
-        ayanamsa=ayanamsa_name, profile=profile,
+        ayanamsa=ayanamsa_name, profile=profile, clock=clock, sunrise_rule=sunrise_rule, school=school,
     )
 
     target_dir = (
@@ -138,12 +153,14 @@ def generate_laghu_panchang_export(
     )
     target_dir.mkdir(parents=True, exist_ok=True)
     place = "".join(ch for ch in (city or location.name) if ch.isalnum()) or "Location"
-    stem = target_dir / f"Laghu_Panchang_{year}_{place}"
+    school_suffix = "" if school == "all" else f"_{school.capitalize()}"
+    stem = target_dir / f"Laghu_Panchang_{year}_{place}{school_suffix}"
     title = f"लघु पंचांग {year}"
+    caption = location.name if school == "all" else f"{location.name} · {SCHOOL_NAMES_HI[school]} मत"
 
     writers = {
-        "pdf": lambda: write_pdf(halves, stem.with_suffix(".pdf"), title=title, location_name=location.name),
-        "excel": lambda: write_excel(halves, stem.with_suffix(".xlsx"), title=title, location_name=location.name),
+        "pdf": lambda: write_pdf(halves, stem.with_suffix(".pdf"), title=title, location_name=caption),
+        "excel": lambda: write_excel(halves, stem.with_suffix(".xlsx"), title=title, location_name=caption),
     }
     formats = ("pdf", "excel") if output_format == "both" else (output_format,)
     written = [Path(writers[fmt]()) for fmt in formats]
@@ -152,6 +169,7 @@ def generate_laghu_panchang_export(
         "year": year,
         "ayanamsa": ayanamsa_name,
         "profile": profile,
+        "school": school,
         "location": {
             "name": location.name,
             "lat": location.lat,

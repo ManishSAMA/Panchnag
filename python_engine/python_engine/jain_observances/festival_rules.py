@@ -4,6 +4,7 @@ from datetime import timedelta
 from typing import List, Dict, Any
 from datetime import date
 from .registry import FESTIVAL_REGISTRY
+from .vriddhi import takes_second_day_of_vriddhi
 from .months import canonical as _canonical_month, next_month as _next_month
 
 # Legacy spellings some call sites / display paths still expect from get_jain_month().
@@ -210,6 +211,16 @@ class FestivalRule:
         # tithi originates on when it began (was active by sunset) on the day before
         # its sunrise day. Enabled per-entry, not globally.
         self.origin_pullback = config.get("origin_pullback", False)
+
+    def _vrat_provider(self, ayanamsa: str, context: Dict[str, Any]):
+        """A tithi provider for the provider-based vrat calculators, honouring the vriddhi rule."""
+        from .vrats.provider import SwissEphTithiProvider
+
+        return SwissEphTithiProvider(
+            ayanamsa,
+            sunrise_rule=context.get("sunrise_rule", "modern"),
+            vriddhi="second_day" if takes_second_day_of_vriddhi(self.id, self.category) else "first_day",
+        )
 
     def matches_profile(self, profile: str) -> bool:
         return profile in self.profiles or "all" in self.profiles
@@ -530,7 +541,7 @@ class RohiniVratFestival(FestivalRule):
         ayanamsa = context.get("ayanamsa", "Lahiri")
         start_date_obj = date(year - 1, 12, 15)
         end_date_obj = date(year, 12, 31)
-        provider = SwissEphPanchangProvider(ayanamsa=ayanamsa)
+        provider = SwissEphPanchangProvider(ayanamsa=ayanamsa, sunrise_rule=context.get("sunrise_rule", "modern"))
         dates = evaluate_rohini_vrat(start_date_obj, end_date_obj, lat, lon, provider)
         occurrences = []
         for d in dates:
@@ -679,7 +690,7 @@ class DaslakshanVratFestival(FestivalRule):
         p_name = self.jain_month
         try:
             p_month = get_greg_month(snapshots, p_name, "Shukla", 5)
-            vrat = calculate_daslakshan_vrat(year, p_month, p_name, lat, lon, SwissEphTithiProvider(ayanamsa))
+            vrat = calculate_daslakshan_vrat(year, p_month, p_name, lat, lon, self._vrat_provider(ayanamsa, context))
             if vrat and hasattr(vrat, 'daily_schedule'):
                 occurrences.append({
                     "id": f"daslakshan_{p_name}_{year}",
@@ -710,7 +721,7 @@ class RatnatrayaVratFestival(FestivalRule):
         p_name = self.jain_month
         try:
             p_month = get_greg_month(snapshots, p_name, "Shukla", 13)
-            vrat = calculate_ratnatraya_vrat(year, p_month, p_name, lat, lon, SwissEphTithiProvider(ayanamsa))
+            vrat = calculate_ratnatraya_vrat(year, p_month, p_name, lat, lon, self._vrat_provider(ayanamsa, context))
             if vrat:
                 start_date_str = vrat.fast_start_date
                 end_date_str = vrat.fast_end_date
@@ -879,7 +890,7 @@ class ShodashkaranVratFestival(FestivalRule):
         try:
             amanta_start = shodashkaran_amanta_starts[p_name]
             p_month = get_greg_month(snapshots, amanta_start, "Krishna", 1)
-            vrat = calculate_shodashkaran_vrat(year, p_month, p_name, lat, lon, SwissEphTithiProvider(ayanamsa))
+            vrat = calculate_shodashkaran_vrat(year, p_month, p_name, lat, lon, self._vrat_provider(ayanamsa, context))
             if vrat:
                 from datetime import datetime
                 d1 = datetime.strptime(vrat.start_date, "%Y-%m-%d")
@@ -916,7 +927,7 @@ class RavivaraVratFestival(FestivalRule):
         ayanamsa = context.get("ayanamsa", "Lahiri")
         occurrences = []
         try:
-            vrat = calculate_ravivara_vrat(year, lat, lon, SwissEphTithiProvider(ayanamsa))
+            vrat = calculate_ravivara_vrat(year, lat, lon, SwissEphTithiProvider(ayanamsa, sunrise_rule=context.get("sunrise_rule", "modern")))
             if vrat:
                 occurrences.append({
                     "id": f"ravivara_{year}",

@@ -40,6 +40,7 @@ def test_a_minimal_request_defaults_to_a_pdf_for_the_default_profile():
     assert parsed == LaghuPanchangRequest(
         year=2027, city=None, lat=DELHI["lat"], lon=DELHI["lon"], ayanamsa_name="Lahiri",
         profile="shwetambar_murtipujak_tapagachchha", output_format="pdf",
+        clock="standard", sunrise_rule="modern",
     )
 
 
@@ -99,8 +100,43 @@ def test_the_service_builds_for_the_requested_place_profile_and_ayanamsa(tmp_pat
 
     build.assert_called_once_with(
         year=2027, lat=DELHI["lat"], lon=DELHI["lon"], tz_name="Asia/Kolkata",
-        ayanamsa="Raman", profile="shwetambar_sthanakvasi",
+        ayanamsa="Raman", profile="shwetambar_sthanakvasi", clock="standard", sunrise_rule="modern", school="all",
     )
+
+
+def test_the_service_passes_the_time_settings_to_the_build(tmp_path):
+    with patch.object(pdf_generation_service, "build_laghu_year", side_effect=_fake_build) as build,          patch.object(hindi_calendar_pdf, "_html_to_pdf", _fake_renderer):
+        generate_laghu_panchang_export(
+            year=2027, city=None, ayanamsa_name="Lahiri", output_format="pdf",
+            profile="shwetambar_sthanakvasi", output_dir=str(tmp_path),
+            clock="daylight", sunrise_rule="traditional", **DELHI,
+        )
+
+    assert build.call_args.kwargs["clock"] == "daylight"
+    assert build.call_args.kwargs["sunrise_rule"] == "traditional"
+
+
+def test_the_endpoint_passes_the_time_settings_through():
+    with patch("app.generate_laghu_panchang_export", return_value={
+        "year": 2027, "ayanamsa": "Lahiri", "profile": "p", "location": {}, "files": [],
+    }) as service:
+        response = app.test_client().post(
+            "/generate-laghu-panchang",
+            json={"year": 2027, "clock": "daylight", "sunrise": "traditional", **DELHI},
+        )
+
+    assert response.status_code == 200
+    assert (service.call_args.kwargs["clock"], service.call_args.kwargs["sunrise_rule"]) == ("daylight", "traditional")
+
+
+def test_the_cli_accepts_the_time_settings(tmp_path):
+    with patch.object(pdf_generation_service, "build_laghu_year", side_effect=_fake_build) as build,          patch.object(hindi_calendar_pdf, "_html_to_pdf", _fake_renderer):
+        cli.main([
+            "laghu", "--year", "2027", "--lat", "28.6139", "--lon", "77.2090",
+            "--clock", "daylight", "--sunrise", "traditional", "--output", str(tmp_path),
+        ])
+
+    assert (build.call_args.kwargs["clock"], build.call_args.kwargs["sunrise_rule"]) == ("daylight", "traditional")
 
 
 # ── API ──────────────────────────────────────────────────────────────────

@@ -92,7 +92,7 @@ def calculate_shodashkaran_vrat(
         jain_cutoff = sunrise + datetime.timedelta(minutes=144)
         
         t_sunrise = provider.get_tithi_at_time(sunrise, lat, lon)
-        t_cutoff = provider.get_tithi_at_time(jain_cutoff, lat, lon)
+        t_cutoff = jain_day_tithi(provider, curr, lat, lon)
         
         daily_active[curr] = {t_sunrise, t_cutoff}
         sunrise_tithis[curr] = t_sunrise
@@ -166,4 +166,4 @@ def calculate_shodashkaran_vrat(
         daily_schedule=daily_schedule
     )
 
-from .provider import SwissEphTithiProvider
+from .provider import SwissEphTithiProvider, jain_day_tithi

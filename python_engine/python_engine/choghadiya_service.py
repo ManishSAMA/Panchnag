@@ -28,6 +28,8 @@ def calculate_choghadiya_slots(
     weekday_index: int,
     tz_name: str,
     reference_date: date,
+    *,
+    clock: str = "standard",
 ) -> list[dict]:
     """Return 16 choghadiya slots (8 day + 8 night) for a given day.
 
@@ -69,8 +71,8 @@ def calculate_choghadiya_slots(
             name = choghadiya_order[(start_idx + i) % 7]
             slot_start = start_jd + i * slot_duration
             slot_end = start_jd + (i + 1) * slot_duration
-            start_dt = jd_to_zoned_datetime(slot_start, tz_name)
-            end_dt = jd_to_zoned_datetime(slot_end, tz_name)
+            start_dt = jd_to_zoned_datetime(slot_start, tz_name, clock=clock)
+            end_dt = jd_to_zoned_datetime(slot_end, tz_name, clock=clock)
             start_utc = start_dt.astimezone(timezone.utc) if start_dt else None
             end_utc = end_dt.astimezone(timezone.utc) if end_dt else None
             slots.append({

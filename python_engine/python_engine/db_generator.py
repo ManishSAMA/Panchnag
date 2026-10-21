@@ -110,7 +110,8 @@ CREATE TABLE IF NOT EXISTS meta (
     date_range_end          TEXT,
     generated_at            TEXT,
     swisseph_version        TEXT,
-    ayanamsa                TEXT
+    ayanamsa                TEXT,
+    sunrise_rule            TEXT
 )
 """
 
@@ -160,10 +161,11 @@ def _compute_samvat_cache(
     lon: float,
     tz_name: str,
     cache: dict[int, date],
+    sunrise_rule: str = "modern",
 ) -> date:
     if year not in cache:
         tz_offset = _tz_offset_hours(tz_name, year)
-        cache[year] = find_chaitra_shukla_1(year, lat, lon, tz_offset)
+        cache[year] = find_chaitra_shukla_1(year, lat, lon, tz_offset, sunrise_rule=sunrise_rule)
     return cache[year]
 
 
@@ -188,17 +190,20 @@ def _compute_day_row(
     swisseph_ver: str,
     generated_at: str,
     ayanamsa: str = "Lahiri",
+    sunrise_rule: str = "modern",
 ) -> dict:
     date_str = local_date.isoformat()
-    anchor_jd = local_date_anchor_jd(local_date, tz_name)
+    # The DB stores UTC instants, so the clock setting cannot change it; the
+    # anchor only has to fall on the civil date.
+    anchor_jd = local_date_anchor_jd(local_date, tz_name, clock="standard")
 
-    sunrise_jd = get_sunrise(anchor_jd, lat, lon)
-    sunset_jd = get_sunset(anchor_jd, lat, lon)
+    sunrise_jd = get_sunrise(anchor_jd, lat, lon, sunrise_rule)
+    sunset_jd = get_sunset(anchor_jd, lat, lon, sunrise_rule)
     moonrise_jd = get_moonrise(anchor_jd, lat, lon)
     moonset_jd = get_moonset(anchor_jd, lat, lon)
 
-    next_anchor_jd = local_date_anchor_jd(local_date + timedelta(days=1), tz_name)
-    next_sunrise_jd = get_sunrise(next_anchor_jd, lat, lon)
+    next_anchor_jd = local_date_anchor_jd(local_date + timedelta(days=1), tz_name, clock="standard")
+    next_sunrise_jd = get_sunrise(next_anchor_jd, lat, lon, sunrise_rule)
 
     # Use Jain reference time (Sunrise + 2h24m / 2.4 hrs); fall back to anchor if sunrise failed
     ref_jd = (sunrise_jd + (2.4 / 24.0)) if sunrise_jd and sunrise_jd > 0 else anchor_jd
@@ -258,7 +263,7 @@ def _compute_day_row(
         lunar_month_type = "Nija"
 
     # ── Samvat years ─────────────────────────────────────────────────────────
-    cs1 = _compute_samvat_cache(local_date.year, lat, lon, tz_name, cs1_cache)
+    cs1 = _compute_samvat_cache(local_date.year, lat, lon, tz_name, cs1_cache, sunrise_rule)
     vikram = get_vikram_samvat(local_date, cs1)
     shaka = get_shaka_samvat(local_date, cs1)
 
@@ -336,6 +341,7 @@ def generate_panchang_db(
     timezone_str: str,
     db_path: str,
     progress_callback: Callable[[int, int], None] | None = None,
+    sunrise_rule: str = "modern",
 ) -> None:
     """Generate a complete Panchang SQLite database for the given city.
 
@@ -401,6 +407,7 @@ def generate_panchang_db(
                     cs1_cache=cs1_cache,
                     swisseph_ver=swisseph_ver,
                     generated_at=generated_at,
+                    sunrise_rule=sunrise_rule,
                 )
                 batch.append(row)
                 days_done += 1
@@ -421,11 +428,11 @@ def generate_panchang_db(
 
             # Write meta
             conn.execute(
-                "INSERT INTO meta VALUES (?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO meta VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     city_name, city_slug, latitude, longitude, timezone_str,
                     _DATE_START.isoformat(), _DATE_END.isoformat(),
-                    generated_at, swisseph_ver, "Lahiri",
+                    generated_at, swisseph_ver, "Lahiri", sunrise_rule,
                 ),
             )
             conn.commit()

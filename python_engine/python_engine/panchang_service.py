@@ -32,6 +32,7 @@ from astronomy import (
     jd_to_iso_local_string,
     jd_to_zoned_datetime,
     local_date_anchor_jd,
+    utc_offset_hours,
 )
 from location_service import geocode_city, get_timezone_name
 from panchang import (
@@ -157,24 +158,30 @@ def resolve_location(
     raise ValueError("Provide either a city name or both latitude and longitude.")
 
 
-def _calculate_daily_events(local_date: date, location: ResolvedLocation) -> DailyEventSet:
+def _calculate_daily_events(
+    local_date: date,
+    location: ResolvedLocation,
+    *,
+    clock: str = "standard",
+    sunrise_rule: str = "modern",
+) -> DailyEventSet:
     """Compute sunrise, sunset, moonrise, moonset, and next sunrise for a civil date."""
-    day_start_jd = local_date_anchor_jd(local_date, location.timezone, hour=0)
+    day_start_jd = local_date_anchor_jd(local_date, location.timezone, hour=0, clock=clock)
     next_day_start_jd = local_date_anchor_jd(
-        local_date + timedelta(days=1), location.timezone, hour=0
+        local_date + timedelta(days=1), location.timezone, hour=0, clock=clock
     )
 
-    sunrise_jd = get_sunrise(day_start_jd, location.lat, location.lon)
-    sunset_jd = get_sunset(day_start_jd, location.lat, location.lon)
+    sunrise_jd = get_sunrise(day_start_jd, location.lat, location.lon, sunrise_rule)
+    sunset_jd = get_sunset(day_start_jd, location.lat, location.lon, sunrise_rule)
     moonrise_jd = get_moonrise(day_start_jd, location.lat, location.lon)
     moonset_jd = get_moonset(day_start_jd, location.lat, location.lon)
-    next_sunrise_jd = get_sunrise(next_day_start_jd, location.lat, location.lon)
+    next_sunrise_jd = get_sunrise(next_day_start_jd, location.lat, location.lon, sunrise_rule)
 
     if sunrise_jd == 0.0 or sunset_jd == 0.0 or next_sunrise_jd == 0.0:
         raise ValueError("Could not compute solar events for the given date and location.")
 
-    sunrise_dt = jd_to_zoned_datetime(sunrise_jd, location.timezone)
-    sunset_dt = jd_to_zoned_datetime(sunset_jd, location.timezone)
+    sunrise_dt = jd_to_zoned_datetime(sunrise_jd, location.timezone, clock=clock)
+    sunset_dt = jd_to_zoned_datetime(sunset_jd, location.timezone, clock=clock)
     if sunrise_dt is None or sunset_dt is None:
         raise ValueError("Could not compute sunrise/sunset for the given date and location.")
     if sunrise_dt.date() != local_date:
@@ -195,8 +202,8 @@ def _calculate_daily_events(local_date: date, location: ResolvedLocation) -> Dai
 # Payload builders (private)
 # ---------------------------------------------------------------------------
 
-def _serialize_event(jd: float, tz_name: str) -> dict:
-    local_dt = jd_to_zoned_datetime(jd, tz_name)
+def _serialize_event(jd: float, tz_name: str, clock: str) -> dict:
+    local_dt = jd_to_zoned_datetime(jd, tz_name, clock=clock)
     if local_dt is None:
         return {"jd": 0.0, "local": "", "time": ""}
     return {
@@ -214,6 +221,8 @@ def _collect_all_tithis_in_day(
     next_sunrise_jd: float,
     ayanamsa_name: str,
     tz_name: str,
+    *,
+    clock: str = "standard",
 ) -> list[dict]:
     tithis = []
     current_jd = sunrise_jd
@@ -224,7 +233,7 @@ def _collect_all_tithis_in_day(
         tithis.append({
             "index": details["Tithi_Index"],
             "name": details["Tithi_Name"],
-            "ends": None if continues else _serialize_event(end_jd, tz_name),
+            "ends": None if continues else _serialize_event(end_jd, tz_name, clock),
             "continues_past_next_sunrise": continues,
         })
         if continues:
@@ -241,6 +250,8 @@ def collect_all_nakshatras_in_day(
     next_sunrise_jd: float,
     ayanamsa_name: str,
     tz_name: str,
+    *,
+    clock: str = "standard",
 ) -> list[dict]:
     """Walk all Nakshatra transitions between sunrise and next sunrise.
 
@@ -272,7 +283,7 @@ def collect_all_nakshatras_in_day(
         nakshatras.append({
             "index": idx,
             "name": NAKSHATRA_NAMES[idx - 1],
-            "ends": None if continues else _serialize_event(end_jd, tz_name),
+            "ends": None if continues else _serialize_event(end_jd, tz_name, clock),
             "continues_past_next_sunrise": continues,
         })
         if continues:
@@ -288,14 +299,16 @@ def _element_payload(
     tz_name: str,
     sunrise_jd: float,
     ayanamsa_name: str,
+    *,
+    clock: str = "standard",
 ) -> dict:
     payload = {
-        "tithi": _collect_all_tithis_in_day(sunrise_jd, next_sunrise_jd, ayanamsa_name, tz_name),
+        "tithi": _collect_all_tithis_in_day(sunrise_jd, next_sunrise_jd, ayanamsa_name, tz_name, clock=clock),
         "nakshatra": {
             "index": panchang_data["Nakshatra_Index"],
             "name": panchang_data["Nakshatra_Name"],
             "pada": panchang_data["Nakshatra_Pada"],
-            "ends": _serialize_event(panchang_data["Nakshatra_End_JD"], tz_name),
+            "ends": _serialize_event(panchang_data["Nakshatra_End_JD"], tz_name, clock),
             "continues_past_next_sunrise": panchang_data["Nakshatra_End_JD"] >= next_sunrise_jd,
         },
         "yoga": {
@@ -305,8 +318,8 @@ def _element_payload(
         "karana": {
             "index": panchang_data["Karana_Index"],
             "name": panchang_data["Karana_Name"],
-            "starts": _serialize_event(panchang_data["Karana_Start_JD"], tz_name),
-            "ends": _serialize_event(panchang_data["Karana_End_JD"], tz_name),
+            "starts": _serialize_event(panchang_data["Karana_Start_JD"], tz_name, clock),
+            "ends": _serialize_event(panchang_data["Karana_End_JD"], tz_name, clock),
         },
         "vara": {
             "index": panchang_data["Vara_Index"],
@@ -321,9 +334,9 @@ def _element_payload(
         payload["jain_tithi"] = {
             "index": panchang_data["Jain_Tithi_Index"],
             "name": panchang_data["Jain_Tithi_Name"],
-            "ends": _serialize_event(panchang_data["Jain_Tithi_End_JD"], tz_name),
+            "ends": _serialize_event(panchang_data["Jain_Tithi_End_JD"], tz_name, clock),
             "continues_past_next_sunrise": panchang_data["Jain_Tithi_End_JD"] >= next_sunrise_jd,
-            "reference": _serialize_event(panchang_data["Jain_Tithi_Reference_JD"], tz_name),
+            "reference": _serialize_event(panchang_data["Jain_Tithi_Reference_JD"], tz_name, clock),
         }
     return payload
 
@@ -351,11 +364,16 @@ def generate_location_panchang(
     lon: float | None = None,
     ayanamsa_name: str = "Lahiri",
     calendar_system: str = DEFAULT_CALENDAR_SYSTEM,
+    clock: str = "standard",
+    sunrise_rule: str = "modern",
 ) -> dict:
-    """Generate a daily Panchang JSON payload for a specific local date and location."""
+    """Generate a daily Panchang JSON payload for a specific local date and location.
+
+    clock "standard" shows the zone's standard time all year; "daylight" the wall clock.
+    """
     local_date = _coerce_date(input_date)
     location = resolve_location(city=city, lat=lat, lon=lon)
-    events = _calculate_daily_events(local_date, location)
+    events = _calculate_daily_events(local_date, location, clock=clock, sunrise_rule=sunrise_rule)
 
     sunrise_planets = get_all_planet_positions(events.sunrise_jd, ayanamsa_name)
     daily_panchang = generate_daily_panchang(
@@ -377,22 +395,18 @@ def generate_location_panchang(
 
     ayanamsa_value = get_ayanamsa(events.sunrise_jd, ayanamsa_name)
     tz_name = location.timezone
-    rahu_start = _serialize_event(rahu_raw["start_jd"], tz_name)
-    rahu_end = _serialize_event(rahu_raw["end_jd"], tz_name)
+    rahu_start = _serialize_event(rahu_raw["start_jd"], tz_name, clock)
+    rahu_end = _serialize_event(rahu_raw["end_jd"], tz_name, clock)
     jain_ref_jd = events.sunrise_jd + JAIN_TITHI_OFFSET_DAYS
     resolve_month = _month_resolver(calendar_system)
     hindu_month, hindu_month_common, is_adhika = resolve_month(jain_ref_jd, ayanamsa_name)
 
-    tz = ZoneInfo(tz_name)
-    tz_offset_float = (
-        datetime.combine(local_date, time(hour=12), tzinfo=tz).utcoffset().total_seconds()
-        / 3600.0
-    )
+    tz_offset_float = utc_offset_hours(tz_name, local_date, clock=clock)
     chaitra_shukla_1 = find_chaitra_shukla_1(
-        local_date.year, location.lat, location.lon, tz_offset_float, ayanamsa_name
+        local_date.year, location.lat, location.lon, tz_offset_float, ayanamsa_name, sunrise_rule=sunrise_rule
     )
     diwali = find_diwali(
-        local_date.year, location.lat, location.lon, tz_offset_float, ayanamsa_name
+        local_date.year, location.lat, location.lon, tz_offset_float, ayanamsa_name, sunrise_rule=sunrise_rule
     )
     bhadra_segments = calculate_bhadra_kaal(events.sunrise_jd, events.next_sunrise_jd, ayanamsa_name)
     serialized_windows = []
@@ -401,8 +415,8 @@ def generate_location_panchang(
     is_active = False
 
     for seg in bhadra_segments:
-        start_serialized = _serialize_event(seg["start_jd"], tz_name)
-        end_serialized = _serialize_event(seg["end_jd"], tz_name)
+        start_serialized = _serialize_event(seg["start_jd"], tz_name, clock)
+        end_serialized = _serialize_event(seg["end_jd"], tz_name, clock)
         seg_active = seg["start_jd"] <= jd_now <= seg["end_jd"]
         if seg_active:
             is_active = True
@@ -434,8 +448,8 @@ def generate_location_panchang(
         if pw_active:
             panchak_is_active = True
         panchak_windows_serialized.append({
-            "start": _serialize_event(pw["start_jd"], tz_name),
-            "end": _serialize_event(pw["end_jd"], tz_name),
+            "start": _serialize_event(pw["start_jd"], tz_name, clock),
+            "end": _serialize_event(pw["end_jd"], tz_name, clock),
             "nakshatra": pw["nakshatra"],
             "clipped_start": pw["clipped_start"],
             "clipped_end": pw["clipped_end"],
@@ -446,8 +460,8 @@ def generate_location_panchang(
         if p is None:
             return None
         return {
-            "entry": _serialize_event(p["entry_jd"], tz_name),
-            "exit": _serialize_event(p["exit_jd"], tz_name),
+            "entry": _serialize_event(p["entry_jd"], tz_name, clock),
+            "exit": _serialize_event(p["exit_jd"], tz_name, clock),
         }
 
     panchak_payload = {
@@ -474,20 +488,22 @@ def generate_location_panchang(
         "lat": location.lat,
         "lon": location.lon,
         "timezone": tz_name,
+        "clock": clock,
+        "sunrise_rule": sunrise_rule,
         "date": local_date.isoformat(),
         "ayanamsa": {
             "name": ayanamsa_name,
             "degrees": round(ayanamsa_value, 6),
         },
         "events": {
-            "sunrise": _serialize_event(events.sunrise_jd, tz_name),
-            "sunset": _serialize_event(events.sunset_jd, tz_name),
-            "moonrise": _serialize_event(events.moonrise_jd, tz_name),
-            "moonset": _serialize_event(events.moonset_jd, tz_name),
-            "next_sunrise": _serialize_event(events.next_sunrise_jd, tz_name),
+            "sunrise": _serialize_event(events.sunrise_jd, tz_name, clock),
+            "sunset": _serialize_event(events.sunset_jd, tz_name, clock),
+            "moonrise": _serialize_event(events.moonrise_jd, tz_name, clock),
+            "moonset": _serialize_event(events.moonset_jd, tz_name, clock),
+            "next_sunrise": _serialize_event(events.next_sunrise_jd, tz_name, clock),
         },
         "panchang": {
-            **_element_payload(daily_panchang, events.next_sunrise_jd, tz_name, events.sunrise_jd, ayanamsa_name),
+            **_element_payload(daily_panchang, events.next_sunrise_jd, tz_name, events.sunrise_jd, ayanamsa_name, clock=clock),
             "sun_rashi": get_sun_rashi(events.sunrise_jd),
             "moon_rashi": get_rashi_name(sunrise_planets["Moon"]),
             "hindu_month": {
@@ -499,7 +515,7 @@ def generate_location_panchang(
             "vikram_samvat": vikram_samvat,
             "vira_nirvana_samvat": vira_nirvana_samvat,
             "calendar_system": calendar_system,
-            "reference_time": _serialize_event(events.sunrise_jd, tz_name),
+            "reference_time": _serialize_event(events.sunrise_jd, tz_name, clock),
         },
         "rahu_kaal": {
             "start": rahu_start,
@@ -522,8 +538,8 @@ def generate_location_panchang(
             "lat": location.lat,
             "lon": location.lon,
             "date": local_date.isoformat(),
-            "sunrise": jd_to_iso_local_string(events.sunrise_jd, tz_name),
-            "sunset": jd_to_iso_local_string(events.sunset_jd, tz_name),
+            "sunrise": jd_to_iso_local_string(events.sunrise_jd, tz_name, clock=clock),
+            "sunset": jd_to_iso_local_string(events.sunset_jd, tz_name, clock=clock),
             # Primary Tithi is the one prevailing at sunrise + 6 ghati (2h24m), not
             # plain sunrise -- matching the 6-ghati hindu_month below. See
             # plans/tithi_unification/design.md's Full Jain decision: there is only

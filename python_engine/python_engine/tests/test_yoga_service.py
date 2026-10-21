@@ -26,8 +26,8 @@ def _sunrise(d: date) -> tuple[float, float]:
     from astronomy import get_sunrise, local_date_anchor_jd
     from datetime import timedelta
 
-    anchor = local_date_anchor_jd(d, TZ)
-    next_anchor = local_date_anchor_jd(d + timedelta(days=1), TZ)
+    anchor = local_date_anchor_jd(d, TZ, clock="standard")
+    next_anchor = local_date_anchor_jd(d + timedelta(days=1), TZ, clock="standard")
     return get_sunrise(anchor, LAT, LON), get_sunrise(next_anchor, LAT, LON)
 
 

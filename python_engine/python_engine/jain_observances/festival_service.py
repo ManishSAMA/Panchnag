@@ -3,7 +3,8 @@ from functools import lru_cache
 from datetime import date, timedelta
 from zoneinfo import ZoneInfo
 
-from astronomy import get_planetary_longitude, get_sunrise, get_sunset, local_date_anchor_jd
+from astronomy import SUNRISE_RULES, get_planetary_longitude, get_sunrise, get_sunset, local_date_anchor_jd
+from jain_observances.vriddhi import previous_tithi, takes_second_day_of_vriddhi
 from panchang import (
     JAIN_TITHI_OFFSET_DAYS,
     calculate_jain_tithi_from_sunrise,
@@ -39,15 +40,53 @@ def _assign_purnimanta(snapshots: list) -> None:
             snap["purnimanta_is_adhika"] = snap["is_adhika"]
 
 
-def _build_snapshots(year: int, lat: float, lon: float, ayanamsa: str, tz_name: str) -> list:
+# The tithi identity of a day: what a vrat rule reads to decide which tithi owns it.
+_TITHI_IDENTITY = (
+    "tithi", "jain_tithi", "paksha", "tithi_in_paksha", "jain_paksha", "jain_tithi_in_paksha",
+    "hindu_month", "is_adhika", "purnimanta_month", "purnimanta_is_adhika",
+)
+
+
+def _previous_tithi_identity(day: dict, before: dict | None) -> dict:
+    index = previous_tithi(day["jain_tithi"])
+    if before is not None and before["jain_tithi"] == index:
+        return {key: before[key] for key in _TITHI_IDENTITY if key in before}
+    paksha = "Shukla" if index <= 15 else "Krishna"
+    in_paksha = index if index <= 15 else index - 15
+    return {
+        "tithi": index, "jain_tithi": index, "paksha": paksha, "tithi_in_paksha": in_paksha,
+        "jain_paksha": paksha, "jain_tithi_in_paksha": in_paksha,
+    }
+
+
+def vrat_view_of_snapshots(snapshots: list) -> list:
+    """The snapshots as vrat rules read them: वृद्धौ कार्या तथोत्तरा.
+
+    When a tithi holds the Jain day-start on two consecutive days, the first of
+    them counts as the preceding tithi, so a vrat lands on the second. Only the
+    tithi identity changes; the sunrise and evening tithis stay as computed.
+    """
+    def relabelled(position: int, day: dict) -> dict:
+        following = snapshots[position + 1] if position + 1 < len(snapshots) else None
+        if following is None or following["jain_tithi"] != day["jain_tithi"]:
+            return day
+        before = snapshots[position - 1] if position > 0 else None
+        return {**day, **_previous_tithi_identity(day, before)}
+
+    return [relabelled(position, day) for position, day in enumerate(snapshots)]
+
+
+def _build_snapshots(
+    year: int, lat: float, lon: float, ayanamsa: str, tz_name: str, sunrise_rule: str = "modern",
+) -> list:
     """Daily Panchang snapshots for a 14-month window (Dec 1 of prev year to Jan 31 of next)."""
     snapshots = []
     start_date = date(year - 1, 12, 1)
     end_date = date(year + 1, 1, 31)
     curr = start_date
     while curr <= end_date:
-        day_start_jd = local_date_anchor_jd(curr, tz_name, hour=0)
-        sunrise_jd = get_sunrise(day_start_jd, lat, lon)
+        day_start_jd = local_date_anchor_jd(curr, tz_name, hour=0, clock="standard")
+        sunrise_jd = get_sunrise(day_start_jd, lat, lon, sunrise_rule)
         sun_lon = get_planetary_longitude(sunrise_jd, 'Sun', ayanamsa)
         moon_lon = get_planetary_longitude(sunrise_jd, 'Moon', ayanamsa)
         tithi_idx = get_tithi(sun_lon, moon_lon)
@@ -67,7 +106,7 @@ def _build_snapshots(year: int, lat: float, lon: float, ayanamsa: str, tz_name: 
         # day-selection of pradosh-vyapini festivals (Diwali/Mahavir Nirvana,
         # Ahoi Ashtami, ...), which the udaya tithi gets wrong whenever
         # the target tithi starts during the day and ends before the next sunrise.
-        sunset_jd = get_sunset(day_start_jd, lat, lon)
+        sunset_jd = get_sunset(day_start_jd, lat, lon, sunrise_rule)
         sun_lon_e = get_planetary_longitude(sunset_jd, 'Sun', ayanamsa)
         moon_lon_e = get_planetary_longitude(sunset_jd, 'Moon', ayanamsa)
         evening_tithi_idx = get_tithi(sun_lon_e, moon_lon_e)
@@ -110,17 +149,23 @@ def generate_jain_festivals(
     lat: float,
     lon: float,
     ayanamsa: str = "Lahiri",
-    profile: str = "shwetambar_murtipujak_tapagachchha"
+    profile: str = "shwetambar_murtipujak_tapagachchha",
+    sunrise_rule: str = "modern",
 ) -> dict:
-    """Generate all Jain festivals for a given year and location, filtered by profile."""
+    """Generate all Jain festivals for a given year and location, filtered by profile.
+
+    sunrise_rule is part of the lru_cache key, so the two rules never share a result.
+    """
+    if sunrise_rule not in SUNRISE_RULES:
+        raise ValueError(f"sunrise rule must be one of: {', '.join(SUNRISE_RULES)} (got {sunrise_rule!r}).")
     location = resolve_location(lat=lat, lon=lon)
     tz_name = location.timezone
 
     # 1. Generate daily Panchang snapshots
-    snapshots = _build_snapshots(year, lat, lon, ayanamsa, tz_name)
+    snapshots = _build_snapshots(year, lat, lon, ayanamsa, tz_name, sunrise_rule)
 
     festivals = []
-    context = {"lat": lat, "lon": lon, "ayanamsa": ayanamsa, "year": year}
+    context = {"lat": lat, "lon": lon, "ayanamsa": ayanamsa, "year": year, "sunrise_rule": sunrise_rule}
 
     # 2. Process rules
     rules = [RuleFactory.create(conf) for conf in FESTIVAL_REGISTRY]
@@ -128,17 +173,22 @@ def generate_jain_festivals(
     independent_rules = [r for r in rules if r.config.get("rule_type") != "Relative"]
     relative_rules = [r for r in rules if r.config.get("rule_type") == "Relative"]
 
+    vrat_snapshots = vrat_view_of_snapshots(snapshots)
+
+    def snapshots_for(rule) -> list:
+        return vrat_snapshots if takes_second_day_of_vriddhi(rule.id, rule.category) else snapshots
+
     for rule in independent_rules:
         if not rule.matches_profile(profile):
             continue
-        occurrences = rule.resolve(snapshots, profile, context)
+        occurrences = rule.resolve(snapshots_for(rule), profile, context)
         context[rule.id] = occurrences
         festivals.extend(occurrences)
 
     for rule in relative_rules:
         if not rule.matches_profile(profile):
             continue
-        occurrences = rule.resolve(snapshots, profile, context)
+        occurrences = rule.resolve(snapshots_for(rule), profile, context)
         context[rule.id] = occurrences
         festivals.extend(occurrences)
 

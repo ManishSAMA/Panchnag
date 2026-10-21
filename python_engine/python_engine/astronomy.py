@@ -11,7 +11,7 @@ Provides:
 
 import math
 from functools import lru_cache
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone, tzinfo
 from zoneinfo import ZoneInfo
 
 import swisseph as swe
@@ -105,9 +105,54 @@ def zoned_datetime_to_jd(local_dt: datetime) -> float:
     return swe.julday(utc_dt.year, utc_dt.month, utc_dt.day, hour_utc)
 
 
-def local_date_anchor_jd(local_date: date, tz_name: str, hour: int = 0) -> float:
+# ---------------------------------------------------------------------------
+# Clock: standard time all year, or the wall clock
+# ---------------------------------------------------------------------------
+# Printed panchangs for DST countries often keep standard time all year (the
+# New Jersey reference prints EST through the summer). "daylight" follows the
+# wall clock. Zones without DST read the same under both.
+
+CLOCK_MODES = ("standard", "daylight")
+
+
+def _check_clock(clock: str) -> None:
+    if clock not in CLOCK_MODES:
+        raise ValueError(f"clock must be one of: {', '.join(CLOCK_MODES)} (got {clock!r}).")
+
+
+def _standard_name(zone: ZoneInfo, year: int, offset: timedelta) -> str:
+    """The zone's standard-time abbreviation ("EST"), from a DST-free day that year."""
+    for month in range(1, 13):
+        probe = datetime(year, month, 15, 12, tzinfo=zone)
+        if not probe.dst() and probe.utcoffset() == offset:
+            return probe.tzname()
+    hours, minutes = divmod(int(offset.total_seconds() // 60), 60)
+    return f"UTC{'+' if offset >= timedelta(0) else '-'}{abs(hours):02d}:{minutes:02d}"
+
+
+def _standard_timezone(zone: ZoneInfo, local_dt: datetime) -> timezone:
+    offset = local_dt.utcoffset() - local_dt.dst()
+    return timezone(offset, _standard_name(zone, local_dt.year, offset))
+
+
+def clock_timezone(tz_name: str, local_date: date, *, clock: str) -> tzinfo:
+    """The tzinfo times are shown in on local_date under the given clock."""
+    _check_clock(clock)
+    zone = ZoneInfo(tz_name)
+    if clock == "daylight":
+        return zone
+    return _standard_timezone(zone, datetime.combine(local_date, time(hour=12), tzinfo=zone))
+
+
+def utc_offset_hours(tz_name: str, local_date: date, *, clock: str) -> float:
+    """UTC offset in hours for local_date, taken at local noon (so a DST-change day uses its own clock)."""
+    noon = datetime.combine(local_date, time(hour=12), tzinfo=clock_timezone(tz_name, local_date, clock=clock))
+    return noon.utcoffset().total_seconds() / 3600.0
+
+
+def local_date_anchor_jd(local_date: date, tz_name: str, hour: int = 0, *, clock: str) -> float:
     """Return the Julian Day for a local civil date at the given local hour."""
-    tz = ZoneInfo(tz_name)
+    tz = clock_timezone(tz_name, local_date, clock=clock)
     local_dt = datetime.combine(local_date, time(hour=hour), tzinfo=tz)
     return zoned_datetime_to_jd(local_dt)
 
@@ -222,9 +267,25 @@ def get_sun_rashi(jd_sunrise: float) -> str:
 # Rise / Set calculations
 # ---------------------------------------------------------------------------
 
+# Sunrise rules. "modern" is Swiss Ephemeris' default: the upper limb touching
+# the horizon, with atmospheric refraction. "traditional" is the printed-panchang
+# rule: the centre of the disc on the geometric horizon, no refraction -- a few
+# minutes later at sunrise and earlier at sunset.
+SUNRISE_RULES = ("modern", "traditional")
+_SUNRISE_RULE_FLAGS = {
+    "modern": 0,
+    "traditional": swe.BIT_DISC_CENTER | swe.BIT_NO_REFRACTION,
+}
+
+
+def _check_sunrise_rule(rule: str) -> None:
+    if rule not in SUNRISE_RULES:
+        raise ValueError(f"sunrise rule must be one of: {', '.join(SUNRISE_RULES)} (got {rule!r}).")
+
+
 def _rise_set(julian_date: float, body: int,
               lat: float, lon: float,
-              is_rise: bool) -> float:
+              is_rise: bool, rule_flags: int = 0) -> float:
     """Internal: compute rise or set JD for a celestial body.
 
     Args:
@@ -242,8 +303,8 @@ def _rise_set(julian_date: float, body: int,
     # to the intended local civil date instead of an arbitrary UTC midnight.
     jd_start = julian_date
 
-    # Use the default Swiss Ephemeris sunrise/sunset definition: upper limb with refraction.
-    rsmi = swe.CALC_RISE if is_rise else swe.CALC_SET
+    # rule_flags 0 is Swiss Ephemeris' default (upper limb, refraction); see SUNRISE_RULES.
+    rsmi = (swe.CALC_RISE if is_rise else swe.CALC_SET) | rule_flags
 
     try:
         # pyswisseph 2.10.x signature:
@@ -271,15 +332,17 @@ def _rise_set(julian_date: float, body: int,
     return 0.0
 
 
-@lru_cache(maxsize=365)
-def get_sunrise(julian_date: float, lat: float, lon: float) -> float:
-    """Return Julian Day of sunrise for the given date and location."""
-    return _rise_set(julian_date, swe.SUN, lat, lon, is_rise=True)
+@lru_cache(maxsize=730)
+def get_sunrise(julian_date: float, lat: float, lon: float, rule: str = "modern") -> float:
+    """Return Julian Day of sunrise for the given date and location under the sunrise rule."""
+    _check_sunrise_rule(rule)
+    return _rise_set(julian_date, swe.SUN, lat, lon, is_rise=True, rule_flags=_SUNRISE_RULE_FLAGS[rule])
 
 
-def get_sunset(julian_date: float, lat: float, lon: float) -> float:
-    """Return Julian Day of sunset for the given date and location."""
-    return _rise_set(julian_date, swe.SUN, lat, lon, is_rise=False)
+def get_sunset(julian_date: float, lat: float, lon: float, rule: str = "modern") -> float:
+    """Return Julian Day of sunset for the given date and location under the sunrise rule."""
+    _check_sunrise_rule(rule)
+    return _rise_set(julian_date, swe.SUN, lat, lon, is_rise=False, rule_flags=_SUNRISE_RULE_FLAGS[rule])
 
 
 def get_moonrise(julian_date: float, lat: float, lon: float) -> float:
@@ -335,21 +398,24 @@ def jd_to_local_datetime_string(jd: float, tz_offset: float = 5.5) -> str:
         return ''
 
 
-def jd_to_zoned_datetime(jd: float, tz_name: str) -> datetime | None:
-    """Convert a Julian Day to a timezone-aware datetime."""
+def jd_to_zoned_datetime(jd: float, tz_name: str, *, clock: str) -> datetime | None:
+    """Convert a Julian Day to a timezone-aware datetime under the given clock."""
+    _check_clock(clock)
     if jd == 0.0:
         return None
     try:
         y, m, d, h_utc = swe.revjul(jd, swe.GREG_CAL)
         base_utc = datetime(y, m, d, tzinfo=timezone.utc) + timedelta(hours=h_utc)
-        return base_utc.astimezone(ZoneInfo(tz_name))
+        zone = ZoneInfo(tz_name)
+        wall = base_utc.astimezone(zone)
+        return wall if clock == "daylight" else base_utc.astimezone(_standard_timezone(zone, wall))
     except Exception:
         return None
 
 
-def jd_to_iso_local_string(jd: float, tz_name: str) -> str:
+def jd_to_iso_local_string(jd: float, tz_name: str, *, clock: str) -> str:
     """Convert a Julian Day to an ISO-like local datetime string."""
-    local_dt = jd_to_zoned_datetime(jd, tz_name)
+    local_dt = jd_to_zoned_datetime(jd, tz_name, clock=clock)
     if local_dt is None:
         return ""
     return local_dt.isoformat(timespec="seconds")

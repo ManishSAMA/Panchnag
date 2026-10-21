@@ -68,16 +68,17 @@ def dt_to_jd(dt: datetime.datetime) -> float:
     return swe.julday(dt.year, dt.month, dt.day, hour)
 
 class SwissEphPanchangProvider:
-    def __init__(self, ayanamsa: str = "Lahiri"):
+    def __init__(self, ayanamsa: str = "Lahiri", sunrise_rule: str = "modern"):
         self.ayanamsa = ayanamsa
+        self.sunrise_rule = sunrise_rule
         
     def get_sunrise(self, date_obj: datetime.date, lat: float, lon: float) -> datetime.datetime:
         from location_service import get_timezone_name
         from astronomy import local_date_anchor_jd, get_sunrise, jd_to_zoned_datetime
         tz_name = get_timezone_name(lat, lon)
-        anchor_jd = local_date_anchor_jd(date_obj, tz_name)
-        sunrise_jd = get_sunrise(anchor_jd, lat, lon)
-        sunrise_dt = jd_to_zoned_datetime(sunrise_jd, tz_name)
+        anchor_jd = local_date_anchor_jd(date_obj, tz_name, clock="standard")
+        sunrise_jd = get_sunrise(anchor_jd, lat, lon, self.sunrise_rule)
+        sunrise_dt = jd_to_zoned_datetime(sunrise_jd, tz_name, clock="standard")
         return sunrise_dt.replace(tzinfo=None)
         
     def get_nakshatra_spans(self, start_time: datetime.datetime, end_time: datetime.datetime) -> List[NakshatraSpan]:

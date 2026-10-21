@@ -24,10 +24,23 @@ function saveState(patch) {
 function getState() { return loadState(); }
 
 // ── API ───────────────────────────────────────────────────────
+// The clock and sunrise rule apply to every calculation, so they ride on every
+// request from here rather than being added at each call site.
+function timeSettings() {
+  const state = getState();
+  return { clock: state.clock || 'standard', sunrise: state.sunrise || 'modern' };
+}
+
+function withTimeSettings(path) {
+  if (!path.startsWith('/month-overview')) return path;
+  const { clock, sunrise } = timeSettings();
+  return `${path}${path.includes('?') ? '&' : '?'}clock=${clock}&sunrise=${sunrise}`;
+}
+
 async function apiFetch(path, method = 'GET', body = null) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(path, opts);
+  if (body) opts.body = JSON.stringify({ ...timeSettings(), ...body });
+  const res = await fetch(withTimeSettings(path), opts);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
@@ -1357,6 +1370,10 @@ registerPage('settings', {
     // Ayanamsa
     const sel = document.getElementById('ayanamsaSelect');
     sel.value = state.ayanamsa || 'Lahiri';
+
+    // Clock and sunrise rule
+    document.getElementById('clockSelect').value = state.clock || 'standard';
+    document.getElementById('sunriseSelect').value = state.sunrise || 'modern';
   }
 });
 
@@ -1376,6 +1393,14 @@ document.querySelectorAll('[data-timefmt]').forEach(btn => {
 
 document.getElementById('ayanamsaSelect').addEventListener('change', function() {
   saveState({ ayanamsa: this.value });
+});
+
+document.getElementById('clockSelect').addEventListener('change', function() {
+  saveState({ clock: this.value });
+});
+
+document.getElementById('sunriseSelect').addEventListener('change', function() {
+  saveState({ sunrise: this.value });
 });
 
 // PDF Export
@@ -1446,6 +1471,7 @@ document.getElementById('laghuBtn').addEventListener('click', async () => {
     const data = await apiFetch('/generate-laghu-panchang', 'POST', {
       year:     parseInt(document.getElementById('laghuYear').value, 10),
       format:   document.getElementById('laghuFormat').value,
+      school:   document.getElementById('laghuSchool').value,
       lat: state.lat, lon: state.lon,
       // The name only labels the files; the coordinates drive the calculation.
       ...(state.locationName ? { city: state.locationName } : {}),

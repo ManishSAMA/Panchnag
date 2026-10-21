@@ -110,14 +110,67 @@ def test_the_app_calendars_kalyanaks_appear_on_their_dates():
         assert festival["name_hindi"] in by_date[festival["start_date"]], festival["name"]
 
 
-def test_dst_shifts_the_header_sunrise_by_the_clock_change():
-    """US DST starts 14 Mar 2027: without it, sunrise on the 16th would be earlier than on the 1st."""
-    march_first, march_second = build_laghu_year(
-        year=2027, ayanamsa="Lahiri", profile=PROFILE, months=(3,), **TRENTON
-    )
+def _sunrise_minutes(half: LaghuHalf) -> int:
+    hours, minutes = re.search(r"सूर्योदय – (\d{2}):(\d{2})", half.sun_times).groups()
+    return int(hours) * 60 + int(minutes)
 
-    def sunrise_minutes(half: LaghuHalf) -> int:
-        hours, minutes = re.search(r"सूर्योदय – (\d{2}):(\d{2})", half.sun_times).groups()
-        return int(hours) * 60 + int(minutes)
 
-    assert sunrise_minutes(march_second) - sunrise_minutes(march_first) > 20
+def _march(place: dict, **settings) -> tuple[LaghuHalf, LaghuHalf]:
+    return build_laghu_year(year=2027, ayanamsa="Lahiri", profile=PROFILE, months=(3,), **place, **settings)
+
+
+def test_daylight_clock_jumps_the_header_sunrise_by_the_dst_hour():
+    """US DST starts 14 Mar 2027: on the wall clock, sunrise on the 16th is later than on the 1st."""
+    march_first, march_second = _march(TRENTON, clock="daylight")
+
+    assert _sunrise_minutes(march_second) - _sunrise_minutes(march_first) > 20
+
+
+def test_standard_clock_is_the_default_and_moves_smoothly_through_march():
+    """In standard time the March sunrise just keeps getting earlier, as in the NJ reference sheet."""
+    default = _march(TRENTON)
+    march_first, march_second = _march(TRENTON, clock="standard")
+
+    assert default == (march_first, march_second)
+    assert 0 < _sunrise_minutes(march_first) - _sunrise_minutes(march_second) < 30
+
+
+NEW_JERSEY = {"lat": 40 + 50 / 60, "lon": -(74 + 6 / 60), "tz_name": "America/New_York"}
+
+
+def _minutes(cell: str) -> int:
+    hours, minutes = map(int, re.search(r"(\d{2}):(\d{2})", cell).groups())
+    return hours * 60 + minutes
+
+
+def test_standard_time_matches_the_new_jersey_reference_after_the_dst_change():
+    """PanchangReport_2654.pdf (40°50'N 74°06'W, 2027, EST all year), March page.
+
+    These days fall after the 14 Mar DST change, where the wall clock reads an
+    hour later; in standard time we agree with the sheet to a few minutes.
+    """
+    days = {day.date.day: day for half in _march(NEW_JERSEY, clock="standard") for day in half.days}
+    reference = [
+        (days[14].tithi_end, "24:24"),     # 14 Mar, Saptami ends 24:24:59
+        (days[15].moon_sign, "10:24"),     # 15 Mar, Moon enters Mithuna 10:24:58
+        (days[22].nakshatra_end, "10:19"), # 22 Mar, Uttara Phalguni ends 10:19:27
+        (days[30].tithi_end, "09:13"),     # 30 Mar, Ashtami ends 09:13:37
+    ]
+
+    for ours, theirs in reference:
+        assert abs(_minutes(ours) - _minutes(theirs)) <= 5, (ours, theirs)
+
+
+def test_traditional_sunrise_matches_the_new_jersey_reference_header():
+    """PanchangReport_2654.pdf, March: sunrise 1 Mar 06:34, 16 Mar 06:10 (EST)."""
+    march_first, march_second = _march(NEW_JERSEY, clock="standard", sunrise_rule="traditional")
+
+    assert abs(_sunrise_minutes(march_first) - (6 * 60 + 34)) <= 1
+    assert abs(_sunrise_minutes(march_second) - (6 * 60 + 10)) <= 1
+
+
+def test_the_traditional_rule_moves_sunrise_later_than_the_modern_one():
+    modern, _ = _march(NEW_JERSEY, clock="standard", sunrise_rule="modern")
+    traditional, _ = _march(NEW_JERSEY, clock="standard", sunrise_rule="traditional")
+
+    assert 2 <= _sunrise_minutes(traditional) - _sunrise_minutes(modern) <= 8

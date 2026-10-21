@@ -58,6 +58,29 @@ An unrecognised value is rejected with HTTP 400.
 Jain festival endpoints do not take this parameter: festival rules resolve their
 own month naming internally and already report Purnimanta months.
 
+### Time settings (`clock`, `sunrise`)
+
+Every calculating endpoint accepts two optional settings (query parameters on
+`GET /month-overview`, JSON fields elsewhere):
+
+| Field | Values | Default | Meaning |
+|---|---|---|---|
+| `clock` | `standard`, `daylight` | `standard` | `standard` prints the zone's standard time all year (EST through a New York summer), as printed panchangs for DST countries do. `daylight` follows the wall clock. Zones without DST read the same under both. |
+| `sunrise` | `modern`, `traditional` | `modern` | `modern`: the Sun's upper limb on the horizon, with refraction. `traditional`: the centre of the disc on the geometric horizon, no refraction, about 2–8 minutes later at sunrise and earlier at sunset. |
+
+`sunrise` changes every sunrise-based value: sunrise and sunset, the Udaya and
+Jain tithi, and on rare days which tithi owns a date (so a festival can move by
+a day). `clock` changes only how times are shown, never a date. Unknown values
+are rejected with HTTP 400. The daily panchang and month overview echo both
+back as `clock` and `sunrise_rule`.
+
+Endpoints: `/generate-panchang`, `/month-overview`, `/choghadiya`,
+`/dainika-muhurta`, `/dainika-muhurta-export`, `/generate-range-panchang`,
+`/generate-pdf-panchang`, `/generate-hindi-pdf`, `/generate-laghu-panchang`,
+`/generate-jain-festivals` and `/generate-jain-festival-exports` (`sunrise`
+only), and `/api/generate-db` (`sunrise` only, since the database stores UTC;
+recorded in `meta.sunrise_rule`).
+
 ## `GET /search-location`
 
 Searches locations through Nominatim for autocomplete-style city selection.
@@ -313,6 +336,15 @@ Request:
 Only `year` (1900–2100) and a location are required. `format` is `pdf` (default),
 `excel` or `both`; `profile` defaults to `shwetambar_murtipujak_tapagachchha`. When
 coordinates are given, `city` only labels the file names.
+
+`school` picks the kalyanak tradition: `all` (default), `vrindavan`,
+`uttarapurana` or `ashadhara`. With one school chosen, a kalyanak attested only
+by the other schools is left out; parvas and vrats, which no school claims,
+always stay. The page caption reads e.g. "Delhi · वृन्दावन मत", the file name
+gains the school (`Laghu_Panchang_2027_Delhi_Vrindavan.pdf`), and the response
+echoes `school`. `POST /generate-jain-festival-exports` applies the same rule to
+its `source` field (`all`, `Vrindavan`, `Uttarapurana`, `Ashadhara`); an unknown
+value is now rejected with HTTP 400.
 
 Response includes `year`, `ayanamsa`, `profile`, the resolved `location`, and
 `files`: one `{name, format, download_url}` per file. `format` is `pdf`, `xlsx`, or

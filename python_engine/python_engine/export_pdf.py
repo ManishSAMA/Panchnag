@@ -1,12 +1,13 @@
 import argparse
 import sys
 import calendar
+from collections.abc import Iterable
 from datetime import date, datetime, timedelta
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import landscape, letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from astronomy import local_time_to_jd, jd_to_local_time_string, get_sunrise, get_sunset, get_planetary_longitude, get_rashi_name, get_sun_rashi
+from astronomy import local_time_to_jd, jd_to_local_time_string, get_sunrise, get_sunset, get_planetary_longitude, get_rashi_name, get_sun_rashi, utc_offset_hours
 from export import apply_element_continuity_formatting, format_row_data
 from panchang import (
     calculate_bhadra_kaal,
@@ -21,7 +22,121 @@ from panchang import (
     get_vira_nirvana_samvat,
 )
 
-def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon: float=75.7873, tz_offset: float=5.5, ayanamsa: str='Lahiri', profile: str='shwetambar_murtipujak_tapagachchha'):
+def build_year_rows(
+    year: int,
+    *,
+    lat: float,
+    lon: float,
+    tz_offset: float,
+    ayanamsa: str,
+    profile: str = "shwetambar_murtipujak_tapagachchha",
+    tz_name: str | None = None,
+    clock: str = "standard",
+    sunrise_rule: str = "modern",
+    months: Iterable[int] = range(1, 13),
+) -> list[dict]:
+    """One row per civil day for the yearly PDF.
+
+    With tz_name, each day takes its own offset under the clock setting (and
+    the row records it as __tz_offset); without, the fixed tz_offset applies.
+    """
+    chaitra_shukla_1 = find_chaitra_shukla_1(year, lat, lon, tz_offset, ayanamsa, sunrise_rule=sunrise_rule)
+    diwali = find_diwali(year, lat, lon, tz_offset, ayanamsa, sunrise_rule=sunrise_rule)
+
+    from jain_observances.festival_service import generate_jain_festivals
+    jain_fest_data = generate_jain_festivals(year, lat, lon, ayanamsa, profile, sunrise_rule=sunrise_rule)
+    date_to_fests = {}
+    for f in jain_fest_data.get("festivals", []):
+        start_d = datetime.strptime(f["start_date"], "%Y-%m-%d").date()
+        end_d = datetime.strptime(f["end_date"], "%Y-%m-%d").date()
+        curr_d = start_d
+        while curr_d <= end_d:
+            d_str = curr_d.isoformat()
+            if d_str not in date_to_fests:
+                date_to_fests[d_str] = []
+            date_to_fests[d_str].append(f)
+            curr_d += timedelta(days=1)
+
+    all_rows: list[dict] = []
+    for month in months:
+        num_days = calendar.monthrange(year, month)[1]
+        for day in range(1, num_days + 1):
+            offset = utc_offset_hours(tz_name, date(year, month, day), clock=clock) if tz_name else tz_offset
+            jd_start = local_time_to_jd(year, month, day, 0.0, offset)
+            jd_sr = get_sunrise(jd_start, lat, lon, sunrise_rule)
+            jd_ss = get_sunset(jd_start, lat, lon, sunrise_rule)
+
+            moon_lon = get_planetary_longitude(jd_sr, 'Moon', ayanamsa)
+            sun_lon = get_planetary_longitude(jd_sr, 'Sun', ayanamsa)
+            civil_date = date(year, month, day)
+            panchang = generate_daily_panchang(
+                jd_sr,
+                ayanamsa,
+                sun_lon=sun_lon,
+                moon_lon=moon_lon,
+                local_date=civil_date,
+            )
+            jain_tithi = calculate_jain_tithi_from_sunrise(jd_sr, ayanamsa)
+
+            jd_next_day_start = jd_start + 1.0
+            jd_next_sr = get_sunrise(jd_next_day_start, lat, lon, sunrise_rule)
+            bhadra = calculate_bhadra_kaal(jd_sr, jd_next_sr, ayanamsa)
+            panchak_raw = calculate_panchak_kaal(jd_sr, jd_next_sr, ayanamsa)
+            panchak_segs = panchak_raw["windows"]
+
+            civil_date_str = f"{year:04d}-{month:02d}-{day:02d}"
+            day_fests = date_to_fests.get(civil_date_str, [])
+            fests_list = [f for f in day_fests if f["category"] != "parva"]
+            parva_list = [f for f in day_fests if f["category"] == "parva"]
+
+            row = format_row_data(
+                date_str=civil_date_str,
+                julian_date=jd_sr,
+                planets={"Sun": sun_lon, "Moon": moon_lon},
+                panchang=panchang,
+                jain_tithi=jain_tithi,
+                sunrise_str=jd_to_local_time_string(jd_sr, offset),
+                sunset_str=jd_to_local_time_string(jd_ss, offset),
+                moonrise_str="",
+                moonset_str="",
+                ayanamsa_dec=0.0,
+                ayanamsa_name=ayanamsa,
+                tz_offset=offset,
+                tz_label="PDF",
+                vikram_samvat=get_vikram_samvat(civil_date, chaitra_shukla_1),
+                vira_nirvana_samvat=get_vira_nirvana_samvat(civil_date, diwali),
+                bhadra_kaal=bhadra,
+                panchak_segments=panchak_segs,
+                jain_festivals=fests_list,
+                jain_parva_tithis=parva_list,
+                festival_profile=profile,
+                festival_review_needed=any(f.get("status") == "review_needed" for f in day_fests),
+            )
+            row["Moon_Rashi"] = get_rashi_name(moon_lon).split(' (')[0]
+            row["Sun_Rashi"] = get_sun_rashi(jd_sr)
+            rahu = calculate_rahu_kaal(jd_sr, jd_ss, panchang["Vara_Index"])
+            row["Rahu_Kaal"] = (
+                jd_to_local_time_string(rahu["start_jd"], offset)[:5]
+                + "–"
+                + jd_to_local_time_string(rahu["end_jd"], offset)[:5]
+            )
+            row["Bhadra_Segments"] = bhadra
+            row["Panchak_Segments"] = panchak_segs
+            row["Jain_Fests_PDF"] = day_fests
+            row["__tz_offset"] = offset
+            all_rows.append(row)
+
+    for i, row in enumerate(all_rows):
+        prev_rashi = all_rows[i - 1]["Sun_Rashi"] if i > 0 else None
+        curr_rashi = row["Sun_Rashi"]
+        row["Sun_Rashi_Display"] = (
+            f"{prev_rashi} \u2192 {curr_rashi}" if prev_rashi and prev_rashi != curr_rashi
+            else curr_rashi
+        )
+    return all_rows
+
+
+def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon: float=75.7873, tz_offset: float=5.5, ayanamsa: str='Lahiri', profile: str='shwetambar_murtipujak_tapagachchha', *, tz_name: str | None = None, clock: str = 'standard', sunrise_rule: str = 'modern', tz_label: str | None = None):
     doc = SimpleDocTemplate(
         out_filename, 
         pagesize=landscape(letter),
@@ -56,98 +171,10 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
         alignment=1 # Center
     )
     
-    chaitra_shukla_1 = find_chaitra_shukla_1(year, lat, lon, tz_offset, ayanamsa)
-    diwali = find_diwali(year, lat, lon, tz_offset, ayanamsa)
-
-    from jain_observances.festival_service import generate_jain_festivals
-    jain_fest_data = generate_jain_festivals(year, lat, lon, ayanamsa, profile)
-    date_to_fests = {}
-    for f in jain_fest_data.get("festivals", []):
-        start_d = datetime.strptime(f["start_date"], "%Y-%m-%d").date()
-        end_d = datetime.strptime(f["end_date"], "%Y-%m-%d").date()
-        curr_d = start_d
-        while curr_d <= end_d:
-            d_str = curr_d.isoformat()
-            if d_str not in date_to_fests:
-                date_to_fests[d_str] = []
-            date_to_fests[d_str].append(f)
-            curr_d += timedelta(days=1)
-
-    all_rows: list[dict] = []
-    for month in range(1, 13):
-        num_days = calendar.monthrange(year, month)[1]
-        for day in range(1, num_days + 1):
-            jd_start = local_time_to_jd(year, month, day, 0.0, tz_offset)
-            jd_sr = get_sunrise(jd_start, lat, lon)
-            jd_ss = get_sunset(jd_start, lat, lon)
-
-            moon_lon = get_planetary_longitude(jd_sr, 'Moon', ayanamsa)
-            sun_lon = get_planetary_longitude(jd_sr, 'Sun', ayanamsa)
-            civil_date = date(year, month, day)
-            panchang = generate_daily_panchang(
-                jd_sr,
-                ayanamsa,
-                sun_lon=sun_lon,
-                moon_lon=moon_lon,
-                local_date=civil_date,
-            )
-            jain_tithi = calculate_jain_tithi_from_sunrise(jd_sr, ayanamsa)
-
-            jd_next_day_start = local_time_to_jd(year, month, day, 0.0, tz_offset) + 1.0
-            jd_next_sr = get_sunrise(jd_next_day_start, lat, lon)
-            bhadra = calculate_bhadra_kaal(jd_sr, jd_next_sr, ayanamsa)
-            panchak_raw = calculate_panchak_kaal(jd_sr, jd_next_sr, ayanamsa)
-            panchak_segs = panchak_raw["windows"]
-
-            civil_date_str = f"{year:04d}-{month:02d}-{day:02d}"
-            day_fests = date_to_fests.get(civil_date_str, [])
-            fests_list = [f for f in day_fests if f["category"] != "parva"]
-            parva_list = [f for f in day_fests if f["category"] == "parva"]
-
-            row = format_row_data(
-                date_str=civil_date_str,
-                julian_date=jd_sr,
-                planets={"Sun": sun_lon, "Moon": moon_lon},
-                panchang=panchang,
-                jain_tithi=jain_tithi,
-                sunrise_str=jd_to_local_time_string(jd_sr, tz_offset),
-                sunset_str=jd_to_local_time_string(jd_ss, tz_offset),
-                moonrise_str="",
-                moonset_str="",
-                ayanamsa_dec=0.0,
-                ayanamsa_name=ayanamsa,
-                tz_offset=tz_offset,
-                tz_label="PDF",
-                vikram_samvat=get_vikram_samvat(civil_date, chaitra_shukla_1),
-                vira_nirvana_samvat=get_vira_nirvana_samvat(civil_date, diwali),
-                bhadra_kaal=bhadra,
-                panchak_segments=panchak_segs,
-                jain_festivals=fests_list,
-                jain_parva_tithis=parva_list,
-                festival_profile=profile,
-                festival_review_needed=any(f.get("status") == "review_needed" for f in day_fests),
-            )
-            row["Moon_Rashi"] = get_rashi_name(moon_lon).split(' (')[0]
-            row["Sun_Rashi"] = get_sun_rashi(jd_sr)
-            rahu = calculate_rahu_kaal(jd_sr, jd_ss, panchang["Vara_Index"])
-            row["Rahu_Kaal"] = (
-                jd_to_local_time_string(rahu["start_jd"], tz_offset)[:5]
-                + "–"
-                + jd_to_local_time_string(rahu["end_jd"], tz_offset)[:5]
-            )
-            row["Bhadra_Segments"] = bhadra
-            row["Panchak_Segments"] = panchak_segs
-            row["Jain_Fests_PDF"] = day_fests
-            all_rows.append(row)
-
-    for i, row in enumerate(all_rows):
-        prev_rashi = all_rows[i - 1]["Sun_Rashi"] if i > 0 else None
-        curr_rashi = row["Sun_Rashi"]
-        row["Sun_Rashi_Display"] = (
-            f"{prev_rashi} \u2192 {curr_rashi}" if prev_rashi and prev_rashi != curr_rashi
-            else curr_rashi
-        )
-
+    all_rows = build_year_rows(
+        year, lat=lat, lon=lon, tz_offset=tz_offset, ayanamsa=ayanamsa, profile=profile,
+        tz_name=tz_name, clock=clock, sunrise_rule=sunrise_rule,
+    )
     formatted_rows = apply_element_continuity_formatting(all_rows, tz_offset=tz_offset)
 
     # Collect unique lunar months per Gregorian month, in order of first appearance.
@@ -186,7 +213,7 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
         elements.append(Paragraph(f"({sanskrit_str})", subtitle_style))
         
         # Header Info
-        loc_info = Paragraph(f"<b>Location:</b> Lat {lat}, Lon {lon} | <b>Timezone:</b> UTC+{tz_offset} | <b>Ayanamsa:</b> {ayanamsa}", styles['Normal'])
+        loc_info = Paragraph(f"<b>Location:</b> Lat {lat}, Lon {lon} | <b>Timezone:</b> {tz_label or f'UTC{tz_offset:+g}'} | <b>Ayanamsa:</b> {ayanamsa}", styles['Normal'])
         loc_info_profile = Paragraph(f"<b>Festival Profile:</b> {profile.replace('_', ' ').title()}", styles['Normal'])
         elements.append(loc_info)
         elements.append(loc_info_profile)
@@ -221,8 +248,8 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
             if bhadra_segs:
                 bhadra_summaries = []
                 for w in bhadra_segs:
-                    start_t = jd_to_local_time_string(w["start_jd"], tz_offset)[:5]
-                    end_t = jd_to_local_time_string(w["end_jd"], tz_offset)[:5]
+                    start_t = jd_to_local_time_string(w["start_jd"], row_data.get("__tz_offset", tz_offset))[:5]
+                    end_t = jd_to_local_time_string(w["end_jd"], row_data.get("__tz_offset", tz_offset))[:5]
                     bhadra_summaries.append(
                         f"{start_t}–{end_t}<br/><font size='5'>{w['residence']} ({w['risk_level']})</font>"
                     )
@@ -235,8 +262,8 @@ def generate_pdf_calendar(year: int, out_filename: str, lat: float=26.9124, lon:
             if panchak_segs:
                 panchak_parts = []
                 for pw in panchak_segs:
-                    start_t = jd_to_local_time_string(pw["start_jd"], tz_offset)[:5]
-                    end_t   = jd_to_local_time_string(pw["end_jd"],   tz_offset)[:5]
+                    start_t = jd_to_local_time_string(pw["start_jd"], row_data.get("__tz_offset", tz_offset))[:5]
+                    end_t   = jd_to_local_time_string(pw["end_jd"],   row_data.get("__tz_offset", tz_offset))[:5]
                     panchak_parts.append(
                         f"{start_t}–{end_t}<br/><font size='5'>{pw['nakshatra']}</font>"
                     )

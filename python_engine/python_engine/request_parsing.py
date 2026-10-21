@@ -15,6 +15,8 @@ class PanchangRequest:
     lon: float | None
     ayanamsa_name: str
     calendar_system: str
+    clock: str = "standard"
+    sunrise_rule: str = "modern"
 
 
 @dataclass(frozen=True)
@@ -30,6 +32,8 @@ class RangeGenerationRequest:
     workers: int
     profile: str
     language: str = "en"
+    clock: str = "standard"
+    sunrise_rule: str = "modern"
 
 
 @dataclass(frozen=True)
@@ -39,6 +43,8 @@ class PdfGenerationRequest:
     lat: float | None
     lon: float | None
     ayanamsa_name: str
+    clock: str = "standard"
+    sunrise_rule: str = "modern"
 
 
 VALID_PROFILES = (
@@ -59,6 +65,9 @@ class LaghuPanchangRequest:
     ayanamsa_name: str
     profile: str
     output_format: str
+    clock: str = "standard"
+    sunrise_rule: str = "modern"
+    school: str = "all"
 
 
 @dataclass(frozen=True)
@@ -71,6 +80,8 @@ class HindiPdfRequest:
     lon: float | None
     ayanamsa_name: str
     calendar_system: str
+    clock: str = "standard"
+    sunrise_rule: str = "modern"
 
 
 # ---------------------------------------------------------------------------
@@ -94,6 +105,8 @@ def parse_panchang_request(payload: dict | None) -> PanchangRequest:
         lon=lon,
         ayanamsa_name=ayanamsa_name,
         calendar_system=parse_calendar_system(payload.get("calendar_system")),
+        clock=parse_clock(payload.get("clock")),
+        sunrise_rule=parse_sunrise_rule(payload.get("sunrise")),
     )
 
 
@@ -134,6 +147,8 @@ def parse_range_generation_request(payload: dict | None) -> RangeGenerationReque
         workers=workers,
         profile=profile,
         language=language,
+        clock=parse_clock(payload.get("clock")),
+        sunrise_rule=parse_sunrise_rule(payload.get("sunrise")),
     )
 
 
@@ -150,6 +165,8 @@ def parse_pdf_generation_request(payload: dict | None) -> PdfGenerationRequest:
         lat=lat,
         lon=lon,
         ayanamsa_name=ayanamsa_name,
+        clock=parse_clock(payload.get("clock")),
+        sunrise_rule=parse_sunrise_rule(payload.get("sunrise")),
     )
 
 
@@ -180,6 +197,8 @@ def parse_hindi_pdf_request(payload: dict | None) -> HindiPdfRequest:
         lon=lon,
         ayanamsa_name=payload.get("ayanamsa", "Lahiri"),
         calendar_system=parse_calendar_system(payload.get("calendar_system")),
+        clock=parse_clock(payload.get("clock")),
+        sunrise_rule=parse_sunrise_rule(payload.get("sunrise")),
     )
 
 
@@ -204,6 +223,9 @@ def parse_laghu_panchang_request(payload: dict | None) -> LaghuPanchangRequest:
         ayanamsa_name=payload.get("ayanamsa", "Lahiri"),
         profile=_parse_profile(payload),
         output_format=output_format,
+        clock=parse_clock(payload.get("clock")),
+        sunrise_rule=parse_sunrise_rule(payload.get("sunrise")),
+        school=parse_school(payload.get("school")),
     )
 
 
@@ -231,6 +253,37 @@ def parse_calendar_system(value: object) -> str:
             "calendar_system must be one of: " + ", ".join(CALENDAR_SYSTEMS)
         )
     return normalized
+
+
+def _parse_choice(value: object, *, choices: tuple[str, ...], field: str) -> str:
+    """Case-insensitive choice; None or "" gives the first (default) choice."""
+    if value in (None, ""):
+        return choices[0]
+    normalized = str(value).strip().lower()
+    if normalized not in choices:
+        raise ValueError(f"{field} must be one of: " + ", ".join(choices))
+    return normalized
+
+
+def parse_clock(value: object) -> str:
+    """Validate the clock setting, defaulting to standard time all year."""
+    from astronomy import CLOCK_MODES
+
+    return _parse_choice(value, choices=CLOCK_MODES, field="clock")
+
+
+def parse_sunrise_rule(value: object) -> str:
+    """Validate the sunrise rule ("sunrise" in requests), defaulting to modern."""
+    from astronomy import SUNRISE_RULES
+
+    return _parse_choice(value, choices=SUNRISE_RULES, field="sunrise")
+
+
+def parse_school(value: object) -> str:
+    """Validate the kalyanak school, defaulting to all schools."""
+    from hindi_calendar_pdf import SCHOOL_CHOICES
+
+    return _parse_choice(value, choices=SCHOOL_CHOICES, field="school")
 
 
 def _parse_location_fields(payload: dict) -> tuple[str | None, float | None, float | None]:
@@ -286,6 +339,7 @@ class JainFestivalsRequest:
     lon: float | None
     ayanamsa_name: str
     profile: str
+    sunrise_rule: str = "modern"
 
 
 def parse_jain_festivals_request(payload: dict | None) -> JainFestivalsRequest:
@@ -306,5 +360,6 @@ def parse_jain_festivals_request(payload: dict | None) -> JainFestivalsRequest:
         lon=lon,
         ayanamsa_name=ayanamsa_name,
         profile=profile,
+        sunrise_rule=parse_sunrise_rule(payload.get("sunrise")),
     )
 

@@ -389,10 +389,112 @@ class TestLaghuPanchangExport(BrowserTestCase):
 
         self.assertEqual(captured, [{
             "year": 2027, "format": "both", "lat": 26.9124, "lon": 75.7873, "city": "Jaipur",
-            "ayanamsa": "Lahiri", "profile": "shwetambar_terapanthi",
+            "ayanamsa": "Lahiri", "profile": "shwetambar_terapanthi", "school": "all",
+            "clock": "standard", "sunrise": "modern",
         }])
         links = page.locator("#laghuResult a")
         self.assertEqual([links.nth(i).get_attribute("href") for i in range(2)], ["/downloads/a", "/downloads/b"])
         self.assertIn("Laghu_Panchang_2027_Jaipur.xlsx", links.nth(1).inner_text())
+        self.assertEqual(page._js_errors, [], f"Uncaught JS errors: {page._js_errors}")
+        page.context.close()
+
+
+class TestTimeSettings(BrowserTestCase):
+    """Settings offers the clock and sunrise rule; every request carries them."""
+
+    STATE = """
+        localStorage.setItem('jain_panchang_v2', JSON.stringify(Object.assign({
+            lat: 40.8333, lon: -74.1, locationName: 'New Jersey', ayanamsa: 'Lahiri', timeFormat: '24h'
+        }, %s)))
+    """
+
+    def _open(self, page, path: str, extra: str = "{}"):
+        page.goto(self.base_url)
+        page.evaluate(self.STATE % extra)
+        page.goto(f"{self.base_url}{path}")
+        page.wait_for_load_state("networkidle")
+
+    def test_settings_default_to_standard_time_and_the_modern_sunrise(self):
+        page = self.new_page()
+        self._open(page, "#settings")
+
+        self.assertEqual(page.input_value("#clockSelect"), "standard")
+        self.assertEqual(page.input_value("#sunriseSelect"), "modern")
+        page.context.close()
+
+    def test_choosing_a_setting_is_remembered(self):
+        page = self.new_page()
+        self._open(page, "#settings")
+
+        page.select_option("#clockSelect", "daylight")
+        page.select_option("#sunriseSelect", "traditional")
+        saved = page.evaluate("JSON.parse(localStorage.getItem('jain_panchang_v2'))")
+
+        self.assertEqual((saved["clock"], saved["sunrise"]), ("daylight", "traditional"))
+        page.reload()
+        page.wait_for_load_state("networkidle")
+        self.assertEqual(page.input_value("#clockSelect"), "daylight")
+        self.assertEqual(page.input_value("#sunriseSelect"), "traditional")
+        self.assertEqual(page._js_errors, [], f"Uncaught JS errors: {page._js_errors}")
+        page.context.close()
+
+    def test_post_requests_carry_the_chosen_settings(self):
+        page = self.new_page()
+        captured: list = []
+
+        def fulfil(route):
+            captured.append(route.request.post_data_json)
+            route.fulfill(json={"year": 2027, "ayanamsa": "Lahiri", "profile": "p", "location": {}, "files": []})
+
+        page.route("**/generate-laghu-panchang", fulfil)
+        self._open(page, "#settings", '{"clock": "daylight", "sunrise": "traditional"}')
+        page.click("#laghuBtn")
+        page.wait_for_timeout(500)
+
+        self.assertEqual((captured[0]["clock"], captured[0]["sunrise"]), ("daylight", "traditional"))
+        page.context.close()
+
+    def test_the_month_overview_request_carries_the_chosen_settings(self):
+        page = self.new_page()
+        urls: list[str] = []
+        page.on("request", lambda req: urls.append(req.url) if "/month-overview" in req.url else None)
+
+        self._open(page, "#calendar", '{"clock": "daylight", "sunrise": "traditional"}')
+        page.wait_for_timeout(500)
+
+        self.assertTrue(urls, "expected a /month-overview request")
+        self.assertIn("clock=daylight", urls[0])
+        self.assertIn("sunrise=traditional", urls[0])
+        page.context.close()
+
+
+class TestLaghuSchool(BrowserTestCase):
+    """The Laghu Panchang card lets you pick the kalyanak school before generating."""
+
+    def test_the_chosen_school_is_sent_with_the_request(self):
+        page = self.new_page()
+        captured: list = []
+
+        def fulfil(route):
+            captured.append(route.request.post_data_json)
+            route.fulfill(json={"year": 2027, "ayanamsa": "Lahiri", "profile": "p", "school": "ashadhara",
+                                "location": {}, "files": []})
+
+        page.route("**/generate-laghu-panchang", fulfil)
+        page.goto(self.base_url)
+        page.evaluate("""localStorage.setItem('jain_panchang_v2', JSON.stringify({
+            lat: 28.6139, lon: 77.209, locationName: 'Delhi', ayanamsa: 'Lahiri'}))""")
+        page.goto(f"{self.base_url}#settings")
+        page.wait_for_load_state("networkidle")
+
+        self.assertEqual(page.input_value("#laghuSchool"), "all")
+        options = page.eval_on_selector_all("#laghuSchool option", "els => els.map(e => e.value)")
+        self.assertEqual(options, ["all", "vrindavan", "uttarapurana", "ashadhara"])
+
+        page.select_option("#laghuSchool", "ashadhara")
+        page.click("#laghuBtn")
+        page.wait_for_timeout(500)
+
+        self.assertEqual(captured[0]["school"], "ashadhara")
         self.assertEqual(page._js_errors, [], f"Uncaught JS errors: {page._js_errors}")
         page.context.close()

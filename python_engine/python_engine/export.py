@@ -226,7 +226,7 @@ def apply_element_continuity_formatting(data_list: list[dict], tz_offset: float 
                 current_name,
                 float(source_row.get(f"__{end_key}", 0.0) or 0.0),
                 show_end_info=is_last_occurrence,
-                tz_offset=tz_offset,
+                tz_offset=float(source_row.get("__tz_offset", tz_offset)),
             )
 
         row["Jain_Tithi_PDF"] = source_row.get("Jain_Tithi", "")

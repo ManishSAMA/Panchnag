@@ -357,6 +357,7 @@ def _tithi_owns_civil_day(
     lon: float,
     tz_offset: float,
     ayanamsa_name: str,
+    sunrise_rule: str = 'modern',
 ) -> bool:
     """Whether ``target_tithi`` (1-30) governs civil day ``d`` under the 6-ghati
     anchor -- including the kshaya case.
@@ -373,7 +374,7 @@ def _tithi_owns_civil_day(
     search windows, so the Pratipada-kshaya forward fallback that
     _kshaya_backshift carries is intentionally not implemented here.
     """
-    jd_sr = get_sunrise(local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset), lat, lon)
+    jd_sr = get_sunrise(local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset), lat, lon, sunrise_rule)
     prevailing = get_prevailing_tithi_index(jd_sr, ayanamsa_name)
     if prevailing == target_tithi:
         return True
@@ -385,7 +386,7 @@ def _tithi_owns_civil_day(
     following_tithi = target_tithi % 30 + 1
     d_next = d + timedelta(days=1)
     jd_sr_next = get_sunrise(
-        local_time_to_jd(d_next.year, d_next.month, d_next.day, 0.0, tz_offset), lat, lon
+        local_time_to_jd(d_next.year, d_next.month, d_next.day, 0.0, tz_offset), lat, lon, sunrise_rule
     )
     return get_prevailing_tithi_index(jd_sr_next, ayanamsa_name) == following_tithi
 
@@ -805,6 +806,7 @@ def _find_tithi_in_range(
     lon: float,
     tz_offset: float,
     ayanamsa_name: str,
+    sunrise_rule: str = 'modern',
 ) -> date:
     """Scan a date range and return the first day the target Tithi OWNS by the
     6-ghati anchor (see _tithi_owns_civil_day) -- the day it prevails at
@@ -816,7 +818,7 @@ def _find_tithi_in_range(
     """
     for i in range(search_days):
         d = date(year, start_month, start_day) + timedelta(days=i)
-        if _tithi_owns_civil_day(d, target_tithi, lat, lon, tz_offset, ayanamsa_name):
+        if _tithi_owns_civil_day(d, target_tithi, lat, lon, tz_offset, ayanamsa_name, sunrise_rule):
             return d
     raise ValueError(
         f"Could not find Tithi={target_tithi} in {year}-{start_month:02d}-{start_day:02d} "
@@ -830,6 +832,7 @@ def find_chaitra_shukla_1(
     lon: float,
     tz_offset: float = 5.5,
     ayanamsa_name: str = 'Lahiri',
+    sunrise_rule: str = 'modern',
 ) -> date:
     """Return the Gregorian date of Chaitra Shukla Pratipada for the given year.
 
@@ -844,7 +847,7 @@ def find_chaitra_shukla_1(
     the first one is always the Phalguna Amavasya.
     """
     phalguna_amavasya = _find_tithi_in_range(
-        year, 3, 1, 52, 30, lat, lon, tz_offset, ayanamsa_name
+        year, 3, 1, 52, 30, lat, lon, tz_offset, ayanamsa_name, sunrise_rule
     )
     return phalguna_amavasya + timedelta(days=1)
 
@@ -855,6 +858,7 @@ def find_diwali(
     lon: float,
     tz_offset: float = 5.5,
     ayanamsa_name: str = 'Lahiri',
+    sunrise_rule: str = 'modern',
 ) -> date:
     """Return the Gregorian date of Diwali (Kartik Krishna Amavasya) for the given year.
 
@@ -875,11 +879,11 @@ def find_diwali(
     for i in range(46):  # Oct 10 - Nov 24 inclusive
         d = date(year, 10, 10) + timedelta(days=i)
         jd_start = local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset)
-        jd_sr = get_sunrise(jd_start, lat, lon)
+        jd_sr = get_sunrise(jd_start, lat, lon, sunrise_rule)
         reference_jd = jd_sr + JAIN_TITHI_OFFSET_DAYS
         sun_lon = get_planetary_longitude(reference_jd, 'Sun', ayanamsa_name)
         if (
-            _tithi_owns_civil_day(d, 30, lat, lon, tz_offset, ayanamsa_name)
+            _tithi_owns_civil_day(d, 30, lat, lon, tz_offset, ayanamsa_name, sunrise_rule)
             and sun_lon >= 179.0
         ):
             return d

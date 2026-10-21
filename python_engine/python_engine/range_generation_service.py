@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import calendar
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 import tempfile
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
+from astronomy import clock_timezone, utc_offset_hours
 from export import apply_element_continuity_formatting, export_data
 from hindi_export import translate_rows_to_hindi
 from main import _dates_in_range, run_generation
@@ -27,11 +28,12 @@ def _build_festival_date_index(
     lon: float,
     ayanamsa_name: str,
     profile: str,
+    sunrise_rule: str = "modern",
 ) -> dict[str, dict]:
     from jain_observances.festival_service import generate_jain_festivals
     index: dict[str, dict] = {}
     for year in range(start_year, end_year + 1):
-        fest_data = generate_jain_festivals(year, lat, lon, ayanamsa_name, profile)
+        fest_data = generate_jain_festivals(year, lat, lon, ayanamsa_name, profile, sunrise_rule=sunrise_rule)
         for f in fest_data.get("festivals", []):
             start_d = datetime.strptime(f["start_date"], "%Y-%m-%d").date()
             end_d = datetime.strptime(f["end_date"], "%Y-%m-%d").date()
@@ -70,15 +72,20 @@ def generate_year_range_exports(
     profile: str = "shwetambar_murtipujak_tapagachchha",
     output_dir: str | None = None,
     language: str = "en",
+    clock: str = "standard",
+    sunrise_rule: str = "modern",
 ) -> dict:
     location = resolve_location(city=city, lat=lat, lon=lon)
-    tz_info = _timezone_snapshot(location.timezone, start_year)
+    tz_info = export_timezone(location.timezone, start_year, clock=clock)
     festival_index = _build_festival_date_index(
-        start_year, end_year, location.lat, location.lon, ayanamsa_name, profile
+        start_year, end_year, location.lat, location.lon, ayanamsa_name, profile, sunrise_rule
     )
     config = {
         "lat": location.lat,
         "lon": location.lon,
+        "tz_name": location.timezone,
+        "clock": clock,
+        "sunrise_rule": sunrise_rule,
         "tz_offset": tz_info["offset_hours"],
         "tz_label": tz_info["label"],
         "ayanamsa": ayanamsa_name,
@@ -147,13 +154,21 @@ def generate_year_range_exports(
     }
 
 
-def _timezone_snapshot(tz_name: str, start_year: int) -> dict:
-    tz = ZoneInfo(tz_name)
-    sample_dt = datetime(start_year, 1, 1, 12, tzinfo=tz)
-    offset = sample_dt.utcoffset()
-    offset_hours = 0.0 if offset is None else offset.total_seconds() / 3600.0
-    label = sample_dt.tzname() or tz_name
-    return {
-        "label": label,
-        "offset_hours": offset_hours,
-    }
+def export_timezone(tz_name: str, year: int, *, clock: str) -> dict:
+    """The export's timezone label and offset under the clock setting.
+
+    "standard": the zone's standard offset, all year -- taken as standard time,
+    not as whatever 1 January happens to be (summer time south of the equator).
+    "daylight": rows carry their own per-day offset; the label names every
+    abbreviation the year uses ("EST/EDT"), and offset_hours is 1 January's.
+    """
+    january = date(year, 1, 1)
+    if clock == "standard":
+        zone = clock_timezone(tz_name, january, clock="standard")
+        return {"label": zone.tzname(None), "offset_hours": utc_offset_hours(tz_name, january, clock="standard")}
+
+    wall = ZoneInfo(tz_name)
+    by_month = (datetime(year, month, 1, 12, tzinfo=wall) for month in range(1, 13))
+    standard_first = sorted(by_month, key=lambda moment: bool(moment.dst()))
+    labels = list(dict.fromkeys(moment.tzname() for moment in standard_first))
+    return {"label": "/".join(labels), "offset_hours": utc_offset_hours(tz_name, january, clock="daylight")}

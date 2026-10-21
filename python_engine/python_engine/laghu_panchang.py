@@ -13,16 +13,17 @@ traditional panchang convention, which keeps a solar day on one row.
 from __future__ import annotations
 
 import calendar
+import math
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import date, timedelta
 
-from astronomy import get_sunrise, get_sunset, local_time_to_jd
+from astronomy import get_sunrise, get_sunset, local_time_to_jd, utc_offset_hours
 from hindi_calendar_pdf import (
     GREG_MONTHS_HINDI,
     _paksha_and_name,
     build_festival_index,
+    festivals_for_school,
     hindi_month_name,
     merge_day_festivals,
     translate_fest,
@@ -86,7 +87,9 @@ _YOGA_LISTS = ("yogas", "aanandadi_yogas", "ravi_yogas", "special_yogas")
 
 def clock_from_midnight(jd: float, midnight_jd: float) -> str:
     """"25:47" -- hours and minutes since the civil day's local midnight."""
-    hours, minutes = divmod(round((jd - midnight_jd) * 1440.0), 60)
+    # Seconds are dropped, as in the app's exports and printed panchangs; the tiny
+    # tolerance keeps JD round-off just below a whole minute from losing that minute.
+    hours, minutes = divmod(math.floor((jd - midnight_jd) * 1440.0 + 1e-4), 60)
     return f"{hours:02d}:{minutes:02d}"
 
 
@@ -273,15 +276,22 @@ class _SolarDay:
     jain_month: str
 
 
-def _utc_offset_hours(day: date, tz_name: str) -> float:
-    """Offset in force at local noon, so DST days use their own clock."""
-    noon = datetime(day.year, day.month, day.day, 12, tzinfo=ZoneInfo(tz_name))
-    return noon.utcoffset().total_seconds() / 3600.0
+@dataclass(frozen=True)
+class _Settings:
+    """What the booklet is computed under: place, ayanamsa, clock and sunrise rule."""
+    lat: float
+    lon: float
+    tz_name: str
+    ayanamsa: str
+    clock: str
+    sunrise_rule: str
 
 
-def _solar_day(day: date, *, lat: float, lon: float, tz_name: str, ayanamsa: str) -> _SolarDay:
-    midnight_jd = local_time_to_jd(day.year, day.month, day.day, 0.0, _utc_offset_hours(day, tz_name))
-    sunrise_jd = get_sunrise(midnight_jd, lat, lon)
+def _solar_day(day: date, settings: _Settings) -> _SolarDay:
+    offset = utc_offset_hours(settings.tz_name, day, clock=settings.clock)
+    midnight_jd = local_time_to_jd(day.year, day.month, day.day, 0.0, offset)
+    sunrise_jd = get_sunrise(midnight_jd, settings.lat, settings.lon, settings.sunrise_rule)
+    ayanamsa = settings.ayanamsa
     jain = calculate_jain_tithi_from_sunrise(sunrise_jd, ayanamsa)
     return _SolarDay(
         date=day,
@@ -350,8 +360,7 @@ def _half(
     solar_days: list[_SolarDay],
     days: tuple[LaghuDay, ...],
     *,
-    lat: float,
-    lon: float,
+    settings: _Settings,
     chaitra_shukla_1: date,
     diwali: date,
 ) -> LaghuHalf:
@@ -360,7 +369,8 @@ def _half(
     vikram = [get_vikram_samvat(s.date, chaitra_shukla_1) for s in solar_days]
     month = GREG_MONTHS_HINDI[first.date.month - 1]
     sunrise = clock_from_midnight(first.sunrise_jd, first.midnight_jd)
-    sunset = clock_from_midnight(get_sunset(first.sunrise_jd, lat, lon), first.midnight_jd)
+    sunset_jd = get_sunset(first.sunrise_jd, settings.lat, settings.lon, settings.sunrise_rule)
+    sunset = clock_from_midnight(sunset_jd, first.midnight_jd)
     return LaghuHalf(
         samvat=(
             f"वीर निर्वाण सं. {_year_span(min(vira), max(vira))}   "
@@ -382,20 +392,33 @@ def build_laghu_year(
     ayanamsa: str = "Lahiri",
     profile: str = "shwetambar_murtipujak_tapagachchha",
     months: Iterable[int] = range(1, 13),
+    clock: str = "standard",
+    sunrise_rule: str = "modern",
+    school: str = "all",
 ) -> tuple[LaghuHalf, ...]:
-    """The booklet's half-month tables, two per requested month, in order."""
+    """The booklet's half-month tables, two per requested month, in order.
+
+    clock "standard" keeps the zone's standard time all year, as printed
+    panchangs for DST countries do; "daylight" follows the wall clock.
+    """
+    settings = _Settings(
+        lat=lat, lon=lon, tz_name=tz_name, ayanamsa=ayanamsa, clock=clock, sunrise_rule=sunrise_rule,
+    )
     month_list = sorted(months)
     first_day = date(year, month_list[0], 1)
     last_day = date(year, month_list[-1], calendar.monthrange(year, month_list[-1])[1])
     # One day past the end: each row needs the next sunrise and next Tithi.
     span = [first_day + timedelta(days=n) for n in range((last_day - first_day).days + 2)]
-    solar = [_solar_day(day, lat=lat, lon=lon, tz_name=tz_name, ayanamsa=ayanamsa) for day in span]
+    solar = [_solar_day(day, settings) for day in span]
     solar_by_date = {s.date: s for s in solar}
 
-    date_to_fests, _ = build_festival_index([generate_jain_festivals(year, lat, lon, ayanamsa, profile)])
-    january_offset = _utc_offset_hours(date(year, 1, 1), tz_name)
-    chaitra_shukla_1 = find_chaitra_shukla_1(year, lat, lon, january_offset, ayanamsa)
-    diwali = find_diwali(year, lat, lon, january_offset, ayanamsa)
+    calendar_for_year = generate_jain_festivals(year, lat, lon, ayanamsa, profile, sunrise_rule=sunrise_rule)
+    date_to_fests, _ = build_festival_index(
+        [{**calendar_for_year, "festivals": festivals_for_school(calendar_for_year["festivals"], school)}]
+    )
+    january_offset = utc_offset_hours(tz_name, date(year, 1, 1), clock=clock)
+    chaitra_shukla_1 = find_chaitra_shukla_1(year, lat, lon, january_offset, ayanamsa, sunrise_rule=sunrise_rule)
+    diwali = find_diwali(year, lat, lon, january_offset, ayanamsa, sunrise_rule=sunrise_rule)
 
     rows = {
         today.date: _laghu_day(
@@ -409,7 +432,7 @@ def build_laghu_year(
         dates = [date(year, month, d) for d in range(first, last + 1)]
         return _half(
             [solar_by_date[d] for d in dates], tuple(rows[d] for d in dates),
-            lat=lat, lon=lon, chaitra_shukla_1=chaitra_shukla_1, diwali=diwali,
+            settings=settings, chaitra_shukla_1=chaitra_shukla_1, diwali=diwali,
         )
 
     return tuple(

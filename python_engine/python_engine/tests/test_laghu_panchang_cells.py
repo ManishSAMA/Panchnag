@@ -41,8 +41,14 @@ def test_clock_counts_hours_from_the_civil_days_midnight(hours, minutes, expecte
     assert clock_from_midnight(_at(hours, minutes), MIDNIGHT) == expected
 
 
-def test_clock_rounds_to_the_nearest_minute_without_printing_sixty():
-    assert clock_from_midnight(_at(9, 59.7), MIDNIGHT) == "10:00"
+def test_clock_drops_the_seconds_like_the_apps_other_outputs():
+    """The exports, PDFs and Drik Panchang all drop seconds: 03:54:59 reads 03:54."""
+    assert clock_from_midnight(_at(9, 59.7), MIDNIGHT) == "09:59"
+    assert clock_from_midnight(_at(3, 54.98), MIDNIGHT) == "03:54"
+
+
+def test_clock_is_not_thrown_by_floating_point_just_below_the_minute():
+    assert clock_from_midnight(_at(7, 19) - 1e-9, MIDNIGHT) == "07:19"
 
 
 def test_an_element_outlasting_the_next_sunrise_is_ahoratra():

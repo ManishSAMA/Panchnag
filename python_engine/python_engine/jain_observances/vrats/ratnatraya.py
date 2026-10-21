@@ -51,10 +51,7 @@ def calculate_ratnatraya_vrat(
     
     for day_offset in range(45):
         current_date = search_start + datetime.timedelta(days=day_offset)
-        sunrise_time = provider.get_sunrise(current_date, lat, lon)
-        cutoff_time = sunrise_time + datetime.timedelta(minutes=144)
-        
-        t_cutoff = provider.get_tithi_at_time(cutoff_time, lat, lon)
+        t_cutoff = jain_day_tithi(provider, current_date, lat, lon)
         
         # Capture strictly the Tithi at the morning window cutoff (skip if Adhik Maas)
         if hasattr(provider, 'is_adhik_month') and provider.is_adhik_month(current_date, lat, lon):
@@ -153,4 +150,4 @@ def calculate_ratnatraya_vrat(
         has_vriddhi=has_vriddhi
     )
 
-from .provider import SwissEphTithiProvider
+from .provider import SwissEphTithiProvider, jain_day_tithi

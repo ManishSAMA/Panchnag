@@ -36,6 +36,7 @@ from astronomy import (
     get_sunrise,
     get_sunset,
     jd_to_local_time_string,
+    utc_offset_hours,
     local_time_to_jd,
 )
 from jain_observances.festival_service import generate_jain_festivals
@@ -145,6 +146,29 @@ def school_numbers(sources) -> list[int]:
         for index, school in enumerate(SCHOOLS, start=1)
         if any(school.lower() in source for source in lowered)
     ]
+
+
+SCHOOL_CHOICES: tuple[str, ...] = ("all",) + tuple(school.lower() for school in SCHOOLS)
+SCHOOL_NAMES_HI = {"vrindavan": "वृन्दावन", "uttarapurana": "उत्तरपुराण", "ashadhara": "आशाधर"}
+
+
+def festivals_for_school(festivals: list[dict], school: str) -> list[dict]:
+    """Festivals as one school reckons them.
+
+    A kalyanak attested only by other schools is dropped; one the chosen school
+    attests, or that no school claims (parvas, vrats), is kept. "all" keeps all.
+    """
+    if school not in SCHOOL_CHOICES:
+        raise ValueError(f"school must be one of: {', '.join(SCHOOL_CHOICES)} (got {school!r}).")
+    if school == "all":
+        return list(festivals)
+    chosen = SCHOOL_CHOICES.index(school)  # 1-based, as school_numbers
+
+    def attested(festival: dict) -> bool:
+        numbers = school_numbers(festival.get("sources"))
+        return not numbers or chosen in numbers
+
+    return [festival for festival in festivals if attested(festival)]
 
 
 def school_tag(sources) -> str:
@@ -283,18 +307,28 @@ def build_month_rows(
     ayanamsa: str,
     date_to_fests: dict[str, list[dict]],
     calendar_system: str = "purnimanta",
+    tz_name: str | None = None,
+    clock: str = "standard",
+    sunrise_rule: str = "modern",
 ) -> list[dict]:
-    """One dict per civil day, carrying exactly the eight table columns."""
+    """One dict per civil day, carrying exactly the eight table columns.
+
+    With tz_name, each day takes its own offset under the clock setting;
+    without, the fixed tz_offset applies.
+    """
     resolve_month = get_purnimanta_month if calendar_system == "purnimanta" else get_hindu_month
     day_count = calendar.monthrange(year, month)[1]
 
+    def offset_on(current: date) -> float:
+        return utc_offset_hours(tz_name, current, clock=clock) if tz_name else tz_offset
+
     def day_facts(current: date) -> dict:
-        day_start_jd = local_time_to_jd(current.year, current.month, current.day, 0.0, tz_offset)
-        sunrise_jd = get_sunrise(day_start_jd, lat, lon)
+        day_start_jd = local_time_to_jd(current.year, current.month, current.day, 0.0, offset_on(current))
+        sunrise_jd = get_sunrise(day_start_jd, lat, lon, sunrise_rule)
         reference_jd = sunrise_jd + JAIN_TITHI_OFFSET_DAYS
         return {
             "sunrise_jd": sunrise_jd,
-            "sunset_jd": get_sunset(day_start_jd, lat, lon),
+            "sunset_jd": get_sunset(day_start_jd, lat, lon, sunrise_rule),
             "reference_jd": reference_jd,
             # Hindu Tithi: plain sunrise. Jain Tithi: the 6-ghati Jain day-start,
             # which is also what the month and every festival are keyed on.
@@ -330,8 +364,8 @@ def build_month_rows(
             "hindu_tithi": format_tithi(fact["hindu_tithi"]),
             "jain_tithi": format_tithi_pair(fact["jain_tithi"], kshaya),
             "kshaya_tithi": kshaya,
-            "sunrise": format_time_12h(fact["sunrise_jd"], tz_offset),
-            "sunset": format_time_12h(fact["sunset_jd"], tz_offset),
+            "sunrise": format_time_12h(fact["sunrise_jd"], offset_on(current)),
+            "sunset": format_time_12h(fact["sunset_jd"], offset_on(current)),
             "festivals": festival_cell(date_to_fests.get(current.isoformat(), [])),
         })
 
@@ -590,6 +624,9 @@ def generate_hindi_pdf_calendar(
     ayanamsa: str = "Lahiri",
     profile: str = "all",
     calendar_system: str = "purnimanta",
+    tz_name: str | None = None,
+    clock: str = "standard",
+    sunrise_rule: str = "modern",
 ) -> str:
     """Write the Hindi Panchang calendar.
 
@@ -600,13 +637,13 @@ def generate_hindi_pdf_calendar(
     years = sorted({year for year, _ in months})
 
     date_to_fests, multi_day = build_festival_index(
-        [generate_jain_festivals(year, lat, lon, ayanamsa, profile) for year in years]
+        [generate_jain_festivals(year, lat, lon, ayanamsa, profile, sunrise_rule=sunrise_rule) for year in years]
     )
 
     samvat_by_year = {}
     for year in years:
-        chaitra_shukla_1 = find_chaitra_shukla_1(year, lat, lon, tz_offset, ayanamsa)
-        diwali = find_diwali(year, lat, lon, tz_offset, ayanamsa)
+        chaitra_shukla_1 = find_chaitra_shukla_1(year, lat, lon, tz_offset, ayanamsa, sunrise_rule=sunrise_rule)
+        diwali = find_diwali(year, lat, lon, tz_offset, ayanamsa, sunrise_rule=sunrise_rule)
         anchor = date(year, 6, 15)
         samvat_by_year[year] = (
             get_vikram_samvat(anchor, chaitra_shukla_1),
@@ -617,6 +654,7 @@ def generate_hindi_pdf_calendar(
         (year, month): build_month_rows(
             year, month, lat=lat, lon=lon, tz_offset=tz_offset, ayanamsa=ayanamsa,
             date_to_fests=date_to_fests, calendar_system=calendar_system,
+            tz_name=tz_name, clock=clock, sunrise_rule=sunrise_rule,
         )
         for year, month in months
     }
@@ -641,8 +679,10 @@ def generate_hindi_pdf_calendar(
     return out_pdf_path
 
 
-if __name__ == "__main__":
+def main(argv: list[str] | None = None) -> None:
     import argparse
+
+    from astronomy import CLOCK_MODES, SUNRISE_RULES
 
     parser = argparse.ArgumentParser(description="Generate the Hindi Panchang calendar PDF.")
     parser.add_argument("--start-year", type=int, default=2026)
@@ -656,7 +696,11 @@ if __name__ == "__main__":
     parser.add_argument("--calendar-system", default="purnimanta",
                         choices=["purnimanta", "amanta"])
     parser.add_argument("--out", default=None)
-    args = parser.parse_args()
+    parser.add_argument("--tz-name", default=None,
+                        help="IANA zone (e.g. America/New_York); lets --clock pick each day's offset")
+    parser.add_argument("--clock", default="standard", choices=CLOCK_MODES)
+    parser.add_argument("--sunrise", default="modern", choices=SUNRISE_RULES)
+    args = parser.parse_args(argv)
 
     last_year, last_month = month_sequence(args.start_year, args.start_month, args.months)[-1]
     out = args.out or (
@@ -669,4 +713,9 @@ if __name__ == "__main__":
         start_year=args.start_year, start_month=args.start_month, month_count=args.months,
         lat=args.lat, lon=args.lon, tz_offset=args.tz_offset, ayanamsa=args.ayanamsa,
         profile=args.profile, calendar_system=args.calendar_system,
+        tz_name=args.tz_name, clock=args.clock, sunrise_rule=args.sunrise,
     )
+
+
+if __name__ == "__main__":
+    main()

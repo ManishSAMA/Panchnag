@@ -144,9 +144,12 @@ class JainFestivalServiceTest(unittest.TestCase):
             self.assertEqual(len(hits), 1, fid)
             return hits[0]
 
-        # Chaitra Oli: Chaitra Shukla 7, running to Purnima
+        # Chaitra Oli: Chaitra Shukla 7, running to Purnima. Vaishakh Krishna Pratipada
+        # holds the Jain day-start on 2 and 3 Apr (vriddhi), so by वृद्धौ कार्या तथोत्तरा
+        # 2 Apr counts as Purnima -- it is also Purnima at sunrise -- and the Oli closes
+        # on 2 Apr (user decision 2026-10-20, plans/vrat-vriddhi-second-day.md).
         self.assertEqual(_boundary("navapad_oli_vrat_prarambh_chaitra_2026")["start_date"], "2026-03-25")
-        self.assertEqual(_boundary("navapad_oli_vrat_purna_chaitra_2026")["start_date"], "2026-04-01")
+        self.assertEqual(_boundary("navapad_oli_vrat_purna_chaitra_2026")["start_date"], "2026-04-02")
 
         # Ashvin Oli: Ashwin Shukla 7, running to Purnima
         self.assertEqual(_boundary("navapad_oli_vrat_prarambh_ashwin_2026")["start_date"], "2026-10-17")
@@ -593,7 +596,8 @@ class NavpadOliTest(unittest.TestCase):
             set(oli),
         )
         self.assertEqual(oli["navapad_oli_vrat_prarambh_chaitra_2026"]["start_date"], "2026-03-25")
-        self.assertEqual(oli["navapad_oli_vrat_purna_chaitra_2026"]["start_date"], "2026-04-01")
+        # 2 Apr, not 1 Apr: vrats take the second day of a vriddhi (user decision 2026-10-20).
+        self.assertEqual(oli["navapad_oli_vrat_purna_chaitra_2026"]["start_date"], "2026-04-02")
         self.assertEqual(oli["navapad_oli_vrat_prarambh_ashwin_2026"]["start_date"], "2026-10-17")
         self.assertEqual(oli["navapad_oli_vrat_purna_ashwin_2026"]["start_date"], "2026-10-26")
 

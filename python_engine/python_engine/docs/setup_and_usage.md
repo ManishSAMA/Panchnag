@@ -280,9 +280,12 @@ instead; open it and press Ctrl+P → Save as PDF.
 
 ## 10d. Using the Laghu Panchang (yearly booklet)
 
-Settings → **Laghu Panchang (लघु पंचांग) — January to December**. Choose the year
-and the format (PDF, Excel, or both). It uses the location, ayanamsa and Jain
-profile currently set in the app.
+Settings → **Laghu Panchang (लघु पंचांग) — January to December**. Choose the year,
+the format (PDF, Excel, or both) and the **kalyanak school**: All schools, or one
+of 1 · Vrindavan, 2 · Uttarapurana, 3 · Ashadhara. The three traditions disagree
+on some kalyanak tithis; with one chosen, the booklet prints only that school's
+kalyanaks (parvas and vrats always appear). It uses the location, ayanamsa, Jain
+profile, clock and sunrise rule currently set in the app.
 
 The layout follows the printed *laghu panchang* booklet: one 8 × 5 inch landscape
 page per month, two half-month tables per page. Each half has a four-line header
@@ -307,6 +310,7 @@ sheet per month with both halves side by side.
 
 ```bash
 python main.py laghu --year 2027 --city Delhi --format both --output ./booklets
+python main.py laghu --year 2027 --city Delhi --school vrindavan --format pdf
 python main.py laghu --year 2027 --lat 40.2203 --lon -74.7658 --city Trenton --format pdf
 ```
 
@@ -379,6 +383,17 @@ range export has the same choice (Language: English / हिंदी).
 python main.py --start_year 2027 --end_year 2027 --lat 40.2203 --lon -74.7658 --tz_offset -5 --tz_label EST --format excel --language hi
 ```
 
+### Clock and sunrise rule
+
+`--tz_name` names the zone instead of a fixed `--tz_offset`, which lets
+`--clock` choose standard time (default) or the wall clock per day. `--sunrise`
+picks the modern (default) or traditional rule. The same flags exist on
+`main.py laghu`, and on `hindi_calendar_pdf.py` as `--tz-name`.
+
+```bash
+python main.py --start_year 2027 --end_year 2027 --lat 40.8333 --lon -74.1 --tz_name America/New_York --clock standard --sunrise traditional --format excel
+```
+
 ## 12. API Overview
 
 If you want to use the app programmatically, the main endpoints are:
@@ -433,11 +448,31 @@ The UI offers `Lahiri`, `Raman`, and `Krishnamurti` ayanamsas. Unknown ayanamsa 
 
 ## 15. Practical Notes
 
-### Timezones
+### Timezones, clock and sunrise rule
 
-For daily results, the app uses the timezone inferred from coordinates and validates that the resolved sunrise belongs to the requested civil date.
+The timezone is inferred from the coordinates. Two settings in **Settings**
+(also `--clock` / `--sunrise` on the CLIs and `clock` / `sunrise` in the API)
+control how times are computed and shown:
 
-For range and PDF export generation, the export pipeline uses a derived timezone label and offset snapshot for output formatting. This works well for the main India-based use case.
+- **Clock**: *Standard time all year* (default) or *Daylight saving time*
+  (the wall clock). Printed panchangs for DST countries keep standard time all
+  year; the New Jersey reference sheet prints EST through the summer. Zones
+  without DST, such as India, read the same under both.
+- **Sunrise**: *Modern* (default; upper limb with refraction) or *Traditional*
+  (centre of the disc, no refraction), which printed panchangs use. Traditional
+  sunrise is about 2–8 minutes later. Because the Udaya and Jain tithi are taken
+  at sunrise, on rare days this moves which tithi owns a date, and with it a
+  festival (in 2026–2027: Delhi on 30 Jun 2026 and 16 Mar 2027, New Jersey on a
+  handful of days).
+
+Exports under *Standard time* use the zone's real standard offset, so they are
+right south of the equator as well. Under *Daylight saving time* each row
+carries its own day's offset, and the column label names both abbreviations
+(`Sunrise (EST/EDT)`).
+
+Against the New Jersey reference (40°50′N 74°06′W, 2027) with standard time
+and the traditional sunrise: sunrise agrees within a minute and tithi,
+nakshatra and Moon-sign times run 2–3 minutes early, all year.
 
 ### Geocoding
 

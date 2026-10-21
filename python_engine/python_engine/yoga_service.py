@@ -70,6 +70,7 @@ def detect_all_yogas_for_day(
     next_sunrise_jd: float,
     tz_name: str,
     ayanamsa: str = "Lahiri",
+    clock: str = "standard",
 ) -> dict:
     """Detect all yogas active during the solar day (sunrise → next sunrise).
 
@@ -88,7 +89,7 @@ def detect_all_yogas_for_day(
     vara = get_vara_from_date(date_obj)
 
     tithi_segments, nakshatra_segments = _get_segments(
-        sunrise_jd, next_sunrise_jd, ayanamsa, tz_name
+        sunrise_jd, next_sunrise_jd, ayanamsa, tz_name, clock
     )
 
     sunrise_tithi = tithi_segments[0]["index"]
@@ -98,23 +99,23 @@ def detect_all_yogas_for_day(
     raw_dainika = match_dainika(DAINIKA_RULES, vara, tithi_segments, nakshatra_segments)
     dainika_with_overrides = apply_dainika_overrides(raw_dainika)
     dainika_with_dosha_bhanga = _apply_dainika_dosha_bhanga(dainika_with_overrides)
-    dainika_formatted = [_fmt_dainika(m, tz_name) for m in dainika_with_dosha_bhanga]
+    dainika_formatted = [_fmt_dainika(m, tz_name, clock) for m in dainika_with_dosha_bhanga]
     dainika_rec = compute_recommendation(dainika_with_overrides)
 
     # ── Aanandadi (Vara + Moon nakshatra formula) ────────────────────────
-    moon_segs = _moon_segments(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name)
+    moon_segs = _moon_segments(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name, clock)
     raw_aanandadi = match_aanandadi(AANANDADI_YOGAS, vara, moon_segs)
-    aanandadi_formatted = [_fmt_aanandadi(m, tz_name) for m in raw_aanandadi]
+    aanandadi_formatted = [_fmt_aanandadi(m, tz_name, clock) for m in raw_aanandadi]
     aanandadi_with_nullification = _apply_supreme_nullification(dainika_formatted, aanandadi_formatted)
     aanandadi_rec = compute_recommendation(raw_aanandadi)
 
     # ── Ravi Yoga (Sun + Moon nakshatra distance formula) ────────────────
-    ravi_yogas = _detect_ravi_yoga(sunrise_jd, moon_segs, ayanamsa, tz_name, dainika_formatted, vara)
+    ravi_yogas = _detect_ravi_yoga(sunrise_jd, moon_segs, ayanamsa, tz_name, clock, dainika_formatted, vara)
 
     # ── Special (Moon-position based) ────────────────────────────────────
     special = _detect_special(
         tithi_segments, nakshatra_segments,
-        sunrise_jd, next_sunrise_jd, ayanamsa, tz_name,
+        sunrise_jd, next_sunrise_jd, ayanamsa, tz_name, clock,
     )
 
     return {
@@ -139,9 +140,10 @@ def _get_segments(
     next_sunrise_jd: float,
     ayanamsa: str,
     tz_name: str,
+    clock: str,
 ) -> tuple[list[dict], list[dict]]:
-    tithi_list = _collect_all_tithis_in_day(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name)
-    nak_list = collect_all_nakshatras_in_day(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name)
+    tithi_list = _collect_all_tithis_in_day(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name, clock=clock)
+    nak_list = collect_all_nakshatras_in_day(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name, clock=clock)
 
     def to_segments(entries: list[dict]) -> list[dict]:
         segs: list[dict] = []
@@ -166,8 +168,9 @@ def _moon_segments(
     next_sunrise_jd: float,
     ayanamsa: str,
     tz_name: str,
+    clock: str,
 ) -> list[dict]:
-    raw = collect_all_nakshatras_in_day(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name)
+    raw = collect_all_nakshatras_in_day(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name, clock=clock)
     segs: list[dict] = []
     cursor = sunrise_jd
     for entry in raw:
@@ -209,6 +212,7 @@ def _detect_ravi_yoga(
     moon_segs: list[dict],
     ayanamsa: str,
     tz_name: str,
+    clock: str,
     dainika_yogas: list[dict],
     vara: int,
 ) -> list[dict]:
@@ -270,8 +274,8 @@ def _detect_ravi_yoga(
             severity = "auspicious"
             meaning = _RAVI_YOGA_MEANING
 
-        st, sl = _fmt(start_jd, tz_name)
-        et, el = _fmt(end_jd, tz_name)
+        st, sl = _fmt(start_jd, tz_name, clock)
+        et, el = _fmt(end_jd, tz_name, clock)
         results.append({
             "name": name,
             "nature": nature,
@@ -359,32 +363,32 @@ def _apply_supreme_nullification(
 # Time formatting helpers
 # ---------------------------------------------------------------------------
 
-def _fmt(jd: float, tz_name: str) -> tuple[str, str]:
+def _fmt(jd: float, tz_name: str, clock: str) -> tuple[str, str]:
     """Return (HH:MM, ISO) for a JD. Returns ('', '') on failure."""
-    dt = jd_to_zoned_datetime(jd, tz_name)
+    dt = jd_to_zoned_datetime(jd, tz_name, clock=clock)
     if dt is None:
         return "", ""
     return dt.strftime("%H:%M"), dt.isoformat(timespec="seconds")
 
 
-def _fmt_dainika(match: dict, tz_name: str) -> dict:
-    st, sl = _fmt(match["start_jd"], tz_name)
-    et, el = _fmt(match["end_jd"], tz_name)
+def _fmt_dainika(match: dict, tz_name: str, clock: str) -> dict:
+    st, sl = _fmt(match["start_jd"], tz_name, clock)
+    et, el = _fmt(match["end_jd"], tz_name, clock)
     return {**match, "start_time": st, "start_local": sl, "end_time": et, "end_local": el}
 
 
-def _fmt_aanandadi(match: dict, tz_name: str) -> dict:
-    st, sl = _fmt(match["start_jd"], tz_name)
-    et, el = _fmt(match["end_jd"], tz_name)
+def _fmt_aanandadi(match: dict, tz_name: str, clock: str) -> dict:
+    st, sl = _fmt(match["start_jd"], tz_name, clock)
+    et, el = _fmt(match["end_jd"], tz_name, clock)
     # trigger_nakshatra_index uses standard 1-27 (or 28=Abhijit) — same offset for name lookup
     nak_name = _NAK_NAMES[match["trigger_nakshatra_index"] - 1]
 
     v_start_time: str | None = None
     v_end_time: str | None = None
     if match["varjya_start_jd"] is not None:
-        v_start_time, _ = _fmt(match["varjya_start_jd"], tz_name)
+        v_start_time, _ = _fmt(match["varjya_start_jd"], tz_name, clock)
     if match["varjya_end_jd"] is not None:
-        v_end_time, _ = _fmt(match["varjya_end_jd"], tz_name)
+        v_end_time, _ = _fmt(match["varjya_end_jd"], tz_name, clock)
 
     return {
         **match,
@@ -429,12 +433,13 @@ def _detect_special(
     next_sunrise_jd: float,
     ayanamsa: str,
     tz_name: str,
+    clock: str,
 ) -> list[dict]:
     results: list[dict] = []
-    results.extend(_gandmool(nakshatra_segments, sunrise_jd, next_sunrise_jd, tz_name))
-    results.extend(_panchak(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name))
-    results.extend(_bhadra(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name))
-    results.extend(_jwalamukhi(tithi_segments, nakshatra_segments, tz_name))
+    results.extend(_gandmool(nakshatra_segments, sunrise_jd, next_sunrise_jd, tz_name, clock))
+    results.extend(_panchak(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name, clock))
+    results.extend(_bhadra(sunrise_jd, next_sunrise_jd, ayanamsa, tz_name, clock))
+    results.extend(_jwalamukhi(tithi_segments, nakshatra_segments, tz_name, clock))
     return results
 
 
@@ -443,6 +448,7 @@ def _gandmool(
     sunrise_jd: float,
     next_sunrise_jd: float,
     tz_name: str,
+    clock: str,
 ) -> list[dict]:
     gandmool_segs = [s for s in nak_segments if s["index"] in _GANDMOOL_NAKSHATRAS]
     if not gandmool_segs:
@@ -458,8 +464,8 @@ def _gandmool(
 
     results: list[dict] = []
     for w_start, w_end, nak_indices in windows:
-        st, sl = _fmt(w_start, tz_name)
-        et, el = _fmt(w_end, tz_name)
+        st, sl = _fmt(w_start, tz_name, clock)
+        et, el = _fmt(w_end, tz_name, clock)
         naks = ", ".join(_GANDMOOL_NAK_NAMES[i] for i in nak_indices if i in _GANDMOOL_NAK_NAMES)
         results.append({
             "name": "Gandmool Nakshatra",
@@ -484,12 +490,13 @@ def _panchak(
     next_sunrise_jd: float,
     ayanamsa: str,
     tz_name: str,
+    clock: str,
 ) -> list[dict]:
     panchak = calculate_panchak_kaal(sunrise_jd, next_sunrise_jd, ayanamsa)
     results: list[dict] = []
     for pw in panchak.get("windows", []):
-        st, sl = _fmt(pw["start_jd"], tz_name)
-        et, el = _fmt(pw["end_jd"], tz_name)
+        st, sl = _fmt(pw["start_jd"], tz_name, clock)
+        et, el = _fmt(pw["end_jd"], tz_name, clock)
         results.append({
             "name": "Panchak",
             "nature": "ashubh",
@@ -513,11 +520,12 @@ def _bhadra(
     next_sunrise_jd: float,
     ayanamsa: str,
     tz_name: str,
+    clock: str,
 ) -> list[dict]:
     results: list[dict] = []
     for w in calculate_bhadra_kaal(sunrise_jd, next_sunrise_jd, ayanamsa):
-        st, sl = _fmt(w["start_jd"], tz_name)
-        et, el = _fmt(w["end_jd"], tz_name)
+        st, sl = _fmt(w["start_jd"], tz_name, clock)
+        et, el = _fmt(w["end_jd"], tz_name, clock)
         results.append({
             "name": "Bhadra (Vishti)",
             "nature": "ashubh",
@@ -543,6 +551,7 @@ def _jwalamukhi(
     tithi_segments: list[dict],
     nak_segments: list[dict],
     tz_name: str,
+    clock: str,
 ) -> list[dict]:
     results: list[dict] = []
     for t_seg in tithi_segments:
@@ -553,8 +562,8 @@ def _jwalamukhi(
             end_jd = min(t_seg["end_jd"], n_seg["end_jd"])
             if end_jd <= start_jd:
                 continue
-            st, sl = _fmt(start_jd, tz_name)
-            et, el = _fmt(end_jd, tz_name)
+            st, sl = _fmt(start_jd, tz_name, clock)
+            et, el = _fmt(end_jd, tz_name, clock)
             t_idx, n_idx = t_seg["index"], n_seg["index"]
             tithi_name = _TITHI_NAMES[t_idx - 1] if 1 <= t_idx <= 15 else f"Tithi {t_idx}"
             nak_name = _NAK_NAMES[n_idx - 1]

@@ -295,3 +295,18 @@ The cross-reference approach (parse `tests/tirthankara_kalyanaks_data.json`, app
 amanta/purnimanta shift, compare per-(tirthankara, event, source) against `registry.py`) lives
 in this session's scratchpad as `kalyanak_audit.py` / `build_fixlist.py` / `patch_registry.py`.
 Worth turning into a proper `tests/` script if the kalyanak dataset is edited again.
+
+
+## Vrats take the second day of a vriddhi (2026-10-20)
+
+User decision: when a tithi holds the Jain day-start on two consecutive days, **vrats**
+go on the second day, by the maxim "क्षये पूर्वा तिथिः कार्या, वृद्धौ कार्या तथोत्तरा".
+This does **not** change the rules above: Kalyanaks keep the first active day,
+parva tithis (Pakhi Chaudas) show on both days, and Karma Nirjara keeps the first day.
+The Ashtahnika span and markers and the Sunday-bound Ravi vrats are also unchanged.
+
+Vrat rules see the first day of the pair relabelled as the preceding tithi
+(`festival_service.vrat_view_of_snapshots`; `vrats.provider.jain_day_tithi` for the
+provider-based Dashlakshan / Ratnatraya / Shodashkaran). Who follows the rule:
+`jain_observances/vriddhi.py`. Full before/after list: plans/vrat-vriddhi-second-day.md.
+Regression coverage: tests/test_vrat_vriddhi_second_day.py.

@@ -31,7 +31,7 @@ AYANAMSA = "Lahiri"
 
 def _reference_jd(d: date) -> float:
     """The 6-ghati day-identity anchor -- the same instant the app labels a day by."""
-    sunrise = get_sunrise(local_date_anchor_jd(d, TZ, hour=0), LAT, LON)
+    sunrise = get_sunrise(local_date_anchor_jd(d, TZ, hour=0, clock="standard"), LAT, LON)
     return sunrise + JAIN_TITHI_OFFSET_DAYS
 
 

@@ -41,13 +41,13 @@ def test_astronomical_failure_surfaces_instead_of_dropping_a_day(monkeypatch):
     real_get_sunrise = festival_service.get_sunrise
     doomed = date(2026, 6, 15)
 
-    def exploding_get_sunrise(day_start_jd, lat, lon):
+    def exploding_get_sunrise(day_start_jd, lat, lon, rule="modern"):
         from astronomy import jd_to_zoned_datetime
 
-        moment = jd_to_zoned_datetime(day_start_jd, TZ)
+        moment = jd_to_zoned_datetime(day_start_jd, TZ, clock="standard")
         if moment is not None and moment.date() == doomed:
             raise RuntimeError("ephemeris unavailable")
-        return real_get_sunrise(day_start_jd, lat, lon)
+        return real_get_sunrise(day_start_jd, lat, lon, rule)
 
     monkeypatch.setattr(festival_service, "get_sunrise", exploding_get_sunrise)
 

@@ -13,6 +13,7 @@ from flask import Flask, abort, jsonify, render_template, request, send_file
 from astronomy import get_sunrise, get_sunset, jd_to_zoned_datetime, local_date_anchor_jd
 from choghadiya_service import calculate_choghadiya_slots
 from yoga_service import detect_all_yogas_for_day
+from hindi_calendar_pdf import festivals_for_school
 from location_service import geocode_city, get_timezone_name, search_locations
 from pdf_generation_service import (
     generate_hindi_pdf_export,
@@ -25,7 +26,10 @@ from range_generation_service import generate_year_range_exports
 from request_parsing import (
     parse_calendar_system,
     parse_hindi_pdf_request,
+    parse_clock,
     parse_laghu_panchang_request,
+    parse_school,
+    parse_sunrise_rule,
     parse_panchang_request,
     parse_pdf_generation_request,
     parse_range_generation_request,
@@ -289,6 +293,8 @@ def create_app() -> Flask:
                 lon=parsed.lon,
                 ayanamsa_name=parsed.ayanamsa_name,
                 calendar_system=parsed.calendar_system,
+                clock=parsed.clock,
+                sunrise_rule=parsed.sunrise_rule,
             )
             if profile:
                 from jain_observances.festival_service import generate_jain_festivals
@@ -332,6 +338,8 @@ def create_app() -> Flask:
                 workers=parsed.workers,
                 profile=parsed.profile,
                 language=parsed.language,
+                clock=parsed.clock,
+                sunrise_rule=parsed.sunrise_rule,
             )
 
             files = []
@@ -366,6 +374,8 @@ def create_app() -> Flask:
                 lat=parsed.lat,
                 lon=parsed.lon,
                 ayanamsa_name=parsed.ayanamsa_name,
+                clock=parsed.clock,
+                sunrise_rule=parsed.sunrise_rule,
             )
             token = uuid4().hex
             GENERATED_EXPORTS[token] = result["file"]["path"]
@@ -399,6 +409,8 @@ def create_app() -> Flask:
                 lon=parsed.lon,
                 ayanamsa_name=parsed.ayanamsa_name,
                 calendar_system=parsed.calendar_system,
+                clock=parsed.clock,
+                sunrise_rule=parsed.sunrise_rule,
             )
             token = uuid4().hex
             GENERATED_EXPORTS[token] = result["file"]["path"]
@@ -431,6 +443,9 @@ def create_app() -> Flask:
                 ayanamsa_name=parsed.ayanamsa_name,
                 profile=parsed.profile,
                 output_format=parsed.output_format,
+                clock=parsed.clock,
+                sunrise_rule=parsed.sunrise_rule,
+                school=parsed.school,
             )
             files = []
             for generated in result["files"]:
@@ -446,6 +461,7 @@ def create_app() -> Flask:
                 "year": result["year"],
                 "ayanamsa": result["ayanamsa"],
                 "profile": result["profile"],
+                "school": result.get("school", "all"),
                 "location": result["location"],
                 "files": files,
             })
@@ -481,6 +497,8 @@ def create_app() -> Flask:
             lon_str = request.args.get("lon")
             ayanamsa = request.args.get("ayanamsa", "Lahiri")
             calendar_system = parse_calendar_system(request.args.get("calendar_system"))
+            clock = parse_clock(request.args.get("clock"))
+            sunrise_rule = parse_sunrise_rule(request.args.get("sunrise"))
 
             lat = float(lat_str) if lat_str else None
             lon = float(lon_str) if lon_str else None
@@ -499,7 +517,9 @@ def create_app() -> Flask:
             multi_day_festivals = []
             if profile:
                 from jain_observances.festival_service import generate_jain_festivals
-                fest_data = generate_jain_festivals(year, location.lat, location.lon, ayanamsa, profile)
+                fest_data = generate_jain_festivals(
+                    year, location.lat, location.lon, ayanamsa, profile, sunrise_rule=sunrise_rule
+                )
 
                 multi_day_festivals = [
                     m for m in fest_data.get("multi_day_festivals", [])
@@ -544,6 +564,8 @@ def create_app() -> Flask:
                     lon=location.lon,
                     ayanamsa_name=ayanamsa,
                     calendar_system=calendar_system,
+                    clock=clock,
+                    sunrise_rule=sunrise_rule,
                 )
                 if first_result is None:
                     first_result = result
@@ -599,6 +621,7 @@ def create_app() -> Flask:
                     f"{next_month_year:04d}-{next_month_num:02d}-01",
                     lat=location.lat, lon=location.lon,
                     ayanamsa_name=ayanamsa, calendar_system=calendar_system,
+                    clock=clock, sunrise_rule=sunrise_rule,
                 )
             except ValueError:
                 following_first = None
@@ -632,6 +655,8 @@ def create_app() -> Flask:
                 "hindu_month": hindu_month,
                 "hindu_month_index": hindu_month_index,
                 "calendar_system": calendar_system,
+                "clock": clock,
+                "sunrise_rule": sunrise_rule,
                 "vikram_samvat": vikram_samvat,
                 "days": days,
                 "multi_day_festivals": multi_day_festivals,
@@ -652,7 +677,8 @@ def create_app() -> Flask:
                 lat=parsed.lat,
                 lon=parsed.lon,
                 ayanamsa=parsed.ayanamsa_name,
-                profile=parsed.profile
+                profile=parsed.profile,
+                sunrise_rule=parsed.sunrise_rule,
             )
             return jsonify(result)
         except ValueError as exc:
@@ -675,24 +701,14 @@ def create_app() -> Flask:
                 lat=parsed.lat,
                 lon=parsed.lon,
                 ayanamsa=parsed.ayanamsa_name,
-                profile=parsed.profile
+                profile=parsed.profile,
+                sunrise_rule=parsed.sunrise_rule,
             )
             
-            source = body.get("source", "all")
-            
+            school = parse_school(body.get("source"))
+
             flat_rows = []
-            for f in result.get("festivals", []):
-                if source and source != "all":
-                    sources_val = f.get("sources", [])
-                    source_lower = source.lower()
-                    has_selected_source = any(source_lower in s.lower() for s in sources_val)
-                    specific_schools = ["vrindavan", "uttarapurana", "ashadhara"]
-                    has_other_specific_school = any(
-                        any(sch in s.lower() for sch in specific_schools if sch != source_lower)
-                        for s in sources_val
-                    )
-                    if not has_selected_source and has_other_specific_school:
-                        continue
+            for f in festivals_for_school(result.get("festivals", []), school):
                 sources_val = f.get("sources", [])
                 sources_str = "; ".join(sources_val) if isinstance(sources_val, list) else str(sources_val)
                 flat_rows.append({
@@ -853,28 +869,30 @@ def create_app() -> Flask:
             except ValueError:
                 return jsonify({"error": "date must be in YYYY-MM-DD format"}), 400
 
+            clock = parse_clock(body.get("clock"))
+            sunrise_rule = parse_sunrise_rule(body.get("sunrise"))
             tz_name = get_timezone_name(float(lat), float(lon))
-            anchor_jd = local_date_anchor_jd(parsed_date, tz_name)
-            sunrise_jd = get_sunrise(anchor_jd, float(lat), float(lon))
-            sunset_jd = get_sunset(anchor_jd, float(lat), float(lon))
+            anchor_jd = local_date_anchor_jd(parsed_date, tz_name, clock=clock)
+            sunrise_jd = get_sunrise(anchor_jd, float(lat), float(lon), sunrise_rule)
+            sunset_jd = get_sunset(anchor_jd, float(lat), float(lon), sunrise_rule)
 
             next_date = parsed_date + timedelta(days=1)
-            next_anchor_jd = local_date_anchor_jd(next_date, tz_name)
-            next_sunrise_jd = get_sunrise(next_anchor_jd, float(lat), float(lon))
+            next_anchor_jd = local_date_anchor_jd(next_date, tz_name, clock=clock)
+            next_sunrise_jd = get_sunrise(next_anchor_jd, float(lat), float(lon), sunrise_rule)
 
             if not sunrise_jd or not sunset_jd or not next_sunrise_jd:
                 return jsonify({"error": "Sunrise or sunset could not be calculated for this location/date."}), 400
 
             weekday = (parsed_date.weekday() + 1) % 7
-            sunrise_dt = jd_to_zoned_datetime(sunrise_jd, tz_name)
-            sunset_dt = jd_to_zoned_datetime(sunset_jd, tz_name)
+            sunrise_dt = jd_to_zoned_datetime(sunrise_jd, tz_name, clock=clock)
+            sunset_dt = jd_to_zoned_datetime(sunset_jd, tz_name, clock=clock)
             sunrise_utc = sunrise_dt.astimezone(timezone.utc) if sunrise_dt else None
             sunset_utc = sunset_dt.astimezone(timezone.utc) if sunset_dt else None
             day_slot_duration_minutes = (sunset_jd - sunrise_jd) * 1440 / 8
             night_slot_duration_minutes = (next_sunrise_jd - sunset_jd) * 1440 / 8
 
             slots = calculate_choghadiya_slots(
-                sunrise_jd, sunset_jd, next_sunrise_jd, weekday, tz_name, parsed_date
+                sunrise_jd, sunset_jd, next_sunrise_jd, weekday, tz_name, parsed_date, clock=clock
             )
 
             return jsonify({
@@ -914,11 +932,13 @@ def create_app() -> Flask:
             except ValueError:
                 return jsonify({"error": "date must be in YYYY-MM-DD format"}), 400
 
+            clock = parse_clock(body.get("clock"))
+            sunrise_rule = parse_sunrise_rule(body.get("sunrise"))
             tz_name = get_timezone_name(float(lat), float(lon))
-            anchor_jd = local_date_anchor_jd(parsed_date, tz_name)
-            next_anchor_jd = local_date_anchor_jd(parsed_date + timedelta(days=1), tz_name)
-            sunrise_jd = get_sunrise(anchor_jd, float(lat), float(lon))
-            next_sunrise_jd = get_sunrise(next_anchor_jd, float(lat), float(lon))
+            anchor_jd = local_date_anchor_jd(parsed_date, tz_name, clock=clock)
+            next_anchor_jd = local_date_anchor_jd(parsed_date + timedelta(days=1), tz_name, clock=clock)
+            sunrise_jd = get_sunrise(anchor_jd, float(lat), float(lon), sunrise_rule)
+            next_sunrise_jd = get_sunrise(next_anchor_jd, float(lat), float(lon), sunrise_rule)
 
             if not sunrise_jd or not next_sunrise_jd:
                 return jsonify({"error": "Sunrise could not be calculated for this location/date."}), 400
@@ -929,6 +949,7 @@ def create_app() -> Flask:
                 next_sunrise_jd=next_sunrise_jd,
                 tz_name=tz_name,
                 ayanamsa=ayanamsa,
+                clock=clock,
             )
             return jsonify({"date": date_str, **result})
         except ValueError as exc:
@@ -957,6 +978,8 @@ def create_app() -> Flask:
             if not (1 <= month <= 12):
                 return jsonify({"error": "month must be 1–12"}), 400
 
+            clock = parse_clock(body.get("clock"))
+            sunrise_rule = parse_sunrise_rule(body.get("sunrise"))
             tz_name = get_timezone_name(float(lat), float(lon))
             days_in_month = calendar.monthrange(year, month)[1]
 
@@ -977,14 +1000,15 @@ def create_app() -> Flask:
 
             for day in range(1, days_in_month + 1):
                 d = date_type(year, month, day)
-                anchor_jd = local_date_anchor_jd(d, tz_name)
+                anchor_jd = local_date_anchor_jd(d, tz_name, clock=clock)
                 next_anchor_jd = local_date_anchor_jd(
                     date_type(year, month, day + 1) if day < days_in_month
                     else date_type(year + (month == 12), (month % 12) + 1, 1),
                     tz_name,
+                    clock=clock,
                 )
-                sunrise_jd = get_sunrise(anchor_jd, float(lat), float(lon))
-                next_sunrise_jd = get_sunrise(next_anchor_jd, float(lat), float(lon))
+                sunrise_jd = get_sunrise(anchor_jd, float(lat), float(lon), sunrise_rule)
+                next_sunrise_jd = get_sunrise(next_anchor_jd, float(lat), float(lon), sunrise_rule)
                 if not sunrise_jd or not next_sunrise_jd:
                     continue
 
@@ -994,6 +1018,7 @@ def create_app() -> Flask:
                     next_sunrise_jd=next_sunrise_jd,
                     tz_name=tz_name,
                     ayanamsa=ayanamsa,
+                    clock=clock,
                 )
 
                 vara = day_result["vara"]
@@ -1118,6 +1143,7 @@ def create_app() -> Flask:
 
         try:
             db_path = _get_safe_db_path(city_slug)
+            sunrise_rule = parse_sunrise_rule(body.get("sunrise"))
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
 
@@ -1137,6 +1163,7 @@ def create_app() -> Flask:
                     timezone_str=tz,
                     db_path=db_path,
                     progress_callback=_progress,
+                    sunrise_rule=sunrise_rule,
                 )
                 _generation_status[city_slug] = {"status": "complete", "progress": 100, "message": ""}
             except Exception as exc:

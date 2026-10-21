@@ -62,9 +62,9 @@ class PanchangRuleTests(unittest.TestCase):
             lon=72.8777,
         )
 
-        sunrise_dt = jd_to_zoned_datetime(result["events"]["sunrise"]["jd"], result["timezone"])
+        sunrise_dt = jd_to_zoned_datetime(result["events"]["sunrise"]["jd"], result["timezone"], clock=result["clock"])
         reference_jd = result["events"]["sunrise"]["jd"] + (JAIN_OFFSET_CHECK.total_seconds() / 86400.0)
-        reference_dt = jd_to_zoned_datetime(reference_jd, result["timezone"])
+        reference_dt = jd_to_zoned_datetime(reference_jd, result["timezone"], clock=result["clock"])
 
         self.assertIsNotNone(sunrise_dt)
         self.assertIsNotNone(reference_dt)
@@ -91,8 +91,8 @@ class PanchangRuleTests(unittest.TestCase):
             lon=77.2090,
         )
 
-        sunrise_dt = jd_to_zoned_datetime(result["events"]["sunrise"]["jd"], result["timezone"])
-        sunset_dt = jd_to_zoned_datetime(result["events"]["sunset"]["jd"], result["timezone"])
+        sunrise_dt = jd_to_zoned_datetime(result["events"]["sunrise"]["jd"], result["timezone"], clock=result["clock"])
+        sunset_dt = jd_to_zoned_datetime(result["events"]["sunset"]["jd"], result["timezone"], clock=result["clock"])
 
         self.assertIsNotNone(sunrise_dt)
         self.assertIsNotNone(sunset_dt)
