@@ -20,6 +20,7 @@ Ashtami on the first day (18th). The user's rule, from the classical maxim
 | Karma Nirjara Vrat | first (unchanged) | user directive 2026-08-30 |
 | Ashtahnika span and its markers (Kartika Nandishwar Ashtami, Ashtahnika Purna) | follow the span (first Ashtami / second Purnima) | this change |
 | Ravi Vrat, Ravivara Vrat (Sunday-bound) | unchanged | a weekday vrat cannot move to Monday |
+| Gyan Panchami (+ Labh Panchami, same day) | first Panchami (unchanged) | its rule documents "Vriddhi -> 1st Panchami"; matches the user's 2027 reference PDF (decision 2026-10-21) |
 
 ## Design: the first day of a vriddhi belongs to the previous tithi
 

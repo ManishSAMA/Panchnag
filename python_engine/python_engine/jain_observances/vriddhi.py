@@ -12,11 +12,13 @@ VRAT_CATEGORIES = frozenset({"vrat", "monthly_vrat", "tap_vrat", "parva_vrat", "
 
 # Vrats that keep their own vriddhi rule: Karma Nirjara keeps the first day (user
 # directive, 2026-08-30); the Ashtahnika markers follow the Ashtahnika span; the
-# Ravi vrats are bound to Sunday.
+# Ravi vrats are bound to Sunday; Kartika Shukla Panchami (Gyan + Labh Panchami)
+# keeps its documented "Vriddhi -> 1st Panchami", matching the user's 2027
+# reference panchang (decision 2026-10-21).
 KEEPS_OWN_VRIDDHI_RULE = frozenset({
     "karma_nirjara_vrat", "kartika_nandishwar_ashtami",
     "kartika_purnima_ashtahnika_purna", "phalguna_purnima_ashtahnika_purna",
-    "ravi_vrat", "ravivara",
+    "ravi_vrat", "ravivara", "kartika_shukla_panchami",
 })
 
 

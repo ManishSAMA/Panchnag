@@ -303,7 +303,9 @@ User decision: when a tithi holds the Jain day-start on two consecutive days, **
 go on the second day, by the maxim "क्षये पूर्वा तिथिः कार्या, वृद्धौ कार्या तथोत्तरा".
 This does **not** change the rules above: Kalyanaks keep the first active day,
 parva tithis (Pakhi Chaudas) show on both days, and Karma Nirjara keeps the first day.
-The Ashtahnika span and markers and the Sunday-bound Ravi vrats are also unchanged.
+The Ashtahnika span and markers, the Sunday-bound Ravi vrats, and Gyan Panchami
+("Vriddhi -> 1st Panchami", with Labh Panchami on the same day; decision 2026-10-21)
+are also unchanged.
 
 Vrat rules see the first day of the pair relabelled as the preceding tithi
 (`festival_service.vrat_view_of_snapshots`; `vrats.provider.jain_day_tithi` for the

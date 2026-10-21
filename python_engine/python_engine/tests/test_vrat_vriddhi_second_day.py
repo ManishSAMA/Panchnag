@@ -164,3 +164,14 @@ def test_chaitra_navpad_oli_and_ratnatraya_close_on_the_second_purnima():
     assert _dates(2026, fid="navapad_oli_vrat_purna_chaitra_2026") == {"2026-04-02"}
     assert _dates(2026, fid="ratnatraya_vrat_purna_chaitra_2026") == {"2026-04-02"}
     assert _dates(2026, fid="navapad_oli_vrat_prarambh_chaitra_2026") == {"2026-03-25"}
+
+
+def test_gyan_panchami_keeps_its_documented_first_panchami():
+    """Kartika Shukla Panchami (Gyan + Labh Panchami) has its own documented vriddhi
+    rule -- "Vriddhi -> 1st Panchami" -- like Ashtahnika, so the vrat rule does not
+    move it. Trenton 2027 (Panchami vriddhi, 2-3 Nov): 2 Nov, as in the user's
+    reference Jain_Vedic_Panchang_2027_01_2027_12_Hindi.pdf (decision 2026-10-21)."""
+    festivals = generate_jain_festivals(2027, 40.2203, -74.7658, "Lahiri", "all")["festivals"]
+    days = {f["id"]: f["start_date"] for f in festivals if f["id"] in ("gyan_panchami_2027", "labh_panchami_2027")}
+
+    assert days == {"gyan_panchami_2027": "2027-11-02", "labh_panchami_2027": "2027-11-02"}
