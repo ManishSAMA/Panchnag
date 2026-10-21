@@ -1,0 +1,168 @@
+{
+  "locations": [
+    {
+      "end": "2040-12-31",
+      "lat": 28.6139,
+      "lon": 77.209,
+      "name": "Delhi",
+      "slug": "delhi",
+      "start": "2016-01-01",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "end": "2040-12-31",
+      "lat": 23.0225,
+      "lon": 72.5714,
+      "name": "Ahmedabad",
+      "slug": "ahmedabad",
+      "start": "2016-01-01",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "end": "2040-12-31",
+      "lat": 19.076,
+      "lon": 72.8777,
+      "name": "Mumbai",
+      "slug": "mumbai",
+      "start": "2016-01-01",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "end": "2027-12-31",
+      "lat": 21.1702,
+      "lon": 72.8311,
+      "name": "Surat",
+      "slug": "surat",
+      "start": "2026-01-01",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "end": "2027-12-31",
+      "lat": 21.5222,
+      "lon": 71.8237,
+      "name": "Palitana",
+      "slug": "palitana",
+      "start": "2026-01-01",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "end": "2027-12-31",
+      "lat": 26.9124,
+      "lon": 75.7873,
+      "name": "Jaipur",
+      "slug": "jaipur",
+      "start": "2026-01-01",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "end": "2027-12-31",
+      "lat": 24.5854,
+      "lon": 73.7125,
+      "name": "Udaipur",
+      "slug": "udaipur",
+      "start": "2026-01-01",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "end": "2027-12-31",
+      "lat": 22.7196,
+      "lon": 75.8577,
+      "name": "Indore",
+      "slug": "indore",
+      "start": "2026-01-01",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "end": "2027-12-31",
+      "lat": 22.5726,
+      "lon": 88.3639,
+      "name": "Kolkata",
+      "slug": "kolkata",
+      "start": "2026-01-01",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "end": "2027-12-31",
+      "lat": 12.9716,
+      "lon": 77.5946,
+      "name": "Bengaluru",
+      "slug": "bengaluru",
+      "start": "2026-01-01",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "end": "2027-12-31",
+      "lat": 13.0827,
+      "lon": 80.2707,
+      "name": "Chennai",
+      "slug": "chennai",
+      "start": "2026-01-01",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "end": "2027-12-31",
+      "lat": 51.5074,
+      "lon": -0.1278,
+      "name": "London",
+      "slug": "london",
+      "start": "2026-01-01",
+      "timezone": "Europe/London"
+    },
+    {
+      "end": "2027-12-31",
+      "lat": 40.7128,
+      "lon": -74.006,
+      "name": "New York",
+      "slug": "new-york",
+      "start": "2026-01-01",
+      "timezone": "America/New_York"
+    },
+    {
+      "end": "2027-12-31",
+      "lat": 11.2162,
+      "lon": 82.573,
+      "name": "random s2026 00",
+      "slug": "random-s2026-00",
+      "start": "2026-01-01",
+      "timezone": "Etc/GMT-6"
+    },
+    {
+      "end": "2027-12-31",
+      "lat": 21.8192,
+      "lon": 92.94,
+      "name": "random s2026 01",
+      "slug": "random-s2026-01",
+      "start": "2026-01-01",
+      "timezone": "Asia/Yangon"
+    },
+    {
+      "end": "2027-12-31",
+      "lat": -47.6836,
+      "lon": -99.6176,
+      "name": "random s2026 02",
+      "slug": "random-s2026-02",
+      "start": "2026-01-01",
+      "timezone": "Etc/GMT+7"
+    },
+    {
+      "end": "2027-12-31",
+      "lat": 12.1237,
+      "lon": 20.3612,
+      "name": "random s2026 03",
+      "slug": "random-s2026-03",
+      "start": "2026-01-01",
+      "timezone": "Africa/Ndjamena"
+    }
+  ],
+  "profiles": [
+    "shwetambar_murtipujak_tapagachchha",
+    "shwetambar_sthanakvasi",
+    "shwetambar_terapanthi"
+  ],
+  "schema_version": 1,
+  "sunrise_rules": [
+    "modern",
+    "traditional"
+  ],
+  "swisseph_version": "2.10.03"
+}

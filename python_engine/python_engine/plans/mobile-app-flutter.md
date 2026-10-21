@@ -90,6 +90,10 @@ Each phase ends in a working, tested state. TDD throughout: Python with pytest, 
 - **Go/no-go gate:** if the Moon and tithi-time error can't get within L1/L2 tolerances, stop and re-decide the engine (§1) before building anything else.
 
 ### Phase 1: Python fixture exporter
+
+> **Progress (2026-10-21): Phase 1 complete.** See [`mobile-phase1-fixtures.md`](mobile-phase1-fixtures.md).
+> - The core fixture set is committed under `mobile/packages/panchang_engine/test/fixtures/core/`.
+> - `shared/festival_registry.json` is committed (207 festivals).
 - `scripts/export_parity_fixtures.py`, written test-first: its schema, determinism, and coverage of all days and cities.
 - Generate `shared/festival_registry.json`, with a freshness test.
 

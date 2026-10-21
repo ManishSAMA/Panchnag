@@ -1,7 +1,11 @@
 # Phase 1 — Parity fixture exporter
 
 **Parent plan:** [`mobile-app-flutter.md`](mobile-app-flutter.md) §3–4
-**Status:** In progress (2026-10-21), branch `feat/mobile-phase0`
+**Status:** Complete (2026-10-21), branch `feat/mobile-phase0`.
+
+The core set is committed: 137 files, 8.3 MB, 17 locations. Regenerating it is byte-identical.
+
+**Timing:** the core set took **58 min** on 14 workers, not the ~8 min estimated below, because per-process throughput drops about 5× with 14 processes on 16 logical cores. Expect the full set to take about 4 h.
 
 The Python engine becomes the reference for the Dart engine. This phase builds
 the exporter that writes down what the reference says, for any location.
