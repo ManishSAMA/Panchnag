@@ -45,3 +45,7 @@ diff_output.txt
 # --- Client release bundle (python_engine/python_engine/scripts/build_client_bundle.py) ---
 client_release/
 client_release*.zip
+
+# --- Mobile parity fixtures: only the core set is committed ---
+mobile/packages/panchang_engine/test/fixtures/full/
+mobile/packages/panchang_engine/test/fixtures/custom/

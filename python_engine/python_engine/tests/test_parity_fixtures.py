@@ -18,14 +18,20 @@ from panchang import JAIN_TITHI_OFFSET_DAYS
 from panchang_service import generate_location_panchang
 from jain_observances.festival_service import generate_jain_festivals
 from parity_fixtures import (
+    CORE_SHORT_RANGE,
     DEFAULT_LOCATIONS,
+    FULL_RANGE,
     PROFILES,
+    FixturePlan,
+    PlanEntry,
     SCHEMA_VERSION,
     custom_location,
     day_row,
     festival_rows,
+    parse_plan,
     random_locations,
     read_fixture,
+    run_plan,
     write_days,
     write_festivals,
     write_manifest,
@@ -281,24 +287,36 @@ class TestWriteDays:
             )
 
 
+def a_plan(*entries: tuple[str, date, date], rules=("modern", "traditional"), profiles=None) -> FixturePlan:
+    return FixturePlan(
+        entries=tuple(PlanEntry(a_location(name), start, end) for name, start, end in entries),
+        sunrise_rules=rules,
+        profiles=profiles or PROFILES,
+    )
+
+
 class TestManifest:
-    def a_manifest(self, tmp_path, locations=None) -> dict:
-        path = write_manifest(
-            out_dir=tmp_path,
-            locations=locations or (a_location("London"), a_location("Delhi")),
-            start=date(2016, 1, 1), end=date(2040, 12, 31),
-            sunrise_rules=("modern", "traditional"),
+    def a_manifest(self, tmp_path) -> dict:
+        plan = a_plan(
+            ("London", date(2026, 1, 1), date(2027, 12, 31)),
+            ("Delhi", date(2016, 1, 1), date(2040, 12, 31)),
         )
-        return json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(write_manifest(out_dir=tmp_path, plan=plan).read_text(encoding="utf-8"))
 
     def test_describes_what_the_set_contains(self, tmp_path):
         manifest = self.a_manifest(tmp_path)
 
         assert manifest["schema_version"] == SCHEMA_VERSION
-        assert manifest["range"] == ["2016-01-01", "2040-12-31"]
         assert manifest["sunrise_rules"] == ["modern", "traditional"]
+        assert manifest["profiles"] == list(PROFILES)
         assert [loc["slug"] for loc in manifest["locations"]] == ["london", "delhi"]
         assert manifest["locations"][0]["timezone"] == "Europe/London"
+
+    def test_records_each_locations_own_range(self, tmp_path):
+        london, delhi = self.a_manifest(tmp_path)["locations"]
+
+        assert (london["start"], london["end"]) == ("2026-01-01", "2027-12-31")
+        assert (delhi["start"], delhi["end"]) == ("2016-01-01", "2040-12-31")
 
     def test_records_the_reference_engine_version(self, tmp_path):
         import swisseph
@@ -396,3 +414,101 @@ class TestWriteFestivals:
 
     def test_profiles_are_the_three_the_app_offers(self):
         assert PROFILES == (TAPAGACHCHHA, STHANAKVASI, "shwetambar_terapanthi")
+
+
+class TestPlanJobs:
+    def test_cover_days_once_per_location_and_rule_and_festivals_once_per_profile(self):
+        plan = a_plan(
+            ("Delhi", date(2026, 1, 1), date(2026, 1, 2)),
+            ("Surat", date(2026, 1, 1), date(2026, 1, 2)),
+        )
+        days = [(j.location.slug, j.sunrise_rule) for j in plan.jobs if j.profile is None]
+        festivals = [(j.location.slug, j.sunrise_rule, j.profile) for j in plan.jobs if j.profile]
+
+        assert sorted(days) == sorted(
+            (slug, rule) for slug in ("delhi", "surat") for rule in ("modern", "traditional")
+        )
+        assert sorted(festivals) == sorted(
+            (slug, rule, profile)
+            for slug in ("delhi", "surat") for rule in ("modern", "traditional") for profile in PROFILES
+        )
+
+    def test_carry_each_locations_range(self):
+        plan = a_plan(("Delhi", date(2016, 3, 1), date(2018, 2, 1)))
+
+        assert {(j.start, j.end) for j in plan.jobs} == {(date(2016, 3, 1), date(2018, 2, 1))}
+
+
+class TestParsePlan:
+    def test_core_set_is_three_cities_in_full_and_the_rest_for_two_years(self):
+        plan = parse_plan(["--set", "core"])
+        ranges = {e.location.name: (e.start, e.end) for e in plan.entries}
+
+        assert {n for n, r in ranges.items() if r == FULL_RANGE} == {"Delhi", "Ahmedabad", "Mumbai"}
+        assert {n for n, r in ranges.items() if r == CORE_SHORT_RANGE} >= {
+            loc.name for loc in DEFAULT_LOCATIONS if loc.name not in {"Delhi", "Ahmedabad", "Mumbai"}
+        }
+        assert sum(n.startswith("random") for n in ranges) == 4
+        assert plan.sunrise_rules == ("modern", "traditional")
+        assert plan.profiles == PROFILES
+
+    def test_full_set_is_every_default_and_eight_random_over_the_whole_range(self):
+        plan = parse_plan(["--set", "full"])
+
+        assert {e.location.name for e in plan.entries} >= {loc.name for loc in DEFAULT_LOCATIONS}
+        assert sum(e.location.name.startswith("random") for e in plan.entries) == 8
+        assert {(e.start, e.end) for e in plan.entries} == {FULL_RANGE}
+
+    def test_random_sample_can_be_resized_and_reseeded(self):
+        plan = parse_plan(["--set", "full", "--random", "2", "--seed", "99"])
+
+        assert [e.location for e in plan.entries if e.location.name.startswith("random")] == list(
+            random_locations(count=2, seed=99)
+        )
+
+    def test_custom_set_is_any_place_and_range_you_name(self):
+        plan = parse_plan([
+            "--set", "custom", "--name", "Shikharji", "--lat", "23.9616", "--lon", "86.1331",
+            "--start", "2030-01-01", "--end", "2030-12-31", "--rule", "traditional",
+        ])
+
+        (entry,) = plan.entries
+        assert (entry.location.name, entry.location.timezone) == ("Shikharji", "Asia/Kolkata")
+        assert (entry.start, entry.end) == (date(2030, 1, 1), date(2030, 12, 31))
+        assert plan.sunrise_rules == ("traditional",)
+
+    def test_custom_set_defaults_to_the_apps_whole_range_and_both_rules(self):
+        plan = parse_plan(["--set", "custom", "--lat", "21.52", "--lon", "71.82"])
+
+        (entry,) = plan.entries
+        assert (entry.start, entry.end) == FULL_RANGE
+        assert plan.sunrise_rules == ("modern", "traditional")
+
+    def test_custom_set_needs_coordinates(self):
+        with pytest.raises(SystemExit):
+            parse_plan(["--set", "custom", "--name", "Nowhere"])
+
+
+class TestRunPlan:
+    def test_parallel_output_is_identical_to_serial_and_complete(self, tmp_path):
+        plan = a_plan(
+            ("Delhi", date(2026, 1, 1), date(2026, 1, 2)),
+            ("London", date(2026, 1, 1), date(2026, 1, 2)),
+            rules=("modern",), profiles=(STHANAKVASI,),
+        )
+
+        run_plan(plan, out_dir=tmp_path / "serial", workers=1)
+        run_plan(plan, out_dir=tmp_path / "parallel", workers=2)
+
+        def files(root):
+            return {p.relative_to(root).as_posix(): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+
+        serial = files(tmp_path / "serial")
+        assert serial == files(tmp_path / "parallel")
+        assert set(serial) == {
+            "manifest.json",
+            "delhi/modern/days.json.gz",
+            f"delhi/modern/festivals.{STHANAKVASI}.json.gz",
+            "london/modern/days.json.gz",
+            f"london/modern/festivals.{STHANAKVASI}.json.gz",
+        }

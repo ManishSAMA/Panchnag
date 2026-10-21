@@ -6,16 +6,19 @@ what is written here. Design: plans/mobile-phase1-fixtures.md.
 
 from __future__ import annotations
 
+import argparse
 import gzip
 import json
 import random
 import re
 from dataclasses import asdict, dataclass
+from concurrent.futures import ProcessPoolExecutor
 from datetime import date, timedelta
 from pathlib import Path
 
 import swisseph
 
+from astronomy import SUNRISE_RULES
 from choghadiya_service import calculate_choghadiya_slots
 from jain_observances.festival_service import generate_jain_festivals
 from panchang_service import generate_location_panchang, resolve_location
@@ -177,22 +180,18 @@ def write_days(
     )
 
 
-def write_manifest(
-    *,
-    out_dir: Path,
-    locations: tuple[FixtureLocation, ...],
-    start: date,
-    end: date,
-    sunrise_rules: tuple[str, ...],
-) -> Path:
+def write_manifest(*, out_dir: Path, plan: FixturePlan) -> Path:
     path = out_dir / "manifest.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "swisseph_version": swisseph.version,
-        "range": [start.isoformat(), end.isoformat()],
-        "sunrise_rules": list(sunrise_rules),
-        "locations": [asdict(loc) for loc in locations],
+        "sunrise_rules": list(plan.sunrise_rules),
+        "profiles": list(plan.profiles),
+        "locations": [
+            asdict(entry.location) | {"start": entry.start.isoformat(), "end": entry.end.isoformat()}
+            for entry in plan.entries
+        ],
     }
     path.write_text(json.dumps(manifest, sort_keys=True, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return path
@@ -241,3 +240,139 @@ def write_festivals(
             },
         },
     )
+
+
+FULL_RANGE = (date(2016, 1, 1), date(2040, 12, 31))
+CORE_SHORT_RANGE = (date(2026, 1, 1), date(2027, 12, 31))
+_CORE_FULL_RANGE_CITIES = ("Delhi", "Ahmedabad", "Mumbai")
+_RANDOM_COUNT = {"core": 4, "full": 8, "custom": 0}
+RANDOM_SEED = 2026
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+FIXTURES_DIR = _REPO_ROOT / "mobile" / "packages" / "panchang_engine" / "test" / "fixtures"
+
+
+@dataclass(frozen=True)
+class PlanEntry:
+    location: FixtureLocation
+    start: date
+    end: date
+
+
+@dataclass(frozen=True)
+class Job:
+    """One output file: a location's days (profile None) or one profile's festivals."""
+
+    location: FixtureLocation
+    sunrise_rule: str
+    start: date
+    end: date
+    profile: str | None = None
+
+    @property
+    def cost(self) -> int:
+        # One festival year costs about as much as fifty days (~4.4 s vs ~86 ms).
+        if self.profile is None:
+            return (self.end - self.start).days + 1
+        return (self.end.year - self.start.year + 1) * 50
+
+    def run(self, out_dir: Path) -> Path:
+        if self.profile is None:
+            return write_days(
+                self.location, start=self.start, end=self.end,
+                sunrise_rule=self.sunrise_rule, out_dir=out_dir,
+            )
+        return write_festivals(
+            self.location, start_year=self.start.year, end_year=self.end.year,
+            profile=self.profile, sunrise_rule=self.sunrise_rule, out_dir=out_dir,
+        )
+
+
+@dataclass(frozen=True)
+class FixturePlan:
+    entries: tuple[PlanEntry, ...]
+    sunrise_rules: tuple[str, ...]
+    profiles: tuple[str, ...]
+
+    @property
+    def jobs(self) -> tuple[Job, ...]:
+        return tuple(
+            Job(entry.location, rule, entry.start, entry.end, profile)
+            for entry in self.entries
+            for rule in self.sunrise_rules
+            for profile in (None, *self.profiles)
+        )
+
+
+def _run_job(job: Job, out_dir: Path) -> Path:
+    return job.run(out_dir)
+
+
+def run_plan(plan: FixturePlan, *, out_dir: Path, workers: int) -> None:
+    # Longest jobs first, so a slow one never starts last and holds up the pool.
+    jobs = sorted(plan.jobs, key=lambda job: -job.cost)
+    if workers == 1:
+        for job in jobs:
+            job.run(out_dir)
+    else:
+        with ProcessPoolExecutor(max_workers=workers) as pool:
+            list(pool.map(_run_job, jobs, [out_dir] * len(jobs)))
+    write_manifest(out_dir=out_dir, plan=plan)
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Export the Python engine's answers as parity fixtures for the Dart engine.",
+    )
+    parser.add_argument("--set", choices=("core", "full", "custom"), default="core")
+    parser.add_argument("--random", type=int, help="random locations to add (default: core 4, full 8)")
+    parser.add_argument("--seed", type=int, default=RANDOM_SEED)
+    parser.add_argument("--name", default="custom")
+    parser.add_argument("--lat", type=float)
+    parser.add_argument("--lon", type=float)
+    parser.add_argument("--start", type=date.fromisoformat, default=FULL_RANGE[0])
+    parser.add_argument("--end", type=date.fromisoformat, default=FULL_RANGE[1])
+    parser.add_argument("--rule", action="append", choices=SUNRISE_RULES, dest="rules")
+    parser.add_argument("--profile", action="append", choices=PROFILES, dest="profiles")
+    parser.add_argument("--out", type=Path, help="output directory (default: the set's fixtures folder)")
+    parser.add_argument("--workers", type=int, default=1)
+    return parser
+
+
+def _entries(args: argparse.Namespace, parser: argparse.ArgumentParser) -> list[PlanEntry]:
+    if args.set == "custom":
+        if args.lat is None or args.lon is None:
+            parser.error("--set custom needs --lat and --lon")
+        return [PlanEntry(custom_location(name=args.name, lat=args.lat, lon=args.lon), args.start, args.end)]
+    if args.set == "full":
+        return [PlanEntry(loc, *FULL_RANGE) for loc in DEFAULT_LOCATIONS]
+    return [
+        PlanEntry(loc, *(FULL_RANGE if loc.name in _CORE_FULL_RANGE_CITIES else CORE_SHORT_RANGE))
+        for loc in DEFAULT_LOCATIONS
+    ]
+
+
+def _plan_from_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> FixturePlan:
+    count = _RANDOM_COUNT[args.set] if args.random is None else args.random
+    random_range = FULL_RANGE if args.set == "full" else CORE_SHORT_RANGE
+    return FixturePlan(
+        entries=(
+            *_entries(args, parser),
+            *(PlanEntry(loc, *random_range) for loc in random_locations(count=count, seed=args.seed)),
+        ),
+        sunrise_rules=tuple(args.rules or SUNRISE_RULES),
+        profiles=tuple(args.profiles or PROFILES),
+    )
+
+
+def parse_plan(argv: list[str]) -> FixturePlan:
+    parser = _parser()
+    return _plan_from_args(parser.parse_args(argv), parser)
+
+
+def main(argv: list[str]) -> None:
+    parser = _parser()
+    args = parser.parse_args(argv)
+    plan = _plan_from_args(args, parser)
+    out_dir = args.out or FIXTURES_DIR / args.set
+    run_plan(plan, out_dir=out_dir, workers=args.workers)
+    print(f"{len(plan.jobs)} files for {len(plan.entries)} locations -> {out_dir}")
