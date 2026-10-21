@@ -16,14 +16,18 @@ import pytest
 from location_service import get_timezone_name
 from panchang import JAIN_TITHI_OFFSET_DAYS
 from panchang_service import generate_location_panchang
+from jain_observances.festival_service import generate_jain_festivals
 from parity_fixtures import (
     DEFAULT_LOCATIONS,
+    PROFILES,
     SCHEMA_VERSION,
     custom_location,
     day_row,
+    festival_rows,
     random_locations,
     read_fixture,
     write_days,
+    write_festivals,
     write_manifest,
 )
 
@@ -306,3 +310,89 @@ class TestManifest:
         self.a_manifest(tmp_path / "b")
 
         assert (tmp_path / "a" / "manifest.json").read_bytes() == (tmp_path / "b" / "manifest.json").read_bytes()
+
+
+TAPAGACHCHHA = "shwetambar_murtipujak_tapagachchha"
+STHANAKVASI = "shwetambar_sthanakvasi"
+
+
+class TestFestivalRows:
+    def test_are_the_engines_occurrences_for_that_year(self):
+        loc = a_location()
+        engine = generate_jain_festivals(2026, loc.lat, loc.lon, profile=STHANAKVASI)["festivals"]
+
+        rows = festival_rows(loc, 2026, profile=STHANAKVASI, sunrise_rule="modern")
+
+        assert sorted((r["occurrence_id"], r["start_date"], r["end_date"]) for r in rows) == sorted(
+            (f["occurrence_id"], f["start_date"], f["end_date"]) for f in engine
+        )
+        assert all(r["start_date"].startswith("2026") for r in rows)
+
+    def test_carry_ids_dates_and_status_as_plain_json(self):
+        rows = festival_rows(a_location(), 2026, profile=TAPAGACHCHHA, sunrise_rule="modern")
+
+        assert set(rows[0]) == {"id", "occurrence_id", "start_date", "end_date", "status"}
+        assert json.loads(json.dumps(rows)) == rows
+
+    def test_are_in_a_stable_order(self):
+        rows = festival_rows(a_location(), 2026, profile=TAPAGACHCHHA, sunrise_rule="modern")
+
+        keys = [(r["start_date"], r["occurrence_id"]) for r in rows]
+        assert keys == sorted(keys)
+
+    def test_depend_on_the_profile(self):
+        # registry.py: the Sthanakvasi Samvatsari applies to Sthanakvasi and Terapanthi only.
+        def ids(profile: str) -> set[str]:
+            return {r["id"] for r in festival_rows(a_location(), 2026, profile=profile, sunrise_rule="modern")}
+
+        assert "samvatsari_sthanakvasi" in ids(STHANAKVASI)
+        assert "samvatsari_sthanakvasi" not in ids(TAPAGACHCHHA)
+
+    def test_depend_on_the_sunrise_rule(self):
+        # Rohini Vrat follows the nakshatra at sunrise; in Delhi 2026 the later
+        # traditional sunrise moves one occurrence by a day.
+        def dates(rule: str) -> set[tuple[str, str]]:
+            return {(r["id"], r["start_date"]) for r in festival_rows(a_location(), 2026, profile=TAPAGACHCHHA, sunrise_rule=rule)}
+
+        assert dates("modern") != dates("traditional")
+
+    def test_reject_an_unknown_profile_the_engine_would_silently_accept(self):
+        with pytest.raises(ValueError):
+            festival_rows(a_location(), 2026, profile="digambar_x", sunrise_rule="modern")
+
+
+class TestWriteFestivals:
+    def test_writes_one_file_per_profile_grouped_by_year(self, tmp_path):
+        path = write_festivals(
+            a_location(), start_year=2026, end_year=2027,
+            profile=STHANAKVASI, sunrise_rule="traditional", out_dir=tmp_path,
+        )
+
+        fixture = read_fixture(path)
+        assert path == tmp_path / "delhi" / "traditional" / f"festivals.{STHANAKVASI}.json.gz"
+        assert sorted(fixture["years"]) == ["2026", "2027"]
+        assert fixture["years"]["2027"] == festival_rows(
+            a_location(), 2027, profile=STHANAKVASI, sunrise_rule="traditional"
+        )
+        assert (fixture["profile"], fixture["sunrise_rule"], fixture["schema_version"]) == (
+            STHANAKVASI, "traditional", SCHEMA_VERSION,
+        )
+        assert fixture["location"]["slug"] == "delhi"
+
+    def test_a_single_year_is_a_valid_range(self, tmp_path):
+        path = write_festivals(
+            a_location(), start_year=2026, end_year=2026,
+            profile=STHANAKVASI, sunrise_rule="modern", out_dir=tmp_path,
+        )
+
+        assert list(read_fixture(path)["years"]) == ["2026"]
+
+    def test_rejects_a_range_that_ends_before_it_starts(self, tmp_path):
+        with pytest.raises(ValueError):
+            write_festivals(
+                a_location(), start_year=2027, end_year=2026,
+                profile=STHANAKVASI, sunrise_rule="modern", out_dir=tmp_path,
+            )
+
+    def test_profiles_are_the_three_the_app_offers(self):
+        assert PROFILES == (TAPAGACHCHHA, STHANAKVASI, "shwetambar_terapanthi")

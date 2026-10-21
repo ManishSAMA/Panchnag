@@ -59,7 +59,12 @@ Paksha, Kshaya and Vriddhi are **derived** from these fields (on both sides) rat
 
 ### Festival file (per profile, per year in range)
 
-`[{id, start_date, end_date, status}]`, taken from `generate_jain_festivals(year, lat, lon, profile=…, sunrise_rule=…)`.
+The file is `{years: {"2026": [{id, occurrence_id, start_date, end_date, status}, …]}}`, sorted by (start_date, occurrence_id), taken from `generate_jain_festivals(year, lat, lon, profile=…, sunrise_rule=…)`.
+- The engine already limits each call to its own year, so years never overlap.
+- Names and descriptions come from the shared registry JSON rather than being copied into every fixture.
+- `multi_day_festivals` is a display grouping, so it is left out.
+- **The engine silently accepts an unknown profile.** The exporter therefore checks profiles against `request_parsing.VALID_PROFILES`.
+- **The sunrise rule really does move festivals.** For example, in Delhi 2026 one Rohini Vrat moves from 11 to 12 July under the traditional rule.
 
 ## Sets
 

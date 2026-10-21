@@ -17,10 +17,14 @@ from pathlib import Path
 import swisseph
 
 from choghadiya_service import calculate_choghadiya_slots
+from jain_observances.festival_service import generate_jain_festivals
 from panchang_service import generate_location_panchang, resolve_location
+from request_parsing import VALID_PROFILES
 
 # Bump when a fixture's shape changes, so the Dart side can refuse a stale set.
 SCHEMA_VERSION = 1
+
+PROFILES: tuple[str, ...] = VALID_PROFILES
 
 
 @dataclass(frozen=True)
@@ -192,3 +196,48 @@ def write_manifest(
     }
     path.write_text(json.dumps(manifest, sort_keys=True, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return path
+
+
+def festival_rows(
+    location: FixtureLocation, year: int, *, profile: str, sunrise_rule: str
+) -> list[dict]:
+    """The engine's festival occurrences for one year, reduced to ids, dates and status."""
+    # The engine accepts any profile string and quietly returns the wrong festivals.
+    if profile not in PROFILES:
+        raise ValueError(f"profile must be one of {PROFILES} (got {profile!r}).")
+    festivals = generate_jain_festivals(
+        year, location.lat, location.lon, profile=profile, sunrise_rule=sunrise_rule
+    )["festivals"]
+    return sorted(
+        (
+            {key: f[key] for key in ("id", "occurrence_id", "start_date", "end_date", "status")}
+            for f in festivals
+        ),
+        key=lambda row: (row["start_date"], row["occurrence_id"]),
+    )
+
+
+def write_festivals(
+    location: FixtureLocation,
+    *,
+    start_year: int,
+    end_year: int,
+    profile: str,
+    sunrise_rule: str,
+    out_dir: Path,
+) -> Path:
+    if end_year < start_year:
+        raise ValueError(f"Range ends ({end_year}) before it starts ({start_year}).")
+    return _write_gzip(
+        out_dir / location.slug / sunrise_rule / f"festivals.{profile}.json.gz",
+        {
+            "schema_version": SCHEMA_VERSION,
+            "location": asdict(location),
+            "sunrise_rule": sunrise_rule,
+            "profile": profile,
+            "years": {
+                str(year): festival_rows(location, year, profile=profile, sunrise_rule=sunrise_rule)
+                for year in range(start_year, end_year + 1)
+            },
+        },
+    )
