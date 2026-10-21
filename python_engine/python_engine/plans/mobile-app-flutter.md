@@ -73,9 +73,17 @@ Each phase ends in a working, tested state. TDD throughout: Python with pytest, 
 
 > **Progress (2026-10-07):**
 > - Flutter 3.47.6 / Dart 3.13.5 installed at `C:\dev\flutter`.
-> - Android Studio: pending (user installing).
 > - **Accuracy spike: GO.** Every check is 10–300× inside tolerance. See [`mobile/spikes/astro_accuracy/REPORT.md`](../../../mobile/spikes/astro_accuracy/REPORT.md).
-> - Remaining: `flutter run` on a physical Android phone.
+>
+> **Progress (2026-10-21): Phase 0 complete.**
+> - Android Studio, SDK 36/37, cmdline-tools 23, NDK 28.2.13676358 installed. `flutter doctor` is green for Android.
+> - `mobile/spikes/hello_panchang` built (`flutter build apk --debug`), installed and ran on the `Medium_Phone_API_37.0` emulator.
+>
+> **Setup gotchas:**
+> - The emulator only boots reliably with `-gpu swiftshader_indirect`. The default GPU mode died with "UpdateLayeredWindowIndirect failed".
+> - Gradle could not auto-install the NDK. Install it manually with `android.exe --sdk=<sdk> sdk install ndk/28.2.13676358`.
+> - `sdkmanager.bat` is deprecated and splits `;` package names. Use the new `cmdline-tools\latest\bin\android.exe sdk …`.
+> - Physical-phone run deferred: the emulator is enough until performance testing in Phase 2.
 
 - Install the Flutter SDK, Android Studio (SDK and emulator), and VS Code with the Flutter extension. Get `flutter run` working on your Android phone.
 - Spike: pure-Dart Sun, Moon, Lahiri ayanamsa and sunrise for 2016–2040 at 2–3 cities, compared with a quick Python dump.
