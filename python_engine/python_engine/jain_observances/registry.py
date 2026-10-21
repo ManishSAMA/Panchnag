@@ -141,6 +141,7 @@ FESTIVAL_REGISTRY = [
     {
         "id": "shri_mahavir_swami_ji___moksha_kalyanak__the_nirvana_liberation_of_lord_mahavira__celebrated_as_jain_diwali",
         "name": "Shri Mahavir Swami Ji - Moksha Kalyanak (The Nirvana/Liberation of Lord Mahavira, celebrated as Jain Diwali).",
+        "name_hindi": "श्री महावीर स्वामी मोक्ष कल्याणक (जैन दीपावली)",
         "category": "festival",
         "profiles": ["all"],
         "rule_type": "SingleTithi",

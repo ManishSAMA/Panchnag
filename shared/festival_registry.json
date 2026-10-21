@@ -1,0 +1,3710 @@
+{
+  "festivals": [
+    {
+      "category": "mahaparv_vrat",
+      "id": "shodashkaran_bhadrapada_ashvina",
+      "jain_month": "BHADRAPADA_ASHVINA",
+      "meaning": "Shodashkaran Vrat from Bhadrapada Krishna Ekam to Ashvina Krishna Ekam",
+      "name": "Bhadrapada-Ashvina Shodashkaran Vrat",
+      "name_hindi": "भाद्रपद-आश्विन षोडशकारण व्रत",
+      "observance": "Fasting and Shodashkaran Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "ShodashkaranVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "shodashkaran_magha_phalguna",
+      "jain_month": "MAGHA_PHALGUNA",
+      "meaning": "Shodashkaran Vrat from Magha Krishna Ekam to Phalguna Krishna Ekam",
+      "name": "Magha-Phalguna Shodashkaran Vrat",
+      "name_hindi": "माघ-फाल्गुन षोडशकारण व्रत",
+      "observance": "Fasting and Shodashkaran Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "ShodashkaranVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "shodashkaran_chaitra_vaishakha",
+      "jain_month": "CHAITRA_VAISHAKHA",
+      "meaning": "Shodashkaran Vrat from Chaitra Krishna Ekam to Vaishakha Krishna Ekam",
+      "name": "Chaitra-Vaishakha Shodashkaran Vrat",
+      "name_hindi": "चैत्र-वैशाख षोडशकारण व्रत",
+      "observance": "Fasting and Shodashkaran Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "ShodashkaranVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "vrat",
+      "id": "bhaktambar_vrat",
+      "jain_month": "",
+      "meaning": "Bhaktambar Vrat from Ashtami (8) to Chaturdashi (14) of every Paksha.",
+      "name": "Bhaktambar Vrat",
+      "name_hindi": "भक्ताम्बर व्रत",
+      "observance": "Fasting and Bhaktambar Stotra Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "BhaktambarVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "parva",
+      "id": "rohini_nakshatra_parv_vrat",
+      "jain_month": "",
+      "meaning": "Monthly Digambar vrat observed on the day Rohini nakshatra prevails at sunrise, dedicated to Bhagwan Vasupujya.",
+      "name": "Rohini Nakshatra Vrat",
+      "name_hindi": "रोहिणी नक्षत्र व्रत",
+      "observance": "Fasting and worship of Bhagwan Vasupujya; traditionally observed by women for family well-being.",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "RohiniVrat",
+      "sources": [
+        "Jain Traditions",
+        "Vrat Vidhi Sangrah"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "ratnatraya_chaitra",
+      "jain_month": "Chaitra",
+      "meaning": "Ratnatraya Vrat during Chaitra month.",
+      "name": "Chaitra Ratnatraya Vrat",
+      "name_hindi": "चैत्र रत्नत्रय व्रत",
+      "observance": "Fasting and Ratnatraya Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "RatnatrayaVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "ratnatraya_magha",
+      "jain_month": "Magha",
+      "meaning": "Ratnatraya Vrat during Magha month.",
+      "name": "Magha Ratnatraya Vrat",
+      "name_hindi": "माघ रत्नत्रय व्रत",
+      "observance": "Fasting and Ratnatraya Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "RatnatrayaVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "daslakshan_chaitra",
+      "jain_month": "Chaitra",
+      "meaning": "Daslakshan Vrat during Chaitra month.",
+      "name": "Chaitra Daslakshan Vrat",
+      "name_hindi": "चैत्र दशलक्षण व्रत",
+      "observance": "Fasting and ten virtues Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "DaslakshanVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "daslakshan_magha",
+      "jain_month": "Magha",
+      "meaning": "Daslakshan Vrat during Magha month.",
+      "name": "Magha Daslakshan Vrat",
+      "name_hindi": "माघ दशलक्षण व्रत",
+      "observance": "Fasting and ten virtues Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "DaslakshanVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "daslakshan_bhadrapada",
+      "jain_month": "Bhadrapada",
+      "meaning": "Daslakshan Vrat during Bhadrapada month.",
+      "name": "Bhadrapada Daslakshan Vrat",
+      "name_hindi": "भाद्रपद दशलक्षण व्रत",
+      "observance": "Fasting and ten virtues Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "DaslakshanVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "labdhi_vidhan_chaitra",
+      "jain_month": "Chaitra",
+      "meaning": "Labdhi Vidhan Vrat span from Chaitra Krishna Amavasya to Chaitra Shukla 4",
+      "name": "Chaitra Labdhi Vidhan Vrat",
+      "name_hindi": "चैत्र लब्धि विधान व्रत",
+      "observance": "Labdhi Vrat Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "ChaitraLabdhiVidhan",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "festival",
+      "id": "shri_mahavir_swami_ji___moksha_kalyanak__the_nirvana_liberation_of_lord_mahavira__celebrated_as_jain_diwali",
+      "jain_month": "Ashwin",
+      "name": "Shri Mahavir Swami Ji - Moksha Kalyanak (The Nirvana/Liberation of Lord Mahavira, celebrated as Jain Diwali).",
+      "name_hindi": "श्री महावीर स्वामी मोक्ष कल्याणक (जैन दीपावली)",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "tithi": 15
+    },
+    {
+      "category": "festival",
+      "id": "diwali",
+      "jain_month": "Kartik",
+      "meaning": "Moksha of Bhagwan Mahavir and Kevalgyan of Gautam Swami",
+      "name": "Diwali (Mahavir Nirvan & Gautam Swami Kevalgyan)",
+      "name_hindi": "दीपावली (भगवान महावीर निर्वाण)",
+      "observance": "Laddoo offering & Swadhyay",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "DiwaliChaturmasNishthapan",
+      "sources": [
+        "Jain Traditions"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "festival",
+      "id": "samvatsari_tapagachchha",
+      "jain_month": "Bhadrapada",
+      "meaning": "Samvatsari Mahaparva",
+      "name": "Samvatsari (Tapagachchha)",
+      "name_hindi": "संवत्सरी (तपागच्छ)",
+      "observance": "Kshamapana & Upvas",
+      "paksha": "Shukla",
+      "profiles": [
+        "shwetambar_murtipujak_tapagachchha"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Tapagachchha Rules"
+      ],
+      "tithi": 4,
+      "vriddhi_rule": "second_day"
+    },
+    {
+      "category": "festival",
+      "id": "samvatsari_sthanakvasi",
+      "jain_month": "Bhadrapada",
+      "meaning": "Samvatsari Mahaparva",
+      "name": "Samvatsari (Sthanakvasi / Terapanthi)",
+      "name_hindi": "संवत्सरी (स्थानकवासी/तेरापंथी)",
+      "observance": "Kshamapana & Upvas",
+      "paksha": "Shukla",
+      "profiles": [
+        "shwetambar_sthanakvasi",
+        "shwetambar_terapanthi"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Sthanakvasi Rules"
+      ],
+      "tithi": 5,
+      "vriddhi_rule": "second_day"
+    },
+    {
+      "category": "parva",
+      "id": "pakhi_chaudas_shukla",
+      "meaning": "Fortnightly Pakhi Chaudas",
+      "name": "Pakhi Chaudas (Shukla)",
+      "name_hindi": "पाखी चौदस (शुक्ल)",
+      "observance": "Pakshik Pratikraman",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Jain Panchang Rules"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "parva",
+      "id": "pakhi_chaudas_krishna",
+      "meaning": "Fortnightly Pakhi Chaudas",
+      "name": "Pakhi Chaudas (Krishna)",
+      "name_hindi": "पाखी चौदस (कृष्ण)",
+      "observance": "Pakshik Pratikraman",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Jain Panchang Rules"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "mahaparv",
+      "id": "chaumasi_chaudas_kartika",
+      "jain_month": "Kartika",
+      "meaning": "Kartika Chaumasi Chaudas",
+      "name": "Kartika Chaumasi Chaudas",
+      "name_hindi": "कार्तिक चौमासी चौदस",
+      "observance": "Chaumasi Pratikraman",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Jain Panchang Rules"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "mahaparv",
+      "id": "chaumasi_chaudas_phalguna",
+      "jain_month": "Phalguna",
+      "meaning": "Phalguna Chaumasi Chaudas",
+      "name": "Phalguna Chaumasi Chaudas",
+      "name_hindi": "फाल्गुन चौमासी चौदस",
+      "observance": "Chaumasi Pratikraman",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Jain Panchang Rules"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "mahaparv",
+      "id": "chaumasi_chaudas_ashadha",
+      "jain_month": "Ashadha",
+      "meaning": "Ashadha Chaumasi Chaudas",
+      "name": "Ashadha Chaumasi Chaudas",
+      "name_hindi": "आषाढ़ चौमासी चौदस",
+      "observance": "Chaumasi Pratikraman",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Jain Panchang Rules"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "parva",
+      "id": "jyeshtha_jinvar_vrat_begins",
+      "jain_month": "Jyeshtha",
+      "meaning": "Start of Jyeshtha Jinvar Vrat",
+      "name": "Jyeshtha Jinvar Vrat Begins",
+      "name_hindi": "ज्येष्ठ जिनवर व्रत प्रारंभ",
+      "observance": "Fasting and worship",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Jain Panchang Rules"
+      ],
+      "tithi": 1
+    },
+    {
+      "category": "parva",
+      "id": "shrut_panchami",
+      "jain_month": "Jyeshtha",
+      "meaning": "Worship of the first written Jain scriptures",
+      "name": "Shrut Panchami (Jinvani Divas)",
+      "name_hindi": "श्रुत पंचमी (जिनवाणी दिवस)",
+      "observance": "Jinvani Puja, Swadhyay",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Jain Panchang Rules"
+      ],
+      "tithi": 5
+    },
+    {
+      "category": "mahaparv",
+      "id": "raksha_bandhan",
+      "jain_month": "Shravana",
+      "meaning": "Commemorates Muni Vishnukumar protecting 700 Jain ascetics",
+      "name": "Raksha Bandhan (Vishnukumar Muni Parv)",
+      "name_hindi": "रक्षाबंधन (विष्णुकुमार मुनि पर्व)",
+      "observance": "Worship, community gathering",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Jain Panchang Rules"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "mahaparv",
+      "id": "mahavir_nirvana_deepavali",
+      "jain_month": "Ashwin",
+      "meaning": "Bhagwan Mahavira attained Nirvana (liberation) at Pavapuri.",
+      "name": "Mahavir Swami Nirvana Kalyanak (Deepavali)",
+      "name_hindi": "महावीर स्वामी निर्वाण कल्याणक (दीपावली)",
+      "observance": "Lighting of lamps, offering of Nirvan Ladoo.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Jain Panchang Rules"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_parshvanath_ji___conception_kalyanak_2_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Chaitra",
+      "meaning": "Conception Kalyanak of Lord Parshvanath",
+      "name": "Shri Parshvanath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 2
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_parshvanath_ji___omniscience_kalyanak_14_uttarapurana",
+      "jain_month": "Phalguna",
+      "meaning": "Omniscience Kalyanak of Lord Parshvanath",
+      "name": "Shri Parshvanath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Uttarapurana"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_chandraprabha_ji___conception_kalyanak_5_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Phalguna",
+      "meaning": "Conception Kalyanak of Lord Chandraprabha",
+      "name": "Shri Chandraprabha Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 5
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sheetalnath_ji___conception_kalyanak_8_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Phalguna",
+      "meaning": "Conception Kalyanak of Lord Sheetalnath",
+      "name": "Shri Sheetalnath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 8
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_rishabhdev_ji___austerity_kalyanak_9_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Phalguna",
+      "meaning": "Austerity Kalyanak of Lord Rishabhdev (Adinath)",
+      "name": "Shri Rishabhdev (Adinath) Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 9
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_rishabhdev_ji___birth_kalyanak_9_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Phalguna",
+      "meaning": "Birth Kalyanak of Lord Rishabhdev (Adinath)",
+      "name": "Shri Rishabhdev (Adinath) Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 9
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_anantnath_ji___liberation_kalyanak_15_vrindavan_ashadhara",
+      "jain_month": "Phalguna",
+      "meaning": "Liberation Kalyanak of Lord Anantnath",
+      "name": "Shri Anantnath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Ashadhara"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_anantnath_ji___liberation_kalyanak_15_uttarapurana",
+      "jain_month": "Phalguna",
+      "meaning": "Liberation Kalyanak of Lord Anantnath",
+      "name": "Shri Anantnath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Uttarapurana"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_anantnath_ji___omniscience_kalyanak_15_vrindavan_ashadhara",
+      "jain_month": "Phalguna",
+      "meaning": "Omniscience Kalyanak of Lord Anantnath",
+      "name": "Shri Anantnath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Ashadhara"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_anantnath_ji___omniscience_kalyanak_15_uttarapurana",
+      "jain_month": "Phalguna",
+      "meaning": "Omniscience Kalyanak of Lord Anantnath",
+      "name": "Shri Anantnath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Uttarapurana"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_arahnath_ji___liberation_kalyanak_15_vrindavan_ashadhara",
+      "jain_month": "Phalguna",
+      "meaning": "Liberation Kalyanak of Lord Arahnath",
+      "name": "Shri Arahnath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Ashadhara"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_arahnath_ji___liberation_kalyanak_15_uttarapurana",
+      "jain_month": "Phalguna",
+      "meaning": "Liberation Kalyanak of Lord Arahnath",
+      "name": "Shri Arahnath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Uttarapurana"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_kunthunath_ji___omniscience_kalyanak_3_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Chaitra",
+      "meaning": "Omniscience Kalyanak of Lord Kunthunath",
+      "name": "Shri Kunthunath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 3
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_ajitnath_ji___liberation_kalyanak_5_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Chaitra",
+      "meaning": "Liberation Kalyanak of Lord Ajitnath",
+      "name": "Shri Ajitnath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 5
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sambhavnath_ji___liberation_kalyanak_6_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Chaitra",
+      "meaning": "Liberation Kalyanak of Lord Sambhavnath",
+      "name": "Shri Sambhavnath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 6
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_parshvanath_ji___omniscience_kalyanak_4_vrindavan_ashadhara",
+      "jain_month": "Phalguna",
+      "meaning": "Omniscience Kalyanak of Lord Parshvanath",
+      "name": "Shri Parshvanath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Ashadhara"
+      ],
+      "tithi": 4
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_anantnath_ji___liberation_kalyanak_4_vrindavan",
+      "jain_month": "Phalguna",
+      "meaning": "Liberation Kalyanak of Lord Anantnath",
+      "name": "Shri Anantnath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan"
+      ],
+      "tithi": 4
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sumatinath_ji___birth_kalyanak_11_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Chaitra",
+      "meaning": "Birth Kalyanak of Lord Sumatinath",
+      "name": "Shri Sumatinath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sumatinath_ji___liberation_kalyanak_11_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Chaitra",
+      "meaning": "Liberation Kalyanak of Lord Sumatinath",
+      "name": "Shri Sumatinath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sumatinath_ji___omniscience_kalyanak_11_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Chaitra",
+      "meaning": "Omniscience Kalyanak of Lord Sumatinath",
+      "name": "Shri Sumatinath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_padmaprabha_ji___omniscience_kalyanak_15_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Chaitra",
+      "meaning": "Omniscience Kalyanak of Lord Padmaprabha",
+      "name": "Shri Padmaprabha Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_munisuvrat_ji___omniscience_kalyanak_9_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Chaitra",
+      "meaning": "Omniscience Kalyanak of Lord Munisuvrat",
+      "name": "Shri Munisuvrat Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 9
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_munisuvrat_ji___austerity_kalyanak_10_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Chaitra",
+      "meaning": "Austerity Kalyanak of Lord Munisuvrat",
+      "name": "Shri Munisuvrat Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 10
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_munisuvrat_ji___birth_kalyanak_10_vrindavan_ashadhara",
+      "jain_month": "Chaitra",
+      "meaning": "Birth Kalyanak of Lord Munisuvrat",
+      "name": "Shri Munisuvrat Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Ashadhara"
+      ],
+      "tithi": 10
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_munisuvrat_ji___birth_kalyanak_12_uttarapurana",
+      "jain_month": "Chaitra",
+      "meaning": "Birth Kalyanak of Lord Munisuvrat",
+      "name": "Shri Munisuvrat Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Uttarapurana"
+      ],
+      "tithi": 12
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_dharmanath_ji___conception_kalyanak_13_ashadhara",
+      "jain_month": "Chaitra",
+      "meaning": "Conception Kalyanak of Lord Dharmanath",
+      "name": "Shri Dharmanath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Ashadhara"
+      ],
+      "tithi": 13
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_naminath_ji___liberation_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Chaitra",
+      "meaning": "Liberation Kalyanak of Lord Naminath",
+      "name": "Shri Naminath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_kunthunath_ji___austerity_kalyanak_1_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Austerity Kalyanak of Lord Kunthunath",
+      "name": "Shri Kunthunath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 1
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_kunthunath_ji___birth_kalyanak_1_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Birth Kalyanak of Lord Kunthunath",
+      "name": "Shri Kunthunath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 1
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_kunthunath_ji___liberation_kalyanak_1_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Liberation Kalyanak of Lord Kunthunath",
+      "name": "Shri Kunthunath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 1
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_abhinandan_ji___conception_kalyanak_6_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Conception Kalyanak of Lord Abhinandan",
+      "name": "Shri Abhinandan Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 6
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_abhinandan_ji___liberation_kalyanak_6_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Liberation Kalyanak of Lord Abhinandan",
+      "name": "Shri Abhinandan Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 6
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_dharmanath_ji___conception_kalyanak_8_vrindavan",
+      "jain_month": "Vaishakha",
+      "meaning": "Conception Kalyanak of Lord Dharmanath",
+      "name": "Shri Dharmanath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan"
+      ],
+      "tithi": 8
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_dharmanath_ji___conception_kalyanak_13_uttarapurana",
+      "jain_month": "Vaishakha",
+      "meaning": "Conception Kalyanak of Lord Dharmanath",
+      "name": "Shri Dharmanath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Uttarapurana"
+      ],
+      "tithi": 13
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sumatinath_ji___austerity_kalyanak_9_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Austerity Kalyanak of Lord Sumatinath",
+      "name": "Shri Sumatinath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 9
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sumatinath_ji___birth_kalyanak_chaitra_shukla_10_jaini_jiyalal",
+      "jain_month": "Chaitra",
+      "meaning": "Birth Kalyanak of Lord Sumatinath (Janma-Tapa, observed together)",
+      "name": "Shri Sumatinath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Pt. Jaini Jiyalal Panchang"
+      ],
+      "tithi": 10
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sumatinath_ji___austerity_kalyanak_chaitra_shukla_10_jaini_jiyalal",
+      "jain_month": "Chaitra",
+      "meaning": "Austerity Kalyanak of Lord Sumatinath (Janma-Tapa, observed together)",
+      "name": "Shri Sumatinath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Pt. Jaini Jiyalal Panchang"
+      ],
+      "tithi": 10
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_mahavira_ji___omniscience_kalyanak_10_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Omniscience Kalyanak of Lord Mahavira",
+      "name": "Shri Mahavira Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 10
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_shreyansnath_ji___conception_kalyanak_6_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Conception Kalyanak of Lord Shreyansnath",
+      "name": "Shri Shreyansnath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 6
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_vimalnath_ji___conception_kalyanak_10_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Conception Kalyanak of Lord Vimalnath",
+      "name": "Shri Vimalnath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 10
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_anantnath_ji___austerity_kalyanak_12_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Austerity Kalyanak of Lord Anantnath",
+      "name": "Shri Anantnath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 12
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_anantnath_ji___birth_kalyanak_12_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Birth Kalyanak of Lord Anantnath",
+      "name": "Shri Anantnath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 12
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_shantinath_ji___austerity_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Austerity Kalyanak of Lord Shantinath",
+      "name": "Shri Shantinath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_shantinath_ji___birth_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Birth Kalyanak of Lord Shantinath",
+      "name": "Shri Shantinath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_shantinath_ji___liberation_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Liberation Kalyanak of Lord Shantinath",
+      "name": "Shri Shantinath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_ajitnath_ji___conception_kalyanak_15_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Vaishakha",
+      "meaning": "Conception Kalyanak of Lord Ajitnath",
+      "name": "Shri Ajitnath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_dharmanath_ji___liberation_kalyanak_4_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Jyeshtha",
+      "meaning": "Liberation Kalyanak of Lord Dharmanath",
+      "name": "Shri Dharmanath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 4
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_suparshvanath_ji___austerity_kalyanak_12_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Jyeshtha",
+      "meaning": "Austerity Kalyanak of Lord Suparshvanath",
+      "name": "Shri Suparshvanath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 12
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_suparshvanath_ji___birth_kalyanak_12_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Jyeshtha",
+      "meaning": "Birth Kalyanak of Lord Suparshvanath",
+      "name": "Shri Suparshvanath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 12
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_rishabhdev_ji___conception_kalyanak_2_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Jyeshtha",
+      "meaning": "Conception Kalyanak of Lord Rishabhdev (Adinath)",
+      "name": "Shri Rishabhdev (Adinath) Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 2
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_vasupujya_ji___conception_kalyanak_6_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Jyeshtha",
+      "meaning": "Conception Kalyanak of Lord Vasupujya",
+      "name": "Shri Vasupujya Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 6
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_vimalnath_ji___liberation_kalyanak_6_vrindavan",
+      "jain_month": "Jyeshtha",
+      "meaning": "Liberation Kalyanak of Lord Vimalnath",
+      "name": "Shri Vimalnath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan"
+      ],
+      "tithi": 6
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_vimalnath_ji___liberation_kalyanak_8_uttarapurana_ashadhara",
+      "jain_month": "Jyeshtha",
+      "meaning": "Liberation Kalyanak of Lord Vimalnath",
+      "name": "Shri Vimalnath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 8
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_naminath_ji___austerity_kalyanak_10_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Jyeshtha",
+      "meaning": "Austerity Kalyanak of Lord Naminath",
+      "name": "Shri Naminath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 10
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_naminath_ji___birth_kalyanak_10_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Jyeshtha",
+      "meaning": "Birth Kalyanak of Lord Naminath",
+      "name": "Shri Naminath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 10
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_mahavira_ji___conception_kalyanak_6_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Ashadha",
+      "meaning": "Conception Kalyanak of Lord Mahavira",
+      "name": "Shri Mahavira Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 6
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_neminath_ji___liberation_kalyanak_7_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Ashadha",
+      "meaning": "Liberation Kalyanak of Lord Neminath",
+      "name": "Shri Neminath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 7
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_munisuvrat_ji___conception_kalyanak_2_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Ashadha",
+      "meaning": "Conception Kalyanak of Lord Munisuvrat",
+      "name": "Shri Munisuvrat Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 2
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_kunthunath_ji___conception_kalyanak_10_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Ashadha",
+      "meaning": "Conception Kalyanak of Lord Kunthunath",
+      "name": "Shri Kunthunath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 10
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sumatinath_ji___conception_kalyanak_2_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Shravana",
+      "meaning": "Conception Kalyanak of Lord Sumatinath",
+      "name": "Shri Sumatinath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 2
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_neminath_ji___austerity_kalyanak_6_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Shravana",
+      "meaning": "Austerity Kalyanak of Lord Neminath",
+      "name": "Shri Neminath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 6
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_neminath_ji___birth_kalyanak_6_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Shravana",
+      "meaning": "Birth Kalyanak of Lord Neminath",
+      "name": "Shri Neminath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 6
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_parshvanath_ji___liberation_kalyanak_7_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Shravana",
+      "meaning": "Liberation Kalyanak of Lord Parshvanath",
+      "name": "Shri Parshvanath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 7
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_shreyansnath_ji___liberation_kalyanak_15_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Shravana",
+      "meaning": "Liberation Kalyanak of Lord Shreyansnath",
+      "name": "Shri Shreyansnath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_shantinath_ji___conception_kalyanak_7_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Shravana",
+      "meaning": "Conception Kalyanak of Lord Shantinath",
+      "name": "Shri Shantinath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 7
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_suparshvanath_ji___conception_kalyanak_6_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Bhadrapada",
+      "meaning": "Conception Kalyanak of Lord Suparshvanath",
+      "name": "Shri Suparshvanath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 6
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_pushpadanta_ji___liberation_kalyanak_8_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Bhadrapada",
+      "meaning": "Liberation Kalyanak of Lord Pushpadanta (Suvidhinath)",
+      "name": "Shri Pushpadanta (Suvidhinath) Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 8
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_vasupujya_ji___liberation_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Bhadrapada",
+      "meaning": "Liberation Kalyanak of Lord Vasupujya",
+      "name": "Shri Vasupujya Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_naminath_ji___conception_kalyanak_2_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Bhadrapada",
+      "meaning": "Conception Kalyanak of Lord Naminath",
+      "name": "Shri Naminath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 2
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_neminath_ji___omniscience_kalyanak_1_vrindavan_uttarapurana",
+      "jain_month": "Ashwin",
+      "meaning": "Omniscience Kalyanak of Lord Neminath",
+      "name": "Shri Neminath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana"
+      ],
+      "tithi": 1
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_neminath_ji___omniscience_kalyanak_9_ashadhara",
+      "jain_month": "Ashwin",
+      "meaning": "Omniscience Kalyanak of Lord Neminath",
+      "name": "Shri Neminath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Ashadhara"
+      ],
+      "tithi": 9
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sheetalnath_ji___liberation_kalyanak_8_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Ashwin",
+      "meaning": "Liberation Kalyanak of Lord Sheetalnath",
+      "name": "Shri Sheetalnath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 8
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_anantnath_ji___conception_kalyanak_1_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Ashwin",
+      "meaning": "Conception Kalyanak of Lord Anantnath",
+      "name": "Shri Anantnath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 1
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sambhavnath_ji___omniscience_kalyanak_4_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Ashwin",
+      "meaning": "Omniscience Kalyanak of Lord Sambhavnath",
+      "name": "Shri Sambhavnath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 4
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_padmaprabha_ji___austerity_kalyanak_13_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Ashwin",
+      "meaning": "Austerity Kalyanak of Lord Padmaprabha",
+      "name": "Shri Padmaprabha Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 13
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_padmaprabha_ji___birth_kalyanak_13_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Ashwin",
+      "meaning": "Birth Kalyanak of Lord Padmaprabha",
+      "name": "Shri Padmaprabha Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 13
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_mahavira_ji___liberation_kalyanak_15_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Ashwin",
+      "meaning": "Liberation Kalyanak of Lord Mahavira",
+      "name": "Shri Mahavira Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_pushpadanta_ji___omniscience_kalyanak_2_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Kartika",
+      "meaning": "Omniscience Kalyanak of Lord Pushpadanta (Suvidhinath)",
+      "name": "Shri Pushpadanta (Suvidhinath) Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 2
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_neminath_ji___conception_kalyanak_6_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Kartika",
+      "meaning": "Conception Kalyanak of Lord Neminath",
+      "name": "Shri Neminath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 6
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_arahnath_ji___omniscience_kalyanak_12_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Kartika",
+      "meaning": "Omniscience Kalyanak of Lord Arahnath",
+      "name": "Shri Arahnath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 12
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sambhavnath_ji___birth_kalyanak_15_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Kartika",
+      "meaning": "Birth Kalyanak of Lord Sambhavnath",
+      "name": "Shri Sambhavnath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_mahavira_ji___austerity_kalyanak_10_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Kartika",
+      "meaning": "Austerity Kalyanak of Lord Mahavira",
+      "name": "Shri Mahavira Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 10
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_pushpadanta_ji___austerity_kalyanak_1_vrindavan_uttarapurana",
+      "jain_month": "Margashirsha",
+      "meaning": "Austerity Kalyanak of Lord Pushpadanta (Suvidhinath)",
+      "name": "Shri Pushpadanta (Suvidhinath) Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana"
+      ],
+      "tithi": 1
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_pushpadanta_ji___austerity_kalyanak_9_ashadhara",
+      "jain_month": "Margashirsha",
+      "meaning": "Austerity Kalyanak of Lord Pushpadanta (Suvidhinath)",
+      "name": "Shri Pushpadanta (Suvidhinath) Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Ashadhara"
+      ],
+      "tithi": 9
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_pushpadanta_ji___birth_kalyanak_1_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Margashirsha",
+      "meaning": "Birth Kalyanak of Lord Pushpadanta (Suvidhinath)",
+      "name": "Shri Pushpadanta (Suvidhinath) Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 1
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_arahnath_ji___austerity_kalyanak_10_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Margashirsha",
+      "meaning": "Austerity Kalyanak of Lord Arahnath",
+      "name": "Shri Arahnath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 10
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_naminath_ji___omniscience_kalyanak_11_uttarapurana_ashadhara",
+      "jain_month": "Margashirsha",
+      "meaning": "Omniscience Kalyanak of Lord Naminath",
+      "name": "Shri Naminath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_mallinath_ji___austerity_kalyanak_11_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Margashirsha",
+      "meaning": "Austerity Kalyanak of Lord Mallinath",
+      "name": "Shri Mallinath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_mallinath_ji___birth_kalyanak_11_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Margashirsha",
+      "meaning": "Birth Kalyanak of Lord Mallinath",
+      "name": "Shri Mallinath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_arahnath_ji___birth_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Margashirsha",
+      "meaning": "Birth Kalyanak of Lord Arahnath",
+      "name": "Shri Arahnath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sambhavnath_ji___austerity_kalyanak_15_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Margashirsha",
+      "meaning": "Austerity Kalyanak of Lord Sambhavnath",
+      "name": "Shri Sambhavnath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_mallinath_ji___omniscience_kalyanak_2_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Margashirsha",
+      "meaning": "Omniscience Kalyanak of Lord Mallinath",
+      "name": "Shri Mallinath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 2
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_chandraprabha_ji___austerity_kalyanak_11_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Margashirsha",
+      "meaning": "Austerity Kalyanak of Lord Chandraprabha",
+      "name": "Shri Chandraprabha Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_chandraprabha_ji___birth_kalyanak_11_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Margashirsha",
+      "meaning": "Birth Kalyanak of Lord Chandraprabha",
+      "name": "Shri Chandraprabha Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_parshvanath_ji___austerity_kalyanak_11_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Margashirsha",
+      "meaning": "Austerity Kalyanak of Lord Parshvanath",
+      "name": "Shri Parshvanath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_parshvanath_ji___birth_kalyanak_11_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Margashirsha",
+      "meaning": "Birth Kalyanak of Lord Parshvanath",
+      "name": "Shri Parshvanath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sheetalnath_ji___omniscience_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Margashirsha",
+      "meaning": "Omniscience Kalyanak of Lord Sheetalnath",
+      "name": "Shri Sheetalnath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_shantinath_ji___omniscience_kalyanak_10_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Pausha",
+      "meaning": "Omniscience Kalyanak of Lord Shantinath",
+      "name": "Shri Shantinath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 10
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_ajitnath_ji___omniscience_kalyanak_11_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Pausha",
+      "meaning": "Omniscience Kalyanak of Lord Ajitnath",
+      "name": "Shri Ajitnath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_abhinandan_ji___omniscience_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Pausha",
+      "meaning": "Omniscience Kalyanak of Lord Abhinandan",
+      "name": "Shri Abhinandan Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_dharmanath_ji___omniscience_kalyanak_15_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Pausha",
+      "meaning": "Omniscience Kalyanak of Lord Dharmanath",
+      "name": "Shri Dharmanath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_padmaprabha_ji___conception_kalyanak_6_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Pausha",
+      "meaning": "Conception Kalyanak of Lord Padmaprabha",
+      "name": "Shri Padmaprabha Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 6
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sheetalnath_ji___austerity_kalyanak_12_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Pausha",
+      "meaning": "Austerity Kalyanak of Lord Sheetalnath",
+      "name": "Shri Sheetalnath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 12
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sheetalnath_ji___birth_kalyanak_12_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Pausha",
+      "meaning": "Birth Kalyanak of Lord Sheetalnath",
+      "name": "Shri Sheetalnath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 12
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_rishabhdev_ji___liberation_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Pausha",
+      "meaning": "Liberation Kalyanak of Lord Rishabhdev (Adinath)",
+      "name": "Shri Rishabhdev (Adinath) Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_shreyansnath_ji___omniscience_kalyanak_15_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Pausha",
+      "meaning": "Omniscience Kalyanak of Lord Shreyansnath",
+      "name": "Shri Shreyansnath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 15
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_vasupujya_ji___omniscience_kalyanak_2_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Omniscience Kalyanak of Lord Vasupujya",
+      "name": "Shri Vasupujya Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 2
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_vimalnath_ji___austerity_kalyanak_4_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Austerity Kalyanak of Lord Vimalnath",
+      "name": "Shri Vimalnath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 4
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_vimalnath_ji___birth_kalyanak_4_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Birth Kalyanak of Lord Vimalnath",
+      "name": "Shri Vimalnath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 4
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_vimalnath_ji___omniscience_kalyanak_6_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Omniscience Kalyanak of Lord Vimalnath",
+      "name": "Shri Vimalnath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 6
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_ajitnath_ji___austerity_kalyanak_10_vrindavan",
+      "jain_month": "Magha",
+      "meaning": "Austerity Kalyanak of Lord Ajitnath",
+      "name": "Shri Ajitnath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan"
+      ],
+      "tithi": 10
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_ajitnath_ji___austerity_kalyanak_9_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Austerity Kalyanak of Lord Ajitnath",
+      "name": "Shri Ajitnath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 9
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_ajitnath_ji___birth_kalyanak_10_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Birth Kalyanak of Lord Ajitnath",
+      "name": "Shri Ajitnath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 10
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_abhinandan_ji___austerity_kalyanak_12_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Austerity Kalyanak of Lord Abhinandan",
+      "name": "Shri Abhinandan Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 12
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_abhinandan_ji___birth_kalyanak_12_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Birth Kalyanak of Lord Abhinandan",
+      "name": "Shri Abhinandan Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 12
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_dharmanath_ji___austerity_kalyanak_13_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Austerity Kalyanak of Lord Dharmanath",
+      "name": "Shri Dharmanath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "origin_pullback": true,
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 13
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_dharmanath_ji___birth_kalyanak_13_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Birth Kalyanak of Lord Dharmanath",
+      "name": "Shri Dharmanath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "origin_pullback": true,
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 13
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_arahnath_ji___conception_kalyanak_2_uttarapurana",
+      "jain_month": "Magha",
+      "meaning": "Conception Kalyanak of Lord Arahnath",
+      "name": "Shri Arahnath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Uttarapurana"
+      ],
+      "tithi": 2
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_padmaprabha_ji___liberation_kalyanak_4_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Liberation Kalyanak of Lord Padmaprabha",
+      "name": "Shri Padmaprabha Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 4
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_suparshvanath_ji___omniscience_kalyanak_6_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Omniscience Kalyanak of Lord Suparshvanath",
+      "name": "Shri Suparshvanath Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 6
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_chandraprabha_ji___liberation_kalyanak_7_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Liberation Kalyanak of Lord Chandraprabha",
+      "name": "Shri Chandraprabha Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Ashadhara"
+      ],
+      "tithi": 7
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_chandraprabha_ji___omniscience_kalyanak_7_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Omniscience Kalyanak of Lord Chandraprabha",
+      "name": "Shri Chandraprabha Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 7
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_suparshvanath_ji___liberation_kalyanak_7_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Liberation Kalyanak of Lord Suparshvanath",
+      "name": "Shri Suparshvanath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 7
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_pushpadanta_ji___conception_kalyanak_9_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Conception Kalyanak of Lord Pushpadanta (Suvidhinath)",
+      "name": "Shri Pushpadant (Suvidhinath) Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 9
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_rishabhdev_ji___omniscience_kalyanak_11_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Omniscience Kalyanak of Lord Rishabhdev (Adinath)",
+      "name": "Shri Rishabhdev (Adinath) Ji - Omniscience Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_shreyansnath_ji___austerity_kalyanak_11_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Austerity Kalyanak of Lord Shreyansnath",
+      "name": "Shri Shreyansnath Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_shreyansnath_ji___birth_kalyanak_11_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Birth Kalyanak of Lord Shreyansnath",
+      "name": "Shri Shreyansnath Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_munisuvrat_ji___liberation_kalyanak_12_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Liberation Kalyanak of Lord Munisuvrat",
+      "name": "Shri Munisuvrat Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 12
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_vasupujya_ji___austerity_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Austerity Kalyanak of Lord Vasupujya",
+      "name": "Shri Vasupujya Ji - Austerity Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_vasupujya_ji___birth_kalyanak_14_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Magha",
+      "meaning": "Birth Kalyanak of Lord Vasupujya",
+      "name": "Shri Vasupujya Ji - Birth Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 14
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_arahnath_ji___conception_kalyanak_3_vrindavan_ashadhara",
+      "jain_month": "Phalguna",
+      "meaning": "Conception Kalyanak of Lord Arahnath",
+      "name": "Shri Arahnath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Ashadhara"
+      ],
+      "tithi": 3
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_mallinath_ji___liberation_kalyanak_5_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Phalguna",
+      "meaning": "Liberation Kalyanak of Lord Mallinath",
+      "name": "Shri Mallinath Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 5
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_chandraprabha_ji___liberation_kalyanak_7_vrindavan_uttarapurana",
+      "jain_month": "Phalguna",
+      "meaning": "Liberation Kalyanak of Lord Chandraprabha",
+      "name": "Shri Chandraprabha Ji - Liberation Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana"
+      ],
+      "tithi": 7
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_sambhavnath_ji___conception_kalyanak_8_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Phalguna",
+      "meaning": "Conception Kalyanak of Lord Sambhavnath",
+      "name": "Shri Sambhavnath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 8
+    },
+    {
+      "category": "jayanti",
+      "id": "veer_shasan_jayanti",
+      "jain_month": "Shravana",
+      "meaning": "Commencement of Bhagwan Mahavir's Shasan and origin of Jain Agamic knowledge",
+      "name": "Veer Shasan Jayanti & Shrut Udbhav Divas",
+      "name_hindi": "वीर शासन जयंती और श्रुत उद्भव दिवस",
+      "observance": "Special prayers, Swadhyay, and scripture recitation.",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "VeerShasanJayanti",
+      "sources": [
+        "Jain Traditions"
+      ],
+      "tithi": 1
+    },
+    {
+      "category": "parva_vrat",
+      "id": "ravi_vrat",
+      "jain_month": "Ashadha",
+      "meaning": "Sunday fasting during Ashadha Shukla Paksha",
+      "name": "Ravi Vrat",
+      "name_hindi": "रवि व्रत",
+      "observance": "Fasting on Sundays",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "RaviVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "parva_vrat",
+      "id": "ravivara",
+      "jain_month": "Ashadha",
+      "meaning": "9-Sunday Vrat Span",
+      "name": "Ravivara Vrat Span",
+      "name_hindi": "रविवार व्रत",
+      "observance": "Sunday fasts",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "RavivaraVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "parva_vrat",
+      "id": "karma_nirjara_vrat",
+      "meaning": "Fasting for karma destruction",
+      "name": "Karma Nirjara Vrat",
+      "name_hindi": "कर्म निर्जरा व्रत",
+      "observance": "Fast on Chaturdashi tithis",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "KarmaNirjaraVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv",
+      "id": "ashtahnika_mahaparv",
+      "meaning": "8-day tri-annual festival",
+      "name": "Ashtahnika Mahaparv",
+      "name_hindi": "अष्टाह्निक महापर्व",
+      "observance": "Nandishwar Dvipa Puja & Fasting",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "AshtahnikaVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "kalyanak",
+      "id": "shri_mallinath_ji___conception_kalyanak_1_vrindavan_uttarapurana_ashadhara",
+      "jain_month": "Chaitra",
+      "meaning": "Conception Kalyanak of Lord Mallinath",
+      "name": "Shri Mallinath Ji - Conception Kalyanak",
+      "observance": "Special prayers, pujas, and temple visits.",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Vrindavan",
+        "Uttarapurana",
+        "Ashadhara"
+      ],
+      "tithi": 1
+    },
+    {
+      "badge": "Janam Kalyan",
+      "badge_color": "green",
+      "category": "janam_kalyanak",
+      "id": "gautam_swami_janam_divas",
+      "jain_month": "Chaitra",
+      "meaning": "Birth anniversary of Gandhar Gautam Swami",
+      "name": "Gautam Swami Janam Divas",
+      "name_hindi": "गौतम स्वामी जन्म दिवस",
+      "observance": "Special prayers and reading of scriptures",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Jain Traditions"
+      ],
+      "tithi": 1
+    },
+    {
+      "category": "vrat",
+      "id": "pushpanjali_vrat",
+      "meaning": "5-day tri-annual Vrat",
+      "name": "Pushpanjali Vrat",
+      "name_hindi": "पुष्पांजलि व्रत",
+      "observance": "Fasting and Pushpa offering",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "PushpanjaliVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv",
+      "id": "akshaya_tritiya_dan_divas",
+      "jain_month": "Vaishakha",
+      "meaning": "First Ahar Dan to Bhagwan Rishabhdev",
+      "name": "Akshaya Tritiya (Dan Divas)",
+      "name_hindi": "अक्षय तृतीया (दान दिवस)",
+      "observance": "Sugarcane juice parana & Ahar Dan",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "AkshayaTritiya",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "monthly_vrat",
+      "id": "pratham_jeth_jinvani_vrat",
+      "jain_month": "Jyeshtha",
+      "meaning": "Full month Jinvani Vrat",
+      "name": "Pratham Jeth Jinvani Vrat",
+      "name_hindi": "प्रथम जेठ जिनवाणी व्रत",
+      "observance": "Jinvani Puja and Swadhyay",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "MonthlyVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "vrat",
+      "id": "sapta_rishi_vrat",
+      "jain_month": "Ashadha",
+      "meaning": "Sapta Rishi Vrat from Ashadha Shukla Purnima (15) to Shravana Krishna 5",
+      "name": "Sapta Rishi Vrat",
+      "name_hindi": "सप्तऋषि व्रत",
+      "observance": "Fasting and Sapta Rishi Puja",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SaptaRishiVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "kalyanak",
+      "id": "mahavir_janma_kalyanak",
+      "jain_month": "Chaitra",
+      "meaning": "Birth Kalyanak of Lord Mahavira",
+      "name": "Mahavir Janma Kalyanak",
+      "name_hindi": "महावीर जन्म कल्याणक",
+      "observance": "Rath Yatra, Puja, Fasting",
+      "paksha": "Shukla",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Jain Traditions"
+      ],
+      "tithi": 13
+    },
+    {
+      "category": "kalyanak",
+      "id": "parshvanath_jayanti",
+      "jain_month": "Margashirsha",
+      "meaning": "Birth Kalyanak (Janma Kalyanak) of 23rd Tirthankara Shri Parshvanath Bhagwan on Pausha Krishna Ekadashi",
+      "name": "Shri Parshvanath Jayanti",
+      "name_hindi": "श्री पार्श्वनाथ जयंती",
+      "observance": "Puja, Fasting, Temple visits",
+      "paksha": "Krishna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SingleTithi",
+      "sources": [
+        "Jain Traditions"
+      ],
+      "tithi": 11
+    },
+    {
+      "category": "vrat",
+      "id": "sapta_paramsthan_vrat",
+      "jain_month": "Shravana",
+      "meaning": "7-day Sapta Paramsthan Vrat from Shravana Shukla 1 to 7",
+      "name": "Sapta Paramsthan Vrat",
+      "name_hindi": "सप्त परमस्थान व्रत",
+      "observance": "Fasting and Sapta Paramsthan Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SaptaParamsthanVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "vrat",
+      "id": "rakshabandhan_vrat",
+      "jain_month": "Shravana",
+      "meaning": "Rakshabandhan Vrat from Shravana Shukla 13 to 15 (Minimum 3-day span)",
+      "name": "Rakshabandhan Vrat",
+      "name_hindi": "रक्षाबंधन व्रत",
+      "observance": "Fasting and Rakshabandhan Mahaparv celebration",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "RakshabandhanVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv",
+      "id": "shravana_purnima_rakshabandhan",
+      "jain_month": "Shravana",
+      "meaning": "Protection of 700 Munis by Muni Vishnukumar at Hastinapur",
+      "name": "Shravana Purnima Rakshabandhan",
+      "name_hindi": "श्रावण पूर्णिमा रक्षाबंधन (७०० मुनि रक्षा दिवस)",
+      "observance": "Rakshabandhan Mahaparv, Muni Pujan and Sorana Pujan",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "ShravanaPurnimaRakshabandhan",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "bhadrapada_krishna_ekam_multi_vrat",
+      "jain_month": "Bhadrapada",
+      "meaning": "Commencement of 6 Vrats on purnimanta Bhadrapada Krishna Ekam (Mushti Vidhan and Dhanda Kalash end on Bhadrapada Purnima; the other four end on Ashvin Krishna 14)",
+      "name": "Bhadrapada Krishna Ekam Multi-Vrat Start",
+      "name_hindi": "भाद्रपद कृष्ण एकम बहुव्रत प्रारम्भ",
+      "observance": "Vrat commencement, Solah Karan Bhavna and Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "BhadrapadaKrishnaEkamMultiVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "vrat",
+      "id": "teen_chaubisi_vrat",
+      "jain_month": "Bhadrapada",
+      "meaning": "Aradhana of 72 Tirthankaras: Bhoot, Vartaman, and Bhavishya",
+      "name": "Teen Chaubisi Vrat",
+      "name_hindi": "तीन चौबीसी व्रत",
+      "observance": "Fasting and Teen Chaubisi Tirthankara Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "TeenChaubisiVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "vrat",
+      "id": "akshaya_nidhi_vrat",
+      "jain_month": "Shravana",
+      "meaning": "Akshaya Nidhi Vrat from Shravana Shukla 10 to Bhadrapada Krishna 10",
+      "name": "Akshaya Nidhi Vrat",
+      "name_hindi": "अक्षय निधि व्रत",
+      "observance": "Fasting and Akshaya Nidhi Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "AkshayaNidhiVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv",
+      "id": "shvetambara_paryushan_50_day",
+      "jain_month": "Ashadha",
+      "meaning": "50-Day Paryushan and Samvatsari Cycle starting from Ashadha Shukla 14",
+      "name": "Shvetambara Paryushan 50-Day Cycle",
+      "name_hindi": "श्वेतांबर पर्युषण ५० दिवसीय चक्र",
+      "observance": "Chaturmas Sthirata, Kalpasutra Swadhyay, and Samvatsari Pratikramana",
+      "profiles": [
+        "shwetambar_murtipujak_tapagachchha",
+        "shwetambar_sthanakvasi",
+        "shwetambar_terapanthi"
+      ],
+      "rule_type": "ShvetambaraParyushan50Day",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "vrat",
+      "id": "bhaya_haran_vrat",
+      "jain_month": "Bhadrapada",
+      "meaning": "Bhaya Haran Vrat dedicated to fearlessness on Bhadrapada Krishna 4",
+      "name": "Bhaya Haran Vrat",
+      "name_hindi": "भय हरण व्रत",
+      "observance": "Fasting and Abhaya Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "BhayaHaranVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "vrat",
+      "id": "labdhi_vidhan_vrat",
+      "jain_month": "Bhadrapada",
+      "meaning": "Labdhi Vidhan Vrat from Bhadrapada Krishna Amavasya to Samvatsari Day",
+      "name": "Labdhi Vidhan Vrat",
+      "name_hindi": "लब्धि विधान व्रत",
+      "observance": "Fasting and Labdhi Vidhan Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "LabdhiVidhanVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "punyatithi",
+      "id": "tala_dhar_tap_shantisagar_punyatithi",
+      "jain_month": "Bhadrapada",
+      "meaning": "Tala Dhar Tap and Acharya Shantisagar Punyatithi on Bhadrapada Shukla 2",
+      "name": "Tala Dhar Tap & Acharya Shantisagar Punyatithi",
+      "name_hindi": "ताला धार तप एवं आचार्य शांतिसागर पुण्यतिथि",
+      "observance": "Tala Dhar Tap fasting and Acharya Shantisagar Samadhi Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "TalaDharTapShantisagarPunyatithi",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv",
+      "id": "badi_panchami_meru_sthapana",
+      "jain_month": "Bhadrapada",
+      "meaning": "Badi Panchami and Meru Sthapana on Bhadrapada Shukla 5",
+      "name": "Badi Panchami & Meru Sthapana",
+      "name_hindi": "बड़ी पंचमी एवं मेरु स्थापना",
+      "observance": "Rishi Panchami aradhana and Sudarshan Meru Pujan",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "BadiPanchamiMeruSthapana",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "vrat",
+      "id": "nihshalya_ashtami_manchin_tithi",
+      "jain_month": "Bhadrapada",
+      "meaning": "Nihshalya Ashtami and Manchin Tithi Ashtami on Bhadrapada Shukla 8",
+      "name": "Nihshalya Ashtami Vrat & Manchin Tithi Ashtami",
+      "name_hindi": "निःशल्य अष्टमी व्रत एवं मानछीन तिथि अष्टमी",
+      "observance": "Shalya-Tyaga aradhana and Maan Kashaya subduing",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "NihshalyaAshtamiManchinTithi",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv",
+      "id": "sugandh_dashami",
+      "jain_month": "Bhadrapada",
+      "meaning": "Sugandh Dashami Mahaparv and Vrat on Bhadrapada Shukla 10",
+      "name": "Sugandh Dashami (Dhoop Dashami)",
+      "name_hindi": "सुगन्ध दशमी (धूप दशमी)",
+      "observance": "Offering Dhoop in Jinalayas, Fasting, Jin Pujan",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SugandhDashami",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv",
+      "id": "anant_chaturdashi_vrat",
+      "jain_month": "Bhadrapada",
+      "meaning": "Anant Chaturdashi Vrat from Bhadrapada Shukla Ekadashi to Chaturdashi",
+      "name": "Anant Chaturdashi Vrat",
+      "name_hindi": "अनंत चतुर्दशी व्रत",
+      "observance": "Fasting, Anant Sutra Aradhana, Das Lakshan Finale",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "AnantChaturdashiVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "ratnatraya_sankat_haran_vrat",
+      "jain_month": "Bhadrapada",
+      "meaning": "Ratnatraya Vrat and Sankat Haran Vrat from Bhadrapada Shukla 13 to Purnima",
+      "name": "Ratnatraya Vrat & Sankat Haran Vrat",
+      "name_hindi": "रत्नत्रय व्रत एवं संकट हरण व्रत",
+      "observance": "Fasting and Ratnatraya Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "RatnatrayaSankatHaranVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv",
+      "id": "kshamavani_mahaparv",
+      "jain_month": "Ashwin",
+      "meaning": "Grand Day of Universal Forgiveness in Digambara tradition on Ashwin Krishna 1",
+      "name": "Kshamavani Mahaparv (Kshamadwani Divas)",
+      "name_hindi": "क्षमावाणी महापर्व (क्षमावाणी दिवस)",
+      "observance": "Uttam Kshama, Universal Forgiveness (Micchami Dukkadam)",
+      "profiles": [
+        "digambar"
+      ],
+      "rule_type": "KshamavaniMahaparv",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "vrat",
+      "id": "shraddha_vrat",
+      "jain_month": "Ashwin",
+      "meaning": "Shraddha Vrat from Ashwin Shukla 1 to Kartika Krishna 1",
+      "name": "Shraddha Vrat",
+      "name_hindi": "श्रद्धा व्रत",
+      "observance": "Fasting and Samyak Shraddha Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "ShraddhaVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "navapad_oli_vrat",
+      "jain_month": "Ashwin",
+      "meaning": "Navapad Oli (Ayambil Oli) Vrat Prarambh & Purna boundaries for Chaitra and Ashwin",
+      "name": "Navapad Oli (Ayambil Oli) Vrat Boundaries",
+      "name_hindi": "नवपद ओली (आयांबिल ओली) व्रत सीमाएँ",
+      "observance": "Ayambil Fasting, Navapad Pujan & Tap",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "NavapadOliVrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "jeev_daya_ashtami",
+      "jain_month": "Ashwin",
+      "meaning": "Jeev Daya Ashtami on Ashwin Shukla 8",
+      "name": "Jeev Daya Ashtami",
+      "name_hindi": "जीव दया अष्टमी",
+      "observance": "Ahimsa, Abhayadan, Gaushala Seva, Karuna Bhavna",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "JeevDayaAshtami",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv",
+      "id": "sharad_purnima_jayantis",
+      "jain_month": "Ashwin",
+      "meaning": "Sharad Purnima, Acharya Vidyasagar Ji & Aryika Gyanmati Mataji Janma Jayanti on Ashwin Shukla 15",
+      "name": "Sharad Purnima & Acharya Vidyasagar Ji / Aryika Gyanmati Mataji Jayanti",
+      "name_hindi": "शरद पूर्णिमा एवं आचार्य विद्यासागर जी / आर्यिका ज्ञानमती माताजी जयंती",
+      "observance": "Sharadotsav, Kojagiri Moonlight Aradhana, Gurudev Pujan",
+      "profiles": [
+        "digambar"
+      ],
+      "rule_type": "SharadPurnimaJayantis",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "vrat",
+      "id": "split_day_ahoi_karwa_dampatya",
+      "jain_month": "Kartika",
+      "meaning": "Vyapini (Chandrodaya/Pradosha) vs Udaya Tithi split-day engine for Karwa Chauth, Ahoi Ashtami & Dampatya Ashtami",
+      "name": "Karwa Chauth, Ahoi Ashtami & Dampatya Ashtami Engine",
+      "name_hindi": "करवा चौथ, अहोई अष्टमी एवं दम्पत्य अष्टमी इंजन",
+      "observance": "Chandrodaya Fasting, Pradosha Star Sighting, Udaya Vrat",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "SplitDayAhoiKarwaDampatya",
+      "sources": [
+        "Panchang Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "gyan_dhan_trayodashi",
+      "jain_month": "Kartika",
+      "meaning": "Gyan Trayodashi and Dhyan Teras on Kartika Krishna 13; Janam and Tap Kalyanak of Shri Padam Prabhu Bhagwan",
+      "name": "Gyan Trayodashi & Dhyan Teras",
+      "name_hindi": "ज्ञान त्रयोदशी एवं ध्यान तेरस",
+      "observance": "Samyak Jnana Aradhana, Shastra Pujan, Dhyan and Atma-Dhan Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "GyanDhanTrayodashi",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv",
+      "id": "kartika_amavasya_mahavira_nirvana",
+      "jain_month": "Kartika",
+      "meaning": "Bhagwan Mahavira Nirvana Kalyanak & Varsha Yog Nishthapan on Kartika Krishna Amavasya (Gautam Swami Kevalgyan is observed the next day, Kartika Shukla 1)",
+      "name": "Bhagwan Mahavira Nirvana Kalyanak & Varsha Yog Nishthapan",
+      "name_hindi": "भगवान महावीर निर्वाण कल्याणक एवं वर्षा योग निष्ठापन",
+      "observance": "Nirvana Laddu Offering, Moksha Kalyan Pujan, Varsha Yog Nishthapan",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "KartikaAmavasyaMahaviraNirvana",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv",
+      "id": "kartika_shukla_ekam_new_year",
+      "jain_month": "Kartika",
+      "meaning": "Navina Vira Nirvana Samvat Prarambh (Jain New Year) and Gautam Swami Kevalgyan on Kartika Shukla 1",
+      "name": "Navina Vira Nirvana Samvat Prarambh & Gautam Swami Kevalgyan",
+      "name_hindi": "नवीन वीर निर्वाण संवत् प्रारम्भ एवं गौतम स्वामी केवलज्ञान",
+      "observance": "Jain New Year, Nutan Varsh, Chopda Pujan, Gautam Swami Kevalgyan",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "KartikaShuklaEkamNewYear",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv",
+      "id": "bhai_dooj",
+      "jain_month": "Kartika",
+      "meaning": "Bhaiya Dooj (Bhratri Dvitiya / Yama Dvitiya) on Kartika Shukla 2",
+      "name": "Bhaiya Dooj (Bhratri Dvitiya)",
+      "name_hindi": "भैया दूज (भ्रातृ द्वितीया)",
+      "observance": "Bhratri Pujan, Tilak Vidhi, Sister-Brother Bond Celebration",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "BhaiDooj",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "kartika_shukla_panchami",
+      "jain_month": "Kartika",
+      "meaning": "Gyan Panchami (Jnana Panchami) and Labh Panchami on Kartika Shukla 5",
+      "name": "Gyan Panchami & Labh Panchami (Saubhagya Panchami)",
+      "name_hindi": "ज्ञान पंचमी एवं लाभ पंचमी (सौभाग्य पंचमी)",
+      "observance": "Shrut Jnana Aradhana, Shastra Pujan, Business Reopening, Shubh-Labh Pujan",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "KartikaShuklaPanchami",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "kartika_nandishwar_ashtami",
+      "jain_month": "Kartika",
+      "meaning": "Nandishwar Ashtami start boundary event for Kartika Ashtahnika Mahaparv on Kartika Shukla 8",
+      "name": "Nandishwar Ashtami (Kartika Ashtahnika Parv Prarambh)",
+      "name_hindi": "नंदीश्वर अष्टमी (कार्तिक अष्टाह्निका पर्व प्रारम्भ)",
+      "observance": "Nandishwar Vidhana, Siddhachakra Aradhana, 52 Jinalaya Vandana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "KartikaNandishwarAshtami",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "punya_tithi",
+      "id": "pandit_jaini_jiyalal_punyatithi",
+      "jain_month": "Kartika",
+      "meaning": "Pandit Jaini Jiyalal Ji Chaudhary Punya Divas on Kartika Shukla 11",
+      "name": "Pandit Jaini Jiyalal Ji Chaudhary Punya Divas",
+      "name_hindi": "पंडित जैनी जियालाल जी चौधरी पुण्य दिवस",
+      "observance": "Vidvat Parishad Memorial Assembly, Swadhyay, Shastra Vandana",
+      "profiles": [
+        "digambar"
+      ],
+      "rule_type": "PanditJainiJiyalalPunyatithi",
+      "sources": [
+        "Digambara Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "kartika_purnima_ashtahnika_purna",
+      "jain_month": "Kartika",
+      "meaning": "Conclusion of Kartika Ashtahnika Mahaparv and Dev Deepavali on Kartika Shukla 15",
+      "name": "Kartika Ashtahnika Mahaparv Purna & Kartika Purnima (Dev Deepavali)",
+      "name_hindi": "कार्तिक अष्टाह्निका महापर्व पूर्ण एवं कार्तिक पूर्णिमा (देव दीपावली)",
+      "observance": "Ashtahnika Parv Nishthapan, Jinalaya Deepotsav, Shatrunjaya Teerth Yatra",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "KartikaPurnimaAshtahnikaPurna",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv",
+      "id": "sheetalnath_stotram_rachna",
+      "jain_month": "Margashirsha",
+      "meaning": "Bhagwan Sheetalnath Stotram Rachna Divas on Margashirsha Shukla 9",
+      "name": "Bhagwan Sheetalnath Stotram Rachna Divas",
+      "name_hindi": "भगवान शीतलनाथ स्तोत्रम रचना दिवस",
+      "observance": "Stotra Path, Bhakti-Vandana, Jinavani Swadhyay, Sheetalnath Jin Pujan",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "MargashirshaSheetalnathStotram",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "magha_labdhi_vidhan",
+      "jain_month": "Magha",
+      "meaning": "Labdhi Vidhan Vrat span from Magha Krishna Amavasya to Magha Shukla 4",
+      "name": "Labdhi Vidhan Vrat (Magha Krishna Amavasya to Magha Shukla Chaturthi)",
+      "name_hindi": "लब्धि विधान व्रत (माघ कृष्ण अमावस्या से माघ शुक्ल चतुर्थी)",
+      "observance": "Labdhi Vrat Aradhana, Siddha Bhakti, Purna Ahuti",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "MaghaLabdhiVidhan",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "jayanti",
+      "id": "pandit_jaini_jiyalal_janma_divas",
+      "jain_month": "Magha",
+      "meaning": "Pandit Jaini Jiyalal Ji Chaudhary Janma Divas on Magha Shukla 2",
+      "name": "Pandit Jaini Jiyalal Ji Chaudhary Janma Divas",
+      "name_hindi": "पंडित जैनी जियालाल जी चौधरी जन्म दिवस",
+      "observance": "Vidyalaya & Gurukul Assemblies, Swadhyay, Shastra Publishing Seminars",
+      "profiles": [
+        "digambar"
+      ],
+      "rule_type": "PanditJainiJiyalalJanmaDivas",
+      "sources": [
+        "Digambara Jain Traditions"
+      ]
+    },
+    {
+      "category": "shastra",
+      "id": "magha_shukla_panchami_tri",
+      "jain_month": "Magha",
+      "meaning": "Acharya Kundakunda Jayanti, Murti Sthapna Divas and Vasant Panchami on Magha Shukla 5",
+      "name": "Acharya Kundakunda Jayanti, Murti Sthapna Divas & Vasant Panchami",
+      "name_hindi": "आचार्य कुंदकुंद स्वामी जन्म जयंती, जिन मूर्ति स्थापना दिवस एवं वसन्त पंचमी",
+      "observance": "Kundakunda Dev Pujan, Jina Pratishtha, Jinavani Pujan, Shrut Aradhana",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "MaghaShuklaPanchamiTri",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "phalguna_purnima_ashtahnika_purna",
+      "jain_month": "Phalguna",
+      "meaning": "Conclusion of Phalguna Ashtahnika Mahaparv, Holika Dahan, and Vasantotsav on Phalguna Shukla 15",
+      "name": "Phalguna Ashtahnika Purna, Holika Dahan & Phalguna Purnima (Vasantotsav)",
+      "name_hindi": "फाल्गुन अष्टाह्निका पूर्ण, होलिका दहन एवं फाल्गुन पूर्णिमा (वसन्तौत्सव)",
+      "observance": "Ashtahnika Parv Nishthapan, Holika Dahan Bonfire Pujan, Jina Abhishek",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "PhalgunaPurnimaAshtahnikaPurna",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "kalyanak",
+      "id": "chaitra_amavasya_kalyanak_varshant",
+      "jain_month": "Chaitra",
+      "meaning": "Bhagwan Ananthnath & Aranath Moksha Kalyanak, Labdhi Vidhan Vrat Start and Vikram Samvat Varsha-Ant on Chaitra Krishna Amavasya",
+      "name": "Tirthankara Moksha Kalyanaks, Labdhi Vidhan Start & Vikram Samvat Varsha-Ant",
+      "name_hindi": "तीर्थंकर मोक्ष कल्याणक, लब्धि विधान प्रारम्भ एवं विक्रम संवत वर्षांत",
+      "observance": "Moksha Kalyanak Ladoo Offering, Labdhi Vrat Start, Vikram Samvat Year-End Reflection",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "ChaitraAmavasyaKalyanakVarshant",
+      "sources": [
+        "Jain Traditions"
+      ]
+    },
+    {
+      "category": "mahaparv_vrat",
+      "id": "namokar_35_vrat",
+      "jain_month": "Ashadha",
+      "meaning": "1.5-Year (18 Lunar Months) 35-Vrat sequence mapping 35 syllables of Namokar Mahamantra",
+      "name": "Namokar Mahamantra Vrat Chain",
+      "name_hindi": "णमोकार महामंत्र व्रत श्रृंखला",
+      "observance": "Namokar Vrat Fasting, 108 Mala Jaap, Udyapan Rituals",
+      "profiles": [
+        "all"
+      ],
+      "rule_type": "Namokar35Vrat",
+      "sources": [
+        "Jain Traditions"
+      ]
+    }
+  ],
+  "schema_version": 1
+}
