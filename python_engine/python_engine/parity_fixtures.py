@@ -6,13 +6,21 @@ what is written here. Design: plans/mobile-phase1-fixtures.md.
 
 from __future__ import annotations
 
+import gzip
+import json
 import random
 import re
-from dataclasses import dataclass
-from datetime import date
+from dataclasses import asdict, dataclass
+from datetime import date, timedelta
+from pathlib import Path
+
+import swisseph
 
 from choghadiya_service import calculate_choghadiya_slots
 from panchang_service import generate_location_panchang, resolve_location
+
+# Bump when a fixture's shape changes, so the Dart side can refuse a stale set.
+SCHEMA_VERSION = 1
 
 
 @dataclass(frozen=True)
@@ -127,3 +135,60 @@ def day_row(location: FixtureLocation, local_date: date, *, sunrise_rule: str) -
         "vira_nirvana_samvat": panchang["vira_nirvana_samvat"],
         "choghadiya": [slot["name"] for slot in choghadiya],
     }
+
+
+def _dumps(obj: object) -> bytes:
+    return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def _write_gzip(path: Path, obj: object) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # mtime=0 and no embedded filename keep regenerated files byte-identical.
+    path.write_bytes(gzip.compress(_dumps(obj), mtime=0))
+    return path
+
+
+def read_fixture(path: Path) -> dict:
+    return json.loads(gzip.decompress(path.read_bytes()))
+
+
+def _dates(start: date, end: date) -> list[date]:
+    if end < start:
+        raise ValueError(f"Range ends ({end}) before it starts ({start}).")
+    return [start + timedelta(days=i) for i in range((end - start).days + 1)]
+
+
+def write_days(
+    location: FixtureLocation, *, start: date, end: date, sunrise_rule: str, out_dir: Path
+) -> Path:
+    days = _dates(start, end)
+    return _write_gzip(
+        out_dir / location.slug / sunrise_rule / "days.json.gz",
+        {
+            "schema_version": SCHEMA_VERSION,
+            "location": asdict(location),
+            "sunrise_rule": sunrise_rule,
+            "days": [day_row(location, d, sunrise_rule=sunrise_rule) for d in days],
+        },
+    )
+
+
+def write_manifest(
+    *,
+    out_dir: Path,
+    locations: tuple[FixtureLocation, ...],
+    start: date,
+    end: date,
+    sunrise_rules: tuple[str, ...],
+) -> Path:
+    path = out_dir / "manifest.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    manifest = {
+        "schema_version": SCHEMA_VERSION,
+        "swisseph_version": swisseph.version,
+        "range": [start.isoformat(), end.isoformat()],
+        "sunrise_rules": list(sunrise_rules),
+        "locations": [asdict(loc) for loc in locations],
+    }
+    path.write_text(json.dumps(manifest, sort_keys=True, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return path

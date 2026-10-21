@@ -5,8 +5,10 @@ Design: plans/mobile-phase1-fixtures.md.
 
 from __future__ import annotations
 
+import gzip
 import json
-from datetime import date
+from datetime import date, timedelta
+from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -14,7 +16,16 @@ import pytest
 from location_service import get_timezone_name
 from panchang import JAIN_TITHI_OFFSET_DAYS
 from panchang_service import generate_location_panchang
-from parity_fixtures import DEFAULT_LOCATIONS, custom_location, day_row, random_locations
+from parity_fixtures import (
+    DEFAULT_LOCATIONS,
+    SCHEMA_VERSION,
+    custom_location,
+    day_row,
+    random_locations,
+    read_fixture,
+    write_days,
+    write_manifest,
+)
 
 INDIA_LAT = (8.0, 35.0)
 INDIA_LON = (68.0, 97.0)
@@ -194,3 +205,104 @@ class TestDayRow:
         traditional = a_row(rule="traditional")
 
         assert traditional["sunrise"] > modern["sunrise"]
+
+
+class TestWriteDays:
+    def test_writes_one_file_per_location_and_rule(self, tmp_path):
+        path = write_days(
+            a_location("Surat"), start=date(2026, 1, 1), end=date(2026, 1, 2),
+            sunrise_rule="traditional", out_dir=tmp_path,
+        )
+
+        assert path == tmp_path / "surat" / "traditional" / "days.json.gz"
+
+    def test_holds_every_date_once_in_order_across_a_month_end(self, tmp_path):
+        start, end = date(2026, 1, 30), date(2026, 2, 2)
+
+        fixture = read_fixture(write_days(
+            a_location(), start=start, end=end, sunrise_rule="modern", out_dir=tmp_path,
+        ))
+
+        assert [d["date"] for d in fixture["days"]] == [
+            (start + timedelta(days=i)).isoformat() for i in range((end - start).days + 1)
+        ]
+
+    def test_rows_are_the_day_rows_and_the_header_names_location_and_rule(self, tmp_path):
+        loc = a_location("Chennai")
+
+        fixture = read_fixture(write_days(
+            loc, start=date(2026, 7, 4), end=date(2026, 7, 4), sunrise_rule="modern", out_dir=tmp_path,
+        ))
+
+        assert fixture["days"] == [day_row(loc, date(2026, 7, 4), sunrise_rule="modern")]
+        assert fixture["location"] == {
+            "slug": loc.slug, "name": loc.name, "lat": loc.lat, "lon": loc.lon, "timezone": loc.timezone,
+        }
+        assert fixture["sunrise_rule"] == "modern"
+        assert fixture["schema_version"] == SCHEMA_VERSION
+
+    def test_rewriting_unchanged_data_at_a_later_time_is_byte_identical(self, tmp_path, monkeypatch):
+        def write_at(epoch: float, sub: str) -> bytes:
+            monkeypatch.setattr(gzip, "time", SimpleNamespace(time=lambda: epoch))
+            return write_days(
+                a_location(), start=date(2026, 1, 1), end=date(2026, 1, 2),
+                sunrise_rule="modern", out_dir=tmp_path / sub,
+            ).read_bytes()
+
+        assert write_at(1_000_000_000.0, "a") == write_at(2_000_000_000.0, "b")
+
+    def test_keys_are_sorted_so_reordering_code_never_churns_fixtures(self, tmp_path):
+        path = write_days(
+            a_location(), start=date(2026, 1, 1), end=date(2026, 1, 1),
+            sunrise_rule="modern", out_dir=tmp_path,
+        )
+        fixture = json.loads(gzip.decompress(path.read_bytes()), object_pairs_hook=list)
+        day = dict(fixture)["days"][0]
+
+        assert [k for k, _ in fixture] == sorted(k for k, _ in fixture)
+        assert [k for k, _ in day] == sorted(k for k, _ in day)
+
+    def test_rejects_a_range_that_ends_before_it_starts(self, tmp_path):
+        with pytest.raises(ValueError):
+            write_days(
+                a_location(), start=date(2026, 1, 2), end=date(2026, 1, 1),
+                sunrise_rule="modern", out_dir=tmp_path,
+            )
+
+    def test_rejects_an_unknown_sunrise_rule(self, tmp_path):
+        with pytest.raises(ValueError):
+            write_days(
+                a_location(), start=date(2026, 1, 1), end=date(2026, 1, 1),
+                sunrise_rule="vedic", out_dir=tmp_path,
+            )
+
+
+class TestManifest:
+    def a_manifest(self, tmp_path, locations=None) -> dict:
+        path = write_manifest(
+            out_dir=tmp_path,
+            locations=locations or (a_location("London"), a_location("Delhi")),
+            start=date(2016, 1, 1), end=date(2040, 12, 31),
+            sunrise_rules=("modern", "traditional"),
+        )
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    def test_describes_what_the_set_contains(self, tmp_path):
+        manifest = self.a_manifest(tmp_path)
+
+        assert manifest["schema_version"] == SCHEMA_VERSION
+        assert manifest["range"] == ["2016-01-01", "2040-12-31"]
+        assert manifest["sunrise_rules"] == ["modern", "traditional"]
+        assert [loc["slug"] for loc in manifest["locations"]] == ["london", "delhi"]
+        assert manifest["locations"][0]["timezone"] == "Europe/London"
+
+    def test_records_the_reference_engine_version(self, tmp_path):
+        import swisseph
+
+        assert self.a_manifest(tmp_path)["swisseph_version"] == swisseph.version
+
+    def test_rewriting_is_byte_identical(self, tmp_path):
+        self.a_manifest(tmp_path / "a")
+        self.a_manifest(tmp_path / "b")
+
+        assert (tmp_path / "a" / "manifest.json").read_bytes() == (tmp_path / "b" / "manifest.json").read_bytes()
