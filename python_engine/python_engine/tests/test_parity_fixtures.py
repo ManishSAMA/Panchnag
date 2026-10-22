@@ -24,6 +24,7 @@ from parity_fixtures import (
     PROFILES,
     FixturePlan,
     PlanEntry,
+    astro_samples,
     SCHEMA_VERSION,
     custom_location,
     day_row,
@@ -32,6 +33,7 @@ from parity_fixtures import (
     random_locations,
     read_fixture,
     run_plan,
+    write_astro,
     write_days,
     write_festivals,
     write_manifest,
@@ -160,7 +162,7 @@ class TestDayRow:
     def test_month_and_samvats_are_present(self):
         row = a_row()
 
-        assert 1 <= row["month"]["index"] <= 12
+        assert 0 <= row["month"]["index"] <= 11
         assert isinstance(row["month"]["is_adhika"], bool)
         assert row["vira_nirvana_samvat"] - row["vikram_samvat"] in (469, 470)
 
@@ -208,6 +210,40 @@ class TestDayRow:
         assert row["nakshatra"]["ends"] == engine["panchang"]["nakshatra"]["ends"]["jd"]
         assert row["month"]["name"] == engine["panchang"]["hindu_month"]["name"]
         assert row["vara"] == engine["panchang"]["vara"]["index"]
+
+    def test_amanta_month_matches_the_engines_amanta_reckoning(self):
+        loc = a_location("Ahmedabad")
+        on = date(2026, 10, 30)
+        engine = generate_location_panchang(on, lat=loc.lat, lon=loc.lon, calendar_system="amanta")
+
+        row = day_row(loc, on, sunrise_rule="modern")
+
+        assert row["month_amanta"] == {
+            key: engine["panchang"]["hindu_month"][key] for key in ("index", "name", "is_adhika")
+        }
+
+    def test_amanta_month_is_read_at_the_jain_reference_not_at_sunrise(self):
+        # Ahmedabad 2018-01-17: Amavasya at sunrise, Pratipada by sunrise + 2h24m,
+        # so the new moon (and the Amanta month change) falls between the two.
+        loc = a_location("Ahmedabad")
+        on = date(2018, 1, 17)
+        engine = generate_location_panchang(on, lat=loc.lat, lon=loc.lon, calendar_system="amanta")
+
+        row = day_row(loc, on, sunrise_rule="modern")
+
+        assert (row["tithi"][0]["index"], row["jain_tithi"]["index"]) == (30, 1)
+        assert row["month_amanta"]["name"] == engine["panchang"]["hindu_month"]["name"]
+
+    def test_amanta_and_purnimanta_differ_only_in_krishna_paksha(self, subtests):
+        # A Shukla paksha has the same name in both systems; a Krishna paksha
+        # belongs to the next month under Purnimanta (outside an Adhik year).
+        for on in (date(2026, 10, 21), date(2026, 10, 30), date(2027, 3, 1), date(2027, 3, 10)):
+            row = a_row(on=on)
+            with subtests.test(on.isoformat()):
+                if row["jain_tithi"]["index"] <= 15:
+                    assert row["month_amanta"] == row["month"]
+                else:
+                    assert row["month_amanta"]["index"] == (row["month"]["index"] - 1) % 12
 
     def test_traditional_sunrise_is_later_than_modern(self):
         # Disc centre with no refraction rises after the refracted upper limb.
@@ -507,8 +543,69 @@ class TestRunPlan:
         assert serial == files(tmp_path / "parallel")
         assert set(serial) == {
             "manifest.json",
+            "astro.json.gz",
             "delhi/modern/days.json.gz",
             f"delhi/modern/festivals.{STHANAKVASI}.json.gz",
             "london/modern/days.json.gz",
             f"london/modern/festivals.{STHANAKVASI}.json.gz",
         }
+
+
+class TestAstroSamples:
+    """Location-independent positions, so the Dart engine can test each layer directly."""
+
+    def test_one_sample_per_day_at_zero_hours_ut(self):
+        samples = astro_samples(start=date(2026, 1, 30), end=date(2026, 2, 2))
+
+        jds = [s["jd_ut"] for s in samples]
+        assert len(jds) == 4
+        assert all(round(jd % 1, 9) == 0.5 for jd in jds)  # JD .5 is 0h UT
+        assert [b - a for a, b in zip(jds, jds[1:])] == [1.0, 1.0, 1.0]
+
+    def test_values_are_the_reference_engines(self):
+        import swisseph as swe
+
+        (sample,) = astro_samples(start=date(2026, 10, 21), end=date(2026, 10, 21))
+        jd = sample["jd_ut"]
+        sun, _ = swe.calc_ut(jd, swe.SUN, swe.FLG_SWIEPH)
+        moon, _ = swe.calc_ut(jd, swe.MOON, swe.FLG_SWIEPH)
+        sun_eq, _ = swe.calc_ut(jd, swe.SUN, swe.FLG_SWIEPH | swe.FLG_EQUATORIAL)
+        nut, _ = swe.calc_ut(jd, swe.ECL_NUT, 0)
+
+        assert sample["delta_t"] == swe.deltat(jd) * 86400.0
+        assert (sample["sun_apparent"], sample["moon_apparent"]) == (sun[0], moon[0])
+        assert (sample["sun_ra"], sample["sun_dec"]) == (sun_eq[0], sun_eq[1])
+        assert (sample["true_obliquity"], sample["nutation_longitude"], sample["nutation_obliquity"]) == (
+            nut[0], nut[2], nut[3],
+        )
+        assert sample["gast_hours"] == swe.sidtime(jd)
+
+    def test_sidereal_positions_use_the_engines_lahiri_definition(self):
+        from astronomy import get_ayanamsa, get_planetary_longitude
+
+        (sample,) = astro_samples(start=date(2026, 10, 21), end=date(2026, 10, 21))
+        jd = sample["jd_ut"]
+
+        assert sample["ayanamsa"] == get_ayanamsa(jd, "Lahiri")
+        assert sample["sun_sidereal"] == get_planetary_longitude(jd, "Sun", "Lahiri")
+        assert sample["moon_sidereal"] == get_planetary_longitude(jd, "Moon", "Lahiri")
+
+    def test_written_file_holds_the_samples_and_schema(self, tmp_path):
+        path = write_astro(out_dir=tmp_path, start=date(2026, 1, 1), end=date(2026, 1, 3))
+
+        fixture = read_fixture(path)
+        assert path == tmp_path / "astro.json.gz"
+        assert fixture["schema_version"] == SCHEMA_VERSION
+        assert fixture["samples"] == astro_samples(start=date(2026, 1, 1), end=date(2026, 1, 3))
+
+    def test_run_plan_writes_astro_samples_over_the_whole_plan_range(self, tmp_path):
+        plan = a_plan(
+            ("Delhi", date(2026, 1, 1), date(2026, 1, 2)),
+            ("London", date(2025, 12, 31), date(2026, 1, 1)),
+            rules=("modern",), profiles=(STHANAKVASI,),
+        )
+
+        run_plan(plan, out_dir=tmp_path, workers=1)
+
+        samples = read_fixture(tmp_path / "astro.json.gz")["samples"]
+        assert (samples[0]["jd_ut"], samples[-1]["jd_ut"]) == (2461040.5, 2461042.5)

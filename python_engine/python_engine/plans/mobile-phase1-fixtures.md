@@ -55,7 +55,8 @@ mobile/packages/panchang_engine/test/fixtures/
 | `jain_tithi` | `{index, ends, reference}` (sunrise + 2h24m) |
 | `nakshatra` | `{index, ends}` |
 | `vara` | weekday index |
-| `month` | `{index, name, is_adhika}` (Purnimanta, the engine default) |
+| `month` | `{index, name, is_adhika}` (Purnimanta, the engine default). `index` is 0-based (Chaitra = 0). |
+| `month_amanta` | the same shape under Amanta (`get_hindu_month`), read at the same Jain reference instant as the engine. Added in schema v2 for the app's Purnimanta/Amanta setting. |
 | `vikram_samvat`, `vira_nirvana_samvat` | integers |
 | `choghadiya` | the 16 slot names in order, from `calculate_choghadiya_slots`. Slot times are just sunrise→sunset and sunset→next sunrise each split into 8 equal parts, so they are derived rather than stored. |
 

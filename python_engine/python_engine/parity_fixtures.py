@@ -18,14 +18,15 @@ from pathlib import Path
 
 import swisseph
 
-from astronomy import SUNRISE_RULES
+from astronomy import SUNRISE_RULES, get_ayanamsa, get_planetary_longitude
 from choghadiya_service import calculate_choghadiya_slots
 from jain_observances.festival_service import generate_jain_festivals
+from panchang import HINDU_MONTH_NAMES, get_hindu_month
 from panchang_service import generate_location_panchang, resolve_location
 from request_parsing import VALID_PROFILES
 
 # Bump when a fixture's shape changes, so the Dart side can refuse a stale set.
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 PROFILES: tuple[str, ...] = VALID_PROFILES
 
@@ -101,6 +102,15 @@ def _jd(event: dict | None) -> float | None:
     return event["jd"] if event else None
 
 
+def _amanta_month(jd: float) -> dict:
+    name, _, is_adhika = get_hindu_month(jd)
+    return {
+        "index": HINDU_MONTH_NAMES.index(name.removeprefix("Adhika ")),
+        "name": name,
+        "is_adhika": is_adhika,
+    }
+
+
 def day_row(location: FixtureLocation, local_date: date, *, sunrise_rule: str) -> dict:
     """One civil day as the engine reports it, reduced to JSON-ready instants and indices.
 
@@ -138,6 +148,8 @@ def day_row(location: FixtureLocation, local_date: date, *, sunrise_rule: str) -
             "name": panchang["hindu_month"]["name"],
             "is_adhika": panchang["hindu_month"]["is_adhika"],
         },
+        # The engine names the month at the Jain reference instant in both systems.
+        "month_amanta": _amanta_month(panchang["jain_tithi"]["reference"]["jd"]),
         "vikram_samvat": panchang["vikram_samvat"],
         "vira_nirvana_samvat": panchang["vira_nirvana_samvat"],
         "choghadiya": [slot["name"] for slot in choghadiya],
@@ -177,6 +189,44 @@ def write_days(
             "sunrise_rule": sunrise_rule,
             "days": [day_row(location, d, sunrise_rule=sunrise_rule) for d in days],
         },
+    )
+
+
+def _astro_sample(jd: float) -> dict:
+    sun, _ = swisseph.calc_ut(jd, swisseph.SUN, swisseph.FLG_SWIEPH)
+    moon, _ = swisseph.calc_ut(jd, swisseph.MOON, swisseph.FLG_SWIEPH)
+    sun_eq, _ = swisseph.calc_ut(jd, swisseph.SUN, swisseph.FLG_SWIEPH | swisseph.FLG_EQUATORIAL)
+    true_obliquity, _mean, nutation_longitude, nutation_obliquity, *_ = swisseph.calc_ut(
+        jd, swisseph.ECL_NUT, 0
+    )[0]
+    return {
+        "jd_ut": jd,
+        "delta_t": swisseph.deltat(jd) * 86400.0,
+        "sun_apparent": sun[0],
+        "moon_apparent": moon[0],
+        "sun_ra": sun_eq[0],
+        "sun_dec": sun_eq[1],
+        "true_obliquity": true_obliquity,
+        "nutation_longitude": nutation_longitude,
+        "nutation_obliquity": nutation_obliquity,
+        "gast_hours": swisseph.sidtime(jd),
+        "ayanamsa": get_ayanamsa(jd, "Lahiri"),
+        "sun_sidereal": get_planetary_longitude(jd, "Sun", "Lahiri"),
+        "moon_sidereal": get_planetary_longitude(jd, "Moon", "Lahiri"),
+    }
+
+
+def astro_samples(*, start: date, end: date) -> list[dict]:
+    """Positions at 0h UT on every day of the range, independent of any location."""
+    return [
+        _astro_sample(swisseph.julday(d.year, d.month, d.day, 0.0)) for d in _dates(start, end)
+    ]
+
+
+def write_astro(*, out_dir: Path, start: date, end: date) -> Path:
+    return _write_gzip(
+        out_dir / "astro.json.gz",
+        {"schema_version": SCHEMA_VERSION, "samples": astro_samples(start=start, end=end)},
     )
 
 
@@ -316,6 +366,11 @@ def run_plan(plan: FixturePlan, *, out_dir: Path, workers: int) -> None:
     else:
         with ProcessPoolExecutor(max_workers=workers) as pool:
             list(pool.map(_run_job, jobs, [out_dir] * len(jobs)))
+    write_astro(
+        out_dir=out_dir,
+        start=min(entry.start for entry in plan.entries),
+        end=max(entry.end for entry in plan.entries),
+    )
     write_manifest(out_dir=out_dir, plan=plan)
 
 

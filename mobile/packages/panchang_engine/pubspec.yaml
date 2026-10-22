@@ -1,0 +1,17 @@
+name: panchang_engine
+description: >-
+  Pure-Dart Jain Panchang engine. Reproduces the Python reference engine
+  (python_engine/) within the tolerances in plans/mobile-app-flutter.md,
+  verified against the parity fixtures in test/fixtures/.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  timezone: ^0.11.2
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6

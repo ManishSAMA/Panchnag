@@ -159,7 +159,7 @@
     "shwetambar_sthanakvasi",
     "shwetambar_terapanthi"
   ],
-  "schema_version": 1,
+  "schema_version": 2,
   "sunrise_rules": [
     "modern",
     "traditional"
