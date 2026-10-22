@@ -110,6 +110,7 @@ Each phase ends in a working, tested state. TDD throughout: Python with pytest, 
 ### Phase 4: Screens, one at a time
 - Order: Today (full) → Month grid with day bottom sheet → Choghadiya with live countdown → Settings (location by GPS or preset, profile, language, Purnimanta/Amanta).
 - For each screen: paper sketch, then widget tests, then build, then use it on the phone for a few days.
+- UI design, tokens and the clickable mockup: [`mobile-ui-design.md`](mobile-ui-design.md).
 
 ### Phase 5: Festival engine port (L4), the largest phase
 - Port `festival_rules.py` one rule type at a time. Each rule type is done when its L4 parity passes for all 3 profiles across 2016–2040.
