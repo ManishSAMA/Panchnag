@@ -30,6 +30,26 @@ Covers time, Sun and sunrise/sunset. The Moon moved to M2, where tithi times can
 
 **Fixtures:** schema v2 adds `month_amanta` (open question 1 resolved: keep the toggle).
 
+### M2 done (2026-10-22)
+
+Covers the Moon, sidereal longitudes, tithi, Jain tithi and nakshatra.
+
+**Results:**
+- **Moon:** ELP/MPP02 truncated to **3,010 of 13,757** terms. The dropped terms add ≤ 0.4999″ for |T| ≤ 0.41 (a sum of |A|·|T|^k, so a hard bound), and the source shrinks from about 8 MB to 383 KB. It matches Swiss Ephemeris within 4″ every day 2016–2040.
+- **Lahiri ayanamsa:** IAU 2006 general precession from the Swiss Ephemeris 1956 epoch, within 0.2″. Sidereal = tropical apparent − Δψ − ayanamsa (`FLG_SIDEREAL` excludes nutation).
+- **Elements:** every core day, 17 locations × 2 rules. The day's tithi list, the Jain tithi (sunrise + 2h24m) and the nakshatra all have **exact** indices. End times have a worst error of **5.9 s** (the guard is 10 s; the plan allows 60 s). Python's bisection alone returns ends up to 0.86 s late.
+- **Boundary cases:** 5 in about 75,000 day-readings, each a transition 0.43–1.8 s from the reading instant:
+  - Delhi modern 2024-07-02 (nakshatra)
+  - Delhi traditional 2022-11-22 and 2022-11-23 (tithis)
+  - Palitana modern 2026-11-20 (nakshatra)
+  - random-s2026-03 modern 2027-05-29 (nakshatra)
+
+**Findings:**
+- **The boundary rule must count both engines' transitions.** The deciding transition is often the label that ended just *before* sunrise, which a fixture row never records. Counting only Python's transitions misclassified 3 genuine ties as failures.
+- **The end-time solver** brackets using physical rates: elongation 9.5–16°/day, Moon 11–16°/day. It then refines with the Illinois method to 0.01 s.
+
+**Not yet ported:** vara (a weekday from the civil date). It goes into the M4 façade.
+
 **Follow-up for M4:** the full parity run takes about 3 min under the JIT. The cost is mostly sunrise calls (3 per day), each recomputing nutation several times; cache per instant.
 
 ## Goal

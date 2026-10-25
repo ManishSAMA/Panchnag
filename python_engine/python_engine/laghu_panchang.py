@@ -48,7 +48,7 @@ from panchang import (
 from yoga_service import detect_all_yogas_for_day
 
 AHORATRA = "अहोरात्र"
-SHUBH = "卍"
+SHUBH = "卐"  # U+5350, the right-facing (auspicious) swastika
 NOT_SHUBH = "-"
 
 # Short forms as printed in the reference booklet, indexed like
@@ -136,7 +136,7 @@ def _active_highly_auspicious(yoga: dict, sunrise_jd: float) -> bool:
 
 
 def shubh_mark(yoga_result: dict, sunrise_jd: float) -> str:
-    """卍 when a highly auspicious yoga is in force at sunrise, else "-"."""
+    """卐 when a highly auspicious yoga is in force at sunrise, else "-"."""
     yogas = (yoga for kind in _YOGA_LISTS for yoga in yoga_result.get(kind, ()))
     return SHUBH if any(_active_highly_auspicious(yoga, sunrise_jd) for yoga in yogas) else NOT_SHUBH
 

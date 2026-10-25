@@ -5,7 +5,8 @@ Re-run only to re-vendor from a newer persis_times:
 
     python tool/vendor_persis.py <path to persis_times-x.y.z>
 
-Outputs (committed): lib/src/astro/vsop87d_earth.g.dart, lib/src/astro/nutation_iau2000b.g.dart
+Outputs (committed): lib/src/astro/vsop87d_earth.g.dart, lib/src/astro/nutation_iau2000b.g.dart,
+lib/src/astro/elp_mpp02_longitude.g.dart (truncated, see MOON_* below)
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ PACKAGE = Path(__file__).resolve().parents[1]
 ASTRO = PACKAGE / "lib" / "src" / "astro"
 
 NUMBER = r"-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?"
+ROW6 = re.compile(rf"\[\s*({NUMBER})\s*,\s*({NUMBER})\s*,\s*({NUMBER})\s*,\s*({NUMBER})\s*,\s*({NUMBER})\s*,\s*({NUMBER})\s*,?\s*\]")
 ROW = re.compile(rf"\[\s*({NUMBER})\s*,\s*({NUMBER})\s*,\s*({NUMBER})\s*\]")
 ARGS = r"\((-?\d+) \* l \+ (-?\d+) \* lp \+ (-?\d+) \* f \+ (-?\d+) \* d \+ (-?\d+) \* om\)"
 PSI_TERM = re.compile(
@@ -84,11 +86,53 @@ def nutation_terms(source: Path) -> str:
     )
 
 
+# The engine serves 2016-2040, so |T| <= 0.41 Julian centuries from J2000.
+MOON_MAX_ABS_T = 0.41
+# Worst-case error the dropped ELP/MPP02 terms may add, arcseconds (sum of |A|·|T|^k).
+MOON_DROP_BUDGET_ARCSEC = 0.5
+
+
+def elp_mpp02_longitude(source: Path) -> str:
+    data = source / "lib" / "src" / "data"
+    files = sorted(data.glob("moon_data_l*.dart"))
+    terms = [
+        (int(path.stem[-3]), row)  # moon_data_lKNN: K is the power of T
+        for path in files
+        for row in ROW6.findall(path.read_text(encoding="utf-8"))
+    ]
+    assert len(terms) == 12337 + 1199 + 219 + 2, len(terms)
+
+    def worst_case(term: tuple[int, tuple[str, ...]]) -> float:
+        power, row = term
+        return abs(float(row[0])) * MOON_MAX_ABS_T**power
+
+    by_size = sorted(terms, key=worst_case)
+    dropped, budget_used = 0, 0.0
+    for term in by_size:
+        if budget_used + worst_case(term) > MOON_DROP_BUDGET_ARCSEC:
+            break
+        budget_used += worst_case(term)
+        dropped += 1
+    kept = sorted(by_size[dropped:], key=lambda term: (term[0], -abs(float(term[1][0]))))
+    rows = "".join(f"  ({power}, {', '.join(row)}),\n" for power, row in kept)
+    return (
+        _header(source)
+        + f"// Truncated: kept {len(kept)} of {len(terms)} terms; the dropped ones add at most\n"
+        + f"// {budget_used:.4f}\" (budget {MOON_DROP_BUDGET_ARCSEC}\") for |T| <= {MOON_MAX_ABS_T}.\n\n"
+        + "/// ELP/MPP02 longitude terms: (k, A″, φ0, φ1, φ2, φ3, φ4) for\n"
+        + "/// T^k · A · sin(φ0 + φ1·T + φ2·T² + φ3·T³ + φ4·T⁴).\n"
+        + "const List<(int, double, double, double, double, double, double)> moonLongitudeTerms = [\n"
+        + rows
+        + "];\n"
+    )
+
+
 def main(source: Path) -> None:
     ASTRO.mkdir(parents=True, exist_ok=True)
     for name, text in (
         ("vsop87d_earth.g.dart", vsop87d_earth(source)),
         ("nutation_iau2000b.g.dart", nutation_terms(source)),
+        ("elp_mpp02_longitude.g.dart", elp_mpp02_longitude(source)),
     ):
         (ASTRO / name).write_text(text, encoding="utf-8", newline="\n")
         print("wrote", ASTRO / name)

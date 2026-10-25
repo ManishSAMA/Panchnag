@@ -21,7 +21,7 @@ from hindi_calendar_pdf import GREG_MONTHS_HINDI
 from laghu_panchang import COLUMN_HEADERS, LaghuHalf
 
 # Column widths in percent of a half-page table, in COLUMN_HEADERS order.
-_COLUMN_WIDTHS = (4, 5, 9, 9, 4, 8, 7, 8, 6, 12, 28)
+_COLUMN_WIDTHS = (4, 5, 11, 11, 4, 8, 7, 8, 6, 12, 24)
 
 _STYLE = """
 @page { size: 8in 5in; margin: 0.12in; }
@@ -38,9 +38,10 @@ body { margin: 0; font-family: 'Nirmala UI', 'Mangal', 'Noto Sans Devanagari', s
 table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 2px; }
 th, td { border: 0.5pt solid #555; padding: 0.5pt 1pt; font-size: var(--cell-size, 5.6pt); line-height: 1.15;
          text-align: center; vertical-align: middle; word-wrap: break-word; }
-th { background: #f1e3c6; font-weight: 700; font-size: 5.2pt; }
+th { background: #f1e3c6; font-weight: 700; font-size: 5.2pt; overflow-wrap: normal; word-break: keep-all; }
 td.events { text-align: left; }
 td.shubh { color: #b3001b; font-weight: 700; }
+td.tithi-long { font-size: calc(var(--cell-size, 5.6pt) * 0.86); white-space: nowrap; }
 tr.sunday td { background: #fff4f4; }
 .place { font-size: 5pt; color: #666; text-align: right; margin-top: 1px; }
 """
@@ -74,7 +75,7 @@ def _half_html(half: LaghuHalf, location_name: str) -> str:
     rows = "".join(
         f'<tr class="{"sunday" if day.vara == "र" else ""}">'
         + "".join(
-            f'<td class="{_cell_class(index)}">{escape(cell)}</td>'
+            f'<td class="{_cell_class(index, cell)}">{escape(cell)}</td>'
             for index, cell in enumerate(day.cells)
         )
         + "</tr>"
@@ -84,7 +85,14 @@ def _half_html(half: LaghuHalf, location_name: str) -> str:
     return f'<div class="half">{head}{table}<div class="place">{escape(location_name)}</div></div>'
 
 
-def _cell_class(index: int) -> str:
+# A Pratipada that also carries a kshaya ("मार्ग.कृ. 01-2") is the one tithi cell
+# too long for its column; it prints a little smaller rather than wrapping.
+_LONG_TITHI = 12
+
+
+def _cell_class(index: int, cell: str = "") -> str:
+    if index in (2, 3) and len(cell) > _LONG_TITHI:
+        return "tithi-long"
     return {1: "shubh", len(COLUMN_HEADERS) - 1: "events"}.get(index, "")
 
 

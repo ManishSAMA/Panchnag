@@ -1017,13 +1017,16 @@ class KarmaNirjaraVratFestival(FestivalRule):
             prefix = "Adhik " if (has_adhik_month_in_year and day_snap["is_adhika"]) else ""
             month_title = prefix + day_snap["hindu_month"]
             title = f"Karma Nirjara Vrat ({month_title})"
+            from hindi_calendar_pdf import MONTH_NAMES_HINDI
+            month_hindi = MONTH_NAMES_HINDI.get(day_snap["hindu_month"].upper(), day_snap["hindu_month"])
+            title_hindi = f"कर्म निर्जरा व्रत ({'अधिक ' if prefix else ''}{month_hindi})"
 
             occurrences.append({
                 "id": f"karma_nirjara_vrat_{month_title.lower().replace(' ', '_')}_{year}",
                 "occurrence_id": f"karma_nirjara_vrat_{resolved_day.isoformat()}",
                 "name": title,
                 "title": title,
-                "name_hindi": title,
+                "name_hindi": title_hindi,
                 "category": "parva_vrat",
                 "start_date": resolved_day.isoformat(),
                 "end_date": resolved_day.isoformat(),
@@ -1710,18 +1713,18 @@ class RaviVratFestival(FestivalRule):
             is_pushya = (nak_sunrise == 8) or (nak_cutoff == 8)
 
             if is_pushya:
-                title = "☀️ Ravi Pushya Vrat"
+                title, title_hindi = "☀️ Ravi Pushya Vrat", "रवि पुष्य व्रत"
             elif is_saptami:
-                title = "☀️ Ravi Saptami Vrat"
+                title, title_hindi = "☀️ Ravi Saptami Vrat", "रवि सप्तमी व्रत"
             else:
-                title = "☀️ Ravi Vrat"
+                title, title_hindi = "☀️ Ravi Vrat", "रवि व्रत"
 
             occurrences.append({
                 "id": self.id,
                 "occurrence_id": f"{self.id}_{d['date'].isoformat()}",
                 "name": title,
                 "title": title,
-                "name_hindi": title,
+                "name_hindi": title_hindi,
                 "category": self.category,
                 "start_date": d["date"].isoformat(),
                 "end_date": d["date"].isoformat(),

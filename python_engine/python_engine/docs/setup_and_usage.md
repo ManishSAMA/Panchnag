@@ -294,7 +294,7 @@ sunrise/sunset on its first day) and these columns:
 
 | Column | Meaning |
 |---|---|
-| शुभ दि. | `卍` when a *highly auspicious* yoga (Aanandadi, Dainika or Ravi; e.g. Amrit Siddhi, Sarvartha Siddhi, Guru Pushya) is in force at sunrise, else `-` |
+| शुभ दि. | `卐` when a *highly auspicious* yoga (Aanandadi, Dainika or Ravi; e.g. Amrit Siddhi, Sarvartha Siddhi, Guru Pushya) is in force at sunrise, else `-` |
 | जैन तिथि / उदय तिथि | Tithi at sunrise + 2h24m (Jain) and at sunrise; 1–14, 15 = Purnima, 30 = Amavasya; Pratipada shows the Purnimanta month, e.g. `पौ.शु. 01`; a kshaya tithi shows as `3-4` |
 | तिथि / नक्षत्र समाप्ति समय | End time counted from that day's midnight, so `25:47` means 01:47 the next morning; `अहोरात्र` when it outlasts the next sunrise |
 | योग | Yoga at sunrise (abbreviated) |

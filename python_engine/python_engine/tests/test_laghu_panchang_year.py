@@ -55,7 +55,7 @@ def test_every_row_has_one_cell_per_column():
 def test_shubh_is_either_swastika_or_dash_and_both_occur():
     marks = [day.shubh for day in _days()]
 
-    assert set(marks) == {"卍", "-"}
+    assert set(marks) == {"卐", "-"}
 
 
 def test_weekday_matches_the_date():

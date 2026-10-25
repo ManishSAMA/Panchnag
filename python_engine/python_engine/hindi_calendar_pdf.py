@@ -106,6 +106,7 @@ TRANSLATIONS_MAP = {
     "Suparshvanath": "सुपार्श्वनाथ",
     "Chandraprabha": "चंद्रप्रभ",
     "Pushpadanta (Suvidhinath)": "पुष्पदंत (सुविधिनाथ)",
+    "Pushpadant (Suvidhinath)": "पुष्पदंत (सुविधिनाथ)",
     "Sheetalnath": "शीतलनाथ",
     "Shreyansnath": "श्रेयांसनाथ",
     "Vasupujya": "वासुपूज्य",

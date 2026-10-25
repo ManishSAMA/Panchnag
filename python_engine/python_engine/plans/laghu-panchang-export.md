@@ -7,7 +7,7 @@ Status: implemented 2026-10-12. Reference booklet: "laghu panchang 2027 12ver (2
 The user has a printed "laghu panchang 2027" booklet (12 landscape pages, legacy Kruti-font Hindi) and wants the app to generate the same booklet for **any year (Jan–Dec) and any location set in the app**, from the app's own calculations. Output must be **searchable/copyable Unicode Hindi PDF**, and the same data as **Excel**. Available from the web app, an API endpoint and the CLI.
 
 Decisions already made with the user:
-- 卍 = day has a *highly auspicious* shubh yoga; `-` otherwise.
+- 卐 = day has a *highly auspicious* shubh yoga; `-` otherwise.
 - Festivals = the app's own calendar, using the profile selected in the app (default `shwetambar_murtipujak_tapagachchha`), not a Digambar list.
 - Include everything the app can compute; skip what it can't (acharya/muni anniversaries, melas).
 - Location comes from the app; header sunrise/sunset = the app's own values (1st and 16th of month).
@@ -27,7 +27,7 @@ Half header (4 lines):
 | Header | Content |
 |---|---|
 | दि. | day number |
-| शुभ दि. | `卍` / `-` |
+| शुभ दि. | `卐` / `-` |
 | जैन तिथि | tithi at sunrise + 2h24m: 1–14, 15 (पूर्णिमा), 30 (अमावस); on Pratipada → `पौ.शु. 01` / `मा.कृ. 01` (Purnimanta month abbr) |
 | उदय तिथि | tithi at sunrise, same format; kshaya → `3-4` |
 | वा. | र सो मं बु बृ शु श |
@@ -58,7 +58,7 @@ Half header (4 lines):
    - `build_laghu_year(*, year, lat, lon, tz_name, ayanamsa, profile) -> tuple[LaghuHalf, ...]` (24 halves). **Per-day UTC offset from `zoneinfo`** (not `_timezone_snapshot`'s Jan-1 offset) so DST locations (e.g. Trenton, NJ) are correct. Computes Dec 31 + Jan 1 of the next year for kshaya and next-sunrise.
    - Performance: build serially first and time it. If a year takes over ~60 s, parallelise per month with `multiprocessing.Pool` like `main.run_generation`.
 3. **`laghu_panchang_render.py`**:
-   - `render_html(halves, *, title, location_name) -> str`: `@page { size: 8in 5in; margin: 0.15in }`, Nirmala UI / Mangal / Noto Sans Devanagari, two tables per page, page break per month, 卍 rendered as text.
+   - `render_html(halves, *, title, location_name) -> str`: `@page { size: 8in 5in; margin: 0.15in }`, Nirmala UI / Mangal / Noto Sans Devanagari, two tables per page, page break per month, 卐 rendered as text.
    - `write_pdf(halves, path) -> str`: writes the .html, calls `_html_to_pdf` and returns the PDF path (or the .html path when no renderer exists). If `_html_to_pdf` hard-codes A4, add a keyword `prefer_css_page_size=True` path (backward compatible).
    - `write_excel(halves, path)`: openpyxl, 12 sheets (Hindi month names), each sheet mirrors the page: two blocks side by side, merged header rows, same 11 column headers, styling like `export.export_to_excel` (2C3E50 header, frozen panes).
 4. **Service**: `pdf_generation_service.generate_laghu_panchang_export(*, year, city, lat, lon, ayanamsa_name, profile, output_format: "pdf"|"excel"|"both", output_dir=None) -> dict` returning `{year, ayanamsa, profile, location{...}, files: [{name, path, format}]}`; file names `Laghu_Panchang_<year>_<place>.pdf/.xlsx`.
@@ -73,9 +73,9 @@ Half header (4 lines):
 
 1. `find_moon_rashi_change`: invariants (entry JD inside window; rashi before ≠ after; None when the sign holds all day); then refactor Bhadra onto it with the existing Bhadra tests green.
 2. Pure formatters: `clock_from_midnight` (>24h after midnight, minutes < 60), `tithi_cell` (Pratipada abbr, 15/30), `shubh_mark` with hand-built yoga dicts (nullified/cancelled ignored), `moon_sign_cell`, Bhadra/Panchak text.
-3. `build_laghu_year` invariants (one real year, Delhi): 24 halves; every date once in order; split 1–15/16–end; 卍/`-` only; weekday consistent with the date; time cells match `^\d{2}:\d{2}$|^अहोरात्र$`, hour < 48. Spot checks: a known kalyanak date's cell contains its Hindi registry name (cite registry), and a DST location's sunrise header shifts by an hour across the DST boundary.
+3. `build_laghu_year` invariants (one real year, Delhi): 24 halves; every date once in order; split 1–15/16–end; 卐/`-` only; weekday consistent with the date; time cells match `^\d{2}:\d{2}$|^अहोरात्र$`, hour < 48. Spot checks: a known kalyanak date's cell contains its Hindi registry name (cite registry), and a DST location's sunrise header shifts by an hour across the DST boundary.
 4. Excel: 12 sheets, 11 headers ×2 per sheet, row count = days in month.
-5. HTML/PDF: HTML contains all headers + 卍; `_html_to_pdf` patched (as in `tests/test_hindi_pdf_export.py`); real-renderer test (skipped if no Playwright/Edge) extracts text with pypdf and finds `सूर्योदय`, so the PDF is searchable.
+5. HTML/PDF: HTML contains all headers + 卐; `_html_to_pdf` patched (as in `tests/test_hindi_pdf_export.py`); real-renderer test (skipped if no Playwright/Edge) extracts text with pypdf and finds `सूर्योदय`, so the PDF is searchable.
 6. Request parser (parametrised bad year/format/profile) → API endpoint (patched service, then GET download) → CLI (`main.main(["laghu", …])` writes files to tmp).
 7. UI: `tests_ui/test_smoke.py` class like `TestHindiCalendarExport` (:228): routes `**/generate-laghu-panchang`, asserts the posted payload carries lat/lon/profile/format, link appears, no JS errors.
 

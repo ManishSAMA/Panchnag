@@ -99,7 +99,7 @@ def _day(**lists):
 
 @pytest.mark.parametrize("kind", ["yogas", "aanandadi_yogas", "ravi_yogas", "special_yogas"])
 def test_a_highly_auspicious_yoga_at_sunrise_marks_the_day_shubh(kind):
-    assert shubh_mark(_day(**{kind: [_yoga()]}), SUNRISE) == "卍"
+    assert shubh_mark(_day(**{kind: [_yoga()]}), SUNRISE) == "卐"
 
 
 @pytest.mark.parametrize(
@@ -187,3 +187,11 @@ def test_a_multi_day_marker_already_in_the_name_is_not_repeated():
     festivals = [{"name": "Solah Karan Vrat", "name_hindi": "सोलह कारण व्रत प्रारम्भ (प्रारंभ)", "_tag": "प्रारंभ"}]
 
     assert festival_text(festivals) == "सोलह कारण व्रत प्रारम्भ (प्रारंभ)"
+
+
+def test_the_shubh_mark_is_the_right_facing_swastika():
+    """The Jain auspicious swastika is right-facing, U+5350 (卐), not the mirrored U+534D."""
+    mark = shubh_mark(_day(aanandadi_yogas=[_yoga()]), SUNRISE)
+
+    assert mark == "卐"
+    assert "卍" not in mark

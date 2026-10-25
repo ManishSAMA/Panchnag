@@ -41,7 +41,7 @@ def make_month(year: int, month: int, *, events: str = "भ. 25:47 से") -> t
             tithi_range="पौष कृष्ण नवमी से पौष शुक्ल सप्तमी तक",
             sun_times="सूर्योदय – 07:19 बजे, सूर्यास्त – 17:31 बजे",
             days=tuple(
-                make_day(date(year, month, d), shubh="卍" if d == 2 else "-", events=events)
+                make_day(date(year, month, d), shubh="卐" if d == 2 else "-", events=events)
                 for d in range(first, end + 1)
             ),
         )
@@ -79,7 +79,7 @@ def test_html_carries_every_header_line_and_the_shubh_mark():
     for half in halves:
         for line in (half.samvat, half.date_range, half.tithi_range, half.sun_times):
             assert line in html
-    assert "卍" in html
+    assert "卐" in html
     assert all(header in html for header in COLUMN_HEADERS)
 
 
@@ -189,4 +189,57 @@ def test_excel_has_a_sheet_per_month_with_both_halves_side_by_side(tmp_path):
     assert values.count(COLUMN_HEADERS[-1]) == 2
     assert values.count("तुला") == 31
     assert "1 जनवरी से 15 जनवरी 2027 तक।" in values
-    assert "卍" in values
+    assert "卐" in values
+
+
+@pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="needs Playwright")
+def test_the_longest_pratipada_cell_stays_on_one_line():
+    """'आश्वि.कृ. 01' (Ashvin) and 'मार्ग.कृ. 01-2' (Pratipada + kshaya) wrapped onto two lines."""
+    from dataclasses import replace
+
+    from playwright.sync_api import sync_playwright
+
+    first, second = make_month(2027, 9)
+    # The second is the longest cell there is: a Pratipada that also carries a kshaya.
+    days = (replace(first.days[0], jain_tithi="आश्वि.कृ. 01", udaya_tithi="मार्ग.कृ. 01-2"),) + first.days[1:]
+    html = render_html((replace(first, days=days), second), title="t", location_name="Delhi")
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        try:
+            page = browser.new_page()
+            page.set_content(html)
+            page.emulate_media(media="print")
+            lines = page.evaluate("""() => [2, 3].map(i => {
+                const cell = document.querySelector('tbody tr').children[i];
+                const range = document.createRange(); range.selectNodeContents(cell);
+                return new Set([...range.getClientRects()].map(r => Math.round(r.top))).size;
+            })""")
+        finally:
+            browser.close()
+
+    assert lines == [1, 1]
+
+
+@pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="needs Playwright")
+def test_no_column_header_breaks_inside_a_word():
+    """'शुभ दि.' broke as 'शु / भ / दि.' once the shubh column was narrowed."""
+    from playwright.sync_api import sync_playwright
+
+    html = render_html(make_month(2027, 1), title="t", location_name="Delhi")
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        try:
+            page = browser.new_page()
+            page.set_content(html)
+            page.emulate_media(media="print")
+            broken = page.evaluate(r"""() => [...document.querySelector('thead tr').children].filter(th => {
+                const words = th.textContent.trim().split(/\s+/).length;
+                const range = document.createRange(); range.selectNodeContents(th);
+                const lines = new Set([...range.getClientRects()].map(r => Math.round(r.top))).size;
+                return lines > words;
+            }).map(th => th.textContent)""")
+        finally:
+            browser.close()
+
+    assert broken == []
