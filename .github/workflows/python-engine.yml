@@ -1,0 +1,49 @@
+name: Python engine
+
+on:
+  push:
+    paths:
+      - "python_engine/python_engine/**"
+      - "shared/**"
+      - "mobile/packages/panchang_engine/test/fixtures/**"
+      - ".github/workflows/python-engine.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "python_engine/python_engine/**"
+      - "shared/**"
+      - "mobile/packages/panchang_engine/test/fixtures/**"
+      - ".github/workflows/python-engine.yml"
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: python_engine/python_engine
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: python_engine/python_engine/requirements*.txt
+
+      # Pinned to the version that generated the parity fixtures, so CI checks
+      # the same Swiss Ephemeris build the fixtures came from.
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyswisseph==2.10.3.2 -r requirements-dev.txt
+
+      # The Laghu PDF tests render through Chromium; the booklet's Devanagari
+      # falls back to Noto Sans Devanagari on Linux.
+      - name: Install Chromium and Devanagari fonts
+        run: |
+          python -m playwright install --with-deps chromium
+          sudo apt-get install -y --no-install-recommends fonts-noto-core
+
+      - name: pytest tests
+        run: python -m pytest tests -q

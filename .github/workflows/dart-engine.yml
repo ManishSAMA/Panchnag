@@ -1,0 +1,38 @@
+name: Dart engine
+
+on:
+  push:
+    paths:
+      - "mobile/packages/panchang_engine/**"
+      - "shared/**"
+      - ".github/workflows/dart-engine.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/packages/panchang_engine/**"
+      - "shared/**"
+      - ".github/workflows/dart-engine.yml"
+
+jobs:
+  dart-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile/packages/panchang_engine
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.13.5
+
+      - name: dart pub get
+        run: dart pub get
+
+      - name: dart analyze
+        run: dart analyze --fatal-infos
+
+      # Includes the full parity suite against test/fixtures/core.
+      - name: dart test
+        run: dart test
