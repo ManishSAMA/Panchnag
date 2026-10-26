@@ -1,6 +1,6 @@
 # Jain Panchang Mobile App — Flutter + Pure-Dart Engine
 
-**Status:** Approved direction, not started
+**Status:** Approved direction; Phases 0–1 done, Phase 2 at M2. Scope and release decisions settled in review on 2026-10-26 (§1a).
 **Supersedes:** [`mobile_app_conversion_plan.md`](mobile_app_conversion_plan.md) (precomputed-SQLite approach)
 **Date:** 2026-10-07
 
@@ -10,7 +10,7 @@
 
 | Topic | Decision | Why |
 |---|---|---|
-| Platforms | Android + iOS, one Flutter codebase | Reach both audiences with one codebase |
+| Platforms | One Flutter codebase. **The beta is Android only**; iOS builds start once the Android beta is stable. | Avoids Apple fees, signing without a Mac, and iOS notification quirks until the app itself is proven. The code stays iOS-ready. |
 | Engine | **Pure-Dart astronomy written from published algorithms** (Meeus, VSOP87 / ELP2000 truncations), permissive license | Swiss Ephemeris is AGPL. Embedding it would force the whole app to be AGPL open source, and the iOS App Store's terms are widely considered incompatible with GPL-family licenses. Writing our own code avoids both. |
 | Reference engine | Existing `python_engine` (Swiss Ephemeris) stays on the dev machine as the **test reference** | It is already corrected against the physical panchang (e.g. the 15-day Maha offset fix). It never ships inside the app. |
 | Data | Calculated on the phone, fully offline, **any GPS location** | No city packs, no server, no network clause |
@@ -19,7 +19,63 @@
 | Beta scope | Today, Month grid, Choghadiya, Festivals (all 3 Shwetambar profiles), Settings; English + Hindi | Same as the earlier plan's §1 |
 | Deferred | Karana, Yoga, Hora, Rahu Kaal, Dainika Muhurta, PDF export, audio, vow trackers, accounts | Post-beta |
 | Repo layout | Same repo, new `mobile/` folder next to `python_engine/` | One CI run compares the two engines |
-| iOS builds | Cloud macOS (Codemagic or GitHub Actions macOS runner); a friend's Mac only for occasional Simulator checks | No Mac owned |
+| iOS builds (after the beta) | Cloud macOS (Codemagic or GitHub Actions macOS runner); a friend's Mac only for occasional Simulator checks | No Mac owned |
+
+---
+
+## 1a. Decisions from the 2026-10-26 review
+
+### Product
+| Topic | Decision |
+|---|---|
+| Name and ID | Display name **Jain Panchang** / **जैन पंचांग**. Package `io.github.manishsama.jainpanchang`; it can never change after the first Play upload. |
+| Traditions | The three Shwetambar profiles only. The profile is stored as an open string ID, not a fixed enum, so Digambar can be added later without a migration. |
+| Price | Free, with no ads, accounts or analytics. A one-page privacy policy. |
+| Date range | A hard limit of 2016–2040 in every picker, arrow and year chip. Widen it later by regenerating the fixtures. |
+| Minimum Android | Flutter's default `minSdk`. Test on the oldest phone a tester owns. |
+| Default settings | Modern sunrise rule (matches the web app and engine), Purnimanta month. Sangh testers are asked to compare both sunrise rules. |
+| Icon | The siddhashila mark (crescent + dot) on maroon. |
+
+### Architecture
+| Topic | Decision |
+|---|---|
+| Backend | None. Calculation is fully offline. The only network use is Sentry crash reporting, **off by default**, switched on in Settings or from a one-line prompt on first launch, and wired in Phase 7 only. Data bugs are fixed by shipping app updates. |
+| Source of truth | The Python engine stays canonical. A rule change lands in Python first, then the fixtures are regenerated, then Dart must pass parity again. Revisit after launch. |
+| Festival location | Festivals use the sunrise at the **user's** location, as the engine and parity fixtures already do. Sangh testers are asked specifically about this. |
+| Time zone | A GPS fix uses the phone's time zone; each preset city carries its own. No coordinate-to-time-zone lookup in the beta. |
+| Computation | On demand in a background isolate, plus a disk cache keyed by (engine version, registry hash, location, profile, sunrise rule, year). An app update invalidates it. |
+| Reminders | Inexact alarms (`inexactAllowWhileIdle`), so no exact-alarm permission is needed. A rolling 60-day schedule, rescheduled when settings change and after a reboot. |
+| Festival port | A Dart **interpreter** for the rule types declared in `festival_registry.json`, not a line-by-line port. Phase 5 starts with an audit of which registry rules are pure data and which are special-case code; only the special cases are ported by hand. |
+
+### Build order
+1. **Python and CI first:**
+   - GitHub Actions on Linux with three jobs on every push: `pytest tests` (including the registry freshness test), `dart test` with the full core parity suite, and `flutter analyze` + `flutter test`. `tests_ui` and fixture regeneration stay local.
+   - A fixture freshness test: `manifest.json` records a hash of the Python engine sources the fixtures depend on, and a Python test fails when it is stale.
+   - `generate_jain_festivals` raises on an unknown profile; Dart rejects unknown profiles from the start.
+   - Generate the missing Hindi kalyanak names in `registry.py`, and investigate the duplicate Neminath omniscience kalyanak (see [`mobile-ui-design.md`](mobile-ui-design.md) §6).
+2. Engine M3, then M4 ([`mobile-phase2-dart-engine.md`](mobile-phase2-dart-engine.md)).
+3. Phase 3: a Today-only app on the Play **internal** track.
+4. After that, alternate one screen with one festival rule type, so that neither blocks the other for weeks.
+5. Hindi review, then the sangh closed beta. The closed beta waits for full festival (L4) parity.
+
+### Release
+| Topic | Decision |
+|---|---|
+| Play account | Personal ($25). The sangh closed beta doubles as the rule for new personal accounts (currently 12 testers for 14 days); re-check the numbers at Phase 7. |
+| Signing | Play App Signing. The upload keystore and its password live in a password manager plus one offline backup, never in the repo. Release builds are uploaded by hand; CI never signs. |
+| Repo | Private through the beta. Decide on open source after launch. |
+| Wrong-date reports | Every day view has a "गलत लगे तो बताएँ" ("Report if something looks wrong") action. It opens an email or WhatsApp share pre-filled with date, coordinates, time zone, profile, sunrise rule, app version and engine version. The destination address or number is still to be chosen. |
+| Hindi review | Every Hindi string (ARB files and registry names) is checked by the maintainer plus one sangh elder before the closed beta. |
+
+### Launch gate (closed beta → production)
+- At least 14 days of closed testing with 12 or more testers.
+- No open wrong-date reports: each is fixed, or confirmed as a boundary case against a physical panchang.
+- A crash-free session rate of 99% or more.
+- Today renders in under 100 ms on the slowest tester phone.
+- The full parity suite passes in CI on the release commit.
+
+### Revisit after the beta
+Festival dates against a fixed reference city · the default sunrise rule · offline time-zone lookup from coordinates · over-the-air registry updates · open source · iOS.
 
 ---
 
@@ -101,11 +157,11 @@ Each phase ends in a working, tested state. TDD throughout: Python with pytest, 
 - Order: Julian day / time → Sun → Moon → ayanamsa → rise/set → tithi and nakshatra instants → sunrise and Jain tithi → Purnimanta month, Adhik/Kshaya → VS/VNS → Kshaya/Vriddhi → choghadiya.
 - Each step turns its parity layer green before the next starts.
 
-### Phase 3: First working app, on both stores' test tracks
+### Phase 3: First working app on the Play internal track
 - The Today screen shows the real engine output for a preset city, plain styling.
 - Android: a signed build on the Play Console **internal testing** track.
-- iOS: a cloud build uploaded to **TestFlight**. Codemagic can manage signing with an App Store Connect API key, so no Mac is needed.
-- CI on every push: `pytest tests`, `dart test`, `flutter test`, and the parity suite.
+- iOS is after the beta (§1a). When it starts: a cloud build uploaded to **TestFlight**. Codemagic can manage signing with an App Store Connect API key, so no Mac is needed.
+- CI is already in place by now (§1a build order, step 1).
 
 ### Phase 4: Screens, one at a time
 - Order: Today (full) → Month grid with day bottom sheet → Choghadiya with live countdown → Settings (location by GPS or preset, profile, language, Purnimanta/Amanta).
@@ -113,7 +169,9 @@ Each phase ends in a working, tested state. TDD throughout: Python with pytest, 
 - UI design, tokens and the clickable mockup: [`mobile-ui-design.md`](mobile-ui-design.md).
 
 ### Phase 5: Festival engine port (L4), the largest phase
-- Port `festival_rules.py` one rule type at a time. Each rule type is done when its L4 parity passes for all 3 profiles across 2016–2040.
+- First, audit which registry rules are pure data and which need special-case code (§1a).
+- Build the registry interpreter one rule type at a time, hand-porting only the special cases. Each rule type is done when its L4 parity passes for all 3 profiles across 2016–2040.
+- Interleaved with Phase 4 screens rather than run after them (§1a build order).
 - Then the Festivals screen: list, filter chips, profile selector.
 
 ### Phase 6: Hindi + polish
@@ -122,9 +180,9 @@ Each phase ends in a working, tested state. TDD throughout: Python with pytest, 
 
 ### Phase 7: Beta
 - Play Console **closed testing**. New personal developer accounts must meet a minimum-tester / minimum-days rule before production; check the current numbers when we get here.
-- TestFlight external testing.
-- Crash reporting (Sentry or Crashlytics).
+- Opt-in Sentry crash reporting (§1a).
 - Testers come from the sangh, since they spot a wrong tithi immediately.
+- Production only after the launch gate in §1a is met.
 
 ---
 
@@ -134,7 +192,8 @@ Each phase ends in a working, tested state. TDD throughout: Python with pytest, 
 |---|---|
 | Our own Moon theory isn't accurate enough near tithi boundaries | Phase 0 go/no-go gate; boundary report; sweph + AGPL open-source app as the fallback |
 | Porting the festival rules brings back old bugs | Exact L4 parity over 25 years × 3 profiles; port one rule type at a time |
-| Python and Dart drift apart after launch | Shared registry JSON; parity suite in CI; any Python fix must regenerate fixtures and leave Dart green |
+| Python and Dart drift apart after launch | Shared registry JSON; parity suite in CI; fixture source-hash freshness test; any Python fix must regenerate fixtures and leave Dart green |
+| Users see a festival on a different day than their printed panchang | Festivals follow the user's own sunrise; sangh testers check this specifically; a reference-city comparison is on the revisit list |
 | Time-zone or date-line bugs outside India | Edge-location fixtures; `timezone` package; tests use UTC instants only |
 | iOS signing without a Mac | Codemagic automatic signing; friend's Mac as backup |
 | Store rules change | Re-check Play and App Store requirements at Phase 3 and Phase 7 |
@@ -142,13 +201,13 @@ Each phase ends in a working, tested state. TDD throughout: Python with pytest, 
 ---
 
 ## 6. Accounts and costs
-- Google Play Console: one-time $25.
-- Apple Developer Program: $99 per year (needed for TestFlight).
-- Codemagic free tier, or GitHub Actions macOS minutes, for iOS builds.
+- Google Play Console: one-time $25 (personal account).
+- GitHub Actions: the private repo's free monthly minutes, Linux runners only.
+- After the beta, for iOS: Apple Developer Program $99 per year, and the Codemagic free tier or GitHub Actions macOS minutes.
 
 ---
 
-## 7. Open items (to settle when we reach them, not blocking Phase 0)
-- App name, icon, bundle ID (e.g. `org.<you>.jainpanchang`).
-- Whether to open-source the app anyway. Not required now, but a nice option.
+## 7. Open items
+- Settled 2026-10-26: app name, icon and package ID (§1a). Open source is deferred until after launch.
+- Where wrong-date reports go: an email address and a WhatsApp number.
 - How the Purnimanta/Amanta setting affects festival naming, matching the web app's current behaviour.
