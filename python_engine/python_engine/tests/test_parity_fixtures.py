@@ -20,19 +20,23 @@ from jain_observances.festival_service import generate_jain_festivals
 from parity_fixtures import (
     CORE_SHORT_RANGE,
     DEFAULT_LOCATIONS,
+    FIXTURES_DIR,
     FULL_RANGE,
     PROFILES,
     FixturePlan,
     PlanEntry,
     astro_samples,
     SCHEMA_VERSION,
+    code_fingerprint,
     custom_location,
     day_row,
+    engine_sources,
     festival_rows,
     parse_plan,
     random_locations,
     read_fixture,
     run_plan,
+    stale_sources,
     write_astro,
     write_days,
     write_festivals,
@@ -364,6 +368,85 @@ class TestManifest:
         self.a_manifest(tmp_path / "b")
 
         assert (tmp_path / "a" / "manifest.json").read_bytes() == (tmp_path / "b" / "manifest.json").read_bytes()
+
+    def test_fingerprints_the_engine_sources_it_was_generated_from(self, tmp_path):
+        assert self.a_manifest(tmp_path)["engine_sources"] == engine_sources()
+
+
+class TestCodeFingerprint:
+    CODE = 'def f(x):\n    """Doubles x."""\n    return x * 2\n'
+
+    def test_ignores_comments_docstrings_and_formatting(self):
+        reworded = "def f( x ):  # the input\n\n    return x*2\n"
+
+        assert code_fingerprint(reworded) == code_fingerprint(self.CODE)
+
+    def test_changes_when_the_code_changes(self):
+        assert code_fingerprint(self.CODE.replace("x * 2", "x * 3")) != code_fingerprint(self.CODE)
+
+    def test_changes_when_a_string_that_is_not_a_docstring_changes(self):
+        # A Hindi festival name is data the engine returns, not documentation.
+        named = 'def f():\n    return "रवि व्रत"\n'
+
+        assert code_fingerprint(named.replace("रवि", "सोम")) != code_fingerprint(named)
+
+
+class TestEngineSources:
+    def test_cover_the_engine_modules_the_fixtures_are_computed_by(self):
+        sources = engine_sources()
+
+        assert {
+            "parity_fixtures.py",
+            "panchang.py",
+            "astronomy.py",
+            "choghadiya_service.py",
+            "jain_observances/festival_rules.py",
+            "jain_observances/registry.py",
+            "jain_observances/vrats/provider.py",
+        } <= set(sources)
+
+    def test_leave_out_tests_and_installed_packages(self):
+        assert not any(path.startswith(("tests/", "tests_ui/", ".venv", "venv/", "pyswisseph/")) for path in engine_sources())
+
+    def test_are_keyed_by_a_path_that_is_the_same_on_every_os(self):
+        assert all("\\" not in path for path in engine_sources())
+
+
+class TestStaleSources:
+    RECORDED = {"panchang.py": "a", "astronomy.py": "b"}
+
+    def test_none_when_every_fingerprint_matches(self):
+        assert stale_sources(recorded=self.RECORDED, current=dict(self.RECORDED)) == []
+
+    def test_names_a_changed_file(self):
+        assert stale_sources(recorded=self.RECORDED, current=self.RECORDED | {"astronomy.py": "c"}) == ["astronomy.py"]
+
+    def test_names_added_and_removed_files(self):
+        current = {"panchang.py": "a", "vriddhi.py": "d"}
+
+        assert stale_sources(recorded=self.RECORDED, current=current) == ["astronomy.py", "vriddhi.py"]
+
+
+class TestCommittedCoreSet:
+    """The committed fixtures are the Dart engine's oracle, so they must come from today's engine."""
+
+    MANIFEST = FIXTURES_DIR / "core" / "manifest.json"
+
+    def a_committed_manifest(self) -> dict:
+        return json.loads(self.MANIFEST.read_text(encoding="utf-8"))
+
+    def test_was_generated_from_the_current_engine_code(self):
+        stale = stale_sources(recorded=self.a_committed_manifest().get("engine_sources", {}), current=engine_sources())
+
+        assert stale == [], (
+            f"Parity fixtures are stale; changed since they were generated: {', '.join(stale)}. "
+            "Run `python scripts/export_parity_fixtures.py --set core --workers 14` and commit the result."
+        )
+
+    def test_was_generated_with_the_installed_swiss_ephemeris(self):
+        import swisseph
+
+        assert self.a_committed_manifest()["swisseph_version"] == swisseph.version
 
 
 TAPAGACHCHHA = "shwetambar_murtipujak_tapagachchha"

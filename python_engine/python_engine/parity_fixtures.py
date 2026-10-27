@@ -7,13 +7,17 @@ what is written here. Design: plans/mobile-phase1-fixtures.md.
 from __future__ import annotations
 
 import argparse
+import ast
 import gzip
+import hashlib
 import json
 import random
 import re
 from dataclasses import asdict, dataclass
 from concurrent.futures import ProcessPoolExecutor
 from datetime import date, timedelta
+from functools import cache
+from modulefinder import ModuleFinder
 from pathlib import Path
 
 import swisseph
@@ -230,11 +234,65 @@ def write_astro(*, out_dir: Path, start: date, end: date) -> Path:
     )
 
 
+ENGINE_DIR = Path(__file__).resolve().parent
+
+
+class _DropDocstrings(ast.NodeTransformer):
+    def generic_visit(self, node: ast.AST) -> ast.AST:
+        super().generic_visit(node)
+        body = getattr(node, "body", None)
+        if isinstance(body, list) and body and _is_docstring(body[0]):
+            node.body = body[1:]
+        return node
+
+
+def _is_docstring(statement: ast.stmt) -> bool:
+    return (
+        isinstance(statement, ast.Expr)
+        and isinstance(statement.value, ast.Constant)
+        and isinstance(statement.value.value, str)
+    )
+
+
+def code_fingerprint(source: str) -> str:
+    """A hash of what the code does: comments, docstrings and layout don't change it.
+
+    Regenerating the fixtures takes about an hour, so a reworded comment must not
+    mark them stale.
+    """
+    tree = _DropDocstrings().visit(ast.parse(source))
+    return hashlib.sha256(ast.dump(tree).encode("utf-8")).hexdigest()
+
+
+@cache
+def engine_sources() -> dict[str, str]:
+    """Fingerprint of every engine module the fixtures are computed by, keyed by POSIX path.
+
+    The modules are found by scanning imports from this file, so a new engine
+    module is covered without anyone listing it. The search path is the engine
+    folder alone: installed packages are not engine code, and scanning them
+    takes seconds.
+    """
+    finder = ModuleFinder(path=[str(ENGINE_DIR)])
+    finder.run_script(str(ENGINE_DIR / "parity_fixtures.py"))
+    paths = sorted(Path(module.__file__).resolve() for module in finder.modules.values() if module.__file__)
+    return {
+        path.relative_to(ENGINE_DIR).as_posix(): code_fingerprint(path.read_text(encoding="utf-8"))
+        for path in paths
+    }
+
+
+def stale_sources(*, recorded: dict[str, str], current: dict[str, str]) -> list[str]:
+    """Engine files whose code changed, appeared or disappeared since the fixtures were written."""
+    return sorted(path for path in recorded.keys() | current.keys() if recorded.get(path) != current.get(path))
+
+
 def write_manifest(*, out_dir: Path, plan: FixturePlan) -> Path:
     path = out_dir / "manifest.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     manifest = {
         "schema_version": SCHEMA_VERSION,
+        "engine_sources": engine_sources(),
         "swisseph_version": swisseph.version,
         "sunrise_rules": list(plan.sunrise_rules),
         "profiles": list(plan.profiles),

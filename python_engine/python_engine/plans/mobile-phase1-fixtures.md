@@ -36,7 +36,7 @@ the exporter that writes down what the reference says, for any location.
 mobile/packages/panchang_engine/test/fixtures/
   core/                         # committed
   full/                         # gitignored, local only
-    manifest.json               # locations, range, rules, schema_version, swe version
+    manifest.json               # locations, range, rules, schema_version, swe version, engine_sources
     <slug>/<rule>/days.json.gz
     <slug>/<rule>/festivals.<profile>.json.gz
 ```
@@ -81,6 +81,8 @@ The file is `{years: {"2026": [{id, occurrence_id, start_date, end_date, status}
 ## Also in this phase
 
 `shared/festival_registry.json` (repo root) is generated from `jain_observances.registry.FESTIVAL_REGISTRY`, with a freshness test. Dart loads it as an asset in Phase 5.
+
+**Fixture freshness (added 2026-10-26):** regenerating takes about an hour, too long for CI, so CI checks a fingerprint instead. `manifest.json` carries `engine_sources`: for each engine module that `parity_fixtures.py` imports (found by `modulefinder`, searching the engine folder only), a SHA-256 of its AST with docstrings removed. Comments, docstrings and formatting don't count as changes; code and string data such as Hindi names do. `TestCommittedCoreSet` fails, naming the changed files, until the core set is regenerated, and also checks that the manifest's Swiss Ephemeris version matches the installed one. Adding the key did not bump `schema_version`: the Dart harness reads only the manifest keys it needs (`schema_version`, `locations`), so the new key is ignored there.
 
 ## Increments (TDD, each one green before the next)
 
