@@ -66,6 +66,40 @@ void main() {
     });
   });
 
+  group('the pachchakkhan phase through a day (Delhi, 22 Oct 2026)', () {
+    final day = delhi(2026, 10, 22);
+    DateTime at(TimedPachchakkhan kind) => day.pachchakkhan.firstWhere((p) => p.kind == kind).at;
+
+    test('the parana is the next day\'s Navkarsi', () {
+      expect(day.pachchakkhanParana, delhi(2026, 10, 23).pachchakkhan.first.at);
+    });
+
+    test('before sunrise, Navkarsi is next', () {
+      expect(
+        day.pachchakkhanPhase(day.sunrise.subtract(const Duration(hours: 2))),
+        NextCompletion(.navkarsi, at(.navkarsi)),
+      );
+    });
+
+    test('each completion is next until its instant, then the one after it', () {
+      for (final (i, p) in day.pachchakkhan.indexed.skip(1)) {
+        final previous = day.pachchakkhan[i - 1].at;
+        expect(day.pachchakkhanPhase(previous), NextCompletion(p.kind, p.at), reason: '${p.kind}');
+        expect(day.pachchakkhanPhase(p.at.subtract(second)), NextCompletion(p.kind, p.at), reason: '${p.kind}');
+      }
+    });
+
+    test('after Avaddh, the evening pachchakkhan is due before sunset', () {
+      expect(day.pachchakkhanPhase(at(.avaddh)), EveningDeadline(day.pachchakkhanEvening));
+      expect(day.pachchakkhanPhase(day.sunset.subtract(second)), EveningDeadline(day.pachchakkhanEvening));
+    });
+
+    test('from sunset, everything is done until the parana', () {
+      expect(day.pachchakkhanPhase(day.sunset), AllDone(day.pachchakkhanParana));
+      expect(day.pachchakkhanPhase(day.nextSunrise), AllDone(day.pachchakkhanParana));
+    });
+  });
+
   // The Python engine's Jain tithis for Delhi, October 2026 (generate_location_panchang,
   // modern sunrise): 2 Oct 21 → 3 Oct 23, 18 and 19 Oct both 8, 26 Oct 15 → 27 Oct 17.
   // mobile-ui-design.md §3.2 names this month as the test month.

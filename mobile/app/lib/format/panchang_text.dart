@@ -115,6 +115,13 @@ String durationText(Duration d, Lang lang) {
   return '$h $hu $m $mu';
 }
 
+String countdownClock(Duration d) {
+  final seconds = (d.inMicroseconds / Duration.microsecondsPerSecond).ceil();
+  final (h, m, s) = (seconds ~/ 3600, seconds ~/ 60 % 60, seconds % 60);
+  String two(int v) => v.toString().padLeft(2, '0');
+  return h == 0 ? '$m:${two(s)}' : '$h:${two(m)}:${two(s)}';
+}
+
 const _weekdaysHi = ['सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार', 'रविवार'];
 const _weekdaysEn = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const _gregorianHi = [

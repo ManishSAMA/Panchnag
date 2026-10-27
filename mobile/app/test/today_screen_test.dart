@@ -1,52 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jainpanchang/app.dart';
 import 'package:jainpanchang/engine/day_reading.dart';
 import 'package:jainpanchang/features/today/today_state.dart';
 import 'package:panchang_engine/src/astro/rise_set.dart';
 import 'package:panchang_engine/src/panchang/elements.dart';
 import 'package:panchang_engine/src/time/civil_day.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-const istOffset = Duration(hours: 5, minutes: 30);
-
-/// A wall-clock time in Delhi as a UTC instant.
-DateTime ist(int year, int month, int day, [int hour = 10, int minute = 52]) =>
-    DateTime.utc(year, month, day, hour, minute).subtract(istOffset);
-
-Future<void> openToday(
-  WidgetTester tester, {
-  required DateTime now,
-  Locale phone = const Locale('hi', 'IN'),
-  double textScale = 1,
-}) async {
-  SharedPreferences.setMockInitialValues({'location.city': 'delhi'});
-  final prefs = await SharedPreferences.getInstance();
-  tester.view.physicalSize = const Size(1080, 2400);
-  tester.view.devicePixelRatio = 2.75;
-  tester.platformDispatcher.localesTestValue = [phone];
-  tester.platformDispatcher.textScaleFactorTestValue = textScale;
-  addTearDown(tester.view.reset);
-  addTearDown(tester.platformDispatcher.clearAllTestValues);
-
-  await tester.pumpWidget(
-    JainPanchangApp(
-      preferences: prefs,
-      overrides: [
-        clockProvider.overrideWithValue(() => now),
-        nowProvider.overrideWith((ref) => Stream.value(now)),
-        // The real engine, on the test's own isolate.
-        dayReaderProvider.overrideWithValue((request) async => readDay(request)),
-      ],
-    ),
-  );
-  await tester.pumpAndSettle();
-}
+import 'support/harness.dart';
 
 String heroTithi(WidgetTester tester) => tester.widget<Text>(find.byKey(const Key('today-hero-tithi'))).data!;
-
-Finder nav(String tooltip) => find.byTooltip(tooltip);
 
 /// The Jain tithi straight from the engine, independent of the screen's own reading.
 int engineJainTithi(CivilDate date) {
@@ -58,7 +21,7 @@ int engineJainTithi(CivilDate date) {
 void main() {
   group('the hero', () {
     testWidgets('shows the Jain tithi, its month and both samvats', (tester) async {
-      await openToday(tester, now: ist(2026, 10, 22));
+      await openApp(tester, now: ist(2026, 10, 22));
 
       expect(engineJainTithi(const CivilDate(2026, 10, 22)), 11);
       expect(heroTithi(tester), 'शुक्ल एकादशी');
@@ -69,14 +32,14 @@ void main() {
 
     testWidgets('shows the tithi at sunrise + 2 h 24 min, not the sunrise tithi', (tester) async {
       // 3 Oct 2026: Krishna Saptami holds at sunrise and ends before the reference instant.
-      await openToday(tester, now: ist(2026, 10, 3));
+      await openApp(tester, now: ist(2026, 10, 3));
 
       expect(engineJainTithi(const CivilDate(2026, 10, 3)), 23);
       expect(heroTithi(tester), 'कृष्ण अष्टमी');
     });
 
     testWidgets('is in English on an English phone', (tester) async {
-      await openToday(tester, now: ist(2026, 10, 22), phone: const Locale('en', 'US'));
+      await openApp(tester, now: ist(2026, 10, 22), phone: const Locale('en', 'US'));
 
       expect(heroTithi(tester), 'Shukla Ekadashi');
       expect(find.textContaining('VNS 2552 · VS 2083', findRichText: true), findsOneWidget);
@@ -85,14 +48,14 @@ void main() {
 
   group('the date navigator', () {
     testWidgets('shows the full date and that it is today', (tester) async {
-      await openToday(tester, now: ist(2026, 10, 22));
+      await openApp(tester, now: ist(2026, 10, 22));
 
       expect(find.text('गुरुवार, 22 अक्टूबर 2026'), findsOneWidget);
       expect(find.widgetWithText(ActionChip, 'आज'), findsNothing);
     });
 
     testWidgets('moves a day at a time and offers a way back to today', (tester) async {
-      await openToday(tester, now: ist(2026, 10, 22));
+      await openApp(tester, now: ist(2026, 10, 22));
 
       await tester.tap(nav('अगला दिन'));
       await tester.pumpAndSettle();
@@ -108,14 +71,14 @@ void main() {
     });
 
     testWidgets('stops at 31 Dec 2040', (tester) async {
-      await openToday(tester, now: ist(2040, 12, 31));
+      await openApp(tester, now: ist(2040, 12, 31));
 
       expect(tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.chevron_right)).onPressed, isNull);
       expect(tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.chevron_left)).onPressed, isNotNull);
     });
 
     testWidgets('stops at 1 Jan 2016', (tester) async {
-      await openToday(tester, now: ist(2016, 1, 1));
+      await openApp(tester, now: ist(2016, 1, 1));
 
       expect(tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.chevron_left)).onPressed, isNull);
     });
@@ -125,14 +88,14 @@ void main() {
     // Mockup board 1 (Delhi, 22 Oct 2026, 10:52): sunrise 06:26:12, sunset 17:44:41,
     // so Purimaddh (the midpoint) is 12:05:26, shown rounded up as 12:06.
     testWidgets('the yellow band names the next one with its time and countdown', (tester) async {
-      await openToday(tester, now: ist(2026, 10, 22));
+      await openApp(tester, now: ist(2026, 10, 22));
 
       expect(find.text('अगला: पुरिमड्ढ'), findsOneWidget);
       expect(find.text('12:06 · 1 घं 14 मि में'), findsOneWidget);
     });
 
     testWidgets('the rows mark the passed times done and the coming one next', (tester) async {
-      await openToday(tester, now: ist(2026, 10, 22));
+      await openApp(tester, now: ist(2026, 10, 22));
 
       for (final name in ['नवकारसी', 'पोरसी', 'साढ़-पोरसी']) {
         expect(find.bySemanticsLabel(RegExp('^$name .*, हो गया\$')), findsOneWidget, reason: name);
@@ -143,14 +106,14 @@ void main() {
     });
 
     testWidgets('after Avaddh there is no band and nothing is next', (tester) async {
-      await openToday(tester, now: ist(2026, 10, 22, 16, 30));
+      await openApp(tester, now: ist(2026, 10, 22, 16, 30));
 
       expect(find.textContaining('अगला:'), findsNothing);
       expect(find.bySemanticsLabel(RegExp(r', अगला')), findsNothing);
     });
 
     testWidgets('another day has no yellow and no done or next rows', (tester) async {
-      await openToday(tester, now: ist(2026, 10, 22));
+      await openApp(tester, now: ist(2026, 10, 22));
       await tester.tap(nav('अगला दिन'));
       await tester.pumpAndSettle();
 
@@ -160,7 +123,7 @@ void main() {
     });
 
     testWidgets('the band opens the Pachchakkhan tab', (tester) async {
-      await openToday(tester, now: ist(2026, 10, 22));
+      await openApp(tester, now: ist(2026, 10, 22));
 
       await tester.tap(find.text('अगला: पुरिमड्ढ'));
       await tester.pumpAndSettle();
@@ -170,7 +133,7 @@ void main() {
   });
 
   testWidgets("today's times list sunrise, sunset and the nakshatra with its pada", (tester) async {
-    await openToday(tester, now: ist(2026, 10, 22));
+    await openApp(tester, now: ist(2026, 10, 22));
 
     expect(find.text('सूर्योदय'), findsOneWidget);
     expect(find.text('सूर्यास्त'), findsOneWidget);
@@ -179,19 +142,19 @@ void main() {
 
   group('notes', () {
     testWidgets('vriddhi, first day (18 Oct 2026)', (tester) async {
-      await openToday(tester, now: ist(2026, 10, 18));
+      await openApp(tester, now: ist(2026, 10, 18));
 
       expect(find.text('वृद्धि तिथि · पहला दिन'), findsOneWidget);
     });
 
     testWidgets('vriddhi, second day (19 Oct 2026)', (tester) async {
-      await openToday(tester, now: ist(2026, 10, 19));
+      await openApp(tester, now: ist(2026, 10, 19));
 
       expect(find.text('वृद्धि तिथि · दूसरा दिन'), findsOneWidget);
     });
 
     testWidgets('kshaya names the lost tithi (3 Oct 2026)', (tester) async {
-      await openToday(tester, now: ist(2026, 10, 3));
+      await openApp(tester, now: ist(2026, 10, 3));
 
       expect(find.text('क्षय तिथि'), findsOneWidget);
       expect(find.textContaining('कृष्ण सप्तमी'), findsOneWidget);
@@ -199,13 +162,13 @@ void main() {
     });
 
     testWidgets('a tithi change near the reference instant (27 Nov 2026)', (tester) async {
-      await openToday(tester, now: ist(2026, 11, 27));
+      await openApp(tester, now: ist(2026, 11, 27));
 
       expect(find.text('तिथि बदलने का समय पास है'), findsOneWidget);
     });
 
     testWidgets('an ordinary day has none (22 Oct 2026)', (tester) async {
-      await openToday(tester, now: ist(2026, 10, 22));
+      await openApp(tester, now: ist(2026, 10, 22));
 
       expect(find.byKey(const Key('today-note')), findsNothing);
     });
@@ -213,7 +176,7 @@ void main() {
 
   for (final scale in [1.3, 1.6]) {
     testWidgets('nothing overflows at ${scale}x text on a busy day', (tester) async {
-      await openToday(tester, now: ist(2026, 11, 27), textScale: scale);
+      await openApp(tester, now: ist(2026, 11, 27), textScale: scale);
 
       expect(tester.takeException(), isNull);
       expect(heroTithi(tester), isNotEmpty);
@@ -221,7 +184,7 @@ void main() {
   }
 
   testWidgets('every Today control is at least 48 dp', (tester) async {
-    await openToday(tester, now: ist(2026, 10, 22));
+    await openApp(tester, now: ist(2026, 10, 22));
 
     await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
     await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));

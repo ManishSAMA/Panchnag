@@ -53,6 +53,51 @@ typedef TithiBoundary = ({DateTime at, bool isStart, Duration gap});
 
 typedef PachchakkhanAt = ({TimedPachchakkhan kind, DateTime at});
 
+/// Where a day's pachchakkhans stand at one instant.
+sealed class PachchakkhanPhase {
+  const PachchakkhanPhase();
+}
+
+/// [kind] may be completed after [at], the first completion still ahead.
+final class NextCompletion extends PachchakkhanPhase {
+  const NextCompletion(this.kind, this.at);
+
+  final TimedPachchakkhan kind;
+  final DateTime at;
+
+  @override
+  bool operator ==(Object other) => other is NextCompletion && other.kind == kind && other.at == at;
+
+  @override
+  int get hashCode => Object.hash(kind, at);
+}
+
+/// Every completion has passed; the evening pachchakkhan is due before [at].
+final class EveningDeadline extends PachchakkhanPhase {
+  const EveningDeadline(this.at);
+
+  final DateTime at;
+
+  @override
+  bool operator ==(Object other) => other is EveningDeadline && other.at == at;
+
+  @override
+  int get hashCode => at.hashCode;
+}
+
+/// The day is over; the next is the parana at [parana].
+final class AllDone extends PachchakkhanPhase {
+  const AllDone(this.parana);
+
+  final DateTime parana;
+
+  @override
+  bool operator ==(Object other) => other is AllDone && other.parana == parana;
+
+  @override
+  int get hashCode => parana.hashCode;
+}
+
 /// How close to the reference instant a tithi change gets a note
 /// (mobile-ui-design.md §3.1; a proposal until tied to the parity tolerance).
 const Duration boundaryWindow = Duration(minutes: 45);
@@ -77,6 +122,7 @@ final class DayReading {
     required this.boundary,
     required this.pachchakkhan,
     required this.pachchakkhanEvening,
+    required this.pachchakkhanParana,
   });
 
   final CivilDate date;
@@ -98,12 +144,22 @@ final class DayReading {
   final List<PachchakkhanAt> pachchakkhan;
   final DateTime pachchakkhanEvening;
 
+  /// The next day's Navkarsi: when an Ayambil or Upvas may be completed.
+  final DateTime pachchakkhanParana;
+
   /// The first pachchakkhan still ahead of [now], or null once Avaddh has passed.
   TimedPachchakkhan? nextPachchakkhan(DateTime now) {
     for (final p in pachchakkhan) {
       if (p.at.isAfter(now)) return p.kind;
     }
     return null;
+  }
+
+  PachchakkhanPhase pachchakkhanPhase(DateTime now) {
+    for (final p in pachchakkhan) {
+      if (p.at.isAfter(now)) return NextCompletion(p.kind, p.at);
+    }
+    return pachchakkhanEvening.isAfter(now) ? EveningDeadline(pachchakkhanEvening) : AllDone(pachchakkhanParana);
   }
 }
 
@@ -156,6 +212,7 @@ DayReading readDay(DayRequest request) {
     boundary: _boundary(reference: reference, jain: jain, jainEnds: jainEnds),
     pachchakkhan: [for (final c in times.completions) (kind: c.kind, at: _utc(c.at))],
     pachchakkhanEvening: _utc(times.evening),
+    pachchakkhanParana: _utc(times.parana),
   );
 }
 

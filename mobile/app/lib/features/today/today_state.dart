@@ -49,3 +49,6 @@ final class SelectedDate extends Notifier<CivilDate> {
 
   void goToday() => state = _today();
 }
+
+/// The ticking clock once it has started, the fixed clock before.
+DateTime currentTime(WidgetRef ref) => ref.watch(nowProvider).value ?? ref.read(clockProvider)();

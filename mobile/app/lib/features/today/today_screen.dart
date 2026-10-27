@@ -11,7 +11,9 @@ import '../../l10n/city_name.dart';
 import '../../location/cities.dart';
 import '../../location/city_time.dart';
 import '../../location/location_store.dart';
+import '../../shared/date_navigator.dart';
 import '../../shared/navpad_widgets.dart';
+import '../../shared/pachchakkhan_row.dart';
 import '../../theme/navpad.dart';
 import 'today_state.dart';
 
@@ -34,7 +36,7 @@ class TodayScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _DateNavigator(date: date, timezone: city.timezone),
+            DateNavigator(date: date, timezone: city.timezone),
             ...switch (reading) {
               AsyncData(:final value) => [_DayView(reading: value, timezone: city.timezone)],
               AsyncError(:final error) => [
@@ -83,58 +85,6 @@ class _LocationButton extends StatelessWidget {
   }
 }
 
-DateTime _now(WidgetRef ref) => ref.watch(nowProvider).value ?? ref.read(clockProvider)();
-
-class _DateNavigator extends ConsumerWidget {
-  const _DateNavigator({required this.date, required this.timezone});
-
-  final CivilDate date;
-  final String timezone;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final text = Theme.of(context).textTheme;
-    final selected = ref.read(selectedDateProvider.notifier);
-    final isToday = date == todayIn(timezone, _now(ref));
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            tooltip: l10n.previousDay,
-            onPressed: date.compareTo(firstDay) > 0 ? () => selected.shift(-1) : null,
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                Text(
-                  longDate(date, langOf(context)),
-                  textAlign: TextAlign.center,
-                  style: text.bodyLarge!.copyWith(fontWeight: FontWeight.w600),
-                ),
-                if (isToday)
-                  Text(
-                    l10n.today,
-                    style: text.bodyMedium!.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  )
-                else
-                  ActionChip(label: Text(l10n.today), onPressed: selected.goToday),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            tooltip: l10n.nextDay,
-            onPressed: date.compareTo(lastDay) < 0 ? () => selected.shift(1) : null,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _DayView extends ConsumerWidget {
   const _DayView({required this.reading, required this.timezone});
 
@@ -145,7 +95,7 @@ class _DayView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final lang = langOf(context);
-    final now = _now(ref);
+    final now = currentTime(ref);
     final isToday = reading.date == todayIn(timezone, now);
     final next = isToday ? reading.nextPachchakkhan(now) : null;
     DateTime wall(DateTime utc) => cityWall(utc, timezone);
@@ -185,7 +135,7 @@ class _DayView extends ConsumerWidget {
         SectionHeading(title: l10n.pachchakkhan, linkLabel: l10n.seeAll, onLink: () => context.go('/pachchakkhan')),
         const ListTop(),
         for (final p in reading.pachchakkhan)
-          _pachchakkhanRow(
+          pachchakkhanRow(
             l10n: l10n,
             name: pachchakkhanName(p.kind, lang),
             time: completionTime(p.at),
@@ -194,7 +144,7 @@ class _DayView extends ConsumerWidget {
                 : (!p.at.isAfter(now) ? RowState.done : (p.kind == next ? RowState.next : RowState.plain)),
             prefix: p.kind == next ? l10n.countdownPrefix(durationText(p.at.difference(now), lang)) : null,
           ),
-        _pachchakkhanRow(
+        pachchakkhanRow(
           l10n: l10n,
           name: l10n.chauvihar,
           time: clockTime(roundDownToMinute(wall(reading.pachchakkhanEvening)), lang).time,
@@ -235,28 +185,6 @@ class _DayView extends ConsumerWidget {
       ),
       time: l10n.until(lang == Lang.hi ? time : '$time $when'),
       prefix: lang == Lang.hi ? when : null,
-    );
-  }
-
-  Widget _pachchakkhanRow({
-    required AppLocalizations l10n,
-    required String name,
-    required String time,
-    required RowState? state,
-    String? prefix,
-  }) {
-    final word = switch (state) {
-      RowState.done => l10n.stateDone,
-      RowState.next => l10n.stateNext,
-      RowState.plain => l10n.stateLeft,
-      null => null,
-    };
-    return TimeRow(
-      name: name,
-      time: time,
-      prefix: prefix,
-      state: state ?? RowState.plain,
-      semanticsLabel: word == null ? '$name $time' : l10n.rowSemantics(name, time, word),
     );
   }
 

@@ -119,6 +119,14 @@ void main() {
     expect(durationText(const Duration(minutes: 74), Lang.en), '1 h 14 min');
   });
 
+  test('a live countdown ticks in whole seconds, rounded up, so it never reaches 0 early', () {
+    expect(countdownClock(const Duration(hours: 1, minutes: 13, seconds: 34)), '1:13:34');
+    expect(countdownClock(const Duration(minutes: 13, seconds: 4)), '13:04');
+    expect(countdownClock(const Duration(seconds: 4)), '0:04');
+    expect(countdownClock(const Duration(minutes: 59, seconds: 59, milliseconds: 1)), '1:00:00');
+    expect(countdownClock(const Duration(hours: 10)), '10:00:00');
+  });
+
   test('long dates', () {
     expect(longDate(const CivilDate(2026, 10, 22), Lang.hi), 'गुरुवार, 22 अक्टूबर 2026');
     expect(longDate(const CivilDate(2026, 10, 22), Lang.en), 'Thursday, 22 October 2026');
