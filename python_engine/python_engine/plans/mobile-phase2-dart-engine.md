@@ -64,6 +64,12 @@ Covers new moons, Sankrantis, the Amanta and Purnimanta month with the Adhik fla
 - **Python's new-year searches use one clock offset for the whole window**: the offset of the day being computed, not each searched day's. Dart takes `utcOffset` as an argument, so callers pass `standardOffset(date, tz)` of the day being computed.
 - `nextAngleBoundary` (tithi and nakshatra ends) moved to `astro/boundary.dart` so new moons and Sankrantis share it. `siderealSunLongitude` moved to `astro/sidereal.dart`.
 
+### Added for the app (2026-10-27)
+
+Two small pieces the first app screens need ahead of M4:
+- **`nakshatraPadaAt`** (`panchang/elements.dart`), read at sunrise like the nakshatra (Python `get_nakshatra_pada`). The fixtures carry no pada, so it is checked by invariants (1–4, each nakshatra runs pada 1→4) on top of the exact nakshatra parity it shares a longitude with.
+- **`pachchakkhanTimes`** (`panchang/pachchakkhan.dart`), Dart only, with no Python reference: the five completion times, the evening time (sunset), the Ayambil/Upvas parana and `nextAt(now)`. The rules are in `mobile-ui-design.md` §3 · Pachchakkhan. The check that Porsi…Avaddh coincide with choghadiya day-slot boundaries 2, 3, 4 and 6 waits for M4's choghadiya.
+
 ## Goal
 
 `mobile/packages/panchang_engine` is a pure-Dart package with no Flutter dependency. It reproduces every field of the Phase 1 day rows for any location, within the §3 tolerances, verified against `test/fixtures/core/`. Festivals (L4) are Phase 5 and out of scope here.

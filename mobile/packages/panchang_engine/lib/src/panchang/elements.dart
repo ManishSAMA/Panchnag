@@ -25,6 +25,9 @@ int tithiAt(double jdUt) => _elongation(jdUt) ~/ _tithiWidth + 1;
 
 int nakshatraAt(double jdUt) => _siderealMoon(jdUt) ~/ _nakshatraWidth + 1;
 
+/// The quarter (1-4) of the nakshatra holding at [jdUt] (Python `get_nakshatra_pada`).
+int nakshatraPadaAt(double jdUt) => _siderealMoon(jdUt) ~/ (_nakshatraWidth / 4) % 4 + 1;
+
 /// Moon − Sun elongation, degrees in [0, 360).
 double elongation(double jdUt) => _elongation(jdUt);
 

@@ -45,6 +45,24 @@ void main() {
       expect(nakshatraAt(end - second), index);
       expect(nakshatraAt(end + second), index % 27 + 1);
     });
+
+    test('pada is always 1-4', () {
+      for (var i = 0; i < 60; i++) {
+        expect(nakshatraPadaAt(start + i * 0.37), inInclusiveRange(1, 4));
+      }
+    });
+
+    test('a nakshatra starts in pada 1, ends in pada 4, and passes through each pada in turn', () {
+      final begin = nakshatraEnd(start), end = nakshatraEnd(begin + second);
+      final padas = [for (var jd = begin + second; jd < end; jd += 0.01) nakshatraPadaAt(jd)];
+
+      expect(padas.first, 1);
+      expect(nakshatraPadaAt(end - second), 4);
+      expect(padas.toSet().toList(), [1, 2, 3, 4]);
+      for (var i = 1; i < padas.length; i++) {
+        expect(padas[i] - padas[i - 1], anyOf(0, 1));
+      }
+    });
   });
 
   group('tithis of a day', () {
