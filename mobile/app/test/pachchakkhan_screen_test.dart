@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:panchang_engine/panchang_engine.dart';
 import 'package:jainpanchang/engine/day_reading.dart';
-import 'package:panchang_engine/src/time/civil_day.dart';
 
 import 'support/harness.dart';
 
@@ -28,7 +28,7 @@ Finder inHero(Finder finder) => find.descendant(of: hero, matching: finder);
 String navkarsi23Oct() {
   final at = readDay(
     const DayRequest(date: CivilDate(2026, 10, 23), lat: 28.6139, lon: 77.2090, timezone: 'Asia/Kolkata'),
-  ).pachchakkhan.first.at.add(istOffset);
+  ).pachchakkhan.completions.first.at.add(istOffset);
   expect(at.second + at.millisecond, isNot(0), reason: 'rounding up must change the minute');
   final up = at.add(const Duration(minutes: 1));
   return '${up.hour}:${up.minute.toString().padLeft(2, '0')}';

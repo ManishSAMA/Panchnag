@@ -1,7 +1,7 @@
+import 'package:panchang_engine/panchang_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:panchang_engine/src/time/civil_day.dart';
 
 import '../../engine/day_reading.dart';
 import '../../format/panchang_text.dart';
@@ -87,7 +87,7 @@ class _LocationButton extends StatelessWidget {
 class _DayView extends ConsumerWidget {
   const _DayView({required this.reading, required this.timezone});
 
-  final DayReading reading;
+  final PanchangDay reading;
   final String timezone;
 
   @override
@@ -96,14 +96,14 @@ class _DayView extends ConsumerWidget {
     final lang = langOf(context);
     final now = currentTime(ref);
     final isToday = reading.date == todayIn(timezone, now);
-    final phase = isToday ? reading.pachchakkhanPhase(now) : null;
+    final phase = isToday ? reading.pachchakkhan.phaseAt(now) : null;
     final next = switch (phase) {
       NextCompletion(:final kind) => kind,
       _ => null,
     };
     DateTime wall(DateTime utc) => cityWall(utc, timezone);
     String completionTime(DateTime utc) => clockTime(roundUpToMinute(wall(utc)), lang).time;
-    final eveningTime = clockTime(roundDownToMinute(wall(reading.pachchakkhanEvening)), lang).time;
+    final eveningTime = clockTime(roundDownToMinute(wall(reading.pachchakkhan.evening)), lang).time;
     final band = switch (phase) {
       NextCompletion(:final kind, :final at) => (
         name: pachchakkhanName(kind, lang),
@@ -145,7 +145,7 @@ class _DayView extends ConsumerWidget {
         _nakshatraRow(l10n, lang, wall),
         SectionHeading(title: l10n.pachchakkhan, linkLabel: l10n.seeAll, onLink: () => context.go('/pachchakkhan')),
         const ListTop(),
-        for (final p in reading.pachchakkhan)
+        for (final p in reading.pachchakkhan.completions)
           pachchakkhanRow(
             l10n: l10n,
             name: pachchakkhanName(p.kind, lang),
@@ -185,16 +185,16 @@ class _DayView extends ConsumerWidget {
   }
 
   Widget _nakshatraRow(AppLocalizations l10n, Lang lang, DateTime Function(DateTime) wall) {
-    final local = wall(reading.nakshatraEnds);
+    final local = wall(reading.nakshatra.endsAt);
     final (:period, :time) = clockTime(local, lang);
     final day = CivilDate(local.year, local.month, local.day);
     final when = day == reading.date ? period : '${shortDate(day, lang)}, $period';
     return TimeRow(
       name: l10n.nakshatra,
       subtitle: l10n.nakshatraDetail(
-        nakshatraName(reading.nakshatra, lang),
-        reading.nakshatraPada,
-        nakshatraName(reading.nakshatra % 27 + 1, lang),
+        nakshatraName(reading.nakshatra.index, lang),
+        reading.nakshatra.pada,
+        nakshatraName(reading.nakshatra.index % 27 + 1, lang),
       ),
       time: l10n.until(lang == Lang.hi ? time : '$time $when'),
       prefix: lang == Lang.hi ? when : null,
@@ -202,7 +202,7 @@ class _DayView extends ConsumerWidget {
   }
 
   List<Widget> _notes(AppLocalizations l10n, Lang lang, DateTime Function(DateTime) wall) {
-    final tithi = tithiName(reading.jainTithi, lang);
+    final tithi = tithiName(reading.jainTithi.index, lang);
     String at(DateTime utc) => instantPhrase(wall(utc), day: reading.date, lang: lang);
     final previousDate = DateTime.utc(reading.date.year, reading.date.month, reading.date.day - 1);
     return [
@@ -225,7 +225,7 @@ class _DayView extends ConsumerWidget {
         Note(
           icon: NoteIcon.info,
           title: l10n.kshayaTitle,
-          body: switch (spanPhrases(wall(kshaya.starts), wall(kshaya.ends), day: reading.date, lang: lang)) {
+          body: switch (spanPhrases(wall(kshaya.startsAt), wall(kshaya.endsAt), day: reading.date, lang: lang)) {
             (final start, final end) => l10n.kshayaBody(
               tithiName(kshaya.lost, lang),
               start,
@@ -235,14 +235,14 @@ class _DayView extends ConsumerWidget {
             ),
           },
         ),
-      if (reading.boundary case final boundary?)
+      if (tithiBoundary(reading.jainTithi) case final boundary?)
         Note(
           icon: NoteIcon.alert,
           title: l10n.boundaryTitle,
           body: (boundary.isStart ? l10n.boundaryStartsBody : l10n.boundaryEndsBody)(
             tithi,
             at(boundary.at),
-            clockPhrase(wall(reading.reference), lang),
+            clockPhrase(wall(reading.jainTithi.reference), lang),
             (boundary.gap.inSeconds / 60).round(),
           ),
         ),
@@ -253,7 +253,7 @@ class _DayView extends ConsumerWidget {
 class _Hero extends StatelessWidget {
   const _Hero({required this.reading, required this.wall});
 
-  final DayReading reading;
+  final PanchangDay reading;
   final DateTime Function(DateTime) wall;
 
   @override
@@ -262,7 +262,7 @@ class _Hero extends StatelessWidget {
     final lang = langOf(context);
     final n = Theme.of(context).extension<Navpad>()!;
     final text = Theme.of(context).textTheme;
-    final ends = instantPhrase(wall(reading.jainTithiEnds), day: reading.date, lang: lang);
+    final ends = instantPhrase(wall(reading.jainTithi.endsAt), day: reading.date, lang: lang);
     return Semantics(
       container: true,
       child: Padding(
@@ -271,7 +271,7 @@ class _Hero extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              tithiName(reading.jainTithi, lang),
+              tithiName(reading.jainTithi.index, lang),
               key: const Key('today-hero-tithi'),
               style: NavpadType.displayHero.copyWith(color: n.ink),
             ),
@@ -284,7 +284,7 @@ class _Hero extends StatelessWidget {
                     text: monthName(reading.month, lang),
                     style: TextStyle(color: n.ink, fontWeight: FontWeight.w600),
                   ),
-                  TextSpan(text: ' · ${l10n.heroUntil(ends, tithiName(reading.jainTithi % 30 + 1, lang))}\n'),
+                  TextSpan(text: ' · ${l10n.heroUntil(ends, tithiName(reading.jainTithi.index % 30 + 1, lang))}\n'),
                   TextSpan(
                     text: samvatLine(viraNirvana: reading.viraNirvanaSamvat, vikram: reading.vikramSamvat, lang: lang),
                   ),

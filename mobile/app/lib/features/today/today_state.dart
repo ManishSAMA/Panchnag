@@ -1,9 +1,8 @@
-import 'dart:isolate';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:panchang_engine/src/time/civil_day.dart';
+import 'package:panchang_engine/panchang_engine.dart';
 
 import '../../engine/day_reading.dart';
+import '../../engine/engine_worker.dart';
 import '../../location/city_time.dart';
 import '../../location/location_store.dart';
 
@@ -20,15 +19,22 @@ final nowProvider = StreamProvider<DateTime>((ref) async* {
   yield* Stream.periodic(const Duration(seconds: 1), (_) => clock());
 });
 
-typedef DayReader = Future<DayReading> Function(DayRequest request);
+typedef DayReader = Future<PanchangDay> Function(DayRequest request);
 
-/// Engine work runs in a background isolate so the UI never stalls on it.
+/// The engine's background isolate, started on the first read and kept for the app's life.
+final engineWorkerProvider = FutureProvider<EngineWorker>((ref) async {
+  final worker = await EngineWorker.spawn();
+  ref.onDispose(worker.close);
+  return worker;
+});
+
+/// Engine work runs in the background isolate so the UI never stalls on it.
 final dayReaderProvider = Provider<DayReader>(
   (ref) =>
-      (request) => Isolate.run(() => readDay(request)),
+      (request) async => (await ref.read(engineWorkerProvider.future)).read(request),
 );
 
-final dayReadingProvider = FutureProvider.autoDispose.family<DayReading, DayRequest>(
+final dayReadingProvider = FutureProvider.autoDispose.family<PanchangDay, DayRequest>(
   (ref, request) => ref.watch(dayReaderProvider)(request),
 );
 

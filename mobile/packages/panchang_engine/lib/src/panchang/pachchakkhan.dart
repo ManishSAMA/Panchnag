@@ -31,14 +31,6 @@ final class PachchakkhanTimes {
 
   /// Ayambil and Upvas are completed at the next day's Navkarsi.
   final double parana;
-
-  /// The first pachchakkhan still ahead of [now], or null once Avaddh has passed.
-  TimedPachchakkhan? nextAt(double now) {
-    for (final completion in completions) {
-      if (completion.at > now) return completion.kind;
-    }
-    return null;
-  }
 }
 
 PachchakkhanTimes pachchakkhanTimes({required double sunrise, required double sunset, required double nextSunrise}) {

@@ -24,6 +24,9 @@ final class CivilDate implements Comparable<CivilDate> {
     return CivilDate(following.year, following.month, following.day);
   }
 
+  /// The weekday, 0 = Sunday (Python `get_vara_from_date`).
+  int get vara => DateTime.utc(year, month, day).weekday % 7;
+
   String get iso =>
       '${year.toString().padLeft(4, '0')}-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
 

@@ -1,4 +1,4 @@
-import 'package:panchang_engine/src/time/civil_day.dart';
+import 'package:panchang_engine/panchang_engine.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 

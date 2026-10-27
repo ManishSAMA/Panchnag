@@ -4,10 +4,8 @@
 /// English names the Python engine (`panchang.py`).
 library;
 
+import 'package:panchang_engine/panchang_engine.dart';
 import 'package:flutter/widgets.dart';
-import 'package:panchang_engine/src/calendar/month.dart';
-import 'package:panchang_engine/src/panchang/pachchakkhan.dart';
-import 'package:panchang_engine/src/time/civil_day.dart';
 
 enum Lang { hi, en }
 

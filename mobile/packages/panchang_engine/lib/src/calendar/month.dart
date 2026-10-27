@@ -43,14 +43,12 @@ const double _minElongationRate = 9.5;
 /// Python steps 30 s past each end before asking for the next tithi.
 const double _nudgeDays = 30 / 86400;
 
-/// First new moon (end of tithi 30) strictly after [jdUt].
+/// First new moon (end of tithi 30) strictly after [jdUt]. The jump at the
+/// fastest elongation rate lands short of it by under 150°, so one solve for
+/// the 360° boundary stays within the half-turn the solver can tell apart.
 double newMoonAfter(double jdUt) {
-  var instant = jdUt + (360 - elongation(jdUt)) / _maxElongationRate;
-  while (true) {
-    final end = tithiEnd(instant);
-    if (tithiAt(instant) == 30) return end;
-    instant = end + _nudgeDays;
-  }
+  final instant = jdUt + (360 - elongation(jdUt)) / _maxElongationRate;
+  return nextAngleBoundary(instant, elongation, 360, minRate: _minElongationRate, maxRate: _maxElongationRate);
 }
 
 /// Last new moon strictly before [jdUt].

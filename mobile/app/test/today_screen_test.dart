@@ -1,22 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jainpanchang/engine/day_reading.dart';
-import 'package:jainpanchang/features/today/today_state.dart';
-import 'package:panchang_engine/src/astro/rise_set.dart';
-import 'package:panchang_engine/src/panchang/elements.dart';
-import 'package:panchang_engine/src/time/civil_day.dart';
+import 'package:panchang_engine/panchang_engine.dart';
 
 import 'support/harness.dart';
 
 String heroTithi(WidgetTester tester) => tester.widget<Text>(find.byKey(const Key('today-hero-tithi'))).data!;
 
-/// The Jain tithi straight from the engine, independent of the screen's own reading.
-int engineJainTithi(CivilDate date) {
-  const delhi = (lat: 28.6139, lon: 77.2090);
-  final rise = sunrise(civilDayAnchor(date, 'Asia/Kolkata'), delhi.lat, delhi.lon, SunriseRule.modern);
-  return tithiAt(rise + jainTithiOffsetDays);
-}
+/// The Jain tithi straight from the engine, read apart from the screen.
+int engineJainTithi(CivilDate date) => const PanchangEngine()
+    .day(
+      location: const Location(lat: 28.6139, lon: 77.2090, timezone: 'Asia/Kolkata'),
+      date: date,
+    )
+    .jainTithi
+    .index;
 
 void main() {
   group('the hero', () {
@@ -199,15 +196,5 @@ void main() {
 
     await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
     await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-  });
-
-  test('the reader runs off the UI isolate by default', () async {
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
-    final reading = await container.read(dayReaderProvider)(
-      const DayRequest(date: CivilDate(2026, 10, 22), lat: 28.6139, lon: 77.2090, timezone: 'Asia/Kolkata'),
-    );
-
-    expect(reading.jainTithi, 11);
   });
 }

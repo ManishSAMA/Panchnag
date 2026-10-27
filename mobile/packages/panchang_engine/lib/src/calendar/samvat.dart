@@ -3,6 +3,8 @@
 /// `_tithi_owns_civil_day`, `get_vikram_samvat`, `get_vira_nirvana_samvat`).
 library;
 
+import 'dart:math' as math;
+
 import '../astro/rise_set.dart';
 import '../astro/sidereal.dart';
 import '../panchang/elements.dart';
@@ -37,22 +39,40 @@ int prevailingTithi(
   required SunriseRule rule,
 }) => tithiAt(_sunriseOf(date, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule) + jainTithiOffsetDays);
 
-/// Whether [target] owns [date], counting a kshaya [target] as merged onto
-/// the preceding tithi's day.
-bool _owns(
-  CivilDate date,
+/// The elongation grows at most 16° in the day between two reference instants
+/// (plus a few minutes of sunrise drift), so a day's tithi index runs at most
+/// this far ahead of the day before.
+const double _maxTithisPerDay = 1.4;
+
+/// The first of [days] days from [from] owned by [target], counting a kshaya
+/// [target] as merged onto the preceding tithi's day, that [accept] takes.
+/// Days whose tithi cannot yet have reached [target]'s predecessor are skipped.
+CivilDate? _firstOwned(
+  CivilDate from,
+  int days,
   int target, {
   required double lat,
   required double lon,
   required Duration utcOffset,
   required SunriseRule rule,
+  bool Function(double reference) accept = _any,
 }) {
-  int on(CivilDate d) => prevailingTithi(d, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule);
-  final today = on(date);
-  if (today == target) return true;
-  if (today != (target - 2) % 30 + 1) return false;
-  return on(date.next()) == target % 30 + 1;
+  final references = <int, double>{};
+  double referenceOf(int i) => references[i] ??=
+      _sunriseOf(_plusDays(from, i), lat: lat, lon: lon, utcOffset: utcOffset, rule: rule) + jainTithiOffsetDays;
+  final predecessor = (target - 2) % 30 + 1;
+
+  for (var i = 0; i < days;) {
+    final today = tithiAt(referenceOf(i));
+    final owns = today == target || (today == predecessor && tithiAt(referenceOf(i + 1)) == target % 30 + 1);
+    if (owns && accept(referenceOf(i))) return _plusDays(from, i);
+    final ahead = (predecessor - today) % 30;
+    i += math.max(1, (ahead - 1) ~/ _maxTithisPerDay);
+  }
+  return null;
 }
+
+bool _any(double reference) => true;
 
 const int _amavasya = 30;
 
@@ -64,13 +84,9 @@ CivilDate chaitraShuklaPratipada(
   required double lon,
   required Duration utcOffset,
   required SunriseRule rule,
-}) {
-  for (var i = 0; i < 52; i++) {
-    final day = _plusDays(CivilDate(year, 3, 1), i);
-    if (_owns(day, _amavasya, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule)) return day.next();
-  }
-  throw StateError('No Phalguna Amavasya between 1 March and 21 April $year.');
-}
+}) =>
+    _firstOwned(CivilDate(year, 3, 1), 52, _amavasya, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule)?.next() ??
+    (throw StateError('No Phalguna Amavasya between 1 March and 21 April $year.'));
 
 /// The Sun is past 179° sidereal only from the Kartika Amavasya on; the Ashwin
 /// one before it peaks near 178°.
@@ -84,18 +100,18 @@ CivilDate diwali(
   required double lon,
   required Duration utcOffset,
   required SunriseRule rule,
-}) {
-  for (var i = 0; i < 46; i++) {
-    final day = _plusDays(CivilDate(year, 10, 10), i);
-    final reference =
-        _sunriseOf(day, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule) + jainTithiOffsetDays;
-    if (_owns(day, _amavasya, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule) &&
-        siderealSunLongitude(reference) >= _kartikaSunLongitude) {
-      return day;
-    }
-  }
-  throw StateError('No Kartika Amavasya between 10 October and 24 November $year.');
-}
+}) =>
+    _firstOwned(
+      CivilDate(year, 10, 10),
+      46,
+      _amavasya,
+      lat: lat,
+      lon: lon,
+      utcOffset: utcOffset,
+      rule: rule,
+      accept: (reference) => siderealSunLongitude(reference) >= _kartikaSunLongitude,
+    ) ??
+    (throw StateError('No Kartika Amavasya between 10 October and 24 November $year.'));
 
 /// Vikram Samvat on [date]: Gregorian year + 57 from Chaitra Shukla Pratipada on.
 int vikramSamvat(CivilDate date, {required CivilDate chaitraShukla1}) =>
@@ -104,3 +120,32 @@ int vikramSamvat(CivilDate date, {required CivilDate chaitraShukla1}) =>
 /// Vira Nirvana Samvat on [date]: Gregorian year + 527 from the day after Diwali.
 int viraNirvanaSamvat(CivilDate date, {required CivilDate diwali}) =>
     date.compareTo(diwali) > 0 ? date.year + 527 : date.year + 526;
+
+/// [chaitraShuklaPratipada] falls from 2 March to 22 April and [diwali] from
+/// 10 October to 24 November, so a day outside those windows needs no search.
+({int vikram, int viraNirvana}) samvatsOn(
+  CivilDate date, {
+  required double lat,
+  required double lon,
+  required Duration utcOffset,
+  required SunriseRule rule,
+}) {
+  final year = date.year;
+  final vikram = switch (date) {
+    _ when date.compareTo(CivilDate(year, 3, 2)) < 0 => year + 56,
+    _ when date.compareTo(CivilDate(year, 4, 22)) >= 0 => year + 57,
+    _ => vikramSamvat(
+      date,
+      chaitraShukla1: chaitraShuklaPratipada(year, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule),
+    ),
+  };
+  final viraNirvana = switch (date) {
+    _ when date.compareTo(CivilDate(year, 10, 10)) <= 0 => year + 526,
+    _ when date.compareTo(CivilDate(year, 11, 24)) > 0 => year + 527,
+    _ => viraNirvanaSamvat(
+      date,
+      diwali: diwali(year, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule),
+    ),
+  };
+  return (vikram: vikram, viraNirvana: viraNirvana);
+}

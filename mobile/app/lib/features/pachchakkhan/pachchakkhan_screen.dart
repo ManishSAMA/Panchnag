@@ -1,6 +1,6 @@
+import 'package:panchang_engine/panchang_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:panchang_engine/src/panchang/pachchakkhan.dart';
 
 import '../../engine/day_reading.dart';
 import '../../format/panchang_text.dart';
@@ -60,7 +60,7 @@ const _fractions = {
 class _PachchakkhanView extends ConsumerWidget {
   const _PachchakkhanView({required this.reading, required this.cityName, required this.timezone});
 
-  final DayReading reading;
+  final PanchangDay reading;
   final String cityName, timezone;
 
   @override
@@ -70,10 +70,10 @@ class _PachchakkhanView extends ConsumerWidget {
     final n = Theme.of(context).extension<Navpad>()!;
     final text = Theme.of(context).textTheme;
     final now = currentTime(ref);
-    final phase = reading.date == todayIn(timezone, now) ? reading.pachchakkhanPhase(now) : null;
+    final phase = reading.date == todayIn(timezone, now) ? reading.pachchakkhan.phaseAt(now) : null;
     DateTime wall(DateTime utc) => cityWall(utc, timezone);
     String completionTime(DateTime utc) => clockTime(roundUpToMinute(wall(utc)), lang).time;
-    final eveningTime = clockTime(roundDownToMinute(wall(reading.pachchakkhanEvening)), lang).time;
+    final eveningTime = clockTime(roundDownToMinute(wall(reading.pachchakkhan.evening)), lang).time;
 
     RowState? stateOf(DateTime at, {required bool isNext}) => switch (phase) {
       null => null,
@@ -129,7 +129,7 @@ class _PachchakkhanView extends ConsumerWidget {
           child: Text(l10n.completionNote, style: text.bodyMedium!.copyWith(color: n.ink2)),
         ),
         const ListTop(),
-        for (final p in reading.pachchakkhan)
+        for (final p in reading.pachchakkhan.completions)
           pachchakkhanRow(
             l10n: l10n,
             name: pachchakkhanName(p.kind, lang),
@@ -146,7 +146,7 @@ class _PachchakkhanView extends ConsumerWidget {
           l10n: l10n,
           name: l10n.eveningNames,
           time: eveningTime,
-          state: stateOf(reading.pachchakkhanEvening, isNext: phase is EveningDeadline),
+          state: stateOf(reading.pachchakkhan.evening, isNext: phase is EveningDeadline),
         ),
         SectionHeading(title: l10n.otherHeading),
         const ListTop(),
@@ -155,7 +155,7 @@ class _PachchakkhanView extends ConsumerWidget {
         TimeRow(
           name: l10n.ayambilUpvas,
           subtitle: l10n.paranaNextNavkarsi,
-          time: instantPhrase(roundUpToMinute(wall(reading.pachchakkhanParana)), day: reading.date, lang: lang),
+          time: instantPhrase(roundUpToMinute(wall(reading.pachchakkhan.parana)), day: reading.date, lang: lang),
         ),
       ],
     );

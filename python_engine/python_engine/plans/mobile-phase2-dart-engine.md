@@ -5,7 +5,7 @@
 - Phase 0 spike: [`mobile/spikes/astro_accuracy/REPORT.md`](../../../mobile/spikes/astro_accuracy/REPORT.md)
 - Phase 1 fixtures: [`mobile-phase1-fixtures.md`](mobile-phase1-fixtures.md)
 
-**Status:** Approved 2026-10-21. M1–M3 complete; M4 next.
+**Status:** Approved 2026-10-21. M1–M4 complete; the phone measurement and the month call remain open (see M4 done).
 
 ## Progress
 
@@ -69,6 +69,47 @@ Covers new moons, Sankrantis, the Amanta and Purnimanta month with the Adhik fla
 Two small pieces the first app screens need ahead of M4:
 - **`nakshatraPadaAt`** (`panchang/elements.dart`), read at sunrise like the nakshatra (Python `get_nakshatra_pada`). The fixtures carry no pada, so it is checked by invariants (1–4, each nakshatra runs pada 1→4) on top of the exact nakshatra parity it shares a longitude with.
 - **`pachchakkhanTimes`** (`panchang/pachchakkhan.dart`), Dart only, with no Python reference: the five completion times, the evening time (sunset), the Ayambil/Upvas parana and `nextAt(now)`. The rules are in `mobile-ui-design.md` §3 · Pachchakkhan. The check that Porsi…Avaddh coincide with choghadiya day-slot boundaries 2, 3, 4 and 6 waits for M4's choghadiya.
+
+### M4 design (decided 2026-10-27)
+
+- **Choghadiya** (`panchang/choghadiya.dart`), a port of `choghadiya_service.py`: day and night each split into 8 equal slots, named from the two 7-name cycles, starting at the weekday's index. `enum Choghadiya` carries its nature (auspicious, neutral, inauspicious). Parity: every core row's 16 names from the row's own sunrise, sunset, next sunrise and vara, so they are exact. Python's meanings and display labels are not ported; text belongs to the app.
+- **Vara** is the weekday of the civil date, 0 = Sunday (Python `get_vara_from_date`). Parity: every core row.
+- **`PanchangEngine.day`**, the one export of `package:panchang_engine/panchang_engine.dart`, returns the **full Jain day**: the API below plus nakshatra pada, the Jain tithi's start, vriddhi, kshaya and the pachchakkhan times with their phase at an instant. Vriddhi, kshaya and pachchakkhan move into the engine from the app's `readDay`; they are calendar rules, not display. The app keeps only display choices, such as the 45-minute boundary note, which it builds from the Jain tithi's start and end.
+  - Instants are UTC `DateTime`s; every value is an immutable plain class, so a day can cross an isolate.
+  - Façade parity: a sample of core days (every location, both rules) checked field by field against the fixtures. The layer parity tests stay the full check.
+- The app imports only the façade, and the `implementation_imports: false` exemption goes.
+- **Performance:** measured in profile mode (AOT) on the emulator: one Today read, and a 31-day month of reads. Optimise only if over budget (Today < 100 ms, month < 1 s). The physical-phone measurement stays open until a phone is connected.
+- The Today navy band and the Choghadiya screen are the next app commit, not M4.
+
+### M4 done (2026-10-27)
+
+**Results:**
+- Choghadiya names and the vara are **exact** on every core row (17 locations × 2 rules).
+- The façade matches the fixtures field by field on a sample: every 223rd day, about 40 a location, which walks every weekday.
+- Porsi, Sadh-Porsi, Purimaddh and Avaddh fall on day choghadiya slots 3, 4, 5 and 7, as the UI design expected.
+- The app imports only `package:panchang_engine/panchang_engine.dart`.
+
+**Performance** (Medium Phone API 37 emulator, AOT; the first measurement was 310 ms a day and 9.2 s a month):
+
+| Measure | Profile | Release | Budget |
+|---|---|---|---|
+| One day, warm | 55 ms (worst 92) | 55 ms (worst 96) | < 100 ms ✓ |
+| One day through the app's engine worker | 76 ms median | 106 ms median | < 100 ms |
+| Worker start + its first read | 1.9 s + 112 ms | 21 ms + 1.38 s | — |
+| 31-day month, as 31 single days | 1.5 s | 1.9 s | < 1 s ✗ |
+
+- **Where a day went:** three searches that ran for every day.
+  - **Diwali (83 ms) and Chaitra Shukla Pratipada (25 ms).** Python searches fixed windows (1 Mar–21 Apr, 10 Oct–24 Nov), so `samvatsOn` searches only for a day inside them. Inside them, `_firstOwned` skips the days whose tithi cannot yet have reached Amavasya: a tithi index advances at most 1.4 a day.
+  - **The Purnimanta month (36 ms).** `newMoonAfter` stepped tithi by tithi; it now jumps at the fastest elongation rate and solves the 360° boundary once.
+  - All three are refactors under exact parity, and the month and samvat parity runs dropped from 31 s and 33 s to 25 s together.
+- **The engine worker** (`app/lib/engine/engine_worker.dart`) is one isolate for the app's life. The `Isolate.run` it replaces paid 100–290 ms a read (1.6 s on the first) to start an isolate and load the time zones.
+  - On the emulator, the first piece of work in any new isolate is slow, whether it is the spawn (profile) or the first read (release). The main isolate does the same cold read in 150 ms.
+  - The worker's reads then run about 1.4–2× slower than the main isolate's, which looks like emulator thread scheduling.
+  - The phone measurement decides whether this is real.
+- **Open:**
+  - The month budget is for the Month tab's own call, decided 2026-10-27: one lunar-month lookup (`lunarMonthsBetween` / `amantaLookup`) and shared sunrises for all 31 days.
+  - Measuring on a physical phone.
+  - The nutation-per-instant cache (M2 follow-up) was not needed for Today.
 
 ## Goal
 

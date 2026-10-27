@@ -16,6 +16,3 @@ linter:
     prefer_final_fields: true
     prefer_const_constructors: true
     avoid_dynamic_calls: true
-    # The app reads engine src/ modules directly until the M4 PanchangEngine
-    # facade exists (plans/mobile-phase2-dart-engine.md); then turn this back on.
-    implementation_imports: false

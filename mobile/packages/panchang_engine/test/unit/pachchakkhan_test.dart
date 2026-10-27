@@ -1,3 +1,4 @@
+import 'package:panchang_engine/src/panchang/choghadiya.dart';
 import 'package:panchang_engine/src/panchang/pachchakkhan.dart';
 import 'package:test/test.dart';
 
@@ -35,6 +36,16 @@ void main() {
     expect(fractionOfDay(at(TimedPachchakkhan.avaddh)), closeTo(3 / 4, 1e-9));
   });
 
+  // mobile-ui-design.md §3 · Pachchakkhan: both divide the same day into fractions.
+  test('Porsi, Sadh-Porsi, Purimaddh and Avaddh start day choghadiya slots 3, 4, 5 and 7', () {
+    final slots = choghadiyaSlots(sunrise: sunrise, sunset: sunset, nextSunrise: nextSunrise, vara: 4);
+
+    expect(at(TimedPachchakkhan.porsi), closeTo(slots[2].start, 1e-9));
+    expect(at(TimedPachchakkhan.sadhPorsi), closeTo(slots[3].start, 1e-9));
+    expect(at(TimedPachchakkhan.purimaddh), closeTo(slots[4].start, 1e-9));
+    expect(at(TimedPachchakkhan.avaddh), closeTo(slots[6].start, 1e-9));
+  });
+
   test('the evening pachchakkhans end at sunset', () {
     expect(times.evening, sunset);
   });
@@ -43,29 +54,5 @@ void main() {
     final tomorrow = pachchakkhanTimes(sunrise: nextSunrise, sunset: sunset + 1, nextSunrise: nextSunrise + 1);
 
     expect(times.parana, tomorrow.completions.first.at);
-  });
-
-  group('next completion', () {
-    test('before sunrise it is Navkarsi', () {
-      expect(times.nextAt(sunrise - 0.1), TimedPachchakkhan.navkarsi);
-    });
-
-    test('from sunrise until Avaddh exactly one is next: the first still ahead', () {
-      for (var now = sunrise; now < at(TimedPachchakkhan.avaddh); now += 7 * minute) {
-        final next = times.nextAt(now)!;
-        final ahead = times.completions.where((c) => c.at > now);
-
-        expect(next, ahead.first.kind);
-      }
-    });
-
-    test('a time is done from its own instant on', () {
-      expect(times.nextAt(at(TimedPachchakkhan.porsi)), TimedPachchakkhan.sadhPorsi);
-    });
-
-    test('after Avaddh there is none', () {
-      expect(times.nextAt(at(TimedPachchakkhan.avaddh)), isNull);
-      expect(times.nextAt(sunset + 0.1), isNull);
-    });
   });
 }

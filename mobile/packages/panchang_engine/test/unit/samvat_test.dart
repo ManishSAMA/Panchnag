@@ -9,8 +9,7 @@ const ist = Duration(hours: 5, minutes: 30);
 CivilDate newYear(int year) =>
     chaitraShuklaPratipada(year, lat: delhi.lat, lon: delhi.lon, utcOffset: ist, rule: SunriseRule.modern);
 
-CivilDate diwaliOf(int year) =>
-    diwali(year, lat: delhi.lat, lon: delhi.lon, utcOffset: ist, rule: SunriseRule.modern);
+CivilDate diwaliOf(int year) => diwali(year, lat: delhi.lat, lon: delhi.lon, utcOffset: ist, rule: SunriseRule.modern);
 
 CivilDate dayBefore(CivilDate date) {
   final previous = DateTime.utc(date.year, date.month, date.day - 1);
@@ -61,5 +60,27 @@ void main() {
       expect(viraNirvanaSamvat(day, diwali: day), 2552);
       expect(viraNirvanaSamvat(day.next(), diwali: day), 2553);
     });
+  });
+
+  // Python searches fixed windows for the two new years (1 Mar-21 Apr, 10 Oct-24 Nov),
+  // so the samvats outside them need no search at all.
+  group('the samvats on any day of a year', () {
+    for (final year in [2024, 2026, 2027, 2033]) {
+      test("$year: equal the samvats from that year's new-year days, on every day", () {
+        final (chaitra, diwaliDay) = (newYear(year), diwaliOf(year));
+        final mismatches = <String>[];
+        for (var d = DateTime.utc(year, 1, 1); d.year == year; d = d.add(const Duration(days: 1))) {
+          final date = CivilDate(d.year, d.month, d.day);
+          final on = samvatsOn(date, lat: delhi.lat, lon: delhi.lon, utcOffset: ist, rule: SunriseRule.modern);
+          final expected = (
+            vikram: vikramSamvat(date, chaitraShukla1: chaitra),
+            viraNirvana: viraNirvanaSamvat(date, diwali: diwaliDay),
+          );
+          if (on != expected) mismatches.add('$date $on, expected $expected');
+        }
+
+        expect(mismatches, isEmpty);
+      });
+    }
   });
 }
