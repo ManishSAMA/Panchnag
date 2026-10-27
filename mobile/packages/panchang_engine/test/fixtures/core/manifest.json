@@ -5,7 +5,7 @@
     "hindi_calendar_pdf.py": "a988e0c4a56ec29f7fc98a7cad802e1ca9c3e912e6b3365c7a6ec2acb1fd716c",
     "jain_observances/__init__.py": "ad2e13b69c4fc1fda46413f740f426fc1793cfc6d6da8d226ba619f1aef48be7",
     "jain_observances/festival_rules.py": "af6ddcb020053da3aaedd6d13d7ac95dc80881a62b76b22a0927f7462d088061",
-    "jain_observances/festival_service.py": "fb92803739a3bd469fac72b22603732f74ef6fc21488281fc6582e4ba9bf4dfc",
+    "jain_observances/festival_service.py": "3fdbe5663014ee8d7d07c55739f97ac8bccaf87ce390988ab75fcde07929cb90",
     "jain_observances/months.py": "e5c751b26f2adb1b59acd2cfaebb2e2e6e30525a09755947b5143a7f6ef2a493",
     "jain_observances/registry.py": "9e306f2bc4bc6a50f6e7cde7caabddfebc2ca7ed2c71cb12bd77885528987876",
     "jain_observances/vrats/__init__.py": "ad2e13b69c4fc1fda46413f740f426fc1793cfc6d6da8d226ba619f1aef48be7",

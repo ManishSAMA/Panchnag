@@ -143,6 +143,14 @@ def _build_snapshots(
     return snapshots
 
 
+# "all" selects the festivals every tradition shares (rules tagged "all"), not the
+# union of every profile.
+FESTIVAL_PROFILES: tuple[str, ...] = (
+    "all",
+    *sorted({profile for festival in FESTIVAL_REGISTRY for profile in festival["profiles"]} - {"all"}),
+)
+
+
 @lru_cache(maxsize=32)
 def generate_jain_festivals(
     year: int,
@@ -158,6 +166,8 @@ def generate_jain_festivals(
     """
     if sunrise_rule not in SUNRISE_RULES:
         raise ValueError(f"sunrise rule must be one of: {', '.join(SUNRISE_RULES)} (got {sunrise_rule!r}).")
+    if profile not in FESTIVAL_PROFILES:
+        raise ValueError(f"profile must be one of: {', '.join(FESTIVAL_PROFILES)} (got {profile!r}).")
     location = resolve_location(lat=lat, lon=lon)
     tz_name = location.timezone
 

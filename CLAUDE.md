@@ -20,7 +20,7 @@ Jain Panchang is a sunrise-based Panchang generator: a Flask web app plus CLI ov
 - **Mobile app (Flutter, in `mobile/`):** a pure-Dart engine tested against this Python engine as the reference.
   - `parity_fixtures.py` with `scripts/export_parity_fixtures.py` (`--set core|full|custom`, `--workers N`) writes gzip JSON fixtures to `mobile/packages/panchang_engine/test/fixtures/`. Only `core/` is committed; it takes about 1 h on 14 workers, and `full` about 4 h. The files are byte-reproducible, so regenerate them after any engine change and commit the diff. `core/manifest.json` records a code fingerprint (AST, docstrings and comments ignored) of every engine module the exporter imports, found by `modulefinder`; `TestCommittedCoreSet` fails, naming the changed files, until you regenerate. Edits to `hindi_calendar_pdf.py` count, because `festival_rules` imports it.
   - `shared/festival_registry.json` is generated from `registry.py` by `scripts/export_festival_registry.py`. A freshness test fails until you regenerate it.
-  - Gotcha: `generate_jain_festivals` silently accepts unknown profiles.
+  - `generate_jain_festivals` raises `ValueError` for a profile outside `FESTIVAL_PROFILES` (`festival_service.py`): every profile the registry names, plus `"all"`. Gotcha: `"all"` selects only the festivals tagged `"all"` (common to every tradition), not the union of every profile.
   - Plans: `plans/mobile-app-flutter.md`, `plans/mobile-phase1-fixtures.md`.
 - **Client release:** `python scripts/build_client_bundle.py` writes the gitignored `client_release/` + zip at the repo root (Windows, `start.bat`, Python 3.11–3.14 with bundled wheels). Launcher files live in `client_files/`; see `docs/setup_and_usage.md` §10c.
 

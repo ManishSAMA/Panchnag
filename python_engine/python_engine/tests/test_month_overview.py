@@ -89,6 +89,20 @@ class TestMonthOverviewSunriseSunset(unittest.TestCase):
             self.assertEqual(day["sunrise_time"], "06:15", f"day {day['date']}")
             self.assertEqual(day["sunset_time"], "18:45", f"day {day['date']}")
 
+    @patch("app.generate_location_panchang", return_value=DUMMY_RESULT)
+    @patch("app.resolve_location")
+    def test_an_unknown_profile_is_a_client_error_naming_the_choices(self, mock_resolve, mock_panchang):
+        loc = MagicMock()
+        loc.lat, loc.lon, loc.name, loc.timezone = 23.0225, 72.5714, "Ahmedabad", "Asia/Kolkata"
+        mock_resolve.return_value = loc
+
+        response = self.client.get(
+            "/month-overview?year=2025&month=6&lat=23.0225&lon=72.5714&profile=shwetambar_tapagacha"
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("shwetambar_murtipujak_tapagachchha", response.get_json()["error"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -26,6 +26,33 @@ parva_tithi_contract = unittest.skipUnless(
 )
 
 
+class FestivalProfileValidationTest(unittest.TestCase):
+    """A misspelt profile used to match no rule and quietly return a short festival list."""
+
+    def test_an_unknown_profile_is_rejected_with_the_valid_choices(self):
+        from jain_observances.festival_service import FESTIVAL_PROFILES, generate_jain_festivals
+
+        with self.assertRaises(ValueError) as raised:
+            generate_jain_festivals(2026, 28.6139, 77.2090, profile="shwetambar_tapagacha")
+
+        for profile in FESTIVAL_PROFILES:
+            self.assertIn(profile, str(raised.exception))
+
+    def test_accepts_every_profile_the_registry_names_and_the_common_set(self):
+        from jain_observances.festival_rules import FESTIVAL_REGISTRY
+        from jain_observances.festival_service import FESTIVAL_PROFILES
+
+        named = {profile for festival in FESTIVAL_REGISTRY for profile in festival["profiles"]}
+
+        self.assertEqual(set(FESTIVAL_PROFILES), named | {"all"})
+
+    def test_every_profile_a_request_may_carry_is_one_the_engine_accepts(self):
+        from jain_observances.festival_service import FESTIVAL_PROFILES
+        from request_parsing import VALID_PROFILES
+
+        self.assertLessEqual(set(VALID_PROFILES), set(FESTIVAL_PROFILES))
+
+
 class JainFestivalsRegistryTest(unittest.TestCase):
     def test_registry_integrity(self):
         """Test that the festival rules module loads and has valid festival schemas."""
@@ -621,7 +648,7 @@ class ChaitraShuklaEkamKalyanaksTest(unittest.TestCase):
     def _festivals(self, year):
         from jain_observances.festival_service import generate_jain_festivals
         return generate_jain_festivals(
-            year=year, lat=27.5650, lon=77.6593, ayanamsa="Lahiri", profile="vrindavan"
+            year=year, lat=27.5650, lon=77.6593, ayanamsa="Lahiri", profile="all"
         )["festivals"]
 
     def _only(self, festivals, fid):
@@ -2687,7 +2714,7 @@ class NaminathOmniscienceKalyanakTest(unittest.TestCase):
     def _omniscience(self, year):
         from jain_observances.festival_service import generate_jain_festivals
         festivals = generate_jain_festivals(
-            year=year, lat=27.5650, lon=77.6593, ayanamsa="Lahiri", profile="vrindavan"
+            year=year, lat=27.5650, lon=77.6593, ayanamsa="Lahiri", profile="all"
         )["festivals"]
         return [f for f in festivals if f["name"].endswith("Shri Naminath Ji - Omniscience Kalyanak")]
 
