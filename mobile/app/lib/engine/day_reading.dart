@@ -147,14 +147,6 @@ final class DayReading {
   /// The next day's Navkarsi: when an Ayambil or Upvas may be completed.
   final DateTime pachchakkhanParana;
 
-  /// The first pachchakkhan still ahead of [now], or null once Avaddh has passed.
-  TimedPachchakkhan? nextPachchakkhan(DateTime now) {
-    for (final p in pachchakkhan) {
-      if (p.at.isAfter(now)) return p.kind;
-    }
-    return null;
-  }
-
   PachchakkhanPhase pachchakkhanPhase(DateTime now) {
     for (final p in pachchakkhan) {
       if (p.at.isAfter(now)) return NextCompletion(p.kind, p.at);

@@ -61,8 +61,6 @@ void main() {
         expect(jd(p.at), closeTo(times.completions[i].at, 1e-8));
       }
       expect(day.pachchakkhanEvening, day.sunset);
-      expect(day.nextPachchakkhan(day.sunrise), TimedPachchakkhan.navkarsi);
-      expect(day.nextPachchakkhan(day.sunset), isNull);
     });
   });
 

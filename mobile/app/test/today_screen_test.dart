@@ -105,11 +105,22 @@ void main() {
       expect(find.bySemanticsLabel(RegExp(r'^चौविहार 5:44, बाकी$')), findsOneWidget);
     });
 
-    testWidgets('after Avaddh there is no band and nothing is next', (tester) async {
+    testWidgets('after Avaddh the band counts down to sunset for Chauvihar, which is next', (tester) async {
       await openApp(tester, now: ist(2026, 10, 22, 16, 30));
+
+      expect(find.text('अगला: चौविहार'), findsOneWidget);
+      expect(find.text('सूर्यास्त से पहले'), findsOneWidget);
+      expect(find.text('5:44 · 1 घं 15 मि में'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp(r'^चौविहार 5:44, अगला$')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp(r'^अवड्ढ .*, हो गया$')), findsOneWidget);
+    });
+
+    testWidgets('after sunset there is no band and nothing is next', (tester) async {
+      await openApp(tester, now: ist(2026, 10, 22, 18, 30));
 
       expect(find.textContaining('अगला:'), findsNothing);
       expect(find.bySemanticsLabel(RegExp(r', अगला')), findsNothing);
+      expect(find.bySemanticsLabel(RegExp(r'^चौविहार 5:44, हो गया$')), findsOneWidget);
     });
 
     testWidgets('another day has no yellow and no done or next rows', (tester) async {

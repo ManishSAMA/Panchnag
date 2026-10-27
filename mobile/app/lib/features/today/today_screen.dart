@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:panchang_engine/src/panchang/pachchakkhan.dart';
 import 'package:panchang_engine/src/time/civil_day.dart';
 
 import '../../engine/day_reading.dart';
@@ -97,9 +96,24 @@ class _DayView extends ConsumerWidget {
     final lang = langOf(context);
     final now = currentTime(ref);
     final isToday = reading.date == todayIn(timezone, now);
-    final next = isToday ? reading.nextPachchakkhan(now) : null;
+    final phase = isToday ? reading.pachchakkhanPhase(now) : null;
+    final next = switch (phase) {
+      NextCompletion(:final kind) => kind,
+      _ => null,
+    };
     DateTime wall(DateTime utc) => cityWall(utc, timezone);
     String completionTime(DateTime utc) => clockTime(roundUpToMinute(wall(utc)), lang).time;
+    final eveningTime = clockTime(roundDownToMinute(wall(reading.pachchakkhanEvening)), lang).time;
+    final band = switch (phase) {
+      NextCompletion(:final kind, :final at) => (
+        name: pachchakkhanName(kind, lang),
+        subtitle: l10n.bandNextSubtitle,
+        time: completionTime(at),
+        at: at,
+      ),
+      EveningDeadline(:final at) => (name: l10n.chauvihar, subtitle: l10n.eveningHeading, time: eveningTime, at: at),
+      AllDone() || null => null,
+    };
     final notes = _notes(l10n, lang, wall);
 
     return Column(
@@ -113,17 +127,14 @@ class _DayView extends ConsumerWidget {
               children: [for (final note in notes) Padding(padding: const EdgeInsets.only(bottom: 8), child: note)],
             ),
           ),
-        if (next != null)
+        if (band != null)
           Padding(
             padding: EdgeInsets.only(top: notes.isEmpty ? 0 : 10),
             child: Band(
               colour: BandColour.yellow,
-              title: l10n.bandNextTitle(pachchakkhanName(next, lang)),
-              subtitle: l10n.bandNextSubtitle,
-              value: l10n.timeAndCountdown(
-                completionTime(_at(reading, next)),
-                durationText(_at(reading, next).difference(now), lang),
-              ),
+              title: l10n.bandNextTitle(band.name),
+              subtitle: band.subtitle,
+              value: l10n.timeAndCountdown(band.time, durationText(band.at.difference(now), lang)),
               onTap: () => context.go('/pachchakkhan'),
             ),
           ),
@@ -147,16 +158,18 @@ class _DayView extends ConsumerWidget {
         pachchakkhanRow(
           l10n: l10n,
           name: l10n.chauvihar,
-          time: clockTime(roundDownToMinute(wall(reading.pachchakkhanEvening)), lang).time,
-          state: !isToday ? null : (reading.pachchakkhanEvening.isAfter(now) ? RowState.plain : RowState.done),
+          time: eveningTime,
+          state: switch (phase) {
+            null => null,
+            EveningDeadline() => RowState.next,
+            AllDone() => RowState.done,
+            NextCompletion() => RowState.plain,
+          },
           prefix: l10n.bySunset,
         ),
       ],
     );
   }
-
-  static DateTime _at(DayReading reading, TimedPachchakkhan kind) =>
-      reading.pachchakkhan.firstWhere((p) => p.kind == kind).at;
 
   Widget _clockRow(String name, DateTime utc, DateTime Function(DateTime) wall, Lang lang) {
     final local = wall(utc);
