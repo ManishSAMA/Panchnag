@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,19 +13,20 @@ import 'theme/theme.dart';
 /// (mobile-ui-design.md §1).
 Locale appLocaleFor(List<Locale>? phoneLocales) =>
     phoneLocales != null && phoneLocales.isNotEmpty && phoneLocales.first.languageCode == 'en'
-        ? const Locale('en')
-        : const Locale('hi');
+    ? const Locale('en')
+    : const Locale('hi');
 
 class JainPanchangApp extends StatelessWidget {
-  const JainPanchangApp({super.key, required this.preferences});
+  const JainPanchangApp({super.key, required this.preferences, this.overrides = const []});
 
   final SharedPreferences preferences;
 
+  /// For tests: a fixed clock, or the engine run on the test's own isolate.
+  final List<Override> overrides;
+
   @override
-  Widget build(BuildContext context) => ProviderScope(
-    overrides: [preferencesProvider.overrideWithValue(preferences)],
-    child: const _App(),
-  );
+  Widget build(BuildContext context) =>
+      ProviderScope(overrides: [preferencesProvider.overrideWithValue(preferences), ...overrides], child: const _App());
 }
 
 class _App extends ConsumerStatefulWidget {

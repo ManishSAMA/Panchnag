@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jainpanchang/app.dart';
+import 'package:jainpanchang/engine/day_reading.dart';
+import 'package:jainpanchang/features/today/today_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<SharedPreferences> preferences([Map<String, Object> saved = const {}]) async {
@@ -11,7 +13,17 @@ Future<SharedPreferences> preferences([Map<String, Object> saved = const {}]) as
 Future<void> launch(WidgetTester tester, SharedPreferences prefs, {Locale phone = const Locale('hi', 'IN')}) async {
   tester.platformDispatcher.localesTestValue = [phone];
   addTearDown(tester.platformDispatcher.clearLocalesTestValue);
-  await tester.pumpWidget(JainPanchangApp(preferences: prefs));
+  final now = DateTime.utc(2026, 10, 22, 5, 22);
+  await tester.pumpWidget(
+    JainPanchangApp(
+      preferences: prefs,
+      overrides: [
+        clockProvider.overrideWithValue(() => now),
+        nowProvider.overrideWith((ref) => Stream.value(now)),
+        dayReaderProvider.overrideWithValue((request) async => readDay(request)),
+      ],
+    ),
+  );
   await tester.pumpAndSettle();
 }
 
@@ -23,10 +35,7 @@ void main() {
       expect(find.text('अपना शहर चुनें'), findsOneWidget);
       expect(find.byType(ChoiceChip), findsNWidgets(11));
       expect(find.byType(NavigationBar), findsNothing);
-      expect(
-        tester.widgetList<ChoiceChip>(find.byType(ChoiceChip)).where((chip) => chip.selected),
-        isEmpty,
-      );
+      expect(tester.widgetList<ChoiceChip>(find.byType(ChoiceChip)).where((chip) => chip.selected), isEmpty);
     });
 
     testWidgets('choosing a city opens Today there and remembers it', (tester) async {
@@ -37,7 +46,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(NavigationBar), findsOneWidget);
-      expect(find.widgetWithText(ActionChip, 'दिल्ली'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'दिल्ली'), findsOneWidget);
       expect(prefs.getString('location.city'), 'delhi');
     });
   });
@@ -45,7 +54,7 @@ void main() {
   testWidgets('a saved city opens straight on Today', (tester) async {
     await launch(tester, await preferences({'location.city': 'palitana'}));
 
-    expect(find.widgetWithText(ActionChip, 'पालीताणा'), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'पालीताणा'), findsOneWidget);
     expect(find.text('अपना शहर चुनें'), findsNothing);
   });
 
@@ -59,17 +68,14 @@ void main() {
     final prefs = await preferences({'location.city': 'delhi'});
     await launch(tester, prefs);
 
-    await tester.tap(find.widgetWithText(ActionChip, 'दिल्ली'));
+    await tester.tap(find.widgetWithText(TextButton, 'दिल्ली'));
     await tester.pumpAndSettle();
-    expect(
-      tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'दिल्ली')).selected,
-      isTrue,
-    );
+    expect(tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'दिल्ली')).selected, isTrue);
 
     await tester.tap(find.text('मुंबई'));
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(ActionChip, 'मुंबई'), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'मुंबई'), findsOneWidget);
     expect(prefs.getString('location.city'), 'mumbai');
   });
 

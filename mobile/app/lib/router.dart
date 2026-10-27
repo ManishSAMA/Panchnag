@@ -15,7 +15,9 @@ GoRouter buildRouter({required bool hasLocation}) => GoRouter(
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => _TabShell(shell: shell),
       branches: [
-        StatefulShellBranch(routes: [GoRoute(path: '/today', builder: (context, state) => const TodayScreen())]),
+        StatefulShellBranch(
+          routes: [GoRoute(path: '/today', builder: (context, state) => const TodayScreen())],
+        ),
         StatefulShellBranch(
           routes: [GoRoute(path: '/pachchakkhan', builder: (context, state) => const PachchakkhanScreen())],
         ),
@@ -35,7 +37,9 @@ class _TabShell extends StatelessWidget {
     return Scaffold(
       body: shell,
       bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(border: Border(top: BorderSide(color: Theme.of(context).dividerTheme.color!))),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: Theme.of(context).dividerTheme.color!)),
+        ),
         child: NavigationBar(
           selectedIndex: shell.currentIndex,
           onDestinationSelected: (index) => shell.goBranch(index, initialLocation: index == shell.currentIndex),

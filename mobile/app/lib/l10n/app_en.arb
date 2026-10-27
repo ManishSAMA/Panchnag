@@ -3,7 +3,44 @@
   "appTitle": "Jain Panchang",
   "chooseCityTitle": "Choose your city",
   "chooseCityOffline": "Sunrise and tithi are calculated for this city. Everything is calculated on your phone, offline.",
-  "changeCity": "Change city",
+  "changeCity": "Change location: {city}",
   "tabToday": "Today",
-  "tabPachchakkhan": "Pachchakkhan"
+  "tabPachchakkhan": "Pachchakkhan",
+
+  "today": "Today",
+  "previousDay": "Previous day",
+  "nextDay": "Next day",
+  "heroUntil": "until {time}, then {next}",
+
+  "bandNextTitle": "Next: {name}",
+  "bandNextSubtitle": "Pachchakkhan",
+  "timeAndCountdown": "{time} · in {duration}",
+  "countdownPrefix": "in {duration} ·",
+
+  "timesToday": "Today's times",
+  "timesOfDay": "Times for this day",
+  "sunrise": "Sunrise",
+  "sunset": "Sunset",
+  "nakshatra": "Nakshatra",
+  "nakshatraDetail": "{name} (pada {pada}), then {next}",
+  "until": "until {time}",
+
+  "pachchakkhan": "Pachchakkhan",
+  "seeAll": "See all",
+  "chauvihar": "Chauvihar",
+  "bySunset": "by sunset ·",
+  "stateDone": "done",
+  "stateNext": "next",
+  "stateLeft": "remaining",
+  "rowSemantics": "{name} {time}, {state}",
+
+  "vriddhiFirstTitle": "Vriddhi tithi · first day",
+  "vriddhiFirstBody": "{tithi} continues on {date}. Kalyanaks are observed on the first day, this one; vrats are kept on the second day ({date}).",
+  "vriddhiSecondTitle": "Vriddhi tithi · second day",
+  "vriddhiSecondBody": "{tithi} also fell on {date}. Vrats are kept on the second day, this one; kalyanaks are observed on the first day ({date}).",
+  "kshayaTitle": "Kshaya tithi",
+  "kshayaBody": "{lost} holds at no Jain day's reference time ({start} to {end}), so {today} follows {previous} directly.",
+  "boundaryTitle": "The tithi changes close to the reference time",
+  "boundaryEndsBody": "{tithi} ends at {time}, only {minutes} min after the Jain reference time (sunrise + 2 h 24 min = {reference}). A printed panchang may show another tithi for this day.",
+  "boundaryStartsBody": "{tithi} begins at {time}, only {minutes} min before the Jain reference time (sunrise + 2 h 24 min = {reference}). A printed panchang may show another tithi for this day."
 }

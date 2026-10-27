@@ -102,8 +102,13 @@ abstract final class NavpadType {
   static const displayHero = TextStyle(fontFamily: _tiro, fontSize: 44, fontWeight: FontWeight.w400, height: 1.12);
   static const displayBrand = TextStyle(fontFamily: _tiro, fontSize: 40, fontWeight: FontWeight.w400, height: 1.15);
   static const displayBand = TextStyle(fontFamily: _tiro, fontSize: 36, fontWeight: FontWeight.w400, height: 1.1);
-  static const countdown =
-      TextStyle(fontFamily: _mukta, fontSize: 30, fontWeight: FontWeight.w700, height: 1.1, fontFeatures: _tabular);
+  static const countdown = TextStyle(
+    fontFamily: _mukta,
+    fontSize: 30,
+    fontWeight: FontWeight.w700,
+    height: 1.1,
+    fontFeatures: _tabular,
+  );
   static const titleBand = TextStyle(fontFamily: _mukta, fontSize: 18, fontWeight: FontWeight.w700, height: 1.3);
   static const labelAction = TextStyle(fontFamily: _mukta, fontSize: 16, fontWeight: FontWeight.w600, height: 1.3);
 }

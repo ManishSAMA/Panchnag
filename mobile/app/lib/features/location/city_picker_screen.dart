@@ -31,7 +31,10 @@ class CityPickerScreen extends ConsumerWidget {
           children: [
             Text(l10n.chooseCityTitle, style: text.headlineSmall),
             const SizedBox(height: 8),
-            Text(l10n.chooseCityOffline, style: text.bodyMedium!.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            Text(
+              l10n.chooseCityOffline,
+              style: text.bodyMedium!.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
             const SizedBox(height: 24),
             Wrap(
               spacing: 8,
