@@ -4,6 +4,7 @@
 library;
 
 import '../astro/angles.dart';
+import '../astro/boundary.dart';
 import '../astro/moon.dart';
 import '../astro/sidereal.dart';
 import '../astro/sun.dart';
@@ -24,53 +25,16 @@ int tithiAt(double jdUt) => _elongation(jdUt) ~/ _tithiWidth + 1;
 
 int nakshatraAt(double jdUt) => _siderealMoon(jdUt) ~/ _nakshatraWidth + 1;
 
+/// Moon − Sun elongation, degrees in [0, 360).
+double elongation(double jdUt) => _elongation(jdUt);
+
 /// When the tithi holding at [jdUt] ends. Elongation grows 10-15° a day.
 double tithiEnd(double jdUt) =>
-    _nextBoundary(jdUt, _elongation, _tithiWidth, minRate: 9.5, maxRate: 16);
+    nextAngleBoundary(jdUt, _elongation, _tithiWidth, minRate: 9.5, maxRate: 16);
 
 /// When the nakshatra holding at [jdUt] ends. The Moon moves 11.7-15.4° a day.
 double nakshatraEnd(double jdUt) =>
-    _nextBoundary(jdUt, _siderealMoon, _nakshatraWidth, minRate: 11, maxRate: 16);
-
-const double _toleranceDays = 1e-7; // about 0.01 s
-
-/// First instant after [start] at which the steadily increasing [angle]
-/// reaches the next multiple of [width] degrees.
-double _nextBoundary(
-  double start,
-  double Function(double) angle,
-  double width, {
-  required double minRate,
-  required double maxRate,
-}) {
-  final initial = angle(start);
-  final remaining = width - initial % width;
-  final boundary = initial + remaining;
-  double beyond(double jd) => (angle(jd) - boundary + 540) % 360 - 180;
-
-  var (lo, hi) = (start + remaining / maxRate, start + remaining / minRate);
-  var (fLo, fHi) = (beyond(lo), beyond(hi));
-  if (fLo >= 0) (lo, fLo) = (start, -remaining);
-  if (fHi <= 0) throw StateError('No boundary within ${hi - start} days of JD $start.');
-
-  var side = 0;
-  while (hi - lo > _toleranceDays) {
-    final mid = (lo * fHi - hi * fLo) / (fHi - fLo);
-    final fMid = beyond(mid);
-    if (fMid > 0) {
-      (hi, fHi) = (mid, fMid);
-      if (side == -1) fLo /= 2;
-      side = -1;
-    } else if (fMid < 0) {
-      (lo, fLo) = (mid, fMid);
-      if (side == 1) fHi /= 2;
-      side = 1;
-    } else {
-      return mid;
-    }
-  }
-  return (lo + hi) / 2;
-}
+    nextAngleBoundary(jdUt, _siderealMoon, _nakshatraWidth, minRate: 11, maxRate: 16);
 
 /// A tithi in a day's list; [endsAt] is null when it lasts past the next sunrise.
 final class DayTithi {

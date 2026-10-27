@@ -5,7 +5,7 @@
 - Phase 0 spike: [`mobile/spikes/astro_accuracy/REPORT.md`](../../../mobile/spikes/astro_accuracy/REPORT.md)
 - Phase 1 fixtures: [`mobile-phase1-fixtures.md`](mobile-phase1-fixtures.md)
 
-**Status:** Approved 2026-10-21. M1 complete; M2 next.
+**Status:** Approved 2026-10-21. M1–M3 complete; M4 next.
 
 ## Progress
 
@@ -51,6 +51,18 @@ Covers the Moon, sidereal longitudes, tithi, Jain tithi and nakshatra.
 **Not yet ported:** vara (a weekday from the civil date). It goes into the M4 façade.
 
 **Follow-up for M4:** the full parity run takes about 3 min under the JIT. The cost is mostly sunrise calls (3 per day), each recomputing nutation several times; cache per instant.
+
+### M3 done (2026-10-27)
+
+Covers new moons, Sankrantis, the Amanta and Purnimanta month with the Adhik flag, Chaitra Shukla Pratipada, Diwali, VS and VNS (`lib/src/calendar/month.dart`, `samvat.dart`).
+
+**Results:** every core day, 17 locations × 2 rules. The Purnimanta and Amanta month (index and Adhik flag) at the Jain reference instant, VS and VNS are all **exact**, with **zero** boundary cases. The month parity takes 31 s, and the samvat parity 33 s.
+
+**Findings:**
+- **Naming a month costs about 40 ms** (two new-moon searches plus Sankrantis). `lunarMonthsBetween` names each month in a range once, and `amantaLookup` answers instants by binary search. The Month screen should use them too. `purnimantaMonth` takes the lookup as an optional `amanta:` argument.
+- **Purnimanta needs no new-moon search.** A Krishna paksha has at most 15 tithis left (under 16.8 days), and the next month lasts at least 29.2 days, so the instant 17 days on is always in the next Amanta month. Python asks for the new moon + 1 day; the month is the same.
+- **Python's new-year searches use one clock offset for the whole window**: the offset of the day being computed, not each searched day's. Dart takes `utcOffset` as an argument, so callers pass `standardOffset(date, tz)` of the day being computed.
+- `nextAngleBoundary` (tithi and nakshatra ends) moved to `astro/boundary.dart` so new moons and Sankrantis share it. `siderealSunLongitude` moved to `astro/sidereal.dart`.
 
 ## Goal
 

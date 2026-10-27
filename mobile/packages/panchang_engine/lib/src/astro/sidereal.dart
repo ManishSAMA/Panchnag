@@ -5,6 +5,7 @@ library;
 import '../time/delta_t.dart';
 import 'angles.dart';
 import 'nutation.dart';
+import 'sun.dart';
 
 /// Lahiri (Indian Calendar Reform Committee): 23°15′00.658″ on the 1956
 /// equinox epoch as Swiss Ephemeris defines SIDM_LAHIRI.
@@ -25,3 +26,6 @@ double lahiriAyanamsa(double jdUt) =>
 /// FLG_SIDEREAL measures from the mean equinox, so nutation is removed too.
 double siderealLongitude(double tropicalApparent, double jdUt) => normalizeDegrees(
     tropicalApparent - nutation(terrestrialTime(jdUt)).longitude - lahiriAyanamsa(jdUt));
+
+/// The Sun's sidereal apparent longitude (Python `get_planetary_longitude(jd, 'Sun')`).
+double siderealSunLongitude(double jdUt) => siderealLongitude(sunApparent(jdUt).longitude, jdUt);
