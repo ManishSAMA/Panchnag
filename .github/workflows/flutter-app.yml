@@ -1,0 +1,43 @@
+name: Flutter app
+
+on:
+  push:
+    paths:
+      - "mobile/app/**"
+      - "mobile/packages/panchang_engine/lib/**"
+      - "mobile/packages/panchang_engine/pubspec.yaml"
+      - "mobile/packages/panchang_engine/test/fixtures/core/manifest.json"
+      - ".github/workflows/flutter-app.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/app/**"
+      - "mobile/packages/panchang_engine/lib/**"
+      - "mobile/packages/panchang_engine/pubspec.yaml"
+      - "mobile/packages/panchang_engine/test/fixtures/core/manifest.json"
+      - ".github/workflows/flutter-app.yml"
+
+jobs:
+  flutter-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile/app
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.6
+          channel: stable
+
+      # Also generates the l10n classes (pubspec `generate: true`).
+      - name: flutter pub get
+        run: flutter pub get
+
+      - name: flutter analyze
+        run: flutter analyze --fatal-infos
+
+      - name: flutter test
+        run: flutter test

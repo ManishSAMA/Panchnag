@@ -1,0 +1,15 @@
+{
+  "@@locale": "hi",
+  "appTitle": "जैन पंचांग",
+  "@appTitle": {"description": "App name, in the launcher and the task switcher."},
+  "chooseCityTitle": "अपना शहर चुनें",
+  "@chooseCityTitle": {"description": "Heading of the city picker (onboarding location step)."},
+  "chooseCityOffline": "सूर्योदय और तिथि इसी शहर के लिए गिने जाते हैं। सारी गणना फ़ोन पर होती है, इंटरनेट के बिना।",
+  "@chooseCityOffline": {"description": "Under the city picker heading: why the city matters, and that everything is calculated offline."},
+  "changeCity": "शहर बदलें",
+  "@changeCity": {"description": "Semantics hint on Today's location chip."},
+  "tabToday": "आज",
+  "@tabToday": {"description": "Navigation bar destination: Today."},
+  "tabPachchakkhan": "पच्चक्खाण",
+  "@tabPachchakkhan": {"description": "Navigation bar destination: Pachchakkhan."}
+}

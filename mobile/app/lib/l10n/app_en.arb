@@ -1,0 +1,9 @@
+{
+  "@@locale": "en",
+  "appTitle": "Jain Panchang",
+  "chooseCityTitle": "Choose your city",
+  "chooseCityOffline": "Sunrise and tithi are calculated for this city. Everything is calculated on your phone, offline.",
+  "changeCity": "Change city",
+  "tabToday": "Today",
+  "tabPachchakkhan": "Pachchakkhan"
+}
