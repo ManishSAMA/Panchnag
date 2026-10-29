@@ -836,20 +836,24 @@ def find_chaitra_shukla_1(
 ) -> date:
     """Return the Gregorian date of Chaitra Shukla Pratipada for the given year.
 
-    In the amanta system, Chaitra Shukla Pratipada is defined as the civil day
-    immediately after the Phalguna Amavasya — regardless of whether the Udaya
-    Tithi at sunrise is 1 (Pratipada can be skipped when the New Moon falls
-    very close to sunrise).
+    The Vikram Samvat turns over on the first civil day from 1 March whose
+    6-ghati reference instant (sunrise + 2h24m, see get_prevailing_tithi_index)
+    falls in the amanta month of Chaitra. Reading the month, not counting a day
+    after "the first Amavasya", is what keeps the rule right when Phalguna's
+    Amavasya ends before 1 March (2024: the first Amavasya in the window is
+    Chaitra's own), when Amavasya prevails on two days (2028), and when the
+    Pratipada itself is kshaya.
 
-    The Phalguna Amavasya is the FIRST Tithi=30 (by prevailing/6-ghati Tithi,
-    see get_prevailing_tithi_index) in the March 1 - April 22 window (52 days).
-    In most years there is only one Amavasya in this range; in years with two,
-    the first one is always the Phalguna Amavasya.
+    In an Adhika Chaitra year (2029) the new year begins with Adhika Chaitra,
+    the first month to carry the name.
     """
-    phalguna_amavasya = _find_tithi_in_range(
-        year, 3, 1, 52, 30, lat, lon, tz_offset, ayanamsa_name, sunrise_rule
-    )
-    return phalguna_amavasya + timedelta(days=1)
+    for i in range(52):  # Mar 1 - Apr 21 inclusive
+        d = date(year, 3, 1) + timedelta(days=i)
+        jd_start = local_time_to_jd(d.year, d.month, d.day, 0.0, tz_offset)
+        reference_jd = get_sunrise(jd_start, lat, lon, sunrise_rule) + JAIN_TITHI_OFFSET_DAYS
+        if get_hindu_month(reference_jd, ayanamsa_name)[0].endswith('Chaitra'):
+            return d
+    raise ValueError(f"Could not find Chaitra Shukla Pratipada for year {year}")
 
 
 def find_diwali(

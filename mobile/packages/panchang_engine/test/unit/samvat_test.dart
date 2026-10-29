@@ -1,6 +1,9 @@
 import 'package:panchang_engine/src/astro/rise_set.dart';
+import 'package:panchang_engine/src/calendar/month.dart';
 import 'package:panchang_engine/src/calendar/samvat.dart';
+import 'package:panchang_engine/src/panchang/elements.dart';
 import 'package:panchang_engine/src/time/civil_day.dart';
+import 'package:panchang_engine/src/time/julian_day.dart';
 import 'package:test/test.dart';
 
 const delhi = (lat: 28.6139, lon: 77.2090);
@@ -16,18 +19,46 @@ CivilDate dayBefore(CivilDate date) {
   return CivilDate(previous.year, previous.month, previous.day);
 }
 
+/// The Amanta month at [date]'s 6-ghati reference instant.
+LunarMonth referenceMonth(CivilDate date) {
+  final midnight = DateTime.utc(date.year, date.month, date.day).subtract(ist);
+  return amantaMonth(
+    sunrise(julianDayFromUtc(midnight), delhi.lat, delhi.lon, SunriseRule.modern) + jainTithiOffsetDays,
+  );
+}
+
 int prevailing(CivilDate date) =>
     prevailingTithi(date, lat: delhi.lat, lon: delhi.lon, utcOffset: ist, rule: SunriseRule.modern);
 
 void main() {
+  // The new year is the first day from 1 March whose 6-ghati reference instant
+  // falls in Amanta Chaitra (Adhika Chaitra in an Adhik year), as in Python's
+  // find_chaitra_shukla_1.
   group('Chaitra Shukla Pratipada', () {
-    for (final year in [2016, 2026, 2040]) {
-      test('$year falls in March or April, the day after the Phalguna Amavasya day', () {
+    test('2024: 9 April, not 11 March: the Amavasya of 10 March ends Magha, not Phalguna', () {
+      expect(newYear(2024), const CivilDate(2024, 4, 9));
+    });
+
+    test('2028: 27 March, after an Amavasya that prevails on two days', () {
+      expect(newYear(2028), const CivilDate(2028, 3, 27));
+    });
+
+    test('2029: 16 March, Adhika Chaitra begins the year', () {
+      expect(newYear(2029), const CivilDate(2029, 3, 16));
+      expect(referenceMonth(const CivilDate(2029, 3, 16)), const LunarMonth(index: 0, isAdhika: true));
+    });
+
+    test('2025 and 2026 are unchanged: 30 March and 19 March', () {
+      expect(newYear(2025), const CivilDate(2025, 3, 30));
+      expect(newYear(2026), const CivilDate(2026, 3, 19));
+    });
+
+    for (var year = 2016; year <= 2040; year++) {
+      test('$year: the first day in Chaitra, after a day in Phalguna', () {
         final day = newYear(year);
 
-        expect(day.compareTo(CivilDate(year, 3, 2)), greaterThanOrEqualTo(0));
-        expect(day.compareTo(CivilDate(year, 4, 23)), lessThanOrEqualTo(0));
-        expect(prevailing(dayBefore(day)), anyOf(30, 29)); // 29 when Amavasya is kshaya
+        expect(referenceMonth(day).index, 0);
+        expect(referenceMonth(dayBefore(day)), const LunarMonth(index: 11, isAdhika: false));
       });
     }
   });

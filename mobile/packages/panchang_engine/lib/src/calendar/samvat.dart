@@ -10,6 +10,7 @@ import '../astro/sidereal.dart';
 import '../panchang/elements.dart';
 import '../time/civil_day.dart';
 import '../time/julian_day.dart';
+import 'month.dart';
 
 CivilDate _plusDays(CivilDate date, int days) {
   final shifted = DateTime.utc(date.year, date.month, date.day + days);
@@ -76,17 +77,26 @@ bool _any(double reference) => true;
 
 const int _amavasya = 30;
 
-/// Chaitra Shukla Pratipada of [year]: the day after the first day owned by
-/// an Amavasya between 1 March and 21 April (the Phalguna Amavasya).
+/// Chaitra Shukla Pratipada of [year]: the first day from 1 March (to 21 April)
+/// whose 6-ghati reference instant falls in Amanta Chaitra, Adhika or Nija.
+/// That first day's tithi is Pratipada, or Dvitiya when Pratipada is kshaya,
+/// so only those days need their month named.
 CivilDate chaitraShuklaPratipada(
   int year, {
   required double lat,
   required double lon,
   required Duration utcOffset,
   required SunriseRule rule,
-}) =>
-    _firstOwned(CivilDate(year, 3, 1), 52, _amavasya, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule)?.next() ??
-    (throw StateError('No Phalguna Amavasya between 1 March and 21 April $year.'));
+}) {
+  for (var i = 0; i < 52; i++) {
+    final day = _plusDays(CivilDate(year, 3, 1), i);
+    final reference = _sunriseOf(day, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule) + jainTithiOffsetDays;
+    if (tithiAt(reference) <= 2 && amantaMonth(reference).index == _chaitra) return day;
+  }
+  throw StateError('No Chaitra between 1 March and 21 April $year.');
+}
+
+const int _chaitra = 0;
 
 /// The Sun is past 179° sidereal only from the Kartika Amavasya on; the Ashwin
 /// one before it peaks near 178°.
@@ -121,8 +131,9 @@ int vikramSamvat(CivilDate date, {required CivilDate chaitraShukla1}) =>
 int viraNirvanaSamvat(CivilDate date, {required CivilDate diwali}) =>
     date.compareTo(diwali) > 0 ? date.year + 527 : date.year + 526;
 
-/// [chaitraShuklaPratipada] falls from 2 March to 22 April and [diwali] from
-/// 10 October to 24 November, so a day outside those windows needs no search.
+/// [chaitraShuklaPratipada] is searched from 1 March to 21 April (and Chaitra
+/// never begins by 1 March) and [diwali] from 10 October to 24 November, so a
+/// day outside those windows needs no search.
 ({int vikram, int viraNirvana}) samvatsOn(
   CivilDate date, {
   required double lat,
