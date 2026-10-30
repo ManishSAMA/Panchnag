@@ -11,6 +11,7 @@ import 'days.dart';
 import 'registry.dart';
 import 'rules/bhaktambar.dart';
 import 'rules/namokar.dart';
+import 'rules/pushpanjali.dart';
 import 'single_tithi.dart';
 
 /// The profiles the app offers. Stored as open string ids, so Digambar can be
@@ -72,6 +73,7 @@ const Map<String, _Rule> _rules = {
   'SingleTithi': singleTithi,
   'BhaktambarVrat': bhaktambarVrat,
   'Namokar35Vrat': namokar35Vrat,
+  'PushpanjaliVrat': pushpanjaliVrat,
 };
 
 Iterable<String> get portedRuleTypes => _rules.keys;

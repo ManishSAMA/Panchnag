@@ -26,6 +26,7 @@ final registry = FestivalRegistry.fromJson(File('../../../shared/festival_regist
 final Map<String, RegExp> emittedIds = {
   'BhaktambarVrat': RegExp(r'^bhaktambar_vrat_\d{4}_'),
   'Namokar35Vrat': RegExp(r'^namokar_vrat_step_\d+_\d{4}$'),
+  'PushpanjaliVrat': RegExp(r'^pushpanjali_vrat_(spring|monsoon|winter)_\d{4}-\d\d-\d\d$'),
 };
 
 String? ruleTypeOf(String id) {

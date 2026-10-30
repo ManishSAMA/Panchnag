@@ -315,5 +315,10 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
   most family B/C rules also use). Exact parity everywhere, no boundary cases (19.0k rows per rule
   for each long-range city). Mutation check: parity alone does not exercise a kshaya with a doubled
   fallback tithi or an Adhik month for these steps; the unit tests do.
-- **Left:** §5 steps 4–13. Rule types not yet ported are skipped by the orchestrator, so
-  `festivals()` returns SingleTithi, Bhaktambar and Namokar 35 occurrences only for now.
+- **Step 4, `PushpanjaliVrat`:** done (`festivals/rules/pushpanjali.dart`). Shukla 5–9 of
+  Chaitra, Bhadrapada and Magha, one occurrence per civil day, the start moved to the first
+  Chaturthi (or the day before Panchami) when Shukla 5–14 have a kshaya and no doubled tithi. Exact
+  parity everywhere, no boundary cases (about 17 more rows per profile and year). Mutation check: parity
+  never sees a doubled Chaturthi before such a kshaya; a unit test pins the first-day choice.
+- **Left:** §5 steps 5–13. Rule types not yet ported are skipped by the orchestrator, so
+  `festivals()` returns SingleTithi, Bhaktambar, Namokar 35 and Pushpanjali occurrences only for now.
