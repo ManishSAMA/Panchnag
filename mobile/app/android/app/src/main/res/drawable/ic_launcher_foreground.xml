@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The siddhashila mark: an upward crescent with a dot in its cup, inside the
+     adaptive icon's 66 dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30.34,49 A24,24 0 1,0 77.66,49 A24,24 0 0,1 30.34,49 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M47.5,37 a6.5,6.5 0 1,0 13,0 a6.5,6.5 0 1,0 -13,0 Z" />
+</vector>
