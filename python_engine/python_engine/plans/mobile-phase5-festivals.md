@@ -328,6 +328,12 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
   31 Dec end and the touches-no-sunrise end test; the unit tests kill them all. Python's 0.01-day
   step past each nakshatra's end is an equivalent mutant (it only decides whether a Rohini that
   begins just before the next sunrise is seen, and such a Rohini gives no day either way).
-- **Left:** §5 steps 6–13. Rule types not yet ported are skipped by the orchestrator, so
-  `festivals()` returns SingleTithi, Bhaktambar, Namokar 35, Pushpanjali and Rohini occurrences
-  only for now.
+- **Step 6, `RaviVrat`:** done (`festivals/rules/ravi_vrat.dart`). Nine Sundays from the last
+  Sunday of the year's non-Adhik Ashadha Shukla (paksha read at the Jain day-start), on the raw
+  days since `ravi_vrat` keeps its own vriddhi rule. Occurrence ids join with `_`, not `:`. Python's
+  per-day titles (Ravi Pushya, Ravi Saptami) are left for Phase 6. Exact parity everywhere (9 rows
+  per profile and year). Mutation check: parity misses the Jain-vs-sunrise paksha reading, the year
+  filter and the window check; the unit tests kill them.
+- **Left:** §5 steps 7–13. Rule types not yet ported are skipped by the orchestrator, so
+  `festivals()` returns SingleTithi, Bhaktambar, Namokar 35, Pushpanjali, Rohini and Ravi Vrat
+  occurrences only for now.

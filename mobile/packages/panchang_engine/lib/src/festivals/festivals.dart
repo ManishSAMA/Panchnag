@@ -12,6 +12,7 @@ import 'registry.dart';
 import 'rules/bhaktambar.dart';
 import 'rules/namokar.dart';
 import 'rules/pushpanjali.dart';
+import 'rules/ravi_vrat.dart';
 import 'rules/rohini.dart';
 import 'single_tithi.dart';
 
@@ -75,6 +76,7 @@ const Map<String, _Rule> _rules = {
   'BhaktambarVrat': bhaktambarVrat,
   'Namokar35Vrat': namokar35Vrat,
   'PushpanjaliVrat': pushpanjaliVrat,
+  'RaviVrat': raviVratSundays,
   'RohiniVrat': rohiniVrat,
 };
 
