@@ -30,9 +30,17 @@ void main() {
       expect(ids(tapagachchha), contains('samvatsari_tapagachchha'));
     });
 
-    test('gives every occurrence a unique occurrence id', () {
-      final occurrenceIds = [for (final f in sthanakvasi) f.occurrenceId];
-      expect(occurrenceIds.toSet(), hasLength(occurrenceIds.length));
+    // Not the occurrence id alone: Python names a Bhaktambar day by its fortnight,
+    // and the Pausha fortnight falls at both ends of a year.
+    test('never lists the same occurrence twice on one day', () {
+      final keys = [for (final f in sthanakvasi) '${f.occurrenceId} ${f.start}'];
+      expect(keys.toSet(), hasLength(keys.length));
+    });
+
+    test('includes the vrats with ids of their own, attributed to their registry entry', () {
+      final bhaktambar = sthanakvasi.where((f) => f.ruleId == 'bhaktambar_vrat').toList();
+      expect(bhaktambar, isNotEmpty);
+      expect(bhaktambar.every((f) => f.id.startsWith('bhaktambar_vrat_2026_')), isTrue);
     });
   });
 

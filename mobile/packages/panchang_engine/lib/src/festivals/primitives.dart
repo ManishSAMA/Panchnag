@@ -103,3 +103,26 @@ CivilDate? firstOfTwoJainDayStarts(List<FestivalDay> days, String paksha, int ti
   }
   return null;
 }
+
+/// Python `get_jain_month`: a day's Purnimanta month in upper case, with the
+/// legacy spellings occurrence ids still use (ASHVINA, MARGASHIRSHA).
+String jainMonthName(FestivalDay day) => switch (lunarMonthNames[day.purnimantaMonth.index].toUpperCase()) {
+  'ASHWIN' => 'ASHVINA',
+  'AGRAHAYANA' => 'MARGASHIRSHA',
+  final name => name,
+};
+
+/// Python `_paksha_blocks`: the days split into fortnights, breaking on any
+/// change of paksha, Amanta month or Adhik flag, or a gap in the dates.
+List<List<FestivalDay>> pakshaBlocks(List<FestivalDay> days) {
+  final blocks = <List<FestivalDay>>[];
+  for (final day in days) {
+    final previous = blocks.lastOrNull?.last;
+    final continues = previous != null &&
+        pakshaOf(day.jainTithi) == pakshaOf(previous.jainTithi) &&
+        day.month == previous.month &&
+        previous.date.next() == day.date;
+    continues ? blocks.last.add(day) : blocks.add([day]);
+  }
+  return blocks;
+}

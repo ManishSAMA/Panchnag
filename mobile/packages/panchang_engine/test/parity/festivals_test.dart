@@ -23,7 +23,9 @@ final registry = FestivalRegistry.fromJson(File('../../../shared/festival_regist
 
 /// Rule types whose occurrences carry an id of their own rather than the
 /// registry id, by the ids they emit. Filled in as each type is ported.
-final Map<String, RegExp> emittedIds = {};
+final Map<String, RegExp> emittedIds = {
+  'BhaktambarVrat': RegExp(r'^bhaktambar_vrat_\d{4}_'),
+};
 
 String? ruleTypeOf(String id) {
   final entry = registry.entries.where((e) => e.id == id).firstOrNull;
@@ -35,6 +37,18 @@ String rowKey(Map<String, Object?> row) =>
     '${row['start_date']} ${row['occurrence_id']} id=${row['id']} end=${row['end_date']} ${row['status']}';
 
 String occurrenceKey(FestivalOccurrence o) => '${o.start} ${o.occurrenceId} id=${o.id} end=${o.end} ${o.status}';
+
+/// The keys of [from] not matched one for one in [other] (a multiset difference).
+List<String> missing(List<String> from, List<String> other) {
+  final unmatched = <String, int>{};
+  for (final key in other) {
+    unmatched.update(key, (n) => n + 1, ifAbsent: () => 1);
+  }
+  return [
+    for (final key in from)
+      if (unmatched.update(key, (n) => n - 1, ifAbsent: () => -1) < 0) key,
+  ];
+}
 
 void main() {
   final ported = portedRuleTypes.toSet();
@@ -75,12 +89,12 @@ void main() {
 
           for (final profile in festivalProfiles) {
             final rows = (fixtures[profile]!['$year']! as List<Object?>).cast<Map<String, Object?>>();
-            final expected = {for (final row in rows) if (ported.contains(ruleTypeOf(row['id']! as String))) rowKey(row)};
-            final ours = {
+            final expected = [for (final row in rows) if (ported.contains(ruleTypeOf(row['id']! as String))) rowKey(row)];
+            final ours = [
               for (final o in festivalsFromDays(days, year: year, profile: profile, registry: registry)) occurrenceKey(o),
-            };
+            ];
             compared += expected.length;
-            for (final (side, keys) in [('python only', expected.difference(ours)), ('dart only', ours.difference(expected))]) {
+            for (final (side, keys) in [('python only', missing(expected, ours)), ('dart only', missing(ours, expected))]) {
               for (final key in keys) {
                 final line = '$profile $side: $key';
                 (nearBoundary(key.substring(0, 10)) ? boundaryCases : mismatches).add(line);

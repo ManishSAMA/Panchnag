@@ -9,6 +9,7 @@ import '../day.dart';
 import '../time/civil_day.dart';
 import 'days.dart';
 import 'registry.dart';
+import 'rules/bhaktambar.dart';
 import 'single_tithi.dart';
 
 /// The profiles the app offers. Stored as open string ids, so Digambar can be
@@ -66,7 +67,7 @@ typedef _Rule = List<FestivalOccurrence> Function(FestivalEntry entry, List<Fest
 
 /// Rule types ported so far, by registry `rule_type`. The rest are skipped
 /// until their parity passes (plans/mobile-phase5-festivals.md §5).
-const Map<String, _Rule> _rules = {'SingleTithi': singleTithi};
+const Map<String, _Rule> _rules = {'SingleTithi': singleTithi, 'BhaktambarVrat': bhaktambarVrat};
 
 Iterable<String> get portedRuleTypes => _rules.keys;
 

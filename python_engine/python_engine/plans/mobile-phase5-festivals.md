@@ -305,5 +305,10 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
   order kept for ties). `test/parity/festivals_test.dart` compares every ported type: SingleTithi
   matches exactly for all 17 locations, both sunrise rules and all three profiles (12.8k rows per
   rule for each of Delhi, Ahmedabad, Mumbai), with no boundary cases. The run takes ~8 min with `-j 4`.
-- **Left:** §5 steps 2–13 (every type except SingleTithi). Rule types not yet ported are skipped
-  by the orchestrator, so `festivals()` returns SingleTithi occurrences only for now.
+- **Step 2, `BhaktambarVrat`:** done (`festivals/rules/bhaktambar.dart`, with `pakshaBlocks` and
+  `jainMonthName` added to the primitives). Exact parity everywhere, no boundary cases (16.4k rows
+  per rule for each long-range city with SingleTithi). Gotcha: Python repeats a Bhaktambar
+  occurrence id within a year (the Pausha fortnight falls at both ends), with different dates, so
+  the harness compares multisets and the orchestrator test checks (occurrence id, date) uniqueness.
+- **Left:** §5 steps 3–13. Rule types not yet ported are skipped by the orchestrator, so
+  `festivals()` returns SingleTithi and Bhaktambar occurrences only for now.
