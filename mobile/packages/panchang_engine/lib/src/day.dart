@@ -150,8 +150,60 @@ final class PanchangEngine {
   /// Throws [StateError] where the Sun does not rise or set that day (polar day or night).
   PanchangDay day({required Location location, required CivilDate date, SunriseRule sunriseRule = SunriseRule.modern}) {
     final Location(:lat, :lon, :timezone) = location;
-    double sunriseOf(CivilDate d) => sunrise(civilDayAnchor(d, timezone), lat, lon, sunriseRule);
+    return _read(
+      date,
+      location: location,
+      sunriseRule: sunriseRule,
+      sunriseOf: (d) => sunrise(civilDayAnchor(d, timezone), lat, lon, sunriseRule),
+      amanta: amantaMonth,
+      samvats: (d, {required utcOffset}) => samvatsOn(d, lat: lat, lon: lon, utcOffset: utcOffset, rule: sunriseRule),
+    );
+  }
 
+  /// Every day of a Gregorian month, each exactly as [day] reads it. The month
+  /// names its lunar months once, computes each sunrise once and searches each
+  /// new year and Diwali once, which a run of [day] calls repeats per date.
+  List<PanchangDay> month({
+    required Location location,
+    required int year,
+    required int month,
+    SunriseRule sunriseRule = SunriseRule.modern,
+  }) {
+    final Location(:lat, :lon, :timezone) = location;
+    final dates = [for (var d = CivilDate(year, month, 1); d.month == month; d = d.next()) d];
+    final rises = {
+      for (final d in [_previous(dates.first), ...dates, dates.last.next()])
+        d: sunrise(civilDayAnchor(d, timezone), lat, lon, sunriseRule),
+    };
+    // A Krishna paksha is named from the month 17 days on (purnimantaMonth).
+    final lunarMonths = lunarMonthsBetween(
+      rises[_previous(dates.first)]! + jainTithiOffsetDays,
+      rises[dates.last.next()]! + jainTithiOffsetDays + 18,
+    );
+    final amanta = amantaLookup(lunarMonths);
+    final samvats = samvatReader(lat: lat, lon: lon, rule: sunriseRule);
+    return [
+      for (final date in dates)
+        _read(
+          date,
+          location: location,
+          sunriseRule: sunriseRule,
+          sunriseOf: (d) => rises[d]!,
+          amanta: amanta,
+          samvats: samvats,
+        ),
+    ];
+  }
+
+  PanchangDay _read(
+    CivilDate date, {
+    required Location location,
+    required SunriseRule sunriseRule,
+    required double Function(CivilDate) sunriseOf,
+    required LunarMonth Function(double) amanta,
+    required Samvats Function(CivilDate, {required Duration utcOffset}) samvats,
+  }) {
+    final Location(:lat, :lon, :timezone) = location;
     final rise = sunriseOf(date);
     final set = sunset(civilDayAnchor(date, timezone), lat, lon, sunriseRule);
     final nextRise = sunriseOf(date.next());
@@ -162,7 +214,7 @@ final class PanchangEngine {
     final yesterday = tithiAt(previousReference);
     final tomorrow = tithiAt(nextRise + jainTithiOffsetDays);
 
-    final samvats = samvatsOn(date, lat: lat, lon: lon, utcOffset: standardOffset(date, timezone), rule: sunriseRule);
+    final samvat = samvats(date, utcOffset: standardOffset(date, timezone));
     final times = pachchakkhanTimes(sunrise: rise, sunset: set, nextSunrise: nextRise);
 
     return PanchangDay(
@@ -181,9 +233,9 @@ final class PanchangEngine {
       ),
       nakshatra: (index: nakshatraAt(rise), pada: nakshatraPadaAt(rise), endsAt: _utc(nakshatraEnd(rise))),
       vara: date.vara,
-      month: purnimantaMonth(reference),
-      vikramSamvat: samvats.vikram,
-      viraNirvanaSamvat: samvats.viraNirvana,
+      month: purnimantaMonth(reference, amanta: amanta),
+      vikramSamvat: samvat.vikram,
+      viraNirvanaSamvat: samvat.viraNirvana,
       choghadiya: [
         for (final s in choghadiyaSlots(sunrise: rise, sunset: set, nextSunrise: nextRise, vara: date.vara))
           (name: s.name, start: _utc(s.start), end: _utc(s.end), isNight: s.isNight),

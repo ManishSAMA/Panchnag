@@ -134,29 +134,53 @@ int viraNirvanaSamvat(CivilDate date, {required CivilDate diwali}) =>
 /// [chaitraShuklaPratipada] is searched from 1 March to 21 April (and Chaitra
 /// never begins by 1 March) and [diwali] from 10 October to 24 November, so a
 /// day outside those windows needs no search.
-({int vikram, int viraNirvana}) samvatsOn(
+typedef Samvats = ({int vikram, int viraNirvana});
+
+Samvats samvatsOn(
   CivilDate date, {
   required double lat,
   required double lon,
   required Duration utcOffset,
   required SunriseRule rule,
+}) => _samvats(
+  date,
+  newYear: () => chaitraShuklaPratipada(date.year, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule),
+  diwaliDay: () => diwali(date.year, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule),
+);
+
+/// [samvatsOn] for a run of dates at one place: each year's new year and
+/// Diwali are searched at most once.
+Samvats Function(CivilDate date, {required Duration utcOffset}) samvatReader({
+  required double lat,
+  required double lon,
+  required SunriseRule rule,
 }) {
+  final newYears = <(int, Duration), CivilDate>{};
+  final diwalis = <(int, Duration), CivilDate>{};
+  return (date, {required utcOffset}) => _samvats(
+    date,
+    newYear: () => newYears.putIfAbsent(
+      (date.year, utcOffset),
+      () => chaitraShuklaPratipada(date.year, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule),
+    ),
+    diwaliDay: () => diwalis.putIfAbsent(
+      (date.year, utcOffset),
+      () => diwali(date.year, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule),
+    ),
+  );
+}
+
+Samvats _samvats(CivilDate date, {required CivilDate Function() newYear, required CivilDate Function() diwaliDay}) {
   final year = date.year;
   final vikram = switch (date) {
     _ when date.compareTo(CivilDate(year, 3, 2)) < 0 => year + 56,
     _ when date.compareTo(CivilDate(year, 4, 22)) >= 0 => year + 57,
-    _ => vikramSamvat(
-      date,
-      chaitraShukla1: chaitraShuklaPratipada(year, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule),
-    ),
+    _ => vikramSamvat(date, chaitraShukla1: newYear()),
   };
   final viraNirvana = switch (date) {
     _ when date.compareTo(CivilDate(year, 10, 10)) <= 0 => year + 526,
     _ when date.compareTo(CivilDate(year, 11, 24)) > 0 => year + 527,
-    _ => viraNirvanaSamvat(
-      date,
-      diwali: diwali(year, lat: lat, lon: lon, utcOffset: utcOffset, rule: rule),
-    ),
+    _ => viraNirvanaSamvat(date, diwali: diwaliDay()),
   };
   return (vikram: vikram, viraNirvana: viraNirvana);
 }
