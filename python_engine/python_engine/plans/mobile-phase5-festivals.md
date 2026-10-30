@@ -286,6 +286,17 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
 
 ---
 
-## 7. What is left (kept current as steps land)
+## 7. Progress and what is left
 
-All of §5, steps 0–13.
+- **Step 0 (part):** done. `FestivalRegistry.fromJson` (schema and `day_rule` checks), the profile
+  check on `PanchangEngine.festivals`, `festivalDays` (the 14-month window of sunrise, Jain
+  day-start and evening tithis, Amanta and Purnimanta months) at L3 parity with `days.json.gz` for
+  every core location and both sunrise rules, `vratView` and `takesSecondDayOfVriddhi`.
+  `festivals()` returns an empty list until rule types land.
+- **Boundary cases (L3, festival readings):** Delhi traditional 2022-11-23 sunrise tithi (1.02 s from
+  the transition) and Ahmedabad traditional 2025-04-21 evening tithi (0.61 s). Any L4 difference
+  near these dates traces back to them. The full readings parity takes about 18 min with `-j 4`.
+- **Performance note:** one window costs about 1.7 s on desktop (JIT), mostly the ~850 sunrise and
+  sunset solves. To revisit in step 13 (e.g. one solve per day for both, or the app's cache).
+- **Left:** the festival parity harness with id attribution and the year orchestrator (land with
+  step 1), then §5 steps 1–13.

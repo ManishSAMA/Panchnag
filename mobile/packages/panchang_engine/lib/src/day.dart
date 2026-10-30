@@ -6,6 +6,8 @@ library;
 import 'astro/rise_set.dart';
 import 'calendar/month.dart';
 import 'calendar/samvat.dart';
+import 'festivals/festivals.dart';
+import 'festivals/registry.dart';
 import 'panchang/choghadiya.dart';
 import 'panchang/elements.dart';
 import 'panchang/pachchakkhan.dart';
@@ -197,6 +199,16 @@ final class PanchangEngine {
       ),
     );
   }
+
+  /// The festivals whose first day falls in [year], sorted by date. Throws
+  /// [ArgumentError] for a profile not in [festivalProfiles].
+  List<FestivalOccurrence> festivals({
+    required Location location,
+    required int year,
+    required String profile,
+    required FestivalRegistry registry,
+    SunriseRule sunriseRule = SunriseRule.modern,
+  }) => festivalsOf(location: location, year: year, profile: profile, registry: registry, sunriseRule: sunriseRule);
 }
 
 DateTime _utc(double jd) => utcFromJulianDay(jd);

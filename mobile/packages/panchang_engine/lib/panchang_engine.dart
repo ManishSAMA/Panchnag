@@ -8,6 +8,8 @@ library;
 export 'src/astro/rise_set.dart' show SunriseRule;
 export 'src/calendar/month.dart' show LunarMonth, lunarMonthNames;
 export 'src/day.dart';
+export 'src/festivals/festivals.dart' show FestivalOccurrence, festivalProfiles;
+export 'src/festivals/registry.dart' show DayRule, FestivalEntry, FestivalRegistry;
 export 'src/panchang/choghadiya.dart' show Choghadiya, ChoghadiyaNature;
 export 'src/panchang/pachchakkhan.dart' show TimedPachchakkhan;
 export 'src/time/civil_day.dart' show CivilDate;
