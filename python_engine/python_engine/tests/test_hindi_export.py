@@ -95,6 +95,17 @@ class HindiRangeExportTest(unittest.TestCase):
         hi = self._paired_contains("Jain_Festivals", "Gautam Swami Janam Divas", "जैन पर्व")
         self.assertIn("गौतम स्वामी जन्म दिवस", hi)
 
+    def test_a_native_tithi_tag_reads_once_in_hindi(self):
+        """festival_service tags a Kalyanak pulled onto a day of another tithi,
+        "[Ekadashi] Shri ...", and tags its name_hindi alike; the export must not tag it twice."""
+        latin_tag, hindi_tag = re.compile(r"\[[A-Za-z]+\] "), re.compile(r"\[[\u0900-\u097f]+\] ")
+        tagged = [(en["Jain_Festivals"], hi["जैन पर्व"]) for en, hi in zip(self.en_rows, self.hi_rows)
+                  if latin_tag.search(en["Jain_Festivals"] or "")]
+
+        self.assertTrue(tagged)
+        for english, hindi in tagged:
+            self.assertEqual(len(hindi_tag.findall(hindi)), len(latin_tag.findall(english)), hindi)
+
     def _paired_contains(self, en_key: str, needle: str, hi_key: str) -> str:
         index = next(i for i, row in enumerate(self.en_rows) if needle in (row[en_key] or ""))
         return self.hi_rows[index][hi_key]

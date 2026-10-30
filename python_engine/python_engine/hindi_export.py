@@ -169,8 +169,9 @@ def _panchak_window(value: str) -> str:
 def _festival_name(festival: dict) -> str:
     """Registry Hindi name, keeping a "[Tithi]" native-tithi tag (in Hindi) up front."""
     prefixed = _TITHI_PREFIX.match(festival.get("name", ""))
-    if not prefixed:
-        name = translate_fest(festival)
+    name = translate_fest(festival)
+    # festival_service already tags a Devanagari name_hindi; only an English fallback needs one.
+    if not prefixed or name.startswith("["):
         return NAME_HI.get(name, name)
     tithi, bare = prefixed.groups()
     name = translate_fest({**festival, "name": bare})

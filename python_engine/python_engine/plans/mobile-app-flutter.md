@@ -52,7 +52,7 @@
    - GitHub Actions on Linux with three jobs on every push: `pytest tests` (including the registry freshness test), `dart test` with the full core parity suite, and `flutter analyze` + `flutter test`. `tests_ui` and fixture regeneration stay local.
    - A fixture freshness test: `manifest.json` records a hash of the Python engine sources the fixtures depend on, and a Python test fails when it is stale.
    - `generate_jain_festivals` raises on an unknown profile; Dart rejects unknown profiles from the start.
-   - Generate the missing Hindi kalyanak names in `registry.py`, and investigate the duplicate Neminath omniscience kalyanak (see [`mobile-ui-design.md`](mobile-ui-design.md) §6).
+   - Done: the Hindi kalyanak names are generated in `registry.py`, and the duplicate Neminath omniscience kalyanak is a school variant, kept for now (see [`mobile-ui-design.md`](mobile-ui-design.md) §6).
 2. Engine M3, then M4 ([`mobile-phase2-dart-engine.md`](mobile-phase2-dart-engine.md)).
 3. Phase 3: a Today-only app on the Play **internal** track.
 4. After that, alternate one screen with one festival rule type, so that neither blocks the other for weeks.

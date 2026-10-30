@@ -2817,12 +2817,14 @@ class NativeTithiTagTest(unittest.TestCase):
         self.assertTrue(tmap["2027-01-18"].endswith("Dashami (10)"))
         self.assertEqual(f["native_tithi"], "Ekadashi (11)")
         self.assertEqual(f["name"], "[Ekadashi] Shri Ajitnath Ji - Omniscience Kalyanak")
+        self.assertEqual(f["name_hindi"], "[एकादशी] श्री अजितनाथ जी — केवलज्ञान कल्याणक")
 
     def test_no_tag_when_native_tithi_matches_civil_date(self):
         by_id, _ = self._by_id(2026)
         f = by_id["shri_munisuvrat_ji___liberation_kalyanak_12_vrindavan_uttarapurana_ashadhara"]
         self.assertEqual(f["start_date"], "2026-02-14")
         self.assertFalse(f["name"].startswith("["))
+        self.assertEqual(f["name_hindi"], "श्री मुनिसुव्रत जी — मोक्ष कल्याणक")
 
     def test_dharmanath_day1_anchor_kalyanaks_are_tagged_trayodashi(self):
         by_id, _ = self._by_id(2027)

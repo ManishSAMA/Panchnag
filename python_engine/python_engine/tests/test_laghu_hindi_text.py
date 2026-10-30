@@ -36,4 +36,4 @@ def test_the_renamed_vrats_read_in_hindi():
 
     assert "रवि व्रत" in text
     assert "कर्म निर्जरा व्रत (श्रावण)" in text
-    assert "श्री पुष्पदंत (सुविधिनाथ) भगवान गर्भ कल्याणक" in text
+    assert "श्री पुष्पदंत (सुविधिनाथ) जी — गर्भ कल्याणक" in text
