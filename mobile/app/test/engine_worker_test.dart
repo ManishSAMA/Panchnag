@@ -22,6 +22,19 @@ void main() {
     expect(worker.isolate, isNot(Isolate.current));
   });
 
+  test('reads a whole month in one request, the same days as reading them one by one', () async {
+    final worker = await EngineWorker.spawn();
+    addTearDown(worker.close);
+    const request = MonthRequest(year: 2026, month: 10, lat: 28.6139, lon: 77.2090, timezone: 'Asia/Kolkata');
+
+    final (month, day) = await (worker.readMonth(request), worker.read(delhi(const CivilDate(2026, 10, 18)))).wait;
+
+    expect(month, hasLength(31));
+    expect(month.first.date, const CivilDate(2026, 10, 1));
+    expect(month[17].jainTithi, day.jainTithi);
+    expect(month[17].vriddhi, day.vriddhi);
+  });
+
   test('passes an engine error back to the caller and keeps working', () async {
     final worker = await EngineWorker.spawn();
     addTearDown(worker.close);

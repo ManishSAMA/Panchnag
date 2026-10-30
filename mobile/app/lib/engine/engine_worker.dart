@@ -16,10 +16,10 @@ final class EngineWorker {
   final Isolate isolate;
   final SendPort _requests;
   final ReceivePort _responses;
-  final Map<int, Completer<PanchangDay>> _pending = {};
+  final Map<int, Completer<Object>> _pending = {};
   int _sent = 0;
 
-  /// How many days have been asked for.
+  /// How many days and months have been asked for.
   int get reads => _sent;
 
   static Future<EngineWorker> spawn() async {
@@ -29,8 +29,8 @@ final class EngineWorker {
     responses.listen(
       (message) => switch (message) {
         final SendPort port => ready.complete(port),
-        (final int id, final PanchangDay day) => worker._pending.remove(id)!.complete(day),
         (final int id, final RemoteError error) => worker._pending.remove(id)!.completeError(error),
+        (final int id, final Object answer) => worker._pending.remove(id)!.complete(answer),
         _ => throw StateError('Unexpected message from the engine worker: $message'),
       },
     );
@@ -40,11 +40,16 @@ final class EngineWorker {
   }
 
   /// Fails with a [RemoteError] when the engine throws, as on a polar day.
-  Future<PanchangDay> read(DayRequest request) {
+  Future<PanchangDay> read(DayRequest request) => _ask(request);
+
+  /// Fails with a [RemoteError] when the engine throws on any day of the month.
+  Future<List<PanchangDay>> readMonth(MonthRequest request) => _ask(request);
+
+  Future<T> _ask<T extends Object>(Object request) async {
     final id = _sent++;
-    final answer = _pending[id] = Completer<PanchangDay>();
+    final answer = _pending[id] = Completer<Object>();
     _requests.send((id, request));
-    return answer.future;
+    return await answer.future as T;
   }
 
   void close() {
@@ -57,9 +62,16 @@ void _serve(SendPort responses) {
   final requests = ReceivePort();
   responses.send(requests.sendPort);
   requests.listen((message) {
-    final (int id, DayRequest request) = message as (int, DayRequest);
+    final (int id, Object request) = message as (int, Object);
     try {
-      responses.send((id, readDay(request)));
+      responses.send((
+        id,
+        switch (request) {
+          final DayRequest day => readDay(day),
+          final MonthRequest month => readMonth(month),
+          _ => throw ArgumentError('Not an engine request: $request'),
+        },
+      ));
     } on Object catch (error, stack) {
       responses.send((id, RemoteError('$error', '$stack')));
     }

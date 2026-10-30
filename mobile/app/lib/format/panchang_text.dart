@@ -33,6 +33,18 @@ String tithiName(int index, Lang lang) {
   return '$paksha $name';
 }
 
+/// A Month cell's tithi: the paksha initial and the day within the paksha.
+String tithiShort(int index, Lang lang) {
+  if (index == 15) return lang == Lang.hi ? 'पूर्णिमा' : 'Purnima';
+  if (index == 30) return lang == Lang.hi ? 'अमावस' : 'Amavas';
+  final shukla = index < 15;
+  final paksha = switch (lang) {
+    Lang.hi => shukla ? 'शु' : 'कृ',
+    Lang.en => shukla ? 'S' : 'K',
+  };
+  return '$paksha ${(index - 1) % 15 + 1}';
+}
+
 const _monthsHi = [
   'चैत्र', 'वैशाख', 'ज्येष्ठ', 'आषाढ़', 'श्रावण', 'भाद्रपद', //
   'आश्विन', 'कार्तिक', 'मार्गशीर्ष', 'पौष', 'माघ', 'फाल्गुन',
@@ -130,6 +142,27 @@ const _gregorianEn = [
   'January', 'February', 'March', 'April', 'May', 'June', //
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
+
+const _varaShortHi = ['रवि', 'सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि'];
+const _varaShortEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/// The Month grid's column heading; [vara] 0 is Sunday, as in the engine.
+String varaShort(int vara, Lang lang) => (lang == Lang.hi ? _varaShortHi : _varaShortEn)[vara];
+
+String monthTitle(int year, int month, Lang lang) =>
+    '${(lang == Lang.hi ? _gregorianHi : _gregorianEn)[month - 1]} $year';
+
+/// The Month header's subtitle: the lunar months of its days, each once, and
+/// the VS, as a range when it turns over within the month.
+String monthSpanLine({required List<LunarMonth> months, required List<int> vikrams, required Lang lang}) {
+  final names = [
+    for (final (i, month) in months.indexed)
+      if (i == 0 || months[i - 1] != month) monthName(month, lang),
+  ];
+  final (first, last) = (vikrams.first, vikrams.last);
+  final vs = first == last ? '$first' : '$first–$last';
+  return '${names.join(' – ')} · ${lang == Lang.hi ? 'वि. सं.' : 'VS'} $vs';
+}
 
 String shortDate(CivilDate date, Lang lang) =>
     '${date.day} ${(lang == Lang.hi ? _gregorianHi : _gregorianEn)[date.month - 1]}';

@@ -168,4 +168,56 @@ void main() {
       expect(spanPhrases(wall(7, 2), wall(9, 41), day: day, lang: Lang.hi), ('सुबह 7:02', 'सुबह 9:41'));
     });
   });
+
+  group('short tithi for a Month cell (mobile-ui-design.md §3 · Month)', () {
+    test('Hindi: paksha initial and number; Purnima and Amavasya by name', () {
+      expect(tithiShort(11, Lang.hi), 'शु 11');
+      expect(tithiShort(20, Lang.hi), 'कृ 5');
+      expect(tithiShort(15, Lang.hi), 'पूर्णिमा');
+      expect(tithiShort(30, Lang.hi), 'अमावस');
+    });
+
+    test('English mirrors the Hindi', () {
+      expect(tithiShort(1, Lang.en), 'S 1');
+      expect(tithiShort(29, Lang.en), 'K 14');
+      expect(tithiShort(15, Lang.en), 'Purnima');
+      expect(tithiShort(30, Lang.en), 'Amavas');
+    });
+
+    test('every index reads differently in both languages', () {
+      for (final lang in Lang.values) {
+        expect({for (var i = 1; i <= 30; i++) tithiShort(i, lang)}, hasLength(30));
+      }
+    });
+  });
+
+  group('the Month header', () {
+    test('the title is the Gregorian month and year', () {
+      expect(monthTitle(2026, 10, Lang.hi), 'अक्टूबर 2026');
+      expect(monthTitle(2026, 10, Lang.en), 'October 2026');
+    });
+
+    const ashwin = LunarMonth(index: 6, isAdhika: false);
+    const kartika = LunarMonth(index: 7, isAdhika: false);
+    const adhikChaitra = LunarMonth(index: 0, isAdhika: true);
+    const phalguna = LunarMonth(index: 11, isAdhika: false);
+
+    test('the subtitle names each lunar month once, in order, with one VS', () {
+      expect(
+        monthSpanLine(months: [ashwin, ashwin, kartika, kartika], vikrams: [2083, 2083, 2083, 2083], lang: Lang.hi),
+        'आश्विन – कार्तिक · वि. सं. 2083',
+      );
+    });
+
+    test('a VS that turns over within the month shows as a range', () {
+      expect(
+        monthSpanLine(months: [phalguna, adhikChaitra], vikrams: [2085, 2086], lang: Lang.hi),
+        'फाल्गुन – अधिक चैत्र · वि. सं. 2085–2086',
+      );
+      expect(
+        monthSpanLine(months: [phalguna, adhikChaitra], vikrams: [2085, 2086], lang: Lang.en),
+        'Phalguna – Adhika Chaitra · VS 2085–2086',
+      );
+    });
+  });
 }

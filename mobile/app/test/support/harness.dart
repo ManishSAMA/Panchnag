@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jainpanchang/app.dart';
 import 'package:jainpanchang/engine/day_reading.dart';
+import 'package:jainpanchang/features/month/month_state.dart';
 import 'package:jainpanchang/features/today/today_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -20,10 +21,11 @@ Future<void> openApp(
   required DateTime now,
   Locale phone = const Locale('hi', 'IN'),
   double textScale = 1,
+  Size screen = const Size(1080, 2400),
 }) async {
   SharedPreferences.setMockInitialValues({'location.city': 'delhi'});
   final prefs = await SharedPreferences.getInstance();
-  tester.view.physicalSize = const Size(1080, 2400);
+  tester.view.physicalSize = screen;
   tester.view.devicePixelRatio = 2.75;
   tester.platformDispatcher.localesTestValue = [phone];
   tester.platformDispatcher.textScaleFactorTestValue = textScale;
@@ -38,6 +40,7 @@ Future<void> openApp(
         nowProvider.overrideWith((ref) => Stream.value(now)),
         // The real engine, on the test's own isolate.
         dayReaderProvider.overrideWithValue((request) async => readDay(request)),
+        monthReaderProvider.overrideWithValue((request) async => readMonth(request)),
       ],
     ),
   );

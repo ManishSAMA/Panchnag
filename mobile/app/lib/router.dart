@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'features/location/city_picker_screen.dart';
+import 'features/month/month_screen.dart';
 import 'features/pachchakkhan/pachchakkhan_screen.dart';
 import 'features/today/today_screen.dart';
 import 'l10n/app_localizations.dart';
 
-/// Tabs appear as their screens are built: Month and Festivals join later
-/// (mobile-ui-design.md §1), never as empty placeholders.
+/// Tabs appear as their screens are built: Festivals joins later
+/// (mobile-ui-design.md §1), never as an empty placeholder.
 GoRouter buildRouter({required bool hasLocation}) => GoRouter(
   initialLocation: hasLocation ? '/today' : '/location',
   routes: [
@@ -17,6 +18,9 @@ GoRouter buildRouter({required bool hasLocation}) => GoRouter(
       branches: [
         StatefulShellBranch(
           routes: [GoRoute(path: '/today', builder: (context, state) => const TodayScreen())],
+        ),
+        StatefulShellBranch(
+          routes: [GoRoute(path: '/month', builder: (context, state) => const MonthScreen())],
         ),
         StatefulShellBranch(
           routes: [GoRoute(path: '/pachchakkhan', builder: (context, state) => const PachchakkhanScreen())],
@@ -48,6 +52,11 @@ class _TabShell extends StatelessWidget {
               icon: const Icon(Icons.wb_sunny_outlined),
               selectedIcon: const Icon(Icons.wb_sunny),
               label: l10n.tabToday,
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.calendar_month_outlined),
+              selectedIcon: const Icon(Icons.calendar_month),
+              label: l10n.tabMonth,
             ),
             NavigationDestination(
               icon: const Icon(Icons.schedule_outlined),

@@ -39,6 +39,45 @@ PanchangDay readDay(DayRequest request) => const PanchangEngine().day(
   sunriseRule: request.rule,
 );
 
+/// Every day of a Gregorian month, for the Month tab; plain values, like [DayRequest].
+final class MonthRequest {
+  const MonthRequest({
+    required this.year,
+    required this.month,
+    required this.lat,
+    required this.lon,
+    required this.timezone,
+    this.rule = SunriseRule.modern,
+  });
+
+  final int year;
+  final int month;
+  final double lat;
+  final double lon;
+  final String timezone;
+  final SunriseRule rule;
+
+  @override
+  bool operator ==(Object other) =>
+      other is MonthRequest &&
+      other.year == year &&
+      other.month == month &&
+      other.lat == lat &&
+      other.lon == lon &&
+      other.timezone == timezone &&
+      other.rule == rule;
+
+  @override
+  int get hashCode => Object.hash(year, month, lat, lon, timezone, rule);
+}
+
+List<PanchangDay> readMonth(MonthRequest request) => const PanchangEngine().month(
+  location: Location(lat: request.lat, lon: request.lon, timezone: request.timezone),
+  year: request.year,
+  month: request.month,
+  sunriseRule: request.rule,
+);
+
 /// A tithi change close to the reference instant: [isStart] when the Jain tithi
 /// began shortly before it, otherwise it ends shortly after.
 typedef TithiBoundary = ({DateTime at, bool isStart, Duration gap});

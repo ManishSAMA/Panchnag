@@ -54,6 +54,8 @@ final class SelectedDate extends Notifier<CivilDate> {
   }
 
   void goToday() => state = _today();
+
+  void goTo(CivilDate date) => state = date;
 }
 
 /// The ticking clock once it has started, the fixed clock before.

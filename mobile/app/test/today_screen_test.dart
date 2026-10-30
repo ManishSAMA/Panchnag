@@ -136,7 +136,7 @@ void main() {
       await tester.tap(find.text('अगला: पुरिमड्ढ'));
       await tester.pumpAndSettle();
 
-      expect(tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex, 1);
+      expect(find.byKey(const Key('pachchakkhan-hero')), findsOneWidget);
     });
   });
 

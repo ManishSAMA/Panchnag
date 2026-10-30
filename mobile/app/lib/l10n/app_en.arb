@@ -5,7 +5,16 @@
   "chooseCityOffline": "Sunrise and tithi are calculated for this city. Everything is calculated on your phone, offline.",
   "changeCity": "Change location: {city}",
   "tabToday": "Today",
+  "tabMonth": "Month",
   "tabPachchakkhan": "Pachchakkhan",
+
+  "previousMonth": "Previous month",
+  "nextMonth": "Next month",
+  "flagKshaya": "Ks",
+  "flagVriddhi": "Vr",
+  "legendKshaya": "Kshaya tithi",
+  "legendVriddhi": "Vriddhi tithi",
+  "openFullDay": "Open full day",
 
   "today": "Today",
   "previousDay": "Previous day",

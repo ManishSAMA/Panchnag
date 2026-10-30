@@ -79,17 +79,18 @@ void main() {
     expect(prefs.getString('location.city'), 'mumbai');
   });
 
-  testWidgets('the tabs are Today and Pachchakkhan', (tester) async {
+  testWidgets('the tabs are Today, Month and Pachchakkhan, in that order', (tester) async {
     await launch(tester, await preferences({'location.city': 'delhi'}));
 
     final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(bar.destinations, hasLength(2));
+    expect(bar.destinations, hasLength(3));
     expect(find.descendant(of: find.byType(NavigationBar), matching: find.text('आज')), findsOneWidget);
 
-    await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('पच्चक्खाण')));
-    await tester.pumpAndSettle();
-
-    expect(tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex, 1);
+    for (final (index, label) in [(1, 'माह'), (2, 'पच्चक्खाण')]) {
+      await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text(label)));
+      await tester.pumpAndSettle();
+      expect(tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex, index, reason: label);
+    }
   });
 
   testWidgets('an English phone sees English', (tester) async {

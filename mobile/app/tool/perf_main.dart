@@ -51,6 +51,15 @@ Future<void> main() async {
   debugPrint(
     'PERF worker: $firstWorkerRead; then median ${viaWorker[5]} ms, worst ${viaWorker.last} ms',
   );
+  final months = <int>[];
+  for (final (year, month) in [(2026, 12), (2026, 10), (2026, 3), (2026, 11)]) {
+    final s = Stopwatch()..start();
+    await worker.readMonth(
+      MonthRequest(year: year, month: month, lat: 28.6139, lon: 77.2090, timezone: 'Asia/Kolkata'),
+    );
+    months.add(ms(s));
+  }
+  debugPrint('PERF month call via worker (Dec, Oct, Mar, Nov 2026): ${months.join(', ')} ms');
   worker.close();
   debugPrint('PERF done');
 }

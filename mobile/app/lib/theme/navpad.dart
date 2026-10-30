@@ -109,6 +109,17 @@ abstract final class NavpadType {
     height: 1.1,
     fontFeatures: _tabular,
   );
-  static const titleBand = TextStyle(fontFamily: _mukta, fontSize: 18, fontWeight: FontWeight.w700, height: 1.3);
+  static const displayMonth = TextStyle(fontFamily: _tiro, fontSize: 26, fontWeight: FontWeight.w400, height: 1.2);
+  static const displayHeading = TextStyle(fontFamily: _tiro, fontSize: 24, fontWeight: FontWeight.w400, height: 1.2);
+  static const cellDay = TextStyle(
+    fontFamily: _mukta,
+    fontSize: 19,
+    fontWeight: FontWeight.w600,
+    height: 1.1,
+    fontFeatures: _tabular,
+  );
+  static const cellTithi = TextStyle(fontFamily: _mukta, fontSize: 12, fontWeight: FontWeight.w400, height: 1.2);
+  static const cellFlag = TextStyle(fontFamily: _mukta, fontSize: 11, fontWeight: FontWeight.w700, height: 1.1);
+  static const titleBand =TextStyle(fontFamily: _mukta, fontSize: 18, fontWeight: FontWeight.w700, height: 1.3);
   static const labelAction = TextStyle(fontFamily: _mukta, fontSize: 16, fontWeight: FontWeight.w600, height: 1.3);
 }
