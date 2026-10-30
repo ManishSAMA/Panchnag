@@ -7,7 +7,9 @@ library;
 import '../astro/rise_set.dart';
 import '../day.dart';
 import '../time/civil_day.dart';
+import 'days.dart';
 import 'registry.dart';
+import 'single_tithi.dart';
 
 /// The profiles the app offers. Stored as open string ids, so Digambar can be
 /// added later without a migration (plans/mobile-app-flutter.md §1a).
@@ -56,5 +58,39 @@ List<FestivalOccurrence> festivalsOf({
   if (!festivalProfiles.contains(profile)) {
     throw ArgumentError.value(profile, 'profile', 'must be one of ${festivalProfiles.join(', ')}');
   }
-  return const [];
+  final days = festivalDays(location: location, year: year, sunriseRule: sunriseRule);
+  return festivalsFromDays(days, year: year, profile: profile, registry: registry);
+}
+
+typedef _Rule = List<FestivalOccurrence> Function(FestivalEntry entry, List<FestivalDay> days, {required int year});
+
+/// Rule types ported so far, by registry `rule_type`. The rest are skipped
+/// until their parity passes (plans/mobile-phase5-festivals.md §5).
+const Map<String, _Rule> _rules = {'SingleTithi': singleTithi};
+
+Iterable<String> get portedRuleTypes => _rules.keys;
+
+/// [festivalsOf] from readings already built, so a caller resolving several
+/// profiles for one place and year builds them once.
+List<FestivalOccurrence> festivalsFromDays(
+  List<FestivalDay> days, {
+  required int year,
+  required String profile,
+  required FestivalRegistry registry,
+}) {
+  final vratDays = vratView(days);
+  final occurrences = [
+    for (final entry in registry.entries)
+      if (entry.profiles.contains(profile) || entry.profiles.contains('all'))
+        if (_rules[entry.ruleType] case final rule?)
+          ...rule(entry, takesSecondDayOfVriddhi(entry.id, entry.category) ? vratDays : days, year: year),
+  ];
+  // Rules may resolve into the window's neighbouring years; List.sort is not
+  // stable, so the registry order of same-day festivals is kept by index.
+  final inYear = [for (final o in occurrences) if (o.start.year == year) o];
+  final order = {for (final (i, o) in inYear.indexed) o: i};
+  return inYear..sort((a, b) {
+    final byDate = a.start.compareTo(b.start);
+    return byDate != 0 ? byDate : order[a]!.compareTo(order[b]!);
+  });
 }

@@ -298,5 +298,12 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
   near these dates traces back to them. The full readings parity takes about 18 min with `-j 4`.
 - **Performance note:** one window costs about 1.7 s on desktop (JIT), mostly the ~850 sunrise and
   sunset solves. To revisit in step 13 (e.g. one solve per day for both, or the app's cache).
-- **Left:** the festival parity harness with id attribution and the year orchestrator (land with
-  step 1), then §5 steps 1–13.
+- **Step 1, `SingleTithi`:** done. Shared selectors in `festivals/primitives.dart` (month aliases,
+  Purnimanta target, 6-ghati pull-back, kshaya back-shift, first of two Jain day-starts, pradosh
+  days), the interpreter in `festivals/single_tithi.dart`, and the year orchestrator
+  (`festivalsFromDays`: profile filter, vrat view per rule, year filter, date order with registry
+  order kept for ties). `test/parity/festivals_test.dart` compares every ported type: SingleTithi
+  matches exactly for all 17 locations, both sunrise rules and all three profiles (12.8k rows per
+  rule for each of Delhi, Ahmedabad, Mumbai), with no boundary cases. The run takes ~8 min with `-j 4`.
+- **Left:** §5 steps 2–13 (every type except SingleTithi). Rule types not yet ported are skipped
+  by the orchestrator, so `festivals()` returns SingleTithi occurrences only for now.
