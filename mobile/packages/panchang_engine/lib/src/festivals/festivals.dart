@@ -10,6 +10,7 @@ import '../time/civil_day.dart';
 import 'days.dart';
 import 'registry.dart';
 import 'rules/bhaktambar.dart';
+import 'rules/namokar.dart';
 import 'single_tithi.dart';
 
 /// The profiles the app offers. Stored as open string ids, so Digambar can be
@@ -67,7 +68,11 @@ typedef _Rule = List<FestivalOccurrence> Function(FestivalEntry entry, List<Fest
 
 /// Rule types ported so far, by registry `rule_type`. The rest are skipped
 /// until their parity passes (plans/mobile-phase5-festivals.md §5).
-const Map<String, _Rule> _rules = {'SingleTithi': singleTithi, 'BhaktambarVrat': bhaktambarVrat};
+const Map<String, _Rule> _rules = {
+  'SingleTithi': singleTithi,
+  'BhaktambarVrat': bhaktambarVrat,
+  'Namokar35Vrat': namokar35Vrat,
+};
 
 Iterable<String> get portedRuleTypes => _rules.keys;
 
@@ -88,7 +93,10 @@ List<FestivalOccurrence> festivalsFromDays(
   ];
   // Rules may resolve into the window's neighbouring years; List.sort is not
   // stable, so the registry order of same-day festivals is kept by index.
-  final inYear = [for (final o in occurrences) if (o.start.year == year) o];
+  final inYear = [
+    for (final o in occurrences)
+      if (o.start.year == year) o,
+  ];
   final order = {for (final (i, o) in inYear.indexed) o: i};
   return inYear..sort((a, b) {
     final byDate = a.start.compareTo(b.start);

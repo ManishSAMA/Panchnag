@@ -41,6 +41,8 @@ void main() {
       final bhaktambar = sthanakvasi.where((f) => f.ruleId == 'bhaktambar_vrat').toList();
       expect(bhaktambar, isNotEmpty);
       expect(bhaktambar.every((f) => f.id.startsWith('bhaktambar_vrat_2026_')), isTrue);
+      expect(sthanakvasi.where((f) => f.ruleId == 'namokar_35_vrat').map((f) => f.id),
+          contains('namokar_vrat_step_1_2026'));
     });
   });
 

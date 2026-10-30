@@ -25,6 +25,7 @@ final registry = FestivalRegistry.fromJson(File('../../../shared/festival_regist
 /// registry id, by the ids they emit. Filled in as each type is ported.
 final Map<String, RegExp> emittedIds = {
   'BhaktambarVrat': RegExp(r'^bhaktambar_vrat_\d{4}_'),
+  'Namokar35Vrat': RegExp(r'^namokar_vrat_step_\d+_\d{4}$'),
 };
 
 String? ruleTypeOf(String id) {

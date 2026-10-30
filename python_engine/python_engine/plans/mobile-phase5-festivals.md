@@ -310,5 +310,10 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
   per rule for each long-range city with SingleTithi). Gotcha: Python repeats a Bhaktambar
   occurrence id within a year (the Pausha fortnight falls at both ends), with different dates, so
   the harness compares multisets and the orchestrator test checks (occurrence id, date) uniqueness.
-- **Left:** §5 steps 3–13. Rule types not yet ported are skipped by the orchestrator, so
-  `festivals()` returns SingleTithi and Bhaktambar occurrences only for now.
+- **Step 3, `Namokar35Vrat`:** done (`festivals/rules/namokar.dart`, with `amantaMonthInYear` in
+  the primitives: the year's days of one Amanta month by name, Adhik-only when it repeats, which
+  most family B/C rules also use). Exact parity everywhere, no boundary cases (19.0k rows per rule
+  for each long-range city). Mutation check: parity alone does not exercise a kshaya with a doubled
+  fallback tithi or an Adhik month for these steps; the unit tests do.
+- **Left:** §5 steps 4–13. Rule types not yet ported are skipped by the orchestrator, so
+  `festivals()` returns SingleTithi, Bhaktambar and Namokar 35 occurrences only for now.
