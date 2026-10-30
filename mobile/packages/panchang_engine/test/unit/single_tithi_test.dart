@@ -28,6 +28,7 @@ List<FestivalDay> days(
         eveningTithi: evening,
         month: amanta ?? purnimanta,
         purnimantaMonth: purnimanta,
+        standardOffset: Duration.zero,
       ),
   ];
 }

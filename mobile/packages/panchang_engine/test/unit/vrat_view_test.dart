@@ -18,6 +18,7 @@ List<FestivalDay> daysWith(List<int> jainTithis, {List<LunarMonth>? months}) => 
       eveningTithi: 98,
       month: months?[i] ?? shravana,
       purnimantaMonth: months?[i] ?? shravana,
+      standardOffset: Duration.zero,
     ),
 ];
 

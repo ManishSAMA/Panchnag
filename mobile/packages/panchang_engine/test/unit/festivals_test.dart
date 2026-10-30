@@ -44,6 +44,8 @@ void main() {
       expect(sthanakvasi.where((f) => f.ruleId == 'namokar_35_vrat').map((f) => f.id),
           contains('namokar_vrat_step_1_2026'));
       expect(sthanakvasi.where((f) => f.ruleId == 'pushpanjali_vrat'), hasLength(greaterThanOrEqualTo(15)));
+      // A sidereal month is 27.3 days, so Rohini comes round 13 or 14 times a year.
+      expect(sthanakvasi.where((f) => f.id == 'rohini_nakshatra_parv_vrat'), hasLength(inInclusiveRange(12, 14)));
     });
   });
 

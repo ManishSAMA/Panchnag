@@ -24,6 +24,7 @@ List<FestivalDay> month(LunarMonth amanta, List<int> tithis, {CivilDate start = 
         eveningTithi: t,
         month: amanta,
         purnimantaMonth: amanta,
+        standardOffset: Duration.zero,
       ),
   ];
 }

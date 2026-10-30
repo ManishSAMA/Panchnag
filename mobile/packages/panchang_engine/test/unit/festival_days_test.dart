@@ -50,11 +50,24 @@ void main() {
       expect(krishnaBefore.month.isAdhika, isFalse);
     });
 
+    test("carries the zone's standard UTC offset, the clock Python's vrat providers read local times on", () {
+      expect(days.map((d) => d.standardOffset).toSet(), {const Duration(hours: 5, minutes: 30)});
+    });
+
     test('Krishna days after the last Shukla paksha take the following month name', () {
       final last = days.last;
       if (last.jainTithi <= 15) return;
       expect(last.purnimantaMonth.index, (last.month.index + 1) % 12);
       expect(last.purnimantaMonth.isAdhika, last.month.isAdhika);
     });
+  });
+
+  test('the standard offset ignores daylight time (London keeps GMT through the summer)', () {
+    final london = festivalDays(
+      location: const Location(lat: 51.5074, lon: -0.1278, timezone: 'Europe/London'),
+      year: 2026,
+      sunriseRule: SunriseRule.modern,
+    );
+    expect(london.map((d) => d.standardOffset).toSet(), {Duration.zero});
   });
 }

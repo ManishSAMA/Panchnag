@@ -25,6 +25,7 @@ List<FestivalDay> fortnight(List<int> tithis, {CivilDate start = const CivilDate
         eveningTithi: t,
         month: month,
         purnimantaMonth: month,
+        standardOffset: Duration.zero,
       ),
   ];
 }

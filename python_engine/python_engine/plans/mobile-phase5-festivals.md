@@ -320,5 +320,14 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
   Chaturthi (or the day before Panchami) when Shukla 5–14 have a kshaya and no doubled tithi. Exact
   parity everywhere, no boundary cases (about 17 more rows per profile and year). Mutation check: parity
   never sees a doubled Chaturthi before such a kshaya; a unit test pins the first-day choice.
-- **Left:** §5 steps 5–13. Rule types not yet ported are skipped by the orchestrator, so
-  `festivals()` returns SingleTithi, Bhaktambar, Namokar 35 and Pushpanjali occurrences only for now.
+- **Step 5, `RohiniVrat`:** done (`festivals/rules/rohini.dart`), with the §6.1 bug kept in one
+  function (`_clockReadAsUtc`). `FestivalDay` gained `standardOffset`, the zone's standard UTC
+  offset on that date, which the provider-based vrats of step 12 also read their local clock on.
+  Exact parity everywhere, no boundary cases, London and New York included (about 13.5 more rows
+  per profile and year). Mutation check: parity alone misses the 20-day skip, the 15 Dec start, the
+  31 Dec end and the touches-no-sunrise end test; the unit tests kill them all. Python's 0.01-day
+  step past each nakshatra's end is an equivalent mutant (it only decides whether a Rohini that
+  begins just before the next sunrise is seen, and such a Rohini gives no day either way).
+- **Left:** §5 steps 6–13. Rule types not yet ported are skipped by the orchestrator, so
+  `festivals()` returns SingleTithi, Bhaktambar, Namokar 35, Pushpanjali and Rohini occurrences
+  only for now.

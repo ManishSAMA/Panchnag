@@ -19,6 +19,7 @@ final class FestivalDay {
     required this.eveningTithi,
     required this.month,
     required this.purnimantaMonth,
+    required this.standardOffset,
   });
 
   final CivilDate date;
@@ -41,6 +42,10 @@ final class FestivalDay {
 
   /// Python `purnimanta_month` + `purnimanta_is_adhika`, see [festivalDays].
   final LunarMonth purnimantaMonth;
+
+  /// The zone's standard UTC offset on [date]: the clock Python's vrat
+  /// providers read local times on.
+  final Duration standardOffset;
 }
 
 /// Readings for every civil day from 1 Dec of `year - 1` to 31 Jan of
@@ -73,6 +78,7 @@ List<FestivalDay> festivalDays({
           jainTithi: tithiAt(reference),
           eveningTithi: tithiAt(set),
           month: monthAt(reference),
+          standardOffset: standardOffset(date, timezone),
         );
       }(),
   ];
@@ -89,6 +95,7 @@ List<FestivalDay> festivalDays({
         eveningTithi: r.eveningTithi,
         month: r.month,
         purnimantaMonth: purnimanta[i],
+        standardOffset: r.standardOffset,
       ),
   ];
 }
@@ -134,6 +141,7 @@ FestivalDay _asPreviousTithi(FestivalDay day, {required FestivalDay? before}) {
     eveningTithi: day.eveningTithi,
     month: months.month,
     purnimantaMonth: months.purnimantaMonth,
+    standardOffset: day.standardOffset,
   );
 }
 
