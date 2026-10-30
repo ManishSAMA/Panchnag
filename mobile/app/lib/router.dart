@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'features/location/city_picker_screen.dart';
 import 'features/month/month_screen.dart';
 import 'features/pachchakkhan/pachchakkhan_screen.dart';
+import 'features/settings/settings_screen.dart';
 import 'features/today/today_screen.dart';
 import 'l10n/app_localizations.dart';
 
@@ -13,6 +14,7 @@ GoRouter buildRouter({required bool hasLocation}) => GoRouter(
   initialLocation: hasLocation ? '/today' : '/location',
   routes: [
     GoRoute(path: '/location', builder: (context, state) => const CityPickerScreen()),
+    GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => _TabShell(shell: shell),
       branches: [

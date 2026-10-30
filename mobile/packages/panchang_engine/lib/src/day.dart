@@ -116,6 +116,7 @@ final class PanchangDay {
     required this.nakshatra,
     required this.vara,
     required this.month,
+    required this.amantaMonth,
     required this.vikramSamvat,
     required this.viraNirvanaSamvat,
     required this.choghadiya,
@@ -135,6 +136,10 @@ final class PanchangDay {
 
   /// The Purnimanta month at the Jain reference instant.
   final LunarMonth month;
+
+  /// The Amanta month at the same instant: the same as [month] in a Shukla
+  /// paksha, the month before it in a Krishna paksha.
+  final LunarMonth amantaMonth;
   final int vikramSamvat, viraNirvanaSamvat;
 
   /// Eight day slots from sunrise, then eight night slots from sunset.
@@ -234,6 +239,7 @@ final class PanchangEngine {
       nakshatra: (index: nakshatraAt(rise), pada: nakshatraPadaAt(rise), endsAt: _utc(nakshatraEnd(rise))),
       vara: date.vara,
       month: purnimantaMonth(reference, amanta: amanta),
+      amantaMonth: amanta(reference),
       vikramSamvat: samvat.vikram,
       viraNirvanaSamvat: samvat.viraNirvana,
       choghadiya: [

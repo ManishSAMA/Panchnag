@@ -48,4 +48,28 @@ void main() {
       expect(() => tz.getLocation(city.timezone), returnsNormally);
     }
   });
+
+  group('the preset city near a GPS fix', () {
+    test('is each city at its own coordinates', () {
+      for (final city in presetCities) {
+        expect(nearestCity(lat: city.lat, lon: city.lon), same(city), reason: city.id);
+      }
+    });
+
+    test('is the closest of two nearby cities', () {
+      // Surat (21.17, 72.83) and Palitana (21.52, 71.82): a point just east of Surat.
+      expect(nearestCity(lat: 21.17, lon: 72.95)?.id, 'surat');
+    });
+
+    test('holds within $nearCityKm km and not beyond', () {
+      // One degree of latitude is about 111 km.
+      final delhi = presetCityById('delhi')!;
+      expect(nearestCity(lat: delhi.lat + 0.4, lon: delhi.lon)?.id, 'delhi');
+      expect(nearestCity(lat: delhi.lat + 0.5, lon: delhi.lon), isNull);
+    });
+
+    test('is none for a fix outside India', () {
+      expect(nearestCity(lat: 51.5074, lon: -0.1278), isNull);
+    });
+  });
 }

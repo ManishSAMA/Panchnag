@@ -10,10 +10,12 @@ import '../../l10n/city_name.dart';
 import '../../location/cities.dart';
 import '../../location/city_time.dart';
 import '../../location/location_store.dart';
+import '../../settings/settings_store.dart';
 import '../../shared/date_navigator.dart';
 import '../../shared/day_notes.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../shared/pachchakkhan_row.dart';
+import '../../shared/settings_button.dart';
 import '../../theme/navpad.dart';
 import 'today_state.dart';
 
@@ -27,10 +29,18 @@ class TodayScreen extends ConsumerWidget {
     final city = ref.watch(locationProvider)!;
     final date = ref.watch(selectedDateProvider);
     final reading = ref.watch(
-      dayReadingProvider(DayRequest(date: date, lat: city.lat, lon: city.lon, timezone: city.timezone)),
+      dayReadingProvider(
+        DayRequest(
+          date: date,
+          lat: city.lat,
+          lon: city.lon,
+          timezone: city.timezone,
+          rule: ref.watch(sunriseRuleProvider),
+        ),
+      ),
     );
     return Scaffold(
-      appBar: AppBar(titleSpacing: 6, title: _LocationButton(city: city)),
+      appBar: AppBar(titleSpacing: 6, title: _LocationButton(city: city), actions: const [SettingsButton()]),
       body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(
@@ -54,7 +64,7 @@ class TodayScreen extends ConsumerWidget {
 class _LocationButton extends StatelessWidget {
   const _LocationButton({required this.city});
 
-  final PresetCity city;
+  final Place city;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +74,8 @@ class _LocationButton extends StatelessWidget {
       button: true,
       excludeSemantics: true,
       child: TextButton(
-        onPressed: () => context.push('/location'),
+        key: const Key('today-location'),
+        onPressed: () => context.push('/settings'),
         style: TextButton.styleFrom(
           foregroundColor: Theme.of(context).colorScheme.onSurface,
           textStyle: NavpadType.titleBand.copyWith(fontWeight: FontWeight.w600),
@@ -120,7 +131,7 @@ class _DayView extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _Hero(reading: reading, wall: wall),
+        _Hero(reading: reading, month: lunarMonthOf(reading, ref.watch(monthSystemProvider)), wall: wall),
         if (notes.isNotEmpty)
           KeyedSubtree(
             key: const Key('today-note'),
@@ -205,9 +216,10 @@ class _DayView extends ConsumerWidget {
 }
 
 class _Hero extends StatelessWidget {
-  const _Hero({required this.reading, required this.wall});
+  const _Hero({required this.reading, required this.month, required this.wall});
 
   final PanchangDay reading;
+  final LunarMonth month;
   final DateTime Function(DateTime) wall;
 
   @override
@@ -235,7 +247,7 @@ class _Hero extends StatelessWidget {
                 style: text.bodyLarge!.copyWith(color: n.ink2, height: 1.4),
                 children: [
                   TextSpan(
-                    text: monthName(reading.month, lang),
+                    text: monthName(month, lang),
                     style: TextStyle(color: n.ink, fontWeight: FontWeight.w600),
                   ),
                   TextSpan(text: ' · ${l10n.heroUntil(ends, tithiName(reading.jainTithi.index % 30 + 1, lang))}\n'),

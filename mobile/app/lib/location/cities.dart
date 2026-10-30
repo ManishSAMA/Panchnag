@@ -2,7 +2,20 @@
 /// fixtures' core locations, so the engine is verified at every one.
 library;
 
-final class PresetCity {
+import 'dart:math' as math;
+
+/// Where the panchang is calculated: a preset city or a GPS fix.
+sealed class Place {
+  const Place();
+
+  double get lat;
+  double get lon;
+
+  /// An IANA name, such as 'Asia/Kolkata'.
+  String get timezone;
+}
+
+final class PresetCity extends Place {
   const PresetCity({
     required this.id,
     required this.nameHi,
@@ -16,9 +29,28 @@ final class PresetCity {
   final String id;
   final String nameHi;
   final String nameEn;
+  @override
   final double lat;
+  @override
   final double lon;
+  @override
   final String timezone;
+}
+
+/// A GPS fix, in the time zone the phone was set to when it was taken
+/// (mobile-ui-design.md §3.0). A fix outside India is accepted.
+final class GpsPlace extends Place {
+  const GpsPlace({required this.lat, required this.lon, required this.timezone});
+
+  @override
+  final double lat;
+  @override
+  final double lon;
+  @override
+  final String timezone;
+
+  /// The preset city it is named after, if one is close enough; offline there is no other name for it.
+  PresetCity? get near => nearestCity(lat: lat, lon: lon);
 }
 
 const List<PresetCity> presetCities = [
@@ -61,4 +93,24 @@ PresetCity? presetCityById(String id) {
     if (city.id == id) return city;
   }
   return null;
+}
+
+/// How far a GPS fix may be from a preset city and still be called "near" it.
+const int nearCityKm = 50;
+
+/// The closest preset city within [nearCityKm] of a point, if any.
+PresetCity? nearestCity({required double lat, required double lon}) {
+  final (distance, city) = presetCities
+      .map((c) => (_kmBetween(lat, lon, c.lat, c.lon), c))
+      .reduce((a, b) => a.$1 <= b.$1 ? a : b);
+  return distance <= nearCityKm ? city : null;
+}
+
+/// Great-circle distance on a spherical Earth (haversine).
+double _kmBetween(double lat1, double lon1, double lat2, double lon2) {
+  double rad(double degrees) => degrees * math.pi / 180;
+  final dLat = rad(lat2 - lat1);
+  final dLon = rad(lon2 - lon1);
+  final h = math.pow(math.sin(dLat / 2), 2) + math.cos(rad(lat1)) * math.cos(rad(lat2)) * math.pow(math.sin(dLon / 2), 2);
+  return 2 * 6371.0 * math.asin(math.sqrt(h));
 }
