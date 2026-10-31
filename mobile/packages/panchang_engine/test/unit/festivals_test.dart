@@ -53,6 +53,14 @@ void main() {
       final samvatsari = sthanakvasi.firstWhere((f) => f.id == 'samvatsari_mahaparv_2026').start;
       expect(sthanakvasi.firstWhere((f) => f.id == 'labdhi_vidhan_vrat_purna_2026').start, samvatsari);
     });
+
+    test('the Diwali cluster: Nirvana on Amavasya, the new year the day after, Bhai Dooj the day after that', () {
+      CivilDate on(String id) => sthanakvasi.firstWhere((f) => f.id == id).start;
+      final nirvana = on('mahavira_nirvana_kalyanak_2026');
+      expect(on('jain_new_year_2026').compareTo(nirvana), greaterThan(0));
+      expect(on('bhai_dooj_2026').compareTo(on('jain_new_year_2026')), greaterThan(0));
+      expect(on('chaturmas_nishthapan_2026'), nirvana);
+    });
   });
 
   group('profiles', () {

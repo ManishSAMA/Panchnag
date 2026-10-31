@@ -342,6 +342,20 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
   last Krishna 14) and ends on Samvatsari. `CivilDate.plusDays` added. Exact parity everywhere
   (11 rows per profile and year). Mutation check: parity misses the second-day anchor, the Adhik
   and year filters, the Amavasya first/K14 last choice and Labdhi's category; the unit tests kill them.
-- **Left:** §5 steps 8–13. Rule types not yet ported are skipped by the orchestrator, so
+- **Step 8, family B (21 types):** done (`festivals/rules/anchored.dart`). 17 types are one table
+  row each (month, Amanta or Purnimanta naming, paksha, tithi, first or second day on a vriddhi,
+  fallback tithi, events); Akshaya Tritiya, Diwali + Chaturmas Nishthapan, Veer Shasan Jayanti
+  and Karwa / Ahoi / Dampatya are written out. `purnimantaMonthInYear` joins `amantaMonthInYear`
+  in the primitives (Labdhi Vidhan now uses it too), and the orchestrator's rule map is a public
+  `FestivalRule` typedef. Exact parity everywhere (40 rows per profile and year). Python quirks
+  kept: the Purnimanta month filter reads the Amanta Adhik flag; Dampatya Ashtami lands on the Ahoi
+  (pradosh) day though its comment says udaya; Veer Shasan's kshaya fallback reaches outside its
+  month to Amanta Ashadha Purnima, but only when Purnimanta Shravana has any days. Akshaya
+  Tritiya's 6-ghati pull-back is a no-op in Python (its input day already holds Tritiya at the
+  Jain day-start) and is left out. Mutation check: parity misses the vriddhi first/second choice,
+  the fallback's last day, the Adhik filter, both year filters, Diwali's last pradosh and
+  Nishthapan's last udaya, Veer Shasan's Adhik and empty-month checks, and Karwa's first day; the
+  unit tests kill them all.
+- **Left:** §5 steps 9–13. Rule types not yet ported are skipped by the orchestrator, so
   `festivals()` returns SingleTithi, Bhaktambar, Namokar 35, Pushpanjali, Rohini, Ravi Vrat,
-  Paryushan 50 and Labdhi Vidhan occurrences only for now.
+  Paryushan 50, Labdhi Vidhan and family B occurrences only for now.

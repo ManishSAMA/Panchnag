@@ -9,6 +9,7 @@ import '../day.dart';
 import '../time/civil_day.dart';
 import 'days.dart';
 import 'registry.dart';
+import 'rules/anchored.dart';
 import 'rules/bhaktambar.dart';
 import 'rules/namokar.dart';
 import 'rules/paryushan.dart';
@@ -68,11 +69,12 @@ List<FestivalOccurrence> festivalsOf({
   return festivalsFromDays(days, year: year, profile: profile, registry: registry);
 }
 
-typedef _Rule = List<FestivalOccurrence> Function(FestivalEntry entry, List<FestivalDay> days, {required int year});
+/// A rule type: the occurrences one registry entry resolves to over a year's window.
+typedef FestivalRule = List<FestivalOccurrence> Function(FestivalEntry entry, List<FestivalDay> days, {required int year});
 
 /// Rule types ported so far, by registry `rule_type`. The rest are skipped
 /// until their parity passes (plans/mobile-phase5-festivals.md §5).
-const Map<String, _Rule> _rules = {
+final Map<String, FestivalRule> _rules = {
   'SingleTithi': singleTithi,
   'BhaktambarVrat': bhaktambarVrat,
   'Namokar35Vrat': namokar35Vrat,
@@ -81,6 +83,7 @@ const Map<String, _Rule> _rules = {
   'ShvetambaraParyushan50Day': paryushan50Day,
   'LabdhiVidhanVrat': labdhiVidhanVrat,
   'RohiniVrat': rohiniVrat,
+  ...anchoredRules,
 };
 
 Iterable<String> get portedRuleTypes => _rules.keys;

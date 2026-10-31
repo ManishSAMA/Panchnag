@@ -131,8 +131,16 @@ List<List<FestivalDay>> pakshaBlocks(List<FestivalDay> days) {
 /// month at both ends of a year counts as one. When the month repeats that year,
 /// only its Adhik days (the "execute strictly in Adhik Maas" rule of many
 /// Python rules).
-List<FestivalDay> amantaMonthInYear(List<FestivalDay> days, int year, int monthIndex) {
-  final named = [for (final d in days) if (d.date.year == year && d.month.index == monthIndex) d];
+List<FestivalDay> amantaMonthInYear(List<FestivalDay> days, int year, int monthIndex) =>
+    _adhikWhenRepeated([for (final d in days) if (d.date.year == year && d.month.index == monthIndex) d]);
+
+/// As [amantaMonthInYear] for a month named the Purnimanta way (Python
+/// `get_jain_month`); the Adhik test still reads the Amanta flag, as Python's
+/// `is_adhika` does.
+List<FestivalDay> purnimantaMonthInYear(List<FestivalDay> days, int year, int monthIndex) =>
+    _adhikWhenRepeated([for (final d in days) if (d.date.year == year && d.purnimantaMonth.index == monthIndex) d]);
+
+List<FestivalDay> _adhikWhenRepeated(List<FestivalDay> named) {
   final adhik = named.any((d) => d.month.isAdhika);
   return [for (final d in named) if (d.month.isAdhika == adhik) d];
 }

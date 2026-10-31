@@ -30,6 +30,34 @@ final Map<String, RegExp> emittedIds = {
   'ShvetambaraParyushan50Day':
       RegExp(r'^(shvetambara_chaturmas_prarambh|paryushan_parv_day_[1-7]|samvatsari_mahaparv)_\d{4}$'),
   'LabdhiVidhanVrat': RegExp(r'^labdhi_vidhan_vrat_(prarambh|purna)_\d{4}$'),
+  for (final MapEntry(:key, :value) in yearlyEvents.entries) key: RegExp('^(${value.join('|')})' r'_\d{4}$'),
+};
+
+/// Family B rule types, by the `<prefix>_<year>` ids of their events.
+const Map<String, List<String>> yearlyEvents = {
+  'ShravanaPurnimaRakshabandhan': [
+    'rakshabandhan_700_muni_raksha_divas', 'muni_vishnukumar_akampanacharya_pujan', 'sorana_pujan',
+  ],
+  'PhalgunaPurnimaAshtahnikaPurna': ['phalguna_ashtahnika_purna', 'holika_dahan', 'phalguna_purnima_vasantotsav'],
+  'MaghaShuklaPanchamiTri': ['acharya_kundakunda_jayanti', 'jina_murti_sthapna', 'vasant_panchami_shrut'],
+  'TalaDharTapShantisagarPunyatithi': ['acharya_shantisagar_punyatithi', 'tala_dhar_tap'],
+  'BadiPanchamiMeruSthapana': ['badi_panchami', 'meru_sthapana'],
+  'NihshalyaAshtamiManchinTithi': ['nihshalya_ashtami_vrat', 'manchin_tithi_ashtami'],
+  'SugandhDashami': ['sugandh_dashami_mahaparv', 'sugandh_dashami_vrat'],
+  'VeerShasanJayanti': ['veer_shasan_jayanti', 'shrut_udbhav_divas'],
+  'GyanDhanTrayodashi': ['gyan_trayodashi', 'dhan_teras'],
+  'KartikaAmavasyaMahaviraNirvana': ['mahavira_nirvana_kalyanak', 'varsha_yog_nishthapan'],
+  'KartikaShuklaEkamNewYear': ['jain_new_year', 'gautam_swami_kevalgyan'],
+  'KartikaShuklaPanchami': ['gyan_panchami', 'labh_panchami'],
+  'KartikaPurnimaAshtahnikaPurna': ['kartika_ashtahnika_purna', 'kartika_purnima_dev_deepavali'],
+  'JeevDayaAshtami': ['jeev_daya_ashtami'],
+  'KartikaNandishwarAshtami': ['nandishwar_ashtami_kartika'],
+  'BhaiDooj': ['bhai_dooj'],
+  'MargashirshaSheetalnathStotram': ['sheetalnath_stotram_rachna'],
+  'ChaitraAmavasyaKalyanakVarshant': ['vikram_samvat_varshant'],
+  'AkshayaTritiya': ['akshaya_tritiya_dan_divas'],
+  'DiwaliChaturmasNishthapan': ['diwali', 'chaturmas_nishthapan'],
+  'SplitDayAhoiKarwaDampatya': ['karwa_chauth', 'ahoi_ashtami', 'dampatya_ashtami'],
 };
 
 String? ruleTypeOf(String id) {

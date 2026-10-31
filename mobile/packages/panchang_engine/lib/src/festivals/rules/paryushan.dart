@@ -10,6 +10,7 @@ import '../primitives.dart';
 import '../registry.dart';
 
 const int _ashadha = 3;
+const int _bhadrapada = 5;
 
 /// Samvatsari is day 50 of the count, 49 days after its first.
 const int _samvatsariOffset = 49;
@@ -56,9 +57,7 @@ List<FestivalOccurrence> labdhiVidhanVrat(FestivalEntry entry, List<FestivalDay>
 /// The first Purnimanta Bhadrapada Krishna Amavasya of the year, reading only
 /// the Adhik days when there are any; on a kshaya, the last Krishna 14.
 CivilDate? _bhadrapadaKrishnaAmavasya(List<FestivalDay> days, int year) {
-  final bhadrapada = days.where((d) => d.date.year == year && jainMonthName(d) == 'BHADRAPADA').toList();
-  final hasAdhik = bhadrapada.any((d) => d.month.isAdhika);
-  final month = bhadrapada.where((d) => d.month.isAdhika == hasAdhik).toList();
+  final month = purnimantaMonthInYear(days, year, _bhadrapada);
   return (month.where((d) => holds(d, Reading.jain, 'Krishna', 15)).firstOrNull ??
           month.where((d) => holds(d, Reading.jain, 'Krishna', 14)).lastOrNull)
       ?.date;
