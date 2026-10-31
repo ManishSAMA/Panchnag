@@ -8,9 +8,11 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/city_name.dart';
 import '../../location/city_time.dart';
 import '../../location/location_store.dart';
+import '../../settings/settings_store.dart';
 import '../../shared/date_navigator.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../shared/pachchakkhan_row.dart';
+import '../../shared/settings_button.dart';
 import '../../theme/navpad.dart';
 import '../today/today_state.dart';
 
@@ -26,10 +28,18 @@ class PachchakkhanScreen extends ConsumerWidget {
     final city = ref.watch(locationProvider)!;
     final date = ref.watch(selectedDateProvider);
     final reading = ref.watch(
-      dayReadingProvider(DayRequest(date: date, lat: city.lat, lon: city.lon, timezone: city.timezone)),
+      dayReadingProvider(
+        DayRequest(
+          date: date,
+          lat: city.lat,
+          lon: city.lon,
+          timezone: city.timezone,
+          rule: ref.watch(sunriseRuleProvider),
+        ),
+      ),
     );
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.tabPachchakkhan)),
+      appBar: AppBar(title: Text(l10n.tabPachchakkhan), actions: const [SettingsButton()]),
       body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(

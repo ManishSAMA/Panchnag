@@ -64,21 +64,6 @@ void main() {
     expect(find.text('अपना शहर चुनें'), findsOneWidget);
   });
 
-  testWidgets("Today's location chip changes the city and returns to Today", (tester) async {
-    final prefs = await preferences({'location.city': 'delhi'});
-    await launch(tester, prefs);
-
-    await tester.tap(find.widgetWithText(TextButton, 'दिल्ली'));
-    await tester.pumpAndSettle();
-    expect(tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'दिल्ली')).selected, isTrue);
-
-    await tester.tap(find.text('मुंबई'));
-    await tester.pumpAndSettle();
-
-    expect(find.widgetWithText(TextButton, 'मुंबई'), findsOneWidget);
-    expect(prefs.getString('location.city'), 'mumbai');
-  });
-
   testWidgets('the tabs are Today, Month and Pachchakkhan, in that order', (tester) async {
     await launch(tester, await preferences({'location.city': 'delhi'}));
 

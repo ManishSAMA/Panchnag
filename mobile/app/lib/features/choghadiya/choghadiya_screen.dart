@@ -8,6 +8,7 @@ import '../../format/panchang_text.dart';
 import '../../l10n/app_localizations.dart';
 import '../../location/city_time.dart';
 import '../../location/location_store.dart';
+import '../../settings/settings_store.dart';
 import '../../shared/date_navigator.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../theme/navpad.dart';
@@ -26,7 +27,15 @@ class ChoghadiyaScreen extends ConsumerWidget {
     final date = ref.watch(selectedDateProvider);
     final now = currentTime(ref);
     final selected = ref.watch(
-      dayReadingProvider(DayRequest(date: date, lat: city.lat, lon: city.lon, timezone: city.timezone)),
+      dayReadingProvider(
+        DayRequest(
+          date: date,
+          lat: city.lat,
+          lon: city.lon,
+          timezone: city.timezone,
+          rule: ref.watch(sunriseRuleProvider),
+        ),
+      ),
     );
     final reading = watchChoghadiya(ref, city: city, date: date, now: now);
     return Scaffold(

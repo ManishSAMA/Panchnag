@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'l10n/app_localizations.dart';
 import 'location/location_store.dart';
 import 'router.dart';
+import 'settings/settings_store.dart';
 import 'theme/theme.dart';
 
 /// English if the phone's first language is English, otherwise Hindi
@@ -52,6 +53,8 @@ class _AppState extends ConsumerState<_App> {
     darkTheme: navpadTheme(Brightness.dark),
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
+    // An override reaches the callback as the only locale; null follows the phone.
+    locale: ref.watch(languageProvider).locale,
     localeListResolutionCallback: (phoneLocales, _) => appLocaleFor(phoneLocales),
     routerConfig: _router,
   );

@@ -8,8 +8,10 @@ import '../../format/panchang_text.dart';
 import '../../l10n/app_localizations.dart';
 import '../../location/city_time.dart';
 import '../../location/location_store.dart';
+import '../../settings/settings_store.dart';
 import '../../shared/day_notes.dart';
 import '../../shared/navpad_widgets.dart';
+import '../../shared/settings_button.dart';
 import '../../theme/navpad.dart';
 import '../today/today_state.dart';
 import 'month_state.dart';
@@ -30,13 +32,20 @@ class MonthScreen extends ConsumerWidget {
     final view = ref.watch(monthViewProvider);
     final reading = ref.watch(
       monthReadingProvider(
-        MonthRequest(year: view.year, month: view.month, lat: city.lat, lon: city.lon, timezone: city.timezone),
+        MonthRequest(
+          year: view.year,
+          month: view.month,
+          lat: city.lat,
+          lon: city.lon,
+          timezone: city.timezone,
+          rule: ref.watch(sunriseRuleProvider),
+        ),
       ),
     );
     final docked = MediaQuery.sizeOf(context).height >= dockedPanelMinHeight;
     final today = todayIn(city.timezone, currentTime(ref));
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.tabMonth)),
+      appBar: AppBar(title: Text(l10n.tabMonth), actions: const [SettingsButton()]),
       body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(
@@ -93,6 +102,7 @@ class _Header extends ConsumerWidget {
     final n = Theme.of(context).extension<Navpad>()!;
     final text = Theme.of(context).textTheme;
     final months = ref.read(monthViewProvider.notifier);
+    final system = ref.watch(monthSystemProvider);
     final shown = (view.year, view.month);
     final showsToday = shown == (today.year, today.month);
     final shownDays = days;
@@ -119,7 +129,7 @@ class _Header extends ConsumerWidget {
                 if (shownDays != null && shownDays.first.date.month == view.month)
                   Text(
                     monthSpanLine(
-                      months: [for (final d in shownDays) d.month],
+                      months: [for (final d in shownDays) lunarMonthOf(d, system)],
                       vikrams: [for (final d in shownDays) d.vikramSamvat],
                       lang: lang,
                     ),
@@ -360,7 +370,7 @@ class _DayPanel extends ConsumerWidget {
           const ListTop(),
           TimeRow(
             name: tithiName(day.jainTithi.index, lang),
-            subtitle: monthName(day.month, lang),
+            subtitle: monthName(lunarMonthOf(day, ref.watch(monthSystemProvider)), lang),
             time: l10n.until(instantPhrase(wall(day.jainTithi.endsAt), day: day.date, lang: lang)),
           ),
           TimeRow(name: l10n.sunrise, time: clockPhrase(wall(day.sunrise), lang)),

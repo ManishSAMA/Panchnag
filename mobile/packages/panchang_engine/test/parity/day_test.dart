@@ -36,6 +36,7 @@ void main() {
           final jain = row['jain_tithi']! as Map<String, Object?>;
           final nakshatra = row['nakshatra']! as Map<String, Object?>;
           final month = row['month']! as Map<String, Object?>;
+          final amanta = row['month_amanta']! as Map<String, Object?>;
 
           near('sunrise', day.sunrise, row['sunrise'], date);
           near('sunset', day.sunset, row['sunset'], date);
@@ -55,6 +56,9 @@ void main() {
           if (day.vara != row['vara']) mismatches.add('$date vara');
           if ((day.month.index, day.month.isAdhika) != (month['index'], month['is_adhika'])) {
             mismatches.add('$date month');
+          }
+          if ((day.amantaMonth.index, day.amantaMonth.isAdhika) != (amanta['index'], amanta['is_adhika'])) {
+            mismatches.add('$date amanta month');
           }
           if ((day.vikramSamvat, day.viraNirvanaSamvat) != (row['vikram_samvat'], row['vira_nirvana_samvat'])) {
             mismatches.add('$date samvat');

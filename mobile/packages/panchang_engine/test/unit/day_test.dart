@@ -1,5 +1,5 @@
 import 'package:panchang_engine/panchang_engine.dart';
-import 'package:panchang_engine/src/calendar/month.dart' show purnimantaMonth;
+import 'package:panchang_engine/src/calendar/month.dart' show amantaMonth, purnimantaMonth;
 import 'package:panchang_engine/src/panchang/elements.dart' show nakshatraAt, nakshatraPadaAt, tithiAt;
 import 'package:panchang_engine/src/time/julian_day.dart';
 import 'package:test/test.dart';
@@ -49,6 +49,10 @@ void main() {
 
     test('the month is the Purnimanta month at the reference instant', () {
       expect(day.month, purnimantaMonth(jd(day.jainTithi.reference)));
+    });
+
+    test('the Amanta month is the one at the reference instant', () {
+      expect(day.amantaMonth, amantaMonth(jd(day.jainTithi.reference)));
     });
 
     test('the vara and samvats match the Python engine (fixture core/delhi, 2026-10-22)', () {
@@ -177,5 +181,15 @@ void main() {
     final (a, b) = (delhi(2026, 10, 22), delhi(2026, 10, 22));
 
     expect((a.sunrise, a.jainTithi, a.nakshatra, a.kshaya), (b.sunrise, b.jainTithi, b.nakshatra, b.kshaya));
+  });
+
+  // The two systems name a Shukla paksha alike; a Krishna paksha is the
+  // Purnimanta month's second half but the Amanta month's second half too, one
+  // month apart (mobile-ui-design.md §3.5, Month system).
+  test('Amanta and Purnimanta agree in Shukla paksha and differ in Krishna paksha', () {
+    for (var d = 1; d <= 31; d++) {
+      final day = delhi(2026, 10, d);
+      expect(day.amantaMonth == day.month, day.jainTithi.index <= 15, reason: '2026-10-$d');
+    }
   });
 }

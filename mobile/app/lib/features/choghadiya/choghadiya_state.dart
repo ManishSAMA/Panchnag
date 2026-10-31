@@ -4,6 +4,7 @@ import 'package:panchang_engine/panchang_engine.dart';
 import '../../engine/day_reading.dart';
 import '../../location/cities.dart';
 import '../../location/city_time.dart';
+import '../../settings/settings_store.dart';
 import '../today/today_state.dart';
 
 /// The slot running at an instant, the one after it and how far it has run.
@@ -31,8 +32,9 @@ LiveChoghadiya? liveChoghadiya(PanchangDay day, DateTime now, {PanchangDay? foll
 /// still running, so the shown day is yesterday and [date] is the one after it.
 typedef ChoghadiyaReading = ({PanchangDay day, PanchangDay? following, bool beforeSunrise});
 
-ChoghadiyaReading? watchChoghadiya(WidgetRef ref, {required PresetCity city, required CivilDate date, required DateTime now}) {
-  DayRequest on(CivilDate d) => DayRequest(date: d, lat: city.lat, lon: city.lon, timezone: city.timezone);
+ChoghadiyaReading? watchChoghadiya(WidgetRef ref, {required Place city, required CivilDate date, required DateTime now}) {
+  final rule = ref.watch(sunriseRuleProvider);
+  DayRequest on(CivilDate d) => DayRequest(date: d, lat: city.lat, lon: city.lon, timezone: city.timezone, rule: rule);
   final selected = ref.watch(dayReadingProvider(on(date))).value;
   if (selected == null) return null;
   if (date != todayIn(city.timezone, now) || !now.isBefore(selected.sunrise)) {
