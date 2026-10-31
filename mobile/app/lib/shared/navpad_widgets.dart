@@ -8,11 +8,13 @@ import '../theme/navpad.dart';
 
 enum BandColour { red, yellow, green, navy }
 
-/// A full-bleed colour band: title and sub-line left, value and chevron right.
+/// A full-bleed colour band: an icon, title and sub-line left, value and
+/// chevron right.
 class Band extends StatelessWidget {
   const Band({
     super.key,
     required this.colour,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.value,
@@ -20,6 +22,9 @@ class Band extends StatelessWidget {
   });
 
   final BandColour colour;
+
+  /// Drawn in the band's text colour, in a 36 dp circle tinted with it.
+  final Widget icon;
   final String title, subtitle, value;
   final VoidCallback onTap;
 
@@ -55,9 +60,15 @@ class Band extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 58),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 9, 12, 9),
+            padding: const EdgeInsets.fromLTRB(14, 9, 12, 9),
             child: Row(
               children: [
+                IconBadge(
+                  background: foreground.withAlpha(colour == BandColour.yellow ? 0x14 : 0x1F),
+                  foreground: foreground,
+                  child: icon,
+                ),
+                const SizedBox(width: 12),
                 Expanded(child: label),
                 // An empty value would still take its flex share from the title.
                 if (!stacked && value.isNotEmpty) ...[const SizedBox(width: 12), Flexible(child: valueText)],
@@ -69,6 +80,26 @@ class Band extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A 36 dp circle behind a 24 dp icon: the leading mark of bands and rows.
+class IconBadge extends StatelessWidget {
+  const IconBadge({super.key, required this.background, required this.foreground, required this.child});
+
+  final Color background, foreground;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 36,
+    height: 36,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(shape: BoxShape.circle, color: background),
+    child: IconTheme(
+      data: IconThemeData(color: foreground, size: 24),
+      child: child,
+    ),
+  );
 }
 
 enum NoteIcon { info, alert }
@@ -151,12 +182,14 @@ class SectionHeading extends StatelessWidget {
 
 enum RowState { plain, done, next }
 
-/// A hairline list row: a name (and sub-line) left, a time column right.
+/// A hairline list row: an optional icon, a name (and sub-line) left, a time
+/// column right.
 class TimeRow extends StatelessWidget {
   const TimeRow({
     super.key,
     required this.name,
     required this.time,
+    this.icon,
     this.subtitle,
     this.prefix,
     this.suffix,
@@ -165,6 +198,9 @@ class TimeRow extends StatelessWidget {
   });
 
   final String name, time;
+
+  /// Drawn in the row's text colour, in a 36 dp `surface` circle.
+  final Widget? icon;
   final String? subtitle, prefix, suffix, semanticsLabel;
   final RowState state;
 
@@ -187,6 +223,14 @@ class TimeRow extends StatelessWidget {
       ),
       child: Row(
         children: [
+          if (icon case final icon?) ...[
+            IconBadge(
+              background: state == RowState.next ? n.onYellow.withAlpha(0x14) : n.surface,
+              foreground: ink,
+              child: icon,
+            ),
+            const SizedBox(width: 14),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

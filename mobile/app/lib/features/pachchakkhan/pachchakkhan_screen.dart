@@ -10,6 +10,7 @@ import '../../location/city_time.dart';
 import '../../location/location_store.dart';
 import '../../settings/settings_store.dart';
 import '../../shared/date_navigator.dart';
+import '../../shared/navpad_icons.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../shared/pachchakkhan_row.dart';
 import '../../shared/settings_button.dart';
@@ -60,6 +61,8 @@ class PachchakkhanScreen extends ConsumerWidget {
   }
 }
 
+const _sunpath = NavpadIcon(NavpadGlyph.sunpath);
+
 const _fractions = {
   TimedPachchakkhan.porsi: '¼',
   TimedPachchakkhan.sadhPorsi: '⅜',
@@ -109,6 +112,7 @@ class _PachchakkhanView extends ConsumerWidget {
         ...switch (phase) {
           NextCompletion(:final kind, :final at) => [
             _Hero(
+              sun: dayFraction(at, reading),
               name: pachchakkhanName(kind, lang),
               line: l10n.pachchakkhanHeroNext(completionTime(at)),
               remaining: at.difference(now),
@@ -116,6 +120,7 @@ class _PachchakkhanView extends ConsumerWidget {
           ],
           EveningDeadline(:final at) => [
             _Hero(
+              sun: 1,
               name: l10n.chauvihar,
               line: l10n.pachchakkhanHeroEvening(clockPhrase(roundDownToMinute(wall(at)), lang)),
               remaining: at.difference(now),
@@ -143,6 +148,7 @@ class _PachchakkhanView extends ConsumerWidget {
           pachchakkhanRow(
             l10n: l10n,
             name: pachchakkhanName(p.kind, lang),
+            icon: SunPathIcon(fraction: dayFraction(p.at, reading)),
             subtitle: switch (_fractions[p.kind]) {
               final fraction? => l10n.ruleFraction(fraction),
               null => l10n.ruleNavkarsi,
@@ -155,14 +161,16 @@ class _PachchakkhanView extends ConsumerWidget {
         pachchakkhanRow(
           l10n: l10n,
           name: l10n.eveningNames,
+          icon: const SunPathIcon(fraction: 1),
           time: eveningTime,
           state: stateOf(reading.pachchakkhan.evening, isNext: phase is EveningDeadline),
         ),
         SectionHeading(title: l10n.otherHeading),
         const ListTop(),
-        TimeRow(name: l10n.mutthiSahiyam, subtitle: l10n.noFixedTime, time: ''),
-        TimeRow(name: l10n.ekasanuBiyasanu, subtitle: l10n.withATimeAbove, time: ''),
+        TimeRow(icon: _sunpath, name: l10n.mutthiSahiyam, subtitle: l10n.noFixedTime, time: ''),
+        TimeRow(icon: _sunpath, name: l10n.ekasanuBiyasanu, subtitle: l10n.withATimeAbove, time: ''),
         TimeRow(
+          icon: _sunpath,
           name: l10n.ayambilUpvas,
           subtitle: l10n.paranaNextNavkarsi,
           time: instantPhrase(roundUpToMinute(wall(reading.pachchakkhan.parana)), day: reading.date, lang: lang),
@@ -172,11 +180,13 @@ class _PachchakkhanView extends ConsumerWidget {
   }
 }
 
-/// The yellow band grown into a 132 dp header: the name in display type, a
-/// line under it and a live countdown on the right.
+/// The yellow band grown into a 132 dp header: the sun at the next time, the
+/// name in display type, a line under it and a live countdown on the right.
 class _Hero extends StatelessWidget {
-  const _Hero({required this.name, required this.line, required this.remaining});
+  const _Hero({required this.sun, required this.name, required this.line, required this.remaining});
 
+  /// Where the sun will stand, as a fraction of the day.
+  final double sun;
   final String name, line;
   final Duration remaining;
 
@@ -208,6 +218,12 @@ class _Hero extends StatelessWidget {
         child: ExcludeSemantics(
           child: Row(
             children: [
+              IconBadge(
+                background: n.onYellow.withAlpha(0x14),
+                foreground: n.onYellow,
+                child: SunPathIcon(fraction: sun),
+              ),
+              const SizedBox(width: 12),
               Expanded(child: label),
               if (!stacked) ...[const SizedBox(width: 12), countdown],
             ],

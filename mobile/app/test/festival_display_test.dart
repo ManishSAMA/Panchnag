@@ -6,7 +6,8 @@ import 'package:jainpanchang/engine/festival_reading.dart';
 import 'package:jainpanchang/features/festivals/festival_state.dart';
 import 'package:jainpanchang/format/festival_text.dart';
 import 'package:jainpanchang/format/panchang_text.dart';
-import 'package:jainpanchang/shared/festival_mark.dart';
+import 'package:jainpanchang/shared/festival_icon.dart';
+import 'package:jainpanchang/shared/navpad_icons.dart';
 import 'package:jainpanchang/theme/navpad.dart';
 import 'package:panchang_engine/panchang_engine.dart';
 
@@ -29,8 +30,8 @@ final vratBand = find.byKey(const Key('today-band-vrat'));
 final upcoming = find.byKey(const Key('today-upcoming'));
 
 List<FestivalKind> marksIn(WidgetTester tester, CivilDate date) => [
-  for (final mark in tester.widgetList<FestivalMark>(
-    find.descendant(of: cell(date), matching: find.byType(FestivalMark)),
+  for (final mark in tester.widgetList<FestivalIcon>(
+    find.descendant(of: cell(date), matching: find.byType(FestivalIcon)),
   ))
     mark.kind,
 ];
@@ -85,7 +86,7 @@ void main() {
       }
     });
 
-    testWidgets('a kalyanak day has the ring and a festival-free day has none', (tester) async {
+    testWidgets('a kalyanak day has the five lights and a festival-free day has none', (tester) async {
       await openMonth(tester, now: ist(2026, 10, 22));
 
       // Shri Sheetalnath Ji's liberation kalyanak, Ashwin Shukla 8 (registry).
@@ -108,14 +109,37 @@ void main() {
       const date = CivilDate(2026, 10, 20);
       final n = Theme.of(tester.element(cell(date))).extension<Navpad>()!;
       Color colourOf(FestivalKind kind) {
-        final mark = find.byWidgetPredicate((w) => w is FestivalMark && w.kind == kind);
-        final box = find.descendant(of: find.descendant(of: cell(date), matching: mark), matching: find.byType(DecoratedBox));
-        final decoration = tester.widget<DecoratedBox>(box).decoration as BoxDecoration;
-        return decoration.color ?? (decoration.border! as Border).top.color;
+        final mark = find.byWidgetPredicate((w) => w is FestivalIcon && w.kind == kind);
+        final icon = find.descendant(
+          of: find.descendant(of: cell(date), matching: mark),
+          matching: find.byType(NavpadIcon),
+        );
+        return tester.widget<NavpadIcon>(icon).color!;
       }
 
       expect(colourOf(FestivalKind.kalyanak), n.red);
       expect(colourOf(FestivalKind.vrat), n.green);
+    });
+
+    testWidgets('each kind has its own picture: kalash, five lights, temple flag, diya', (tester) async {
+      await openMonth(tester, now: ist(2026, 10, 22));
+      NavpadGlyph glyphIn(Finder finder) =>
+          tester.widget<NavpadIcon>(find.descendant(of: finder, matching: find.byType(NavpadIcon))).glyph;
+
+      expect(
+        {for (final kind in FestivalKind.values) kind: glyphIn(find.byKey(Key('legend-${kind.name}')))},
+        {
+          FestivalKind.mahaparva: NavpadGlyph.kalash,
+          FestivalKind.kalyanak: NavpadGlyph.kalyanak,
+          FestivalKind.parva: NavpadGlyph.dhvaja,
+          FestivalKind.vrat: NavpadGlyph.diya,
+        },
+      );
+      final kalyanak = find.byWidgetPredicate((w) => w is FestivalIcon && w.kind == FestivalKind.kalyanak);
+      expect(
+        glyphIn(find.descendant(of: cell(const CivilDate(2026, 10, 18)), matching: kalyanak)),
+        NavpadGlyph.kalyanak,
+      );
     });
 
     testWidgets('the cell\'s spoken label names its marks', (tester) async {
@@ -138,7 +162,7 @@ void main() {
       await openMonth(tester, now: ist(2026, 10, 22), festivals: held.call);
 
       expect(cell(const CivilDate(2026, 10, 18)), findsOneWidget);
-      expect(find.byType(FestivalMark), findsNothing);
+      expect(find.byType(FestivalIcon), findsNothing);
       expect(find.byKey(const Key('legend-kalyanak')), findsNothing);
 
       held.release();
@@ -186,6 +210,9 @@ void main() {
       // Ashadhara's Ashwin Shukla 9 variant; both school variants are kept (mobile-ui-design.md §6).
       expect(inPanel(find.text('श्री नेमिनाथ जी — केवलज्ञान कल्याणक')), findsOneWidget);
       expect(inPanel(find.text('कल्याणक')), findsOneWidget);
+      final icon = inPanel(find.byType(FestivalIcon)).first;
+      expect(tester.widget<FestivalIcon>(icon).badge, isTrue);
+      expect(tester.getSize(icon), const Size.square(32));
     });
 
     testWidgets('uses the English names on an English phone', (tester) async {
@@ -226,6 +253,15 @@ void main() {
       expect(find.descendant(of: parvaBand, matching: find.text('कल्याणक')), findsOneWidget);
       expect(find.descendant(of: vratBand, matching: find.text('णमोकार महामंत्र व्रत श्रृंखला')), findsOneWidget);
       expect(tester.getTopLeft(parvaBand).dy, lessThan(tester.getTopLeft(vratBand).dy));
+    });
+
+    testWidgets('lead with the picture of their first festival', (tester) async {
+      await openApp(tester, now: ist(2026, 10, 20));
+      NavpadGlyph glyphIn(Finder band) =>
+          tester.widget<NavpadIcon>(find.descendant(of: band, matching: find.byType(NavpadIcon))).glyph;
+
+      expect(glyphIn(parvaBand), NavpadGlyph.kalyanak);
+      expect(glyphIn(vratBand), NavpadGlyph.diya);
     });
 
     testWidgets('come in red, yellow, green, navy order on today', (tester) async {
@@ -326,14 +362,41 @@ void main() {
       expect(find.byKey(Key('upcoming-${next.first.date.iso}')), findsOneWidget);
     });
 
-    testWidgets('dates sit in a right-aligned column', (tester) async {
-      // A long name that wraps, as Diwali's does.
-      await openApp(tester, now: ist(2026, 10, 29));
-      final row = find.byKey(const Key('upcoming-2026-11-08'));
-      await tester.scrollUntilVisible(row, 300);
+    testWidgets('each date is a heading: the day, then month, weekday and how far off', (tester) async {
+      await openApp(tester, now: ist(2026, 10, 31));
+      final group = find.byKey(const Key('upcoming-2026-11-07'));
+      await tester.scrollUntilVisible(group, 300);
 
-      final date = find.descendant(of: row, matching: find.text('8 नवंबर'));
-      expect(tester.getTopRight(row).dx - tester.getTopRight(date).dx, lessThanOrEqualTo(18));
+      final day = tester.widget<Text>(find.descendant(of: group, matching: find.text('7')));
+      expect(day.style!.fontFamily, 'TiroDevanagariHindi');
+      expect(find.descendant(of: group, matching: find.text('नवंबर · शनिवार · 7 दिन बाद')), findsOneWidget);
+    });
+
+    testWidgets('the next day reads "कल", or "tomorrow" in English', (tester) async {
+      await openApp(tester, now: ist(2026, 10, 28));
+      final group = find.byKey(const Key('upcoming-2026-10-29'));
+      await tester.scrollUntilVisible(group, 300);
+      expect(find.descendant(of: group, matching: find.text('अक्टूबर · गुरुवार · कल')), findsOneWidget);
+
+      await openApp(tester, now: ist(2026, 10, 31), phone: const Locale('en', 'US'));
+      final english = find.byKey(const Key('upcoming-2026-11-07'));
+      await tester.scrollUntilVisible(english, 300);
+      expect(find.descendant(of: english, matching: find.text('November · Saturday · in 7 days')), findsOneWidget);
+    });
+
+    testWidgets('each festival under a date has one picture in a 32 dp circle', (tester) async {
+      await openApp(tester, now: ist(2026, 10, 31));
+      final expected = upcomingFestivals(engineYear(2026), after: const CivilDate(2026, 10, 31), lang: Lang.hi).first;
+      final group = find.byKey(Key('upcoming-${expected.date.iso}'));
+      await tester.scrollUntilVisible(group, 300);
+
+      final icons = tester.widgetList<FestivalIcon>(find.descendant(of: group, matching: find.byType(FestivalIcon)));
+      expect([for (final icon in icons) icon.kind], [for (final line in expected.lines) line.kind]);
+      expect(icons.every((icon) => icon.badge), isTrue);
+      expect(
+        tester.getSize(find.descendant(of: group, matching: find.byType(FestivalIcon)).first),
+        const Size.square(32),
+      );
     });
 
     testWidgets('a row moves Today to its date', (tester) async {

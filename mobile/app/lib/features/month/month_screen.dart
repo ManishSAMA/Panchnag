@@ -11,7 +11,10 @@ import '../../location/city_time.dart';
 import '../../location/location_store.dart';
 import '../../settings/settings_store.dart';
 import '../../shared/day_notes.dart';
+import '../../shared/festival_icon.dart';
 import '../../shared/festival_mark.dart';
+import '../../shared/moon_phase.dart';
+import '../../shared/navpad_icons.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../shared/settings_button.dart';
 import '../../theme/navpad.dart';
@@ -90,15 +93,15 @@ class MonthScreen extends ConsumerWidget {
 
   void _openSheet(BuildContext context, PanchangDay day, String timezone, List<FestivalLine>? festivals) =>
       showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
-    builder: (sheet) => SafeArea(
-      child: SingleChildScrollView(
-        child: _DayPanel(day: day, timezone: timezone, festivals: festivals, inSheet: true),
-      ),
-    ),
-  );
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (sheet) => SafeArea(
+          child: SingleChildScrollView(
+            child: _DayPanel(day: day, timezone: timezone, festivals: festivals, inSheet: true),
+          ),
+        ),
+      );
 }
 
 class _Header extends ConsumerWidget {
@@ -217,7 +220,10 @@ class _Grid extends StatelessWidget {
           ),
           DecoratedBox(
             decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: n.hair), left: BorderSide(color: n.hair)),
+              border: Border(
+                top: BorderSide(color: n.hair),
+                left: BorderSide(color: n.hair),
+              ),
             ),
             child: Column(
               children: [
@@ -271,7 +277,10 @@ class _Cell extends StatelessWidget {
     final n = Theme.of(context).extension<Navpad>()!;
     final border = BoxDecoration(
       color: isSelected ? n.pill : n.ground,
-      border: Border(right: BorderSide(color: n.hair), bottom: BorderSide(color: n.hair)),
+      border: Border(
+        right: BorderSide(color: n.hair),
+        bottom: BorderSide(color: n.hair),
+      ),
     );
     final day = this.day;
     if (day == null) return Container(constraints: const BoxConstraints(minHeight: 64), decoration: border);
@@ -314,18 +323,36 @@ class _Cell extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: Text('${day.date.day}', style: NavpadType.cellDay.copyWith(color: n.ink))),
+                    Expanded(
+                      child: Text('${day.date.day}', style: NavpadType.cellDay.copyWith(color: n.ink)),
+                    ),
                     if (flag != null) Text(flag, style: NavpadType.cellFlag.copyWith(color: n.ink)),
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(tithiShort(day.jainTithi.index, lang), style: NavpadType.cellTithi.copyWith(color: n.ink2)),
+                Row(
+                  children: [
+                    MoonPhase(tithi: day.jainTithi.index, size: 11),
+                    const SizedBox(width: 3),
+                    // "अमावस" beside the moon is wider than a narrow cell: shrink, never wrap.
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(
+                          tithiShort(day.jainTithi.index, lang),
+                          style: NavpadType.cellTithi.copyWith(color: n.ink2),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 if (marks.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Wrap(
                       spacing: 3,
-                      children: [for (final kind in marks) FestivalMark(kind: kind, size: 7)],
+                      children: [for (final kind in marks) FestivalIcon(kind: kind, size: 13, strokeWidth: 2.2)],
                     ),
                   ),
               ],
@@ -366,7 +393,7 @@ class _Legend extends StatelessWidget {
         children: [
           if (withMarks)
             for (final kind in FestivalKind.values)
-              entry(FestivalMark(kind: kind), festivalKindLabel(kind, l10n), key: Key('legend-${kind.name}')),
+              entry(FestivalIcon(kind: kind, size: 16), festivalKindLabel(kind, l10n), key: Key('legend-${kind.name}')),
           entry(flag(l10n.flagKshaya), l10n.legendKshaya),
           entry(flag(l10n.flagVriddhi), l10n.legendVriddhi),
         ],
@@ -426,12 +453,21 @@ class _DayPanel extends ConsumerWidget {
           ),
           const ListTop(),
           TimeRow(
+            icon: MoonPhase(tithi: day.jainTithi.index, size: 24),
             name: tithiName(day.jainTithi.index, lang),
             subtitle: monthName(lunarMonthOf(day, ref.watch(monthSystemProvider)), lang),
             time: l10n.until(instantPhrase(wall(day.jainTithi.endsAt), day: day.date, lang: lang)),
           ),
-          TimeRow(name: l10n.sunrise, time: clockPhrase(wall(day.sunrise), lang)),
-          TimeRow(name: l10n.sunset, time: clockPhrase(wall(day.sunset), lang)),
+          TimeRow(
+            icon: const NavpadIcon(NavpadGlyph.sunrise),
+            name: l10n.sunrise,
+            time: clockPhrase(wall(day.sunrise), lang),
+          ),
+          TimeRow(
+            icon: const NavpadIcon(NavpadGlyph.sunset),
+            name: l10n.sunset,
+            time: clockPhrase(wall(day.sunset), lang),
+          ),
           for (final line in festivals ?? const <FestivalLine>[])
             FestivalRow(
               line: line,

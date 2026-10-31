@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jainpanchang/shared/moon_phase.dart';
+import 'package:jainpanchang/shared/navpad_icons.dart';
+import 'package:jainpanchang/shared/navpad_widgets.dart';
+import 'package:jainpanchang/theme/navpad.dart';
 import 'package:panchang_engine/panchang_engine.dart';
 
 import 'support/harness.dart';
@@ -40,6 +44,77 @@ void main() {
 
       expect(heroTithi(tester), 'Shukla Ekadashi');
       expect(find.textContaining('VNS 2552 · VS 2083', findRichText: true), findsOneWidget);
+    });
+  });
+
+  group('the moon of the tithi', () {
+    testWidgets('stands beside the hero tithi at 58 dp, with the short tithi under it', (tester) async {
+      await openApp(tester, now: ist(2026, 10, 31));
+      final moon = find.byType(MoonPhase);
+
+      expect(engineJainTithi(const CivilDate(2026, 10, 31)), 21);
+      expect(tester.widget<MoonPhase>(moon).tithi, 21);
+      expect(tester.getSize(moon), const Size.square(58));
+      expect(tester.getCenter(moon).dx, greaterThan(tester.getCenter(find.byKey(const Key('today-hero-tithi'))).dx));
+      final short = find.text('कृ 6');
+      expect(tester.getTopLeft(short).dy, greaterThan(tester.getBottomLeft(moon).dy - 1));
+      expect((tester.getCenter(short).dx - tester.getCenter(moon).dx).abs(), lessThan(1));
+    });
+
+    testWidgets('names its tithi to a screen reader', (tester) async {
+      await openApp(tester, now: ist(2026, 10, 31));
+
+      expect(find.bySemanticsLabel('कृष्ण षष्ठी का चंद्रमा'), findsOneWidget);
+    });
+  });
+
+  group('icons', () {
+    NavpadGlyph glyphOfRow(WidgetTester tester, String name) {
+      final row = find.ancestor(of: find.text(name), matching: find.byType(TimeRow));
+      return tester.widget<NavpadIcon>(find.descendant(of: row, matching: find.byType(NavpadIcon))).glyph;
+    }
+
+    testWidgets("today's times lead with their pictures in a 36 dp surface circle", (tester) async {
+      await openApp(tester, now: ist(2026, 10, 22));
+
+      expect(glyphOfRow(tester, 'सूर्योदय'), NavpadGlyph.sunrise);
+      expect(glyphOfRow(tester, 'सूर्यास्त'), NavpadGlyph.sunset);
+      expect(glyphOfRow(tester, 'नक्षत्र'), NavpadGlyph.nakshatra);
+      final sunriseRow = find.ancestor(of: find.text('सूर्योदय'), matching: find.byType(TimeRow));
+      final badge = find.descendant(of: sunriseRow, matching: find.byType(IconBadge));
+      expect(tester.getSize(badge), const Size.square(36));
+      final n = Theme.of(tester.element(badge)).extension<Navpad>()!;
+      expect(tester.widget<IconBadge>(badge).background, n.surface);
+    });
+
+    testWidgets('the nav bar shows sunrise, the month calendar and the sun on its path', (tester) async {
+      await openApp(tester, now: ist(2026, 10, 22));
+      final bar = find.byType(NavigationBar);
+
+      expect(
+        [
+          for (final icon in tester.widgetList<NavpadIcon>(find.descendant(of: bar, matching: find.byType(NavpadIcon))))
+            icon.glyph,
+        ],
+        [NavpadGlyph.sunrise, NavpadGlyph.monthcal, NavpadGlyph.sunpath],
+      );
+      expect(find.descendant(of: bar, matching: find.byType(Icon)), findsNothing);
+    });
+
+    testWidgets('the sun climbs through the pachchakkhan rows and sets at Chauvihar', (tester) async {
+      await openApp(tester, now: ist(2026, 10, 22));
+      final suns = [for (final sun in tester.widgetList<SunPathIcon>(find.byType(SunPathIcon))) sun.fraction];
+
+      // The yellow band's sun (Purimaddh, midday), then the six rows.
+      expect(suns, hasLength(7));
+      expect(suns.first, closeTo(0.5, 0.01));
+      final rows = suns.skip(1).toList();
+      for (var i = 1; i < rows.length; i++) {
+        expect(rows[i], greaterThan(rows[i - 1]));
+      }
+      // Navkarsi is 48 minutes after a sunrise at 06:26:12, of a 11 h 18 min day.
+      expect(rows.first, closeTo(48 / 678.5, 0.002));
+      expect(rows.last, 1);
     });
   });
 
