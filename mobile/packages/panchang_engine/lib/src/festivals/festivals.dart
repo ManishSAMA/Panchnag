@@ -18,6 +18,7 @@ import 'rules/paryushan.dart';
 import 'rules/pushpanjali.dart';
 import 'rules/ravi_vrat.dart';
 import 'rules/rohini.dart';
+import 'rules/seasonal.dart';
 import 'single_tithi.dart';
 
 /// The profiles the app offers. Stored as open string ids, so Digambar can be
@@ -88,6 +89,7 @@ final Map<String, FestivalRule> _rules = {
   ...anchoredRules,
   ...pairedRules,
   ...fortnightRules,
+  ...seasonalRules,
 };
 
 Iterable<String> get portedRuleTypes => _rules.keys;

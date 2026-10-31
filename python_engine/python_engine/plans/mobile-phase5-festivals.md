@@ -376,6 +376,17 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
   profile and year). Python quirk kept: on a kshaya Bhadrapada Krishna 1 the fallback looks for
   "tithi 0", so all six multi-vrats vanish that year. Mutation check: 17 mutants, all killed by
   the unit tests except `const []` → `[]` (equivalent).
-- **Left:** §5 steps 11–13. Rule types not yet ported are skipped by the orchestrator, so
-  `festivals()` returns SingleTithi, Bhaktambar, Namokar 35, Pushpanjali, Rohini, Ravi Vrat,
-  Paryushan 50, Labdhi Vidhan and families B, C and D occurrences only for now.
+- **Step 11, `KarmaNirjaraVrat` + `AshtahnikaVrat`:** done (`festivals/rules/seasonal.dart`).
+  Both read the year's Amanta month (Adhik-only when it repeats) on the raw days, as neither takes
+  the second day of a vriddhi. Karma Nirjara is Shukla 14 of Ashadha, Shravana, Bhadrapada and
+  Ashwin (kshaya: the last Shukla 13), with an id named by month (`adhik_` for an Adhik month)
+  and an occurrence id named by date. Python tries the first of two consecutive Chaturdashi days
+  and then the first one, twice; within one month's days these are all the first Chaturdashi, so
+  the port reads it once. Ashtahnika runs from the first Shukla 8 (kshaya: the first Shukla 7,
+  else the day before the first of Shukla 8–15) to the last Purnima (kshaya: the last of
+  Shukla 8–14) in Ashadha, Kartika and Phalguna. Exact parity everywhere (7 rows per profile and
+  year). Mutation check: 18 mutants; the unit tests kill all but the hardcoded categories, which
+  equal the registry's.
+- **Left:** §5 steps 12–13. Rule types not yet ported are skipped by the orchestrator, so
+  `festivals()` returns everything but the provider vrats (Ratnatraya, Daslakshan, Shodashkaran,
+  Ravivara) for now.

@@ -73,6 +73,15 @@ void main() {
       }
     });
 
+    test('Karma Nirjara in each Chaturmas month; Ashtahnika three times, eight days or so each', () {
+      expect(sthanakvasi.where((f) => f.ruleId == 'karma_nirjara_vrat'), hasLength(4));
+      final ashtahnika = sthanakvasi.where((f) => f.ruleId == 'ashtahnika_mahaparv').toList();
+      expect(ashtahnika, hasLength(3));
+      for (final f in ashtahnika) {
+        expect(f.start.plusDays(6).compareTo(f.end) <= 0 && f.end.compareTo(f.start.plusDays(9)) <= 0, isTrue, reason: f.id);
+      }
+    });
+
     test('a span vrat ends after it begins', () {
       for (final id in ['solah_karan_vrat_prarambh_2026', 'teen_chaubisi_vrat_prarambh_2026', 'bhaya_haran_vrat_2026']) {
         final vrat = sthanakvasi.firstWhere((f) => f.id == id);
