@@ -29,6 +29,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+  assets:
+    # A copy of shared/festival_registry.json; a test fails until it is re-copied.
+    - assets/festival_registry.json
   fonts:
     - family: Mukta
       fonts:

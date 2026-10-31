@@ -48,5 +48,8 @@ final class MonthViewNotifier extends Notifier<MonthView> {
 
   void goToday() => state = _current();
 
+  /// Today's bands open Month on their date.
+  void show(CivilDate date) => state = (year: date.year, month: date.month, selected: date);
+
   void select(CivilDate date) => state = (year: state.year, month: state.month, selected: date);
 }

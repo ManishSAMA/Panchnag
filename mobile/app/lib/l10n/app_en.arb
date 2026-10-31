@@ -119,5 +119,12 @@
   "settingsAbout": "About",
   "aboutOffline": "Everything is calculated on the phone, offline.",
   "aboutRange": "Dates are verified from 2016 to 2040.",
-  "aboutFontSize": "Text size follows your phone's font size setting."
+  "aboutFontSize": "Text size follows your phone's font size setting.",
+
+  "festivalMahaparva": "Mahaparva",
+  "festivalKalyanak": "Kalyanak",
+  "festivalParva": "Parva",
+  "festivalVrat": "Vrat",
+  "festivalsMore": "+{count} more",
+  "upcomingFestivals": "Upcoming festivals"
 }

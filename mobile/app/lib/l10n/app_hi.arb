@@ -214,5 +214,18 @@
   "aboutRange": "2016 से 2040 तक की तिथियाँ जाँची गई हैं।",
   "@aboutRange": {"description": "About: the verified range."},
   "aboutFontSize": "अक्षरों का आकार फ़ोन की सेटिंग से बदलें।",
-  "@aboutFontSize": {"description": "About: how to make text bigger."}
+  "@aboutFontSize": {"description": "About: how to make text bigger."},
+
+  "festivalMahaparva": "महापर्व",
+  "@festivalMahaparva": {"description": "Festival kind with the square mark: a mahaparva (Month legend, band and list sub-lines)."},
+  "festivalKalyanak": "कल्याणक",
+  "@festivalKalyanak": {"description": "Festival kind with the ring mark: a tirthankar kalyanak."},
+  "festivalParva": "पर्व",
+  "@festivalParva": {"description": "Festival kind with the red dot: a parva or other observance."},
+  "festivalVrat": "व्रत",
+  "@festivalVrat": {"description": "Festival kind with the green dot: a vrat."},
+  "festivalsMore": "+{count} और",
+  "@festivalsMore": {"description": "Sub-line of a Today band with more festivals than the one it names.", "placeholders": {"count": {"type": "int"}}},
+  "upcomingFestivals": "आगामी पर्व",
+  "@upcomingFestivals": {"description": "Today section heading: the next festival dates."}
 }

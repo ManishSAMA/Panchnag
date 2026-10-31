@@ -230,18 +230,18 @@ void main() {
     testWidgets('Amanta renames a Krishna paksha month on Today, live and after a restart', (tester) async {
       expect(amanta, isNot(purnimanta));
       await openApp(tester, now: ist(2026, 10, 3));
-      expect(find.textContaining(purnimanta, findRichText: true), findsOneWidget);
+      expect(find.textContaining('$purnimanta · ', findRichText: true), findsOneWidget);
 
       await openSettings(tester);
       await expectChosen(tester, 'पूर्णिमान्त');
       await tapText(tester, 'अमान्त');
       await goBack(tester);
 
-      expect(find.textContaining(amanta, findRichText: true), findsOneWidget);
-      expect(find.textContaining(purnimanta, findRichText: true), findsNothing);
+      expect(find.textContaining('$amanta · ', findRichText: true), findsOneWidget);
+      expect(find.textContaining('$purnimanta · ', findRichText: true), findsNothing);
 
       await restartApp(tester, now: ist(2026, 10, 3));
-      expect(find.textContaining(amanta, findRichText: true), findsOneWidget);
+      expect(find.textContaining('$amanta · ', findRichText: true), findsOneWidget);
     });
 
     testWidgets("Amanta renames the month in the Month tab's day panel", (tester) async {

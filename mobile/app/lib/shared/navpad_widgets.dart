@@ -45,7 +45,7 @@ class Band extends StatelessWidget {
       children: [
         Text(title, style: NavpadType.titleBand.copyWith(color: foreground)),
         Text(subtitle, style: text.labelMedium!.copyWith(color: secondary)),
-        if (stacked) valueText,
+        if (stacked && value.isNotEmpty) valueText,
       ],
     );
     return Material(
@@ -59,7 +59,8 @@ class Band extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(child: label),
-                if (!stacked) ...[const SizedBox(width: 12), Flexible(child: valueText)],
+                // An empty value would still take its flex share from the title.
+                if (!stacked && value.isNotEmpty) ...[const SizedBox(width: 12), Flexible(child: valueText)],
                 Icon(Icons.chevron_right, size: 20, color: foreground),
               ],
             ),

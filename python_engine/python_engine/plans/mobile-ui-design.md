@@ -70,6 +70,8 @@ The page scrolls from top to bottom:
 
 (The Pachchakkhan card is left out of the beta; see §1.)
 
+**Built 2026-10-31 (festival display decisions):** the ongoing-parva banner became DESIGN.md's red band, shown for any parva, kalyanak or mahaparva on the date shown (single-day or span), with a green band for vrats; each names its first festival, adds "+N और" for the rest, shows a span's dates and opens Month on that date. The upcoming list skips vrats, which fall on nearly every date, and has no "सभी देखें" link until the Festivals tab exists. Every vrat category goes green in the marks, including `parva_vrat` and `mahaparv_vrat` (Navapad Oli, the Namokar chain), so the mahaparva square stays rare; the Festivals filter chips may still group them as the category mapping below says.
+
 The Jain tithi is the one at the reference instant (sunrise + 2 h 24 m), matching the engine's `jain_tithi`.
 
 ### 2 · Month

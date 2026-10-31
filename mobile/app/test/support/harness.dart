@@ -2,13 +2,18 @@
 /// read on the test's own isolate.
 library;
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jainpanchang/app.dart';
 import 'package:jainpanchang/engine/day_reading.dart';
+import 'package:jainpanchang/engine/festival_reading.dart';
+import 'package:jainpanchang/features/festivals/festival_state.dart';
 import 'package:jainpanchang/features/month/month_state.dart';
 import 'package:jainpanchang/features/today/today_state.dart';
 import 'package:jainpanchang/location/gps.dart';
+import 'package:panchang_engine/panchang_engine.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const istOffset = Duration(hours: 5, minutes: 30);
@@ -16,6 +21,14 @@ const istOffset = Duration(hours: 5, minutes: 30);
 /// A wall-clock time in Delhi as a UTC instant.
 DateTime ist(int year, int month, int day, [int hour = 10, int minute = 52]) =>
     DateTime.utc(year, month, day, hour, minute).subtract(istOffset);
+
+/// The bundled registry, read once per test file.
+final testRegistry = FestivalRegistry.fromJson(File('assets/festival_registry.json').readAsStringSync());
+
+/// The real festival engine on the test's own isolate; [readFestivals] keeps
+/// each year, so a test file computes it once.
+Future<List<FestivalOccurrence>> realFestivals(FestivalRequest request) async =>
+    readFestivals(request, registry: testRegistry);
 
 /// Tests that never tap the GPS action get one that fails if they do.
 Future<GpsOutcome> noGps() async => throw StateError('This test did not expect a GPS request.');
@@ -28,6 +41,7 @@ Future<SharedPreferences> openApp(
   Size screen = const Size(1080, 2400),
   Map<String, Object> saved = const {'location.city': 'delhi'},
   GpsLocator gps = noGps,
+  FestivalReader festivals = realFestivals,
 }) async {
   SharedPreferences.resetStatic();
   SharedPreferences.setMockInitialValues(saved);
@@ -37,17 +51,22 @@ Future<SharedPreferences> openApp(
   tester.platformDispatcher.textScaleFactorTestValue = textScale;
   addTearDown(tester.view.reset);
   addTearDown(tester.platformDispatcher.clearAllTestValues);
-  return _pumpApp(tester, now: now, gps: gps);
+  return _pumpApp(tester, now: now, gps: gps, festivals: festivals);
 }
 
 /// A cold start: a fresh app reading back only what the last run saved.
 Future<SharedPreferences> restartApp(WidgetTester tester, {required DateTime now, GpsLocator gps = noGps}) async {
   await tester.pumpWidget(const SizedBox());
   SharedPreferences.resetStatic();
-  return _pumpApp(tester, now: now, gps: gps);
+  return _pumpApp(tester, now: now, gps: gps, festivals: realFestivals);
 }
 
-Future<SharedPreferences> _pumpApp(WidgetTester tester, {required DateTime now, required GpsLocator gps}) async {
+Future<SharedPreferences> _pumpApp(
+  WidgetTester tester, {
+  required DateTime now,
+  required GpsLocator gps,
+  required FestivalReader festivals,
+}) async {
   final prefs = await SharedPreferences.getInstance();
   await tester.pumpWidget(
     JainPanchangApp(
@@ -59,6 +78,7 @@ Future<SharedPreferences> _pumpApp(WidgetTester tester, {required DateTime now, 
         // The real engine, on the test's own isolate.
         dayReaderProvider.overrideWithValue((request) async => readDay(request)),
         monthReaderProvider.overrideWithValue((request) async => readMonth(request)),
+        festivalReaderProvider.overrideWithValue(festivals),
         gpsLocatorProvider.overrideWithValue(gps),
       ],
     ),

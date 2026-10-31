@@ -6,7 +6,7 @@
 
 | Topic | Decision |
 |---|---|
-| Festival dots | Not yet. The Dart engine has no festivals until Phase 5, so cells and the legend show only the क्ष / वृ flags for now. The dots and their legend entries arrive with the festival port, never as placeholders. |
+| Festival dots | Done (2026-10-31), after the Phase 5 port: up to three marks per cell (mahaparva square, kalyanak ring, parva dot, vrat dot, in that priority), on every day of a span; the legend gains them and the day panel lists the day's festivals once the year arrives from its own worker. Before that the grid shows only the क्ष / वृ flags, never placeholders. |
 | Engine call | A new `PanchangEngine.month(location, year, month, sunriseRule)` that returns the same `PanchangDay`s as calling `day()` for each date. It names lunar months once (`lunarMonthsBetween` + `amantaLookup`), computes each sunrise once, and searches each year's new year and Diwali at most once. Budget: < 1 s for 31 days (M4 open item). |
 | Selection | Month keeps its own selected day. Only "पूरा दिन खोलें" ("Open full day") sets Today's `selectedDateProvider` and switches to the Today tab. |
 | Day panel | Date; the full tithi with its end time; sunrise and sunset; the same kshaya / vriddhi notes as Today (house rule included); "पूरा दिन खोलें". Docked under the grid in a scrolling page; a modal bottom sheet below 640 dp of height. No report action yet (its destination is still open). |

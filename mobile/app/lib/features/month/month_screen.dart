@@ -4,15 +4,18 @@ import 'package:go_router/go_router.dart';
 import 'package:panchang_engine/panchang_engine.dart';
 
 import '../../engine/day_reading.dart';
+import '../../format/festival_text.dart';
 import '../../format/panchang_text.dart';
 import '../../l10n/app_localizations.dart';
 import '../../location/city_time.dart';
 import '../../location/location_store.dart';
 import '../../settings/settings_store.dart';
 import '../../shared/day_notes.dart';
+import '../../shared/festival_mark.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../shared/settings_button.dart';
 import '../../theme/navpad.dart';
+import '../festivals/festival_state.dart';
 import '../today/today_state.dart';
 import 'month_state.dart';
 
@@ -20,8 +23,8 @@ import 'month_state.dart';
 /// the day opens in a modal sheet instead (plans/mobile-month-tab.md).
 const double dockedPanelMinHeight = 640;
 
-/// Month (mobile-ui-design.md §3 · Month): the Gregorian grid. Festival marks
-/// join with the festival port, never as placeholders.
+/// Month (mobile-ui-design.md §3 · Month): the Gregorian grid. The festival
+/// marks fill in when the year arrives from its own worker, after the grid.
 class MonthScreen extends ConsumerWidget {
   const MonthScreen({super.key});
 
@@ -44,6 +47,10 @@ class MonthScreen extends ConsumerWidget {
     );
     final docked = MediaQuery.sizeOf(context).height >= dockedPanelMinHeight;
     final today = todayIn(city.timezone, currentTime(ref));
+    final festivals = festivalYear(ref, view.year);
+    final lang = langOf(context);
+    List<FestivalLine>? linesOn(CivilDate date) =>
+        festivals == null ? null : festivalLines(festivalsOn(festivals, date), lang);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.tabMonth), actions: const [SettingsButton()]),
       body: SingleChildScrollView(
@@ -58,14 +65,19 @@ class MonthScreen extends ConsumerWidget {
                   days: value,
                   today: today,
                   selected: view.selected,
+                  linesOn: linesOn,
                   onTap: (day) {
                     ref.read(monthViewProvider.notifier).select(day.date);
-                    if (!docked) _openSheet(context, day, city.timezone);
+                    if (!docked) _openSheet(context, day, city.timezone, linesOn(day.date));
                   },
                 ),
-                const _Legend(),
+                _Legend(withMarks: festivals != null),
                 if (docked)
-                  _DayPanel(day: value.firstWhere((d) => d.date == view.selected), timezone: city.timezone),
+                  _DayPanel(
+                    day: value.firstWhere((d) => d.date == view.selected),
+                    timezone: city.timezone,
+                    festivals: linesOn(view.selected),
+                  ),
               ],
               AsyncError(:final error) => [Note(icon: NoteIcon.alert, title: l10n.appTitle, body: '$error')],
               _ => const <Widget>[],
@@ -76,13 +88,14 @@ class MonthScreen extends ConsumerWidget {
     );
   }
 
-  void _openSheet(BuildContext context, PanchangDay day, String timezone) => showModalBottomSheet<void>(
+  void _openSheet(BuildContext context, PanchangDay day, String timezone, List<FestivalLine>? festivals) =>
+      showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     builder: (sheet) => SafeArea(
       child: SingleChildScrollView(
-        child: _DayPanel(day: day, timezone: timezone, inSheet: true),
+        child: _DayPanel(day: day, timezone: timezone, festivals: festivals, inSheet: true),
       ),
     ),
   );
@@ -156,10 +169,19 @@ class _Header extends ConsumerWidget {
 }
 
 class _Grid extends StatelessWidget {
-  const _Grid({required this.days, required this.today, required this.selected, required this.onTap});
+  const _Grid({
+    required this.days,
+    required this.today,
+    required this.selected,
+    required this.linesOn,
+    required this.onTap,
+  });
 
   final List<PanchangDay> days;
   final CivilDate today, selected;
+
+  /// Null while the festival year is on its way.
+  final List<FestivalLine>? Function(CivilDate) linesOn;
   final void Function(PanchangDay) onTap;
 
   @override
@@ -212,6 +234,7 @@ class _Grid extends StatelessWidget {
                                     day: day,
                                     isToday: day.date == today,
                                     isSelected: day.date == selected,
+                                    marks: cellMarks(linesOn(day.date) ?? const []),
                                     onTap: () => onTap(day),
                                   ),
                           ),
@@ -228,12 +251,19 @@ class _Grid extends StatelessWidget {
 }
 
 class _Cell extends StatelessWidget {
-  const _Cell({required PanchangDay this.day, required this.isToday, required this.isSelected, required this.onTap});
+  const _Cell({
+    required PanchangDay this.day,
+    required this.isToday,
+    required this.isSelected,
+    required this.marks,
+    required this.onTap,
+  });
 
-  const _Cell.blank() : day = null, isToday = false, isSelected = false, onTap = null;
+  const _Cell.blank() : day = null, isToday = false, isSelected = false, marks = const [], onTap = null;
 
   final PanchangDay? day;
   final bool isToday, isSelected;
+  final List<FestivalKind> marks;
   final VoidCallback? onTap;
 
   @override
@@ -262,7 +292,12 @@ class _Cell extends StatelessWidget {
       key: Key('month-cell-${day.date.iso}'),
       button: true,
       selected: isSelected,
-      label: [shortDate(day.date, lang), tithiName(day.jainTithi.index, lang), ?flagMeaning].join(', '),
+      label: [
+        shortDate(day.date, lang),
+        tithiName(day.jainTithi.index, lang),
+        ?flagMeaning,
+        for (final kind in marks) festivalKindLabel(kind, l10n),
+      ].join(', '),
       excludeSemantics: true,
       child: Material(
         type: MaterialType.transparency,
@@ -285,6 +320,14 @@ class _Cell extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(tithiShort(day.jainTithi.index, lang), style: NavpadType.cellTithi.copyWith(color: n.ink2)),
+                if (marks.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Wrap(
+                      spacing: 3,
+                      children: [for (final kind in marks) FestivalMark(kind: kind, size: 7)],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -295,27 +338,38 @@ class _Cell extends StatelessWidget {
 }
 
 class _Legend extends StatelessWidget {
-  const _Legend();
+  const _Legend({required this.withMarks});
+
+  /// The marks join the legend with the festival year, as they join the grid.
+  final bool withMarks;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final n = Theme.of(context).extension<Navpad>()!;
     final text = Theme.of(context).textTheme;
-    Widget entry(String flag, String meaning) => Row(
+    Widget entry(Widget sign, String meaning, {Key? key}) => Row(
+      key: key,
       mainAxisSize: MainAxisSize.min,
       children: [
-        ExcludeSemantics(child: Text(flag, style: NavpadType.cellFlag.copyWith(color: n.ink, fontSize: 13))),
+        ExcludeSemantics(child: sign),
         const SizedBox(width: 6),
         Text(meaning, style: text.labelMedium!.copyWith(color: n.ink2)),
       ],
     );
+    Widget flag(String letters) => Text(letters, style: NavpadType.cellFlag.copyWith(color: n.ink, fontSize: 13));
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
       child: Wrap(
         spacing: 20,
         runSpacing: 4,
-        children: [entry(l10n.flagKshaya, l10n.legendKshaya), entry(l10n.flagVriddhi, l10n.legendVriddhi)],
+        children: [
+          if (withMarks)
+            for (final kind in FestivalKind.values)
+              entry(FestivalMark(kind: kind), festivalKindLabel(kind, l10n), key: Key('legend-${kind.name}')),
+          entry(flag(l10n.flagKshaya), l10n.legendKshaya),
+          entry(flag(l10n.flagVriddhi), l10n.legendVriddhi),
+        ],
       ),
     );
   }
@@ -323,10 +377,13 @@ class _Legend extends StatelessWidget {
 
 /// The picked day: docked under the grid, or the body of the modal sheet.
 class _DayPanel extends ConsumerWidget {
-  const _DayPanel({required this.day, required this.timezone, this.inSheet = false});
+  const _DayPanel({required this.day, required this.timezone, required this.festivals, this.inSheet = false});
 
   final PanchangDay day;
   final String timezone;
+
+  /// Null while the festival year is on its way.
+  final List<FestivalLine>? festivals;
   final bool inSheet;
 
   @override
@@ -375,6 +432,12 @@ class _DayPanel extends ConsumerWidget {
           ),
           TimeRow(name: l10n.sunrise, time: clockPhrase(wall(day.sunrise), lang)),
           TimeRow(name: l10n.sunset, time: clockPhrase(wall(day.sunset), lang)),
+          for (final line in festivals ?? const <FestivalLine>[])
+            FestivalRow(
+              line: line,
+              subtitle: festivalKindLabel(line.kind, l10n),
+              value: line.start == line.end ? null : dateRange(line.start, line.end, lang),
+            ),
           for (final note in notes) Padding(padding: const EdgeInsets.only(top: 10), child: note),
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),

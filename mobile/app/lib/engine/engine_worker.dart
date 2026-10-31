@@ -9,6 +9,7 @@ import 'dart:isolate';
 import 'package:panchang_engine/panchang_engine.dart';
 
 import 'day_reading.dart';
+import 'festival_reading.dart';
 
 final class EngineWorker {
   EngineWorker._(this.isolate, this._requests, this._responses);
@@ -19,10 +20,11 @@ final class EngineWorker {
   final Map<int, Completer<Object>> _pending = {};
   int _sent = 0;
 
-  /// How many days and months have been asked for.
+  /// How many days, months and festival years have been asked for.
   int get reads => _sent;
 
-  static Future<EngineWorker> spawn() async {
+  /// [registry] is the festival registry's JSON, for [readFestivals].
+  static Future<EngineWorker> spawn({String? registry}) async {
     final responses = ReceivePort();
     final ready = Completer<SendPort>();
     late final EngineWorker worker;
@@ -34,7 +36,7 @@ final class EngineWorker {
         _ => throw StateError('Unexpected message from the engine worker: $message'),
       },
     );
-    final isolate = await Isolate.spawn(_serve, responses.sendPort, debugName: 'panchang engine');
+    final isolate = await Isolate.spawn(_serve, (responses.sendPort, registry), debugName: 'panchang engine');
     worker = EngineWorker._(isolate, await ready.future, responses);
     return worker;
   }
@@ -44,6 +46,9 @@ final class EngineWorker {
 
   /// Fails with a [RemoteError] when the engine throws on any day of the month.
   Future<List<PanchangDay>> readMonth(MonthRequest request) => _ask(request);
+
+  /// Needs the worker spawned with a registry.
+  Future<List<FestivalOccurrence>> readFestivals(FestivalRequest request) => _ask(request);
 
   Future<T> _ask<T extends Object>(Object request) async {
     final id = _sent++;
@@ -58,7 +63,9 @@ final class EngineWorker {
   }
 }
 
-void _serve(SendPort responses) {
+void _serve((SendPort, String?) start) {
+  final (responses, registryJson) = start;
+  final registry = registryJson == null ? null : FestivalRegistry.fromJson(registryJson);
   final requests = ReceivePort();
   responses.send(requests.sendPort);
   requests.listen((message) {
@@ -69,6 +76,7 @@ void _serve(SendPort responses) {
         switch (request) {
           final DayRequest day => readDay(day),
           final MonthRequest month => readMonth(month),
+          final FestivalRequest year when registry != null => readFestivals(year, registry: registry),
           _ => throw ArgumentError('Not an engine request: $request'),
         },
       ));

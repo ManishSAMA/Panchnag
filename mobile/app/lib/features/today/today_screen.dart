@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../engine/day_reading.dart';
+import '../../format/festival_text.dart';
 import '../../format/panchang_text.dart';
 import '../../l10n/app_localizations.dart';
 import '../../l10n/city_name.dart';
@@ -13,15 +14,18 @@ import '../../location/location_store.dart';
 import '../../settings/settings_store.dart';
 import '../../shared/date_navigator.dart';
 import '../../shared/day_notes.dart';
+import '../../shared/festival_mark.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../shared/pachchakkhan_row.dart';
 import '../../shared/settings_button.dart';
 import '../../theme/navpad.dart';
 import '../choghadiya/choghadiya_band.dart';
+import '../festivals/festival_state.dart';
+import '../month/month_state.dart';
 import 'today_state.dart';
 
-/// Today (mobile-ui-design.md §3.1). The red and green bands and the upcoming
-/// festivals join with the festival port.
+/// Today (mobile-ui-design.md §3.1). The festival bands and the upcoming
+/// festivals fill in when the year arrives from its own worker, after the hero.
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
 
@@ -128,6 +132,45 @@ class _DayView extends ConsumerWidget {
       AllDone() || null => null,
     };
     final notes = dayNotes(reading: reading, l10n: l10n, lang: lang, wall: wall);
+    final festivals = festivalYear(ref, reading.date.year);
+    final lines = festivalLines(festivalsOn(festivals ?? const [], reading.date), lang);
+    final soon = upcomingFestivals(festivals ?? const [], after: reading.date, lang: lang);
+    final nextYear = festivals != null && soon.length < 4 && reading.date.year < lastDay.year
+        ? festivalYear(ref, reading.date.year + 1)
+        : null;
+    final upcoming = [...soon, ...upcomingFestivals(nextYear ?? const [], after: reading.date, lang: lang)].take(4);
+
+    void openMonth() {
+      ref.read(monthViewProvider.notifier).show(reading.date);
+      context.go('/month');
+    }
+
+    Band? festivalBand(BandColour colour, String key, List<FestivalLine> shown) => switch (shown) {
+      [] => null,
+      [final first, ...final rest] => Band(
+        key: Key(key),
+        colour: colour,
+        title: first.name,
+        subtitle: rest.isEmpty ? festivalKindLabel(first.kind, l10n) : l10n.festivalsMore(rest.length),
+        value: first.start == first.end ? '' : dateRange(first.start, first.end, lang),
+        onTap: openMonth,
+      ),
+    };
+    // DESIGN.md's fixed order: red, yellow, green, then navy.
+    final bands = [
+      ?festivalBand(BandColour.red, 'today-band-parva', [for (final l in lines) if (!l.kind.isVrat) l]),
+      if (band != null)
+        Band(
+          key: const Key('today-band-pachchakkhan'),
+          colour: BandColour.yellow,
+          title: l10n.bandNextTitle(band.name),
+          subtitle: band.subtitle,
+          value: l10n.timeAndCountdown(band.time, durationText(band.at.difference(now), lang)),
+          onTap: () => context.go('/pachchakkhan'),
+        ),
+      ?festivalBand(BandColour.green, 'today-band-vrat', [for (final l in lines) if (l.kind.isVrat) l]),
+    ];
+    final firstGap = notes.isEmpty ? 0.0 : 10.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -140,18 +183,8 @@ class _DayView extends ConsumerWidget {
               children: [for (final note in notes) Padding(padding: const EdgeInsets.only(bottom: 8), child: note)],
             ),
           ),
-        if (band != null)
-          Padding(
-            padding: EdgeInsets.only(top: notes.isEmpty ? 0 : 10),
-            child: Band(
-              colour: BandColour.yellow,
-              title: l10n.bandNextTitle(band.name),
-              subtitle: band.subtitle,
-              value: l10n.timeAndCountdown(band.time, durationText(band.at.difference(now), lang)),
-              onTap: () => context.go('/pachchakkhan'),
-            ),
-          ),
-        ChoghadiyaBand(date: reading.date, topGap: band != null ? 2 : (notes.isEmpty ? 0 : 10)),
+        for (final (i, b) in bands.indexed) Padding(padding: EdgeInsets.only(top: i == 0 ? firstGap : 2), child: b),
+        ChoghadiyaBand(date: reading.date, topGap: bands.isNotEmpty ? 2 : firstGap),
         SectionHeading(title: isToday ? l10n.timesToday : l10n.timesOfDay),
         const ListTop(),
         _clockRow(l10n.sunrise, reading.sunrise, wall, lang),
@@ -181,6 +214,33 @@ class _DayView extends ConsumerWidget {
           },
           prefix: l10n.bySunset,
         ),
+        if (upcoming.isNotEmpty)
+          KeyedSubtree(
+            key: const Key('today-upcoming'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SectionHeading(title: l10n.upcomingFestivals),
+                const ListTop(),
+                for (final day in upcoming)
+                  InkWell(
+                    key: Key('upcoming-${day.date.iso}'),
+                    onTap: () => ref.read(selectedDateProvider.notifier).goTo(day.date),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (final (i, line) in day.lines.indexed)
+                          FestivalRow(
+                            line: line,
+                            subtitle: festivalKindLabel(line.kind, l10n),
+                            value: i == 0 ? shortDate(day.date, lang) : null,
+                          ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
       ],
     );
   }

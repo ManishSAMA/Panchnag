@@ -1,11 +1,24 @@
+import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jainpanchang/engine/day_reading.dart';
 import 'package:jainpanchang/engine/engine_worker.dart';
+import 'package:jainpanchang/engine/festival_reading.dart';
+import 'package:jainpanchang/features/festivals/festival_state.dart';
 import 'package:jainpanchang/features/today/today_state.dart';
 import 'package:panchang_engine/panchang_engine.dart';
+
+const delhi2026 = FestivalRequest(
+  year: 2026,
+  lat: 28.6139,
+  lon: 77.2090,
+  timezone: 'Asia/Kolkata',
+  profile: 'shwetambar_murtipujak_tapagachchha',
+);
+
+String registryJson() => File('assets/festival_registry.json').readAsStringSync();
 
 DayRequest delhi(CivilDate date) => DayRequest(date: date, lat: 28.6139, lon: 77.2090, timezone: 'Asia/Kolkata');
 
@@ -55,5 +68,50 @@ void main() {
 
     expect(day.jainTithi.index, 11);
     expect(container.read(engineWorkerProvider).value?.reads, 2);
+  });
+
+  test('reads a festival year with the registry it was started with: the engine list', () async {
+    final json = registryJson();
+    final worker = await EngineWorker.spawn(registry: json);
+    addTearDown(worker.close);
+
+    final year = await worker.readFestivals(delhi2026);
+
+    final direct = const PanchangEngine().festivals(
+      location: const Location(lat: 28.6139, lon: 77.2090, timezone: 'Asia/Kolkata'),
+      year: 2026,
+      profile: 'shwetambar_murtipujak_tapagachchha',
+      registry: FestivalRegistry.fromJson(json),
+    );
+    expect(year.map((f) => (f.occurrenceId, f.start, f.end)), direct.map((f) => (f.occurrenceId, f.start, f.end)));
+    expect(worker.isolate, isNot(Isolate.current));
+  });
+
+  test('a festival year is computed once per place, profile, sunrise rule and year', () {
+    final registry = FestivalRegistry.fromJson(registryJson());
+    final first = readFestivals(delhi2026, registry: registry);
+
+    expect(identical(readFestivals(delhi2026, registry: registry), first), isTrue);
+    const sthanakvasi = FestivalRequest(
+      year: 2026,
+      lat: 28.6139,
+      lon: 77.2090,
+      timezone: 'Asia/Kolkata',
+      profile: 'shwetambar_sthanakvasi',
+    );
+    expect(sthanakvasi, isNot(delhi2026));
+    expect(identical(readFestivals(sthanakvasi, registry: registry), first), isFalse);
+  });
+
+  test('festivals have a worker of their own, so a festival year never holds up a day', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final year = await container.read(festivalReaderProvider)(delhi2026);
+
+    expect(year, isNotEmpty);
+    expect(container.read(festivalWorkerProvider).value?.reads, 1);
+    expect(container.exists(engineWorkerProvider), isFalse);
   });
 }
