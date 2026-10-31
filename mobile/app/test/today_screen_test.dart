@@ -115,7 +115,7 @@ void main() {
     testWidgets('after sunset there is no band and nothing is next', (tester) async {
       await openApp(tester, now: ist(2026, 10, 22, 18, 30));
 
-      expect(find.textContaining('अगला:'), findsNothing);
+      expect(find.textContaining(RegExp(r'^अगला: (नवकारसी|पोरसी|साढ़-पोरसी|पुरिमड्ढ|अवड्ढ|चौविहार)$')), findsNothing);
       expect(find.bySemanticsLabel(RegExp(r', अगला')), findsNothing);
       expect(find.bySemanticsLabel(RegExp(r'^चौविहार 5:44, हो गया$')), findsOneWidget);
     });

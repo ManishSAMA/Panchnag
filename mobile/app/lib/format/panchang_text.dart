@@ -83,6 +83,40 @@ String pachchakkhanName(TimedPachchakkhan kind, Lang lang) => switch ((kind, lan
   (TimedPachchakkhan.avaddh, Lang.en) => 'Avaddh',
 };
 
+const _choghadiyaHi = {
+  Choghadiya.udveg: 'उद्वेग',
+  Choghadiya.char: 'चर',
+  Choghadiya.labh: 'लाभ',
+  Choghadiya.amrit: 'अमृत',
+  Choghadiya.kaal: 'काल',
+  Choghadiya.shubh: 'शुभ',
+  Choghadiya.rog: 'रोग',
+};
+
+/// English follows the Python engine's spelling.
+String choghadiyaName(Choghadiya slot, Lang lang) => switch (lang) {
+  Lang.hi => _choghadiyaHi[slot]!,
+  Lang.en => '${slot.name[0].toUpperCase()}${slot.name.substring(1)}',
+};
+
+/// Quality is never shown by colour alone (DESIGN.md, the Not-By-Colour-Alone Rule).
+String natureGlyph(ChoghadiyaNature nature) => switch (nature) {
+  ChoghadiyaNature.auspicious => '✓',
+  ChoghadiyaNature.neutral => '–',
+  ChoghadiyaNature.inauspicious => '✕',
+};
+
+/// Two wall-clock readings as one span; the period word appears once when both share it.
+String clockRange(DateTime start, DateTime end, Lang lang) {
+  final (from, to) = (clockTime(start, lang), clockTime(end, lang));
+  return switch (lang) {
+    Lang.hi when from.period == to.period => '${from.period} ${from.time}–${to.time}',
+    Lang.hi => '${from.period} ${from.time}–${to.period} ${to.time}',
+    Lang.en when from.period == to.period => '${from.time}–${to.time} ${to.period}',
+    Lang.en => '${from.time} ${from.period}–${to.time} ${to.period}',
+  };
+}
+
 /// The Hindi day parts: सुबह from 4, दोपहर from 12, शाम from 16, रात from 19.
 String _hindiPeriod(int hour) => switch (hour) {
   >= 4 && < 12 => 'सुबह',

@@ -108,6 +108,33 @@ void main() {
     });
   });
 
+  group('choghadiya (mobile-ui-design.md §3 · Choghadiya)', () {
+    test('names in Hindi and as the Python engine spells them in English', () {
+      expect([for (final c in Choghadiya.values) choghadiyaName(c, Lang.hi)], [
+        'उद्वेग', 'चर', 'लाभ', 'अमृत', 'काल', 'शुभ', 'रोग', //
+      ]);
+      expect([for (final c in Choghadiya.values) choghadiyaName(c, Lang.en)], [
+        'Udveg', 'Char', 'Labh', 'Amrit', 'Kaal', 'Shubh', 'Rog', //
+      ]);
+    });
+
+    test('quality has a glyph, never just a colour', () {
+      expect(natureGlyph(ChoghadiyaNature.auspicious), '✓');
+      expect(natureGlyph(ChoghadiyaNature.neutral), '–');
+      expect(natureGlyph(ChoghadiyaNature.inauspicious), '✕');
+    });
+
+    test('a range within one period names the period once', () {
+      expect(clockRange(wall(9, 16), wall(10, 41), Lang.hi), 'सुबह 9:16–10:41');
+      expect(clockRange(wall(9, 16), wall(10, 41), Lang.en), '9:16–10:41 AM');
+    });
+
+    test('a range across periods names both', () {
+      expect(clockRange(wall(10, 41), wall(12, 6), Lang.hi), 'सुबह 10:41–दोपहर 12:06');
+      expect(clockRange(wall(10, 41), wall(12, 6), Lang.en), '10:41 AM–12:06 PM');
+    });
+  });
+
   test('durations count whole minutes, rounded up', () {
     expect(durationText(const Duration(minutes: 74), Lang.hi), '1 घं 14 मि');
     expect(durationText(const Duration(minutes: 46), Lang.hi), '46 मि');

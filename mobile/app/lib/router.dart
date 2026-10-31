@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'features/choghadiya/choghadiya_screen.dart';
 import 'features/location/city_picker_screen.dart';
 import 'features/month/month_screen.dart';
 import 'features/pachchakkhan/pachchakkhan_screen.dart';
@@ -13,6 +14,7 @@ GoRouter buildRouter({required bool hasLocation}) => GoRouter(
   initialLocation: hasLocation ? '/today' : '/location',
   routes: [
     GoRoute(path: '/location', builder: (context, state) => const CityPickerScreen()),
+    GoRoute(path: '/choghadiya', pageBuilder: choghadiyaPage),
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => _TabShell(shell: shell),
       branches: [

@@ -15,10 +15,11 @@ import '../../shared/day_notes.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../shared/pachchakkhan_row.dart';
 import '../../theme/navpad.dart';
+import '../choghadiya/choghadiya_band.dart';
 import 'today_state.dart';
 
-/// Today (mobile-ui-design.md §3.1). The red, green and navy bands and the
-/// upcoming festivals join with the festival port and the choghadiya (M4).
+/// Today (mobile-ui-design.md §3.1). The red and green bands and the upcoming
+/// festivals join with the festival port.
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
 
@@ -139,6 +140,7 @@ class _DayView extends ConsumerWidget {
               onTap: () => context.go('/pachchakkhan'),
             ),
           ),
+        ChoghadiyaBand(date: reading.date, topGap: band != null ? 2 : (notes.isEmpty ? 0 : 10)),
         SectionHeading(title: isToday ? l10n.timesToday : l10n.timesOfDay),
         const ListTop(),
         _clockRow(l10n.sunrise, reading.sunrise, wall, lang),
