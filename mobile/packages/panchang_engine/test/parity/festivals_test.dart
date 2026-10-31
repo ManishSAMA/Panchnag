@@ -27,6 +27,9 @@ final Map<String, RegExp> emittedIds = {
   'BhaktambarVrat': RegExp(r'^bhaktambar_vrat_\d{4}_'),
   'Namokar35Vrat': RegExp(r'^namokar_vrat_step_\d+_\d{4}$'),
   'PushpanjaliVrat': RegExp(r'^pushpanjali_vrat_(spring|monsoon|winter)_\d{4}-\d\d-\d\d$'),
+  'ShvetambaraParyushan50Day':
+      RegExp(r'^(shvetambara_chaturmas_prarambh|paryushan_parv_day_[1-7]|samvatsari_mahaparv)_\d{4}$'),
+  'LabdhiVidhanVrat': RegExp(r'^labdhi_vidhan_vrat_(prarambh|purna)_\d{4}$'),
 };
 
 String? ruleTypeOf(String id) {

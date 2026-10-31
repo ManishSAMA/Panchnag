@@ -334,6 +334,14 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
   per-day titles (Ravi Pushya, Ravi Saptami) are left for Phase 6. Exact parity everywhere (9 rows
   per profile and year). Mutation check: parity misses the Jain-vs-sunrise paksha reading, the year
   filter and the window check; the unit tests kill them.
-- **Left:** §5 steps 7–13. Rule types not yet ported are skipped by the orchestrator, so
-  `festivals()` returns SingleTithi, Bhaktambar, Namokar 35, Pushpanjali, Rohini and Ravi Vrat
-  occurrences only for now.
+- **Step 7, `ShvetambaraParyushan50Day` + `LabdhiVidhanVrat`:** done (`festivals/rules/paryushan.dart`,
+  one anchor for both: the last day of the year holding non-Adhik Ashadha Shukla 14). Python names
+  the anchor's month from the Amanta reading in one rule and the Purnimanta one in the other; a
+  Shukla day has the same month in both, so the port reads it once. Labdhi Vidhan starts on the
+  first Purnimanta Bhadrapada Krishna Amavasya (Adhik days only when there are any; on a kshaya the
+  last Krishna 14) and ends on Samvatsari. `CivilDate.plusDays` added. Exact parity everywhere
+  (11 rows per profile and year). Mutation check: parity misses the second-day anchor, the Adhik
+  and year filters, the Amavasya first/K14 last choice and Labdhi's category; the unit tests kill them.
+- **Left:** §5 steps 8–13. Rule types not yet ported are skipped by the orchestrator, so
+  `festivals()` returns SingleTithi, Bhaktambar, Namokar 35, Pushpanjali, Rohini, Ravi Vrat,
+  Paryushan 50 and Labdhi Vidhan occurrences only for now.

@@ -49,6 +49,9 @@ void main() {
       final ravi = sthanakvasi.where((f) => f.id == 'ravi_vrat').toList();
       expect(ravi, hasLength(9));
       expect(ravi.every((f) => f.start.vara == 0), isTrue);
+      expect(ids(sthanakvasi), containsAll(['samvatsari_mahaparv_2026', 'labdhi_vidhan_vrat_purna_2026']));
+      final samvatsari = sthanakvasi.firstWhere((f) => f.id == 'samvatsari_mahaparv_2026').start;
+      expect(sthanakvasi.firstWhere((f) => f.id == 'labdhi_vidhan_vrat_purna_2026').start, samvatsari);
     });
   });
 

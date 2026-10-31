@@ -11,6 +11,7 @@ import 'days.dart';
 import 'registry.dart';
 import 'rules/bhaktambar.dart';
 import 'rules/namokar.dart';
+import 'rules/paryushan.dart';
 import 'rules/pushpanjali.dart';
 import 'rules/ravi_vrat.dart';
 import 'rules/rohini.dart';
@@ -77,6 +78,8 @@ const Map<String, _Rule> _rules = {
   'Namokar35Vrat': namokar35Vrat,
   'PushpanjaliVrat': pushpanjaliVrat,
   'RaviVrat': raviVratSundays,
+  'ShvetambaraParyushan50Day': paryushan50Day,
+  'LabdhiVidhanVrat': labdhiVidhanVrat,
   'RohiniVrat': rohiniVrat,
 };
 
