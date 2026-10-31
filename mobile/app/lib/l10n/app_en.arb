@@ -69,5 +69,23 @@
   "ekasanuBiyasanu": "Ekasanu · Biyasanu",
   "withATimeAbove": "Taken with one of the times above",
   "ayambilUpvas": "Ayambil · Upvas",
-  "paranaNextNavkarsi": "Parana: the next day's Navkarsi"
+  "paranaNextNavkarsi": "Parana: the next day's Navkarsi",
+
+  "choghadiyaTitle": "Choghadiya",
+  "natureGood": "Good",
+  "natureNeutral": "Neutral",
+  "natureAvoid": "Avoid",
+  "choghadiyaBandTitle": "Choghadiya: {name} · {quality}",
+  "choghadiyaBandNext": "Next: {name} · {quality}",
+  "untilAndCountdown": "until {time} · {duration}",
+  "choghadiyaThen": "then {name}",
+  "choghadiyaHeroSemantics": "{name}, {line}, {duration} left",
+  "dayHeading": "Day",
+  "nightHeading": "Night",
+  "slotNow": "now",
+  "slotPast": "past",
+  "beforeSunriseTitle": "Before sunrise",
+  "beforeSunriseBody": "Until sunrise at {sunrise}, last night's choghadiya are running, so this list starts at yesterday's sunrise.",
+  "choghadiyaFootnoteTitle": "How the slots are made",
+  "choghadiyaFootnote": "Daytime (sunrise to sunset) and night (sunset to the next sunrise) are each split into eight equal parts. Each part is one choghadiya, in a fixed order for each weekday."
 }
