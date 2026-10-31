@@ -140,6 +140,15 @@ List<FestivalDay> amantaMonthInYear(List<FestivalDay> days, int year, int monthI
 List<FestivalDay> purnimantaMonthInYear(List<FestivalDay> days, int year, int monthIndex) =>
     _adhikWhenRepeated([for (final d in days) if (d.date.year == year && d.purnimantaMonth.index == monthIndex) d]);
 
+/// The first civil day whose Jain day-start holds [paksha] [tithi] (a vriddhi's
+/// first day).
+CivilDate? firstHolding(List<FestivalDay> days, String paksha, int tithi) =>
+    days.where((d) => holds(d, Reading.jain, paksha, tithi)).firstOrNull?.date;
+
+/// The last such day: a vriddhi's second day, and the day a kshaya falls back to.
+CivilDate? lastHolding(List<FestivalDay> days, String paksha, int tithi) =>
+    days.where((d) => holds(d, Reading.jain, paksha, tithi)).lastOrNull?.date;
+
 List<FestivalDay> _adhikWhenRepeated(List<FestivalDay> named) {
   final adhik = named.any((d) => d.month.isAdhika);
   return [for (final d in named) if (d.month.isAdhika == adhik) d];

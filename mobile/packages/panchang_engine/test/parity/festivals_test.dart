@@ -33,7 +33,7 @@ final Map<String, RegExp> emittedIds = {
   for (final MapEntry(:key, :value) in yearlyEvents.entries) key: RegExp('^(${value.join('|')})' r'_\d{4}$'),
 };
 
-/// Family B rule types, by the `<prefix>_<year>` ids of their events.
+/// Family B and C rule types, by the `<prefix>_<year>` ids of their events.
 const Map<String, List<String>> yearlyEvents = {
   'ShravanaPurnimaRakshabandhan': [
     'rakshabandhan_700_muni_raksha_divas', 'muni_vishnukumar_akampanacharya_pujan', 'sorana_pujan',
@@ -58,6 +58,22 @@ const Map<String, List<String>> yearlyEvents = {
   'AkshayaTritiya': ['akshaya_tritiya_dan_divas'],
   'DiwaliChaturmasNishthapan': ['diwali', 'chaturmas_nishthapan'],
   'SplitDayAhoiKarwaDampatya': ['karwa_chauth', 'ahoi_ashtami', 'dampatya_ashtami'],
+  'ChaitraLabdhiVidhan': ['labdhi_vidhan_start_chaitra', 'labdhi_vidhan_purna_chaitra'],
+  'MaghaLabdhiVidhan': ['labdhi_vidhan_start_magha', 'labdhi_vidhan_purna_magha'],
+  'SaptaRishiVrat': ['sapta_rishi_vrat_prarambh', 'sapta_rishi_vrat_nishthapan'],
+  'SaptaParamsthanVrat': ['sapta_paramsthan_vrat_prarambh', 'sapta_paramsthan_vrat_purna'],
+  'RakshabandhanVrat': ['rakshabandhan_vrat_prarambh', 'rakshabandhan_vrat_purna'],
+  'AkshayaNidhiVrat': ['akshaya_nidhi_vrat_prarambh', 'akshaya_nidhi_vrat_purna'],
+  'AnantChaturdashiVrat': ['anant_vrat_prarambh', 'anant_chaturdashi_purna'],
+  'RatnatrayaSankatHaranVrat': [
+    'ratnatraya_vrat_prarambh', 'sankat_haran_vrat_prarambh', 'ratnatraya_vrat_purna', 'sankat_haran_vrat_purna',
+  ],
+  'ShraddhaVrat': ['shraddha_vrat_prarambh', 'shraddha_vrat_purna'],
+  'NavapadOliVrat': [
+    'navapad_oli_vrat_prarambh_chaitra', 'navapad_oli_vrat_purna_chaitra',
+    'navapad_oli_vrat_prarambh_ashwin', 'navapad_oli_vrat_purna_ashwin',
+  ],
+  'MonthlyVrat': ['pratham_jeth_jinvani_vrat_start', 'pratham_jeth_jinvani_vrat_end'],
 };
 
 String? ruleTypeOf(String id) {

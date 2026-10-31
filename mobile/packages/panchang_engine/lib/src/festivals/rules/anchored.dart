@@ -147,10 +147,8 @@ List<FestivalDay> _monthInYear(List<FestivalDay> days, int year, int month, _Nam
 /// kshaya the last day of [fallback].
 CivilDate? _udayaDay(List<FestivalDay> month, String paksha, int tithi,
     {required bool second, required (String, int) fallback}) {
-  final holding = month.where((d) => holds(d, Reading.jain, paksha, tithi));
   final (fallbackPaksha, fallbackTithi) = fallback;
-  return (second ? holding.lastOrNull : holding.firstOrNull)?.date ??
-      month.where((d) => holds(d, Reading.jain, fallbackPaksha, fallbackTithi)).lastOrNull?.date;
+  return (second ? lastHolding : firstHolding)(month, paksha, tithi) ?? lastHolding(month, fallbackPaksha, fallbackTithi);
 }
 
 /// Vaishakha Shukla 3. Python runs the first Tritiya through the 6-ghati
@@ -182,8 +180,7 @@ List<FestivalOccurrence> _veerShasanJayanti(FestivalEntry entry, List<FestivalDa
   if (month.isEmpty) return const [];
   final ashadhaPurnima = days.where((d) =>
       d.date.year == year && d.month.index == 3 && !d.month.isAdhika && holds(d, Reading.jain, _shukla, 15));
-  final date =
-      month.where((d) => holds(d, Reading.jain, _krishna, 1)).firstOrNull?.date ?? ashadhaPurnima.lastOrNull?.date;
+  final date = firstHolding(month, _krishna, 1) ?? ashadhaPurnima.lastOrNull?.date;
   return [
     if (date != null) ...[
       _occurrence(entry, 'veer_shasan_jayanti_$year', 'jayanti', date),

@@ -356,6 +356,18 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
   the fallback's last day, the Adhik filter, both year filters, Diwali's last pradosh and
   Nishthapan's last udaya, Veer Shasan's Adhik and empty-month checks, and Karwa's first day; the
   unit tests kill them all.
-- **Left:** §5 steps 9–13. Rule types not yet ported are skipped by the orchestrator, so
+- **Step 9, family C (11 types; Labdhi Vidhan Vrat came in step 7):** done
+  (`festivals/rules/paired.dart`). Written out rule by rule over two new primitives,
+  `firstHolding` / `lastHolding` (the first or last day whose Jain day-start holds a tithi), which
+  family B's selector now uses too; fallbacks chain with `??`. Exact parity everywhere (26 rows
+  per profile and year). Python quirks kept: Sapta Paramsthan's and Shraddha's kshaya fallbacks to
+  Amavasya take the Amanta month's own Amavasya, at its far end; a third fallback, and
+  Rakshabandhan Vrat's, is the window's previous day (Python `snapshots[idx - 1]`); Shraddha's end
+  falls back to Ashwin Purnima outside Kartika; `MonthlyVrat` reads Jyeshtha whatever the entry's
+  month and emits its start and end independently. Sapta Rishi's 6-ghati pull-back is a no-op as in
+  Akshaya Tritiya: Python's vrat view relabels every Jain day-start field together, so the day it is
+  given holds Purnima for the pull-back too. Mutation check: parity misses nearly every first/last
+  choice on a doubled tithi; 28 mutants, all killed by the unit tests.
+- **Left:** §5 steps 10–13. Rule types not yet ported are skipped by the orchestrator, so
   `festivals()` returns SingleTithi, Bhaktambar, Namokar 35, Pushpanjali, Rohini, Ravi Vrat,
-  Paryushan 50, Labdhi Vidhan and family B occurrences only for now.
+  Paryushan 50, Labdhi Vidhan, family B and family C occurrences only for now.

@@ -61,6 +61,17 @@ void main() {
       expect(on('bhai_dooj_2026').compareTo(on('jain_new_year_2026')), greaterThan(0));
       expect(on('chaturmas_nishthapan_2026'), nirvana);
     });
+
+    test('a Prarambh precedes its Purna', () {
+      CivilDate on(String id) => sthanakvasi.firstWhere((f) => f.id == id).start;
+      for (final (start, end) in [
+        ('navapad_oli_vrat_prarambh_chaitra_2026', 'navapad_oli_vrat_purna_chaitra_2026'),
+        ('anant_vrat_prarambh_2026', 'anant_chaturdashi_purna_2026'),
+        ('shraddha_vrat_prarambh_2026', 'shraddha_vrat_purna_2026'),
+      ]) {
+        expect(on(start).compareTo(on(end)), lessThan(0), reason: start);
+      }
+    });
   });
 
   group('profiles', () {

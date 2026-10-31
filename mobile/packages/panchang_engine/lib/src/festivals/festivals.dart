@@ -12,6 +12,7 @@ import 'registry.dart';
 import 'rules/anchored.dart';
 import 'rules/bhaktambar.dart';
 import 'rules/namokar.dart';
+import 'rules/paired.dart';
 import 'rules/paryushan.dart';
 import 'rules/pushpanjali.dart';
 import 'rules/ravi_vrat.dart';
@@ -84,6 +85,7 @@ final Map<String, FestivalRule> _rules = {
   'LabdhiVidhanVrat': labdhiVidhanVrat,
   'RohiniVrat': rohiniVrat,
   ...anchoredRules,
+  ...pairedRules,
 };
 
 Iterable<String> get portedRuleTypes => _rules.keys;
