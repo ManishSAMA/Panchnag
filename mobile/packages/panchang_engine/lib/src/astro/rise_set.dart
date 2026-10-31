@@ -30,19 +30,18 @@ const double _semidiameterAt1Au = 959.63;
 /// measured refraction constant already absorbs it.)
 const double _parallaxAt1Au = 8.794;
 
-double _altitude(double jdUt, double lat, double lon) {
-  final sun = sunApparent(jdUt);
+double _altitude(double jdUt, SunPosition sun, double lat, double lon) {
   final hourAngle = radians(greenwichApparentSiderealHours(jdUt) * 15 + lon - sun.rightAscension);
   final (phi, delta) = (radians(lat), radians(sun.declination));
   return degrees(math.asin(math.sin(phi) * math.sin(delta) +
       math.cos(phi) * math.cos(delta) * math.cos(hourAngle)));
 }
 
-/// Altitude of the disc centre at the instant the rule calls sunrise.
-double _horizon(double jdUt, SunriseRule rule) => switch (rule) {
-      SunriseRule.modern =>
-        -(_horizonRefractionDegrees + _semidiameterAt1Au / sunApparent(jdUt).distance / 3600),
-      SunriseRule.traditional => _parallaxAt1Au / sunApparent(jdUt).distance / 3600,
+/// Altitude of the disc centre at the instant the rule calls sunrise, for the
+/// Sun at [distance] AU.
+double _horizon(double distance, SunriseRule rule) => switch (rule) {
+      SunriseRule.modern => -(_horizonRefractionDegrees + _semidiameterAt1Au / distance / 3600),
+      SunriseRule.traditional => _parallaxAt1Au / distance / 3600,
     };
 
 const double _scanStepDays = 1 / 24;
@@ -53,7 +52,11 @@ const double _toleranceDays = 1e-7; // about 0.01 s
 /// going up ([rising]) or down. Throws [StateError] when it never does within
 /// a day, as on a polar day or night.
 double _crossing(double anchor, double lat, double lon, SunriseRule rule, {required bool rising}) {
-  double above(double jd) => _altitude(jd, lat, lon) - _horizon(jd, rule);
+  // One Sun position per step serves both the altitude and the horizon.
+  double above(double jd) {
+    final sun = sunApparent(jd);
+    return _altitude(jd, sun, lat, lon) - _horizon(sun.distance, rule);
+  }
   bool crossed(double before, double after) => rising ? before < 0 && after >= 0 : before > 0 && after <= 0;
 
   final estimate = _estimate(anchor, lat, lon, rule, rising: rising);
@@ -81,7 +84,7 @@ const double _siderealDegreesPerDay = 360.98564736629;
 double? _estimate(double anchor, double lat, double lon, SunriseRule rule, {required bool rising}) {
   final sun = sunApparent(anchor);
   final (phi, delta) = (radians(lat), radians(sun.declination));
-  final cosH0 = (math.sin(radians(_horizon(anchor, rule))) - math.sin(phi) * math.sin(delta)) /
+  final cosH0 = (math.sin(radians(_horizon(sun.distance, rule))) - math.sin(phi) * math.sin(delta)) /
       (math.cos(phi) * math.cos(delta));
   if (cosH0.abs() > 1) return null;
   final h0 = degrees(math.acos(cosH0));

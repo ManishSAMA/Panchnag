@@ -418,4 +418,38 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
   140 ms; all others together take under 5 ms. A phone is likely to be several times slower, so the
   §4 target of "well under 1 s on a phone" is not met as is; the year runs once, in the engine
   isolate, and is cached by the app (§1a), so it delays the festival dots, not the Month tab.
-  Not yet measured on a device (`mobile/app/tool/perf_main.dart` does not time festivals).
+- **Step 13, speed-up (bit-identical results):** four changes, each with a test that the faster
+  path gives exactly the old answer.
+  - The sunrise and sunset solvers read one Sun position per step, shared by the altitude and the
+    horizon. `test/support/reference_rise_set.dart` keeps the old solver, and a test compares the
+    two bit for bit across four cities, both rules, 2016-2040.
+  - The Jain day-start and sunset tithis come from the elongations at the two sunrises around them
+    (`tithiBetween`: 9.5-16°/day rate bounds). The Moon is read only when those readings leave two
+    tithis possible. Tests check the rate bounds hold 2016-2040, and that the result equals
+    `tithiAt` at instants a second either side of every tithi end.
+  - Rohini skips the nakshatra search on a day when the Moon (under 16°/day) cannot reach
+    Rohini's end by the next sunrise. `test/support/reference_rohini.dart` keeps the full search,
+    and a test checks the days agree on three real windows.
+  - Mutation check: every non-equivalent mutant is killed. The survivors only remove a shortcut,
+    so they change speed, not results.
+- **Measured** (Delhi, one profile; desktop AOT; Motorola Edge 70 Fusion, profile build,
+  `tool/perf_main.dart`):
+
+  | | before | after |
+  |---|---|---|
+  | desktop: day readings | 0.9 s | 0.40 s |
+  | desktop: rules | 0.16 s | 0.02 s |
+  | desktop: year | ≈1.05 s | ≈0.42 s |
+  | phone: year, engine API (2026-2028 Tapagachchha, 2026 Sthanakvasi) | not measured | 1032-1040 ms |
+  | phone: year in a background isolate (2026-2029) | not measured | 1034-1050 ms |
+
+  The before run on the phone was cut short, so there is no measured phone baseline. On the same
+  build, the phone ran about 2.5× slower than desktop, which puts the old year at roughly 2.6 s.
+  The phone is therefore about 40 ms over the 1 s target, and further still from §4's "well under
+  1 s". What remains is almost all day readings, mostly the 854 sunrise and sunset solves.
+  - Next steps, not yet tried:
+    - Solve sunset from the day's sunrise rather than from the anchor.
+    - Start each solve from the previous day's answer.
+    - Read the elongation at sunrise from the solver's last Sun position.
+  - The year runs once, in the background, and the app caches it (§1a). So it delays the festival
+    dots by about a second, not the Month tab.

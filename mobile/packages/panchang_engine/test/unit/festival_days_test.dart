@@ -62,6 +62,28 @@ void main() {
     });
   });
 
+  // The window reads its later tithis from the sunrise elongations where it
+  // can; every reading must still be the tithi at its instant.
+  for (final rule in SunriseRule.values) {
+    test('every reading of a whole window is the tithi at its instant (${rule.name})', () {
+      const places = [
+        delhiCity,
+        Location(lat: 51.5074, lon: -0.1278, timezone: 'Europe/London'),
+        Location(lat: 40.7128, lon: -74.0060, timezone: 'America/New_York'),
+      ];
+      final wrong = [
+        for (final (place, year) in [(places[0], 2031), (places[1], 2026), (places[2], 2038)])
+          for (final d in festivalDays(location: place, year: year, sunriseRule: rule))
+            if (d.sunriseTithi != tithiAt(d.sunrise) ||
+                d.jainTithi != tithiAt(d.sunrise + jainTithiOffsetDays) ||
+                d.eveningTithi != tithiAt(d.sunset))
+              '${place.timezone} ${d.date}',
+      ];
+
+      expect(wrong, isEmpty);
+    });
+  }
+
   test('the standard offset ignores daylight time (London keeps GMT through the summer)', () {
     final london = festivalDays(
       location: const Location(lat: 51.5074, lon: -0.1278, timezone: 'Europe/London'),

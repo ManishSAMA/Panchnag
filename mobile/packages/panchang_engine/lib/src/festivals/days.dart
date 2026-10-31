@@ -64,19 +64,25 @@ List<FestivalDay> festivalDays({
   final anchors = [for (final d in dates) civilDayAnchor(d, timezone)];
   final monthAt = amanta ?? amantaLookup(lunarMonthsBetween(anchors.first, anchors.last + 2));
 
+  // The elongation at each sunrise brackets the day's later readings.
+  final atRise = [
+    for (final anchor in anchors)
+      if (sunrise(anchor, lat, lon, sunriseRule) case final rise) (jd: rise, elongation: elongation(rise)),
+  ];
   final readings = [
     for (final (i, date) in dates.indexed)
       () {
-        final rise = sunrise(anchors[i], lat, lon, sunriseRule);
+        final rise = atRise[i];
+        final next = i + 1 < atRise.length ? atRise[i + 1] : null;
         final set = sunset(anchors[i], lat, lon, sunriseRule);
-        final reference = rise + jainTithiOffsetDays;
+        final reference = rise.jd + jainTithiOffsetDays;
         return (
           date: date,
-          sunrise: rise,
+          sunrise: rise.jd,
           sunset: set,
-          sunriseTithi: tithiAt(rise),
-          jainTithi: tithiAt(reference),
-          eveningTithi: tithiAt(set),
+          sunriseTithi: tithiOf(rise.elongation),
+          jainTithi: tithiBetween(reference, rise, next),
+          eveningTithi: tithiBetween(set, rise, next),
           month: monthAt(reference),
           standardOffset: standardOffset(date, timezone),
         );
