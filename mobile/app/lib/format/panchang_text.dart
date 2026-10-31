@@ -198,6 +198,15 @@ String monthSpanLine({required List<LunarMonth> months, required List<int> vikra
   return '${names.join(' – ')} · ${lang == Lang.hi ? 'वि. सं.' : 'VS'} $vs';
 }
 
+/// Where [at] falls in [day]'s daylight: 0 at sunrise, 1 at sunset.
+double dayFraction(DateTime at, PanchangDay day) =>
+    at.difference(day.sunrise).inSeconds / day.sunset.difference(day.sunrise).inSeconds;
+
+String gregorianMonthName(int month, Lang lang) => (lang == Lang.hi ? _gregorianHi : _gregorianEn)[month - 1];
+
+String weekdayName(CivilDate date, Lang lang) =>
+    (lang == Lang.hi ? _weekdaysHi : _weekdaysEn)[DateTime.utc(date.year, date.month, date.day).weekday - 1];
+
 String shortDate(CivilDate date, Lang lang) =>
     '${date.day} ${(lang == Lang.hi ? _gregorianHi : _gregorianEn)[date.month - 1]}';
 

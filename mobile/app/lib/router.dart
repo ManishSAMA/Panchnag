@@ -8,6 +8,7 @@ import 'features/pachchakkhan/pachchakkhan_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/today/today_screen.dart';
 import 'l10n/app_localizations.dart';
+import 'shared/navpad_icons.dart';
 
 /// Tabs appear as their screens are built: Festivals joins later
 /// (mobile-ui-design.md §1), never as an empty placeholder.
@@ -52,21 +53,9 @@ class _TabShell extends StatelessWidget {
           selectedIndex: shell.currentIndex,
           onDestinationSelected: (index) => shell.goBranch(index, initialLocation: index == shell.currentIndex),
           destinations: [
-            NavigationDestination(
-              icon: const Icon(Icons.wb_sunny_outlined),
-              selectedIcon: const Icon(Icons.wb_sunny),
-              label: l10n.tabToday,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.calendar_month_outlined),
-              selectedIcon: const Icon(Icons.calendar_month),
-              label: l10n.tabMonth,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.schedule_outlined),
-              selectedIcon: const Icon(Icons.schedule),
-              label: l10n.tabPachchakkhan,
-            ),
+            NavigationDestination(icon: const NavpadIcon(NavpadGlyph.sunrise), label: l10n.tabToday),
+            NavigationDestination(icon: const NavpadIcon(NavpadGlyph.monthcal), label: l10n.tabMonth),
+            NavigationDestination(icon: const NavpadIcon(NavpadGlyph.sunpath), label: l10n.tabPachchakkhan),
           ],
         ),
       ),

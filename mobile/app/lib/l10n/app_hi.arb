@@ -227,5 +227,13 @@
   "festivalsMore": "+{count} और",
   "@festivalsMore": {"description": "Sub-line of a Today band with more festivals than the one it names.", "placeholders": {"count": {"type": "int"}}},
   "upcomingFestivals": "आगामी पर्व",
-  "@upcomingFestivals": {"description": "Today section heading: the next festival dates."}
+  "@upcomingFestivals": {"description": "Today section heading: the next festival dates."},
+  "upcomingDateLine": "{month} · {weekday} · {ahead}",
+  "@upcomingDateLine": {"description": "Beside the day numeral of an upcoming festival date on Today.", "placeholders": {"month": {"type": "String"}, "weekday": {"type": "String"}, "ahead": {"type": "String"}}},
+  "daysAhead": "{count, plural, =1{कल} other{{count} दिन बाद}}",
+  "@daysAhead": {"description": "How far an upcoming festival date is from the date shown on Today.", "placeholders": {"count": {"type": "int"}}},
+  "tileFestivals": "पर्व सूची",
+  "@tileFestivals": {"description": "Today feature tile that opens the festivals tab."},
+  "moonOfTithi": "{tithi} का चंद्रमा",
+  "@moonOfTithi": {"description": "Screen-reader label of the moon drawing beside the Today tithi.", "placeholders": {"tithi": {"type": "String"}}}
 }

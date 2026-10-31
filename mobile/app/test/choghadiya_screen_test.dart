@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jainpanchang/engine/day_reading.dart';
 import 'package:jainpanchang/format/panchang_text.dart';
 import 'package:jainpanchang/location/city_time.dart';
+import 'package:jainpanchang/shared/navpad_icons.dart';
 import 'package:panchang_engine/panchang_engine.dart';
 
 import 'support/harness.dart';
@@ -47,10 +48,7 @@ void main() {
 
       expect(find.text('चौघड़िया: चर · – सामान्य'), findsOneWidget);
       expect(find.text('अगला: लाभ · ✓ अच्छा'), findsOneWidget);
-      expect(
-        find.text('${hm(char.end)} तक · ${durationText(char.end.difference(now), Lang.hi)}'),
-        findsOneWidget,
-      );
+      expect(find.text('${hm(char.end)} तक · ${durationText(char.end.difference(now), Lang.hi)}'), findsOneWidget);
     });
 
     testWidgets("the last day slot ends at the sunset Today shows, seconds dropped", (tester) async {
@@ -69,10 +67,7 @@ void main() {
 
       expect(find.text('Choghadiya: Char · – Neutral'), findsOneWidget);
       expect(find.text('Next: Labh · ✓ Good'), findsOneWidget);
-      expect(
-        find.text('until ${hm(char.end)} · ${durationText(char.end.difference(now), Lang.en)}'),
-        findsOneWidget,
-      );
+      expect(find.text('until ${hm(char.end)} · ${durationText(char.end.difference(now), Lang.en)}'), findsOneWidget);
     });
 
     testWidgets("before sunrise it follows the sun: last night's slot is current", (tester) async {
@@ -115,16 +110,27 @@ void main() {
     }
   });
 
+  testWidgets("Today's band and the hero lead with the ghatika", (tester) async {
+    await openApp(tester, now: ist(2026, 10, 22, 10, 52));
+    final bandIcon = find.descendant(
+      of: find.ancestor(of: band, matching: find.byType(InkWell)).first,
+      matching: find.byType(NavpadIcon),
+    );
+    expect(tester.widget<NavpadIcon>(bandIcon).glyph, NavpadGlyph.ghatika);
+
+    await tester.ensureVisible(band);
+    await tester.tap(band);
+    await tester.pumpAndSettle();
+    expect(tester.widget<NavpadIcon>(inHero(find.byType(NavpadIcon))).glyph, NavpadGlyph.ghatika);
+  });
+
   group('the hero', () {
     testWidgets('names the current slot, its quality and range, and counts down to its end', (tester) async {
       final now = ist(2026, 10, 22, 10, 52);
       await openChoghadiya(tester, now: now);
 
       expect(inHero(find.text('चर')), findsOneWidget);
-      expect(
-        inHero(find.text('– सामान्य · सुबह ${hm(char.start)}–दोपहर ${hm(char.end)} · फिर लाभ')),
-        findsOneWidget,
-      );
+      expect(inHero(find.text('– सामान्य · सुबह ${hm(char.start)}–दोपहर ${hm(char.end)} · फिर लाभ')), findsOneWidget);
       expect(inHero(find.text(countdownClock(char.end.difference(now)))), findsOneWidget);
     });
 

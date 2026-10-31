@@ -10,6 +10,7 @@ import '../../location/city_time.dart';
 import '../../location/location_store.dart';
 import '../../settings/settings_store.dart';
 import '../../shared/date_navigator.dart';
+import '../../shared/navpad_icons.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../theme/navpad.dart';
 import '../today/today_state.dart';
@@ -172,6 +173,12 @@ class _Hero extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  IconBadge(
+                    background: n.onNavy.withAlpha(0x1F),
+                    foreground: n.onNavy,
+                    child: const NavpadIcon(NavpadGlyph.ghatika),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(child: label),
                   if (!stacked) ...[const SizedBox(width: 12), countdown],
                 ],

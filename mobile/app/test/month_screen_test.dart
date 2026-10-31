@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jainpanchang/format/panchang_text.dart';
+import 'package:jainpanchang/shared/moon_phase.dart';
+import 'package:jainpanchang/shared/navpad_icons.dart';
+import 'package:jainpanchang/shared/navpad_widgets.dart';
 import 'package:panchang_engine/panchang_engine.dart';
 
 import 'support/harness.dart';
@@ -120,6 +123,27 @@ void main() {
       }
     });
 
+    testWidgets('each day draws the moon of its tithi at 11 dp, before the short tithi', (tester) async {
+      await openMonth(tester, now: ist(2026, 10, 22));
+      final tithis = jainTithis(october2026.first, october2026.last);
+
+      for (final d in october2026) {
+        final moon = inCell(d, find.byType(MoonPhase));
+        expect(tester.widget<MoonPhase>(moon).tithi, tithis[d], reason: '$d');
+        expect(tester.getSize(moon), const Size.square(11));
+        final short = inCell(d, find.text(tithiShort(tithis[d]!, Lang.hi)));
+        expect(tester.getCenter(moon).dx, lessThan(tester.getTopLeft(short).dx), reason: '$d');
+      }
+    });
+
+    testWidgets('a long short tithi stays on one line beside its moon', (tester) async {
+      await openMonth(tester, now: ist(2026, 10, 22));
+      final amavas = inCell(const CivilDate(2026, 10, 10), find.text('अमावस'));
+
+      expect(tester.getRect(amavas).height, lessThan(20));
+      expect(tester.getRect(cell(const CivilDate(2026, 10, 10))).contains(tester.getRect(amavas).centerRight), isTrue);
+    });
+
     testWidgets('flags क्ष exactly where the Jain tithi skips one, and वृ on both days of a repeat', (tester) async {
       await openMonth(tester, now: ist(2026, 10, 22));
       final tithis = jainTithis(october2026.first, october2026.last);
@@ -128,8 +152,20 @@ void main() {
       bool repeats(CivilDate d) => tithis[d] == tithis[previousDay(d)] || tithis[d] == tithis[d.next()];
 
       // The UI spec's test month: kshaya on the 3rd and 27th, vriddhi on the 18th-19th.
-      expect([for (final d in october2026) if (skips(d)) d.day], [3, 27]);
-      expect([for (final d in october2026) if (repeats(d)) d.day], [18, 19]);
+      expect(
+        [
+          for (final d in october2026)
+            if (skips(d)) d.day,
+        ],
+        [3, 27],
+      );
+      expect(
+        [
+          for (final d in october2026)
+            if (repeats(d)) d.day,
+        ],
+        [18, 19],
+      );
       for (final d in october2026) {
         expect(inCell(d, find.text('क्ष')), skips(d) ? findsOneWidget : findsNothing, reason: '$d');
         expect(inCell(d, find.text('वृ')), repeats(d) ? findsOneWidget : findsNothing, reason: '$d');
@@ -160,6 +196,19 @@ void main() {
       expect(inPanel(find.text('शुक्ल एकादशी')), findsOneWidget);
       expect(inPanel(find.text('सूर्योदय')), findsOneWidget);
       expect(inPanel(find.text('सूर्यास्त')), findsOneWidget);
+    });
+
+    testWidgets('leads the tithi row with its moon and the sun rows with sunrise and sunset', (tester) async {
+      await openMonth(tester, now: ist(2026, 10, 22));
+      Finder row(String name) => inPanel(find.ancestor(of: find.text(name), matching: find.byType(TimeRow)));
+
+      final moon = find.descendant(of: row('शुक्ल एकादशी'), matching: find.byType(MoonPhase));
+      expect(tester.widget<MoonPhase>(moon).tithi, 11);
+      expect(tester.getSize(moon), const Size.square(24));
+      for (final (name, glyph) in [('सूर्योदय', NavpadGlyph.sunrise), ('सूर्यास्त', NavpadGlyph.sunset)]) {
+        final icon = find.descendant(of: row(name), matching: find.byType(NavpadIcon));
+        expect(tester.widget<NavpadIcon>(icon).glyph, glyph);
+      }
     });
 
     testWidgets('on a month without today, shows its first day', (tester) async {

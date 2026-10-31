@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../format/festival_text.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/navpad.dart';
+import 'festival_icon.dart';
 
 String festivalKindLabel(FestivalKind kind, AppLocalizations l10n) => switch (kind) {
   FestivalKind.mahaparva => l10n.festivalMahaparva,
@@ -11,37 +12,7 @@ String festivalKindLabel(FestivalKind kind, AppLocalizations l10n) => switch (ki
   FestivalKind.vrat => l10n.festivalVrat,
 };
 
-/// DESIGN.md's marks: a red square for mahaparva, a red ring for kalyanak, a
-/// red dot for parva and a green dot for vrat; 10 dp in lists, 7 dp in the grid.
-/// The words go alongside, so the mark itself is silent.
-class FestivalMark extends StatelessWidget {
-  const FestivalMark({super.key, required this.kind, this.size = 10});
-
-  final FestivalKind kind;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final n = Theme.of(context).extension<Navpad>()!;
-    final colour = kind.isVrat ? n.green : n.red;
-    final decoration = switch (kind) {
-      FestivalKind.mahaparva => BoxDecoration(color: colour, borderRadius: BorderRadius.circular(size / 5)),
-      FestivalKind.kalyanak => BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: colour, width: size / 4),
-      ),
-      FestivalKind.parva || FestivalKind.vrat => BoxDecoration(shape: BoxShape.circle, color: colour),
-    };
-    return ExcludeSemantics(
-      child: SizedBox.square(
-        dimension: size,
-        child: DecoratedBox(decoration: decoration),
-      ),
-    );
-  }
-}
-
-/// A day's festival line: its mark, its name and a sub-line, with an optional
+/// A day's festival line: its picture, its name and a sub-line, with an optional
 /// right-hand value.
 class FestivalRow extends StatelessWidget {
   const FestivalRow({super.key, required this.line, required this.subtitle, this.value, this.onTap});
@@ -63,7 +34,7 @@ class FestivalRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          FestivalMark(kind: line.kind),
+          FestivalIcon(kind: line.kind, badge: true),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

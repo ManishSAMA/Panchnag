@@ -126,5 +126,9 @@
   "festivalParva": "Parva",
   "festivalVrat": "Vrat",
   "festivalsMore": "+{count} more",
-  "upcomingFestivals": "Upcoming festivals"
+  "upcomingFestivals": "Upcoming festivals",
+  "upcomingDateLine": "{month} · {weekday} · {ahead}",
+  "daysAhead": "{count, plural, =1{tomorrow} other{in {count} days}}",
+  "tileFestivals": "Festivals",
+  "moonOfTithi": "Moon on {tithi}"
 }

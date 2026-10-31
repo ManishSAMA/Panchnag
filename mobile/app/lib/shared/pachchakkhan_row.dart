@@ -10,6 +10,7 @@ Widget pachchakkhanRow({
   required String name,
   required String time,
   required RowState? state,
+  Widget? icon,
   String? subtitle,
   String? prefix,
 }) {
@@ -21,6 +22,7 @@ Widget pachchakkhanRow({
   };
   return TimeRow(
     name: name,
+    icon: icon,
     subtitle: subtitle,
     time: time,
     prefix: prefix,

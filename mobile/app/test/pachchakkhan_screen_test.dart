@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:panchang_engine/panchang_engine.dart';
 import 'package:jainpanchang/engine/day_reading.dart';
+import 'package:jainpanchang/shared/navpad_icons.dart';
 
 import 'support/harness.dart';
 
@@ -39,6 +40,13 @@ String navkarsi23Oct() {
 /// shown rounded up: 7:15, 9:16, 10:41, 12:06 and 2:56. Sunset is shown rounded down, 5:44.
 void main() {
   group('the hero on today', () {
+    testWidgets('leads with the sun where it will stand at the next time', (tester) async {
+      await openPachchakkhan(tester, now: ist(2026, 10, 22, 10, 52));
+
+      final sun = tester.widget<SunPathIcon>(inHero(find.byType(SunPathIcon)));
+      expect(sun.fraction, closeTo(0.5, 0.001));
+    });
+
     testWidgets('names the next pachchakkhan, when it may be completed and a live countdown', (tester) async {
       await openPachchakkhan(tester, now: ist(2026, 10, 22, 10, 52));
 
@@ -135,6 +143,29 @@ void main() {
       expect(find.bySemanticsLabel('पुरिमड्ढ 12:06, अगला'), findsOneWidget);
       expect(find.bySemanticsLabel('अवड्ढ 2:56, बाकी'), findsOneWidget);
     });
+  });
+
+  testWidgets('each row shows the sun where it stands at that time, and sunset for the evening', (tester) async {
+    await openPachchakkhan(tester, now: ist(2026, 10, 22, 10, 52));
+    final rows = [for (final sun in tester.widgetList<SunPathIcon>(find.byType(SunPathIcon)).skip(1)) sun.fraction];
+
+    // Navkarsi, Porsi, Sadh-Porsi, Purimaddh, Avaddh, then the evening row.
+    expect(rows, hasLength(6));
+    for (final (i, quarter) in [0.25, 0.375, 0.5, 0.75].indexed) {
+      expect(rows[i + 1], closeTo(quarter, 0.001));
+    }
+    expect(rows.first, closeTo(48 / 678.5, 0.002));
+    expect(rows.last, 1);
+  });
+
+  testWidgets('the other pachchakkhans show the plain sun-path icon', (tester) async {
+    await openPachchakkhan(tester, now: ist(2026, 10, 22, 10, 52));
+
+    for (final name in ['मुट्ठीसहियं', 'एकासणा · बियासणा', 'आयंबिल · उपवास']) {
+      final row = find.ancestor(of: find.text(name), matching: find.byType(Row)).first;
+      final icon = find.descendant(of: row, matching: find.byType(NavpadIcon));
+      expect(tester.widget<NavpadIcon>(icon).glyph, NavpadGlyph.sunpath, reason: name);
+    }
   });
 
   group('the evening pachchakkhans', () {

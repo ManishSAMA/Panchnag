@@ -7,6 +7,7 @@ import '../../format/panchang_text.dart';
 import '../../l10n/app_localizations.dart';
 import '../../location/city_time.dart';
 import '../../location/location_store.dart';
+import '../../shared/navpad_icons.dart';
 import '../../shared/navpad_widgets.dart';
 import '../today/today_state.dart';
 import 'choghadiya_screen.dart';
@@ -36,6 +37,7 @@ class ChoghadiyaBand extends ConsumerWidget {
       child: Builder(
         builder: (context) => Band(
           colour: BandColour.navy,
+          icon: const NavpadIcon(NavpadGlyph.ghatika),
           title: l10n.choghadiyaBandTitle(
             choghadiyaName(live.slot.name, lang),
             qualityText(l10n, live.slot.name.nature),
