@@ -26,9 +26,9 @@ from laghu_panchang import build_laghu_year
 from request_parsing import parse_laghu_panchang_request
 
 DELHI = {"lat": 28.6139, "lon": 77.2090}
-AJITNATH = "श्री अजितनाथ भगवान दीक्षा कल्याणक"        # 16 Feb, Vrindavan only
-ARNATH = "श्री अरनाथ भगवान गर्भ कल्याणक"              # 22 Feb, Uttarapurana only
-CHANDRAPRABH = "श्री चंद्रप्रभ भगवान मोक्ष कल्याणक"   # 27 Feb, Ashadhara only
+AJITNATH = "श्री अजितनाथ जी — दीक्षा कल्याणक"        # 16 Feb, Vrindavan only
+ARNATH = "श्री अरनाथ जी — गर्भ कल्याणक"              # 22 Feb, Uttarapurana only
+CHANDRAPRABH = "श्री चंद्रप्रभ जी — मोक्ष कल्याणक"   # 27 Feb, Ashadhara only
 
 
 def _festival(name: str, *sources: str) -> dict:

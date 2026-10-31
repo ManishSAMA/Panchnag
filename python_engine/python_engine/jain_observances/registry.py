@@ -2758,3 +2758,67 @@ FESTIVAL_REGISTRY = [
         "sources": ["Jain Traditions"]
     }
 ]
+
+# Tirthankar kalyanaks get their Hindi name from these terms rather than 135 typed
+# strings, so a reviewer checks each spelling once. The spellings follow
+# hindi_calendar_pdf.TRANSLATIONS_MAP; the kalyanak words follow the Digambar
+# sources the dates come from (गर्भ, not the Shwetambar च्यवन).
+TIRTHANKAR_HINDI = {
+    "Rishabhdev (Adinath)": "ऋषभदेव (आदिनाथ)",
+    "Ajitnath": "अजितनाथ",
+    "Sambhavnath": "संभवनाथ",
+    "Abhinandan": "अभिनंदन नाथ",
+    "Sumatinath": "सुमतिनाथ",
+    "Padmaprabha": "पद्मप्रभ",
+    "Suparshvanath": "सुपार्श्वनाथ",
+    "Chandraprabha": "चंद्रप्रभ",
+    "Pushpadanta (Suvidhinath)": "पुष्पदंत (सुविधिनाथ)",
+    "Pushpadant (Suvidhinath)": "पुष्पदंत (सुविधिनाथ)",
+    "Sheetalnath": "शीतलनाथ",
+    "Shreyansnath": "श्रेयांसनाथ",
+    "Vasupujya": "वासुपूज्य",
+    "Vimalnath": "विमलनाथ",
+    "Anantnath": "अनंतनाथ",
+    "Dharmanath": "धर्मनाथ",
+    "Shantinath": "शांतिनाथ",
+    "Kunthunath": "कुंथुनाथ",
+    "Arahnath": "अरनाथ",
+    "Mallinath": "मल्लिनाथ",
+    "Munisuvrat": "मुनिसुव्रत",
+    "Naminath": "नमिनाथ",
+    "Neminath": "नेमिनाथ",
+    "Parshvanath": "पार्श्वनाथ",
+    "Mahavira": "महावीर",
+}
+
+KALYANAK_HINDI = {
+    "Conception": "गर्भ",
+    "Birth": "जन्म",
+    "Austerity": "दीक्षा",
+    "Omniscience": "केवलज्ञान",
+    "Liberation": "मोक्ष",
+}
+
+
+def _kalyanak_name_hindi(name: str) -> str | None:
+    """'Shri Neminath Ji - Omniscience Kalyanak' -> 'श्री नेमिनाथ जी — केवलज्ञान कल्याणक'."""
+    tirthankar, _, kind = name.removeprefix("Shri ").removesuffix(" Kalyanak").partition(" Ji - ")
+    if tirthankar not in TIRTHANKAR_HINDI or kind not in KALYANAK_HINDI:
+        return None
+    return f"श्री {TIRTHANKAR_HINDI[tirthankar]} जी — {KALYANAK_HINDI[kind]} कल्याणक"
+
+
+def _with_kalyanak_name_hindi(festival: dict) -> dict:
+    name_hindi = _kalyanak_name_hindi(festival["name"])
+    if festival["category"] != "kalyanak" or name_hindi is None:
+        return festival
+    # Rebuilt so name_hindi sits beside name, as in the hand-written entries.
+    return {
+        "id": festival["id"],
+        "name": festival["name"],
+        "name_hindi": name_hindi,
+        **{key: value for key, value in festival.items() if key not in ("id", "name", "name_hindi")},
+    }
+
+
+FESTIVAL_REGISTRY = [_with_kalyanak_name_hindi(festival) for festival in FESTIVAL_REGISTRY]

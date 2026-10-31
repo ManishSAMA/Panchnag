@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from zoneinfo import ZoneInfo
 
 from astronomy import SUNRISE_RULES, get_planetary_longitude, get_sunrise, get_sunset, local_date_anchor_jd
+from hindi_observance_map import TITHI_PREFIX_HI
 from jain_observances.vriddhi import previous_tithi, takes_second_day_of_vriddhi
 from panchang import (
     JAIN_TITHI_OFFSET_DAYS,
@@ -266,6 +267,7 @@ def generate_jain_festivals(
                     short = TITHI_LABEL_MAP.get(native_num, f"Tithi {native_num}").split(" (")[0]
                     tag = f"[{short}] "
                     f["name"] = tag + f["name"]
+                    f["name_hindi"] = f"[{TITHI_PREFIX_HI[short]}] " + f["name_hindi"]
                     if f.get("title"):
                         f["title"] = tag + f["title"]
                     f["native_tithi"] = t_name
