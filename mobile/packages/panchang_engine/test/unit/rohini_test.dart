@@ -9,6 +9,8 @@ import 'package:panchang_engine/src/festivals/rules/rohini.dart';
 import 'package:panchang_engine/src/panchang/elements.dart' show nakshatraAt, nakshatraEnd;
 import 'package:test/test.dart';
 
+import '../support/reference_rohini.dart';
+
 const shravana = LunarMonth(index: 4, isAdhika: false);
 const rohini = 4;
 
@@ -78,6 +80,12 @@ void main() {
     expect(dates(days({40: beforeRohini, 41: rohiniSpan.$2 + 0.05})), ['2026-01-11']);
   });
 
+  // The search skips a day whose Rohini the Moon cannot finish by the next
+  // sunrise; two days before Rohini, with the next sunrise past its end, it can.
+  test('a whole Rohini between sunrises three days apart gives the later day', () {
+    expect(dates(days({40: rohiniSpan.$1 - 2, 41: rohiniSpan.$2 + 0.05})), ['2026-01-11']);
+  });
+
   test('a Rohini that begins after a sunrise and lasts to the next gives that next day only', () {
     expect(dates(days({40: beforeRohini, 41: rohiniSpan.$2 - 0.05})), ['2026-01-11']);
   });
@@ -101,5 +109,22 @@ void main() {
   test('the search ends on 31 Dec: a Rohini at a later sunrise is not looked for', () {
     expect(dates(days({395: inRohini, 396: inRohini})), ['2026-12-31']);
     expect(dates(days({396: inRohini})), isEmpty);
+  });
+
+  // The search skips days Rohini cannot reach by the next sunrise; on real
+  // readings it must find what the full search finds.
+  test('finds the same days as the full nakshatra search, on real windows', () {
+    for (final (location, year) in [
+      (const Location(lat: 28.6139, lon: 77.2090, timezone: 'Asia/Kolkata'), 2026),
+      (const Location(lat: 51.5074, lon: -0.1278, timezone: 'Europe/London'), 2030),
+      (const Location(lat: 40.7128, lon: -74.0060, timezone: 'America/New_York'), 2035),
+    ]) {
+      final window = festivalDays(location: location, year: year, sunriseRule: SunriseRule.modern);
+      final ours = [for (final o in rohiniVrat(rohiniEntry(), window, year: year)) o.start.iso];
+      final full = [for (final o in referenceRohiniVrat(rohiniEntry(), window, year: year)) o.start.iso];
+
+      expect(ours, full, reason: '${location.timezone} $year');
+      expect(full, hasLength(greaterThan(10)));
+    }
   });
 }

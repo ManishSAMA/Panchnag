@@ -3,6 +3,7 @@
 /// `vrats/rohini.py` `evaluate_rohini_vrat`).
 library;
 
+import '../../astro/angles.dart';
 import '../../panchang/elements.dart';
 import '../../time/civil_day.dart';
 import '../days.dart';
@@ -36,7 +37,11 @@ List<FestivalOccurrence> rohiniVrat(FestivalEntry entry, List<FestivalDay> days,
 CivilDate? _vratDay(FestivalDay today, FestivalDay tomorrow) {
   final from = _clockReadAsUtc(today);
   final to = _clockReadAsUtc(tomorrow);
-  if (nakshatraAt(from) == _rohini) return today.date;
+  final moon = siderealMoonLongitude(from);
+  if (nakshatraOf(moon) == _rohini) return today.date;
+  // The search below gives a day only for a Rohini that ends before `to`; when
+  // the Moon cannot reach Rohini's end by then, no nakshatra ends need be found.
+  if (normalizeDegrees(nakshatraStart(_rohini + 1) - moon) > maxMoonRate * (to - from)) return null;
   for (var instant = nakshatraEnd(from) + _spanStepDays; instant <= to; instant = nakshatraEnd(instant) + _spanStepDays) {
     if (nakshatraAt(instant) == _rohini) return nakshatraEnd(instant) < to ? tomorrow.date : null;
   }
