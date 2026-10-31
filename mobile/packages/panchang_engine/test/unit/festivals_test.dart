@@ -1,4 +1,5 @@
 import 'package:panchang_engine/panchang_engine.dart';
+import 'package:panchang_engine/src/festivals/festivals.dart' show portedRuleTypes;
 import 'package:test/test.dart';
 
 import 'festival_registry_test.dart' show sharedRegistryJson;
@@ -96,6 +97,16 @@ void main() {
         expect(vrat.end.compareTo(vrat.start), greaterThan(0), reason: id);
       }
     });
+  });
+
+  // The orchestrator skips a rule type it does not know, so a registry entry of
+  // a new type would vanish without this.
+  test('every registry entry an accepted profile reaches has a ported rule type', () {
+    final reached = {
+      for (final e in registry.entries)
+        if (e.profiles.any((p) => p == 'all' || festivalProfiles.contains(p))) e.ruleType,
+    };
+    expect(reached.difference(portedRuleTypes.toSet()), isEmpty);
   });
 
   group('profiles', () {

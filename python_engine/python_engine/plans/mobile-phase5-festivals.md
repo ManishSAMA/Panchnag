@@ -403,5 +403,19 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
   everywhere (11 rows per profile and year). Mutation check: 32 mutants; the unit tests kill all
   but the scan's lower tithi bound, Shodashkaran's 76th window day and Ravivara's 84 minutes
   (144 instead), none of which the synthetic days can tell apart; parity covers them.
-- **Left:** §5 step 13 (whole-year equality and performance). Every Shwetambar rule type is
-  ported.
+- **Step 13, whole-year equality:** done. `test/parity/festivals_test.dart` now compares every
+  fixture row of the year, with no rule-type attribution (the id patterns are gone), and every
+  core location, sunrise rule, year and profile matches exactly with no boundary cases. Rows are
+  compared as a multiset, not in order: `parity_fixtures.festival_rows` sorts a day's rows by
+  occurrence id, so the fixtures do not record the engine's order within a day. A unit test now
+  fails when a registry entry an accepted profile reaches has a rule type with no Dart rule, since
+  the orchestrator skips unknown types silently.
+- **Step 13, performance (desktop, AOT, Delhi):** one profile's year from scratch takes about
+  0.9–1.2 s: the day readings about 0.8 s, the rules about 0.15 s, and each further profile on the
+  same readings about 0.15 s. Of the readings, the 427 sunrise solves take about 265 ms, the 427
+  sunset solves about 290 ms, the three tithi readings per day about 155 ms (0.12 ms each, mostly
+  the Moon), the month names about 30 ms. Of the rules, Rohini's nakshatra search takes about
+  140 ms; all others together take under 5 ms. A phone is likely to be several times slower, so the
+  §4 target of "well under 1 s on a phone" is not met as is; the year runs once, in the engine
+  isolate, and is cached by the app (§1a), so it delays the festival dots, not the Month tab.
+  Not yet measured on a device (`mobile/app/tool/perf_main.dart` does not time festivals).
