@@ -30,6 +30,10 @@ final Map<String, RegExp> emittedIds = {
   'ShvetambaraParyushan50Day':
       RegExp(r'^(shvetambara_chaturmas_prarambh|paryushan_parv_day_[1-7]|samvatsari_mahaparv)_\d{4}$'),
   'LabdhiVidhanVrat': RegExp(r'^labdhi_vidhan_vrat_(prarambh|purna)_\d{4}$'),
+  'DaslakshanVrat': RegExp(r'^daslakshan_(Bhadrapada|Magha|Chaitra)_\d{4}$'),
+  'RatnatrayaVrat': RegExp(r'^ratnatraya_vrat_(prarambh|purna)_(chaitra|magha)_\d{4}$'),
+  'ShodashkaranVrat': RegExp(r'^shodashkaran_[A-Z_]+_\d{4}$'),
+  'RavivaraVrat': RegExp(r'^ravivara_\d{4}$'),
   'KarmaNirjaraVrat': RegExp(r'^karma_nirjara_vrat_(adhik_)?(ashadha|shravana|bhadrapada|ashwin)_\d{4}$'),
   for (final MapEntry(:key, :value) in yearlyEvents.entries) key: RegExp('^(${value.join('|')})' r'_\d{4}$'),
 };

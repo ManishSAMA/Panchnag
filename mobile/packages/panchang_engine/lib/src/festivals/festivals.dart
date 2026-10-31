@@ -15,6 +15,7 @@ import 'rules/fortnight.dart';
 import 'rules/namokar.dart';
 import 'rules/paired.dart';
 import 'rules/paryushan.dart';
+import 'rules/provider_vrats.dart';
 import 'rules/pushpanjali.dart';
 import 'rules/ravi_vrat.dart';
 import 'rules/rohini.dart';
@@ -90,9 +91,14 @@ final Map<String, FestivalRule> _rules = {
   ...pairedRules,
   ...fortnightRules,
   ...seasonalRules,
+  ...providerRules,
 };
 
 Iterable<String> get portedRuleTypes => _rules.keys;
+
+/// The provider vrats apply the vrat view themselves, keeping the raw months.
+bool _readsVratView(FestivalEntry entry) =>
+    takesSecondDayOfVriddhi(entry.id, entry.category) && !providerRules.containsKey(entry.ruleType);
 
 /// [festivalsOf] from readings already built, so a caller resolving several
 /// profiles for one place and year builds them once.
@@ -107,7 +113,7 @@ List<FestivalOccurrence> festivalsFromDays(
     for (final entry in registry.entries)
       if (entry.profiles.contains(profile) || entry.profiles.contains('all'))
         if (_rules[entry.ruleType] case final rule?)
-          ...rule(entry, takesSecondDayOfVriddhi(entry.id, entry.category) ? vratDays : days, year: year),
+          ...rule(entry, _readsVratView(entry) ? vratDays : days, year: year),
   ];
   // Rules may resolve into the window's neighbouring years; List.sort is not
   // stable, so the registry order of same-day festivals is kept by index.

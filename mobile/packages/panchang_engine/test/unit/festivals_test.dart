@@ -82,6 +82,14 @@ void main() {
       }
     });
 
+    test('the provider vrats: Daslakshan ten days or more, Ravivara nine Sundays', () {
+      final daslakshan = sthanakvasi.firstWhere((f) => f.id == 'daslakshan_Bhadrapada_2026');
+      expect(daslakshan.start.plusDays(9).compareTo(daslakshan.end) <= 0, isTrue);
+      final ravivara = sthanakvasi.firstWhere((f) => f.id == 'ravivara_2026');
+      expect((ravivara.start.vara, ravivara.end), (0, ravivara.start.plusDays(56)));
+      expect(ids(sthanakvasi), containsAll(['ratnatraya_vrat_prarambh_magha_2026', 'shodashkaran_BHADRAPADA_ASHVINA_2026']));
+    });
+
     test('a span vrat ends after it begins', () {
       for (final id in ['solah_karan_vrat_prarambh_2026', 'teen_chaubisi_vrat_prarambh_2026', 'bhaya_haran_vrat_2026']) {
         final vrat = sthanakvasi.firstWhere((f) => f.id == id);

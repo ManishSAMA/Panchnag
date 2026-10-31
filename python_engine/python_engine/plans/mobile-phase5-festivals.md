@@ -387,6 +387,21 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
   Shukla 8–14) in Ashadha, Kartika and Phalguna. Exact parity everywhere (7 rows per profile and
   year). Mutation check: 18 mutants; the unit tests kill all but the hardcoded categories, which
   equal the registry's.
-- **Left:** §5 steps 12–13. Rule types not yet ported are skipped by the orchestrator, so
-  `festivals()` returns everything but the provider vrats (Ratnatraya, Daslakshan, Shodashkaran,
-  Ravivara) for now.
+- **Step 12, family F provider vrats (Daslakshan, Ratnatraya, Shodashkaran, Ravivara):** done
+  (`festivals/rules/provider_vrats.dart`). Python's day loop over `SwissEphTithiProvider` reads
+  the same instants the days hold (Jain day-start tithi, sunrise tithi, Amanta month at the Jain
+  day-start), so the port reads the days, in the provider's window: 45 days (Shodashkaran 76) from
+  7 days before the first of the Gregorian month `get_greg_month` names, Adhik days skipped. The
+  orchestrator hands these rules the raw days, since the provider names a day's month as computed
+  while the vrat view moves a relabelled day into the month before; the rules take the vrat view's
+  tithi themselves (and in `get_greg_month`, which reads the snapshots) when the entry takes the
+  second day. Ravivara alone reads the tithi 84 minutes after sunrise, with `tithiAt`. Python
+  quirks kept: Daslakshan's id keeps the registry's month spelling (`daslakshan_Bhadrapada_2026`);
+  a Shodashkaran month first found in December of the year before opens its window in December
+  of the year itself; the `except Exception: pass` cases become "no vrat". `get_greg_month`'s
+  fixed-table fallback, which a 14-month window never reaches, gives no vrat. Exact parity
+  everywhere (11 rows per profile and year). Mutation check: 32 mutants; the unit tests kill all
+  but the scan's lower tithi bound, Shodashkaran's 76th window day and Ravivara's 84 minutes
+  (144 instead), none of which the synthetic days can tell apart; parity covers them.
+- **Left:** §5 step 13 (whole-year equality and performance). Every Shwetambar rule type is
+  ported.
