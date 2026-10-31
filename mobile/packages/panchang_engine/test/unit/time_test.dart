@@ -59,6 +59,12 @@ void main() {
       expect(const CivilDate(2026, 12, 31).next(), const CivilDate(2027, 1, 1));
     });
 
+    test('moves any number of days, like adding a timedelta', () {
+      expect(const CivilDate(2026, 7, 12).plusDays(49), const CivilDate(2026, 8, 30));
+      expect(const CivilDate(2028, 2, 1).plusDays(28), const CivilDate(2028, 2, 29));
+      expect(const CivilDate(2027, 1, 1).plusDays(-1), const CivilDate(2026, 12, 31));
+    });
+
     test('formats as ISO for fixture keys', () {
       expect(const CivilDate(2026, 3, 5).iso, '2026-03-05');
       expect(CivilDate.parse('2026-03-05'), const CivilDate(2026, 3, 5));

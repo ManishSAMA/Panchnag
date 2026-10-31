@@ -19,9 +19,13 @@ final class CivilDate implements Comparable<CivilDate> {
   final int month;
   final int day;
 
-  CivilDate next() {
-    final following = DateTime.utc(year, month, day + 1);
-    return CivilDate(following.year, following.month, following.day);
+  CivilDate next() => plusDays(1);
+
+  CivilDate previous() => plusDays(-1);
+
+  CivilDate plusDays(int days) {
+    final moved = DateTime.utc(year, month, day + days);
+    return CivilDate(moved.year, moved.month, moved.day);
   }
 
   /// The weekday, 0 = Sunday (Python `get_vara_from_date`).
