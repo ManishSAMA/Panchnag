@@ -33,7 +33,7 @@ final Map<String, RegExp> emittedIds = {
   for (final MapEntry(:key, :value) in yearlyEvents.entries) key: RegExp('^(${value.join('|')})' r'_\d{4}$'),
 };
 
-/// Family B and C rule types, by the `<prefix>_<year>` ids of their events.
+/// Family B, C and D rule types, by the `<prefix>_<year>` ids of their events.
 const Map<String, List<String>> yearlyEvents = {
   'ShravanaPurnimaRakshabandhan': [
     'rakshabandhan_700_muni_raksha_divas', 'muni_vishnukumar_akampanacharya_pujan', 'sorana_pujan',
@@ -74,6 +74,12 @@ const Map<String, List<String>> yearlyEvents = {
     'navapad_oli_vrat_prarambh_ashwin', 'navapad_oli_vrat_purna_ashwin',
   ],
   'MonthlyVrat': ['pratham_jeth_jinvani_vrat_start', 'pratham_jeth_jinvani_vrat_end'],
+  'BhadrapadaKrishnaEkamMultiVrat': [
+    'solah_karan_vrat_prarambh', 'shri_jin_mukhavlokan_vrat_prarambh', 'shrut_skandha_vrat_prarambh',
+    'mushti_vidhan_vrat_prarambh', 'dhanda_kalash_vrat_prarambh', 'megh_mala_vrat_prarambh',
+  ],
+  'TeenChaubisiVrat': ['teen_chaubisi_vrat_prarambh'],
+  'BhayaHaranVrat': ['bhaya_haran_vrat'],
 };
 
 String? ruleTypeOf(String id) {

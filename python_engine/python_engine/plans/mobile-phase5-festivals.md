@@ -368,6 +368,14 @@ the session sandbox, so fixtures can only be regenerated on the user's own shell
   Akshaya Tritiya: Python's vrat view relabels every Jain day-start field together, so the day it is
   given holds Purnima for the pull-back too. Mutation check: parity misses nearly every first/last
   choice on a doubled tithi; 28 mutants, all killed by the unit tests.
-- **Left:** §5 steps 10–13. Rule types not yet ported are skipped by the orchestrator, so
+- **Step 10, family D (3 types):** done (`festivals/rules/fortnight.dart`). Python
+  `_purn_month_tithi_day` is ported once, as `_fortnightDay`: the year's days of the Purnimanta
+  fortnight a registry-style Amanta month and paksha name (Adhik Purnimanta fortnights skipped),
+  the first day of the tithi, else the last day of the tithi before. These are the first spans
+  (end after start), and a missing end gives a one-day span. Exact parity everywhere (8 rows per
+  profile and year). Python quirk kept: on a kshaya Bhadrapada Krishna 1 the fallback looks for
+  "tithi 0", so all six multi-vrats vanish that year. Mutation check: 17 mutants, all killed by
+  the unit tests except `const []` → `[]` (equivalent).
+- **Left:** §5 steps 11–13. Rule types not yet ported are skipped by the orchestrator, so
   `festivals()` returns SingleTithi, Bhaktambar, Namokar 35, Pushpanjali, Rohini, Ravi Vrat,
-  Paryushan 50, Labdhi Vidhan, family B and family C occurrences only for now.
+  Paryushan 50, Labdhi Vidhan and families B, C and D occurrences only for now.

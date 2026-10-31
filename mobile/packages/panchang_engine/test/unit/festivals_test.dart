@@ -72,6 +72,13 @@ void main() {
         expect(on(start).compareTo(on(end)), lessThan(0), reason: start);
       }
     });
+
+    test('a span vrat ends after it begins', () {
+      for (final id in ['solah_karan_vrat_prarambh_2026', 'teen_chaubisi_vrat_prarambh_2026', 'bhaya_haran_vrat_2026']) {
+        final vrat = sthanakvasi.firstWhere((f) => f.id == id);
+        expect(vrat.end.compareTo(vrat.start), greaterThan(0), reason: id);
+      }
+    });
   });
 
   group('profiles', () {
