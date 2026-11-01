@@ -137,6 +137,71 @@ void main() {
     });
   });
 
+  group('one event under several registry entries', () {
+    const nov9 = CivilDate(2026, 11, 9);
+
+    test('shows once, under the name its group chooses, with the strongest mark', () {
+      final lines = festivalLines([
+        festival(
+          category: 'kalyanak',
+          start: nov9,
+          id: 'shri_mahavira_ji___liberation_kalyanak_15_vrindavan_uttarapurana_ashadhara',
+          name: 'k',
+        ),
+        festival(category: 'mahaparv', start: nov9, id: 'mahavir_nirvana_deepavali', name: 'n'),
+        festival(category: 'mahaparv', start: nov9, id: 'diwali', name: 'Diwali'),
+        festival(category: 'parva', start: nov9, id: 'pakhi', name: 'p'),
+      ], Lang.en);
+
+      expect(lines.map((l) => (l.name, l.kind)), [('Diwali', FestivalKind.mahaparva), ('p', FestivalKind.parva)]);
+    });
+
+    test('takes the strongest mark even when the named entry is weaker', () {
+      final lines = festivalLines([
+        festival(category: 'vrat', start: nov9, id: 'raksha_bandhan', name: 'Raksha Bandhan'),
+        festival(category: 'mahaparv', start: nov9, id: 'rakshabandhan_vrat', name: 'r'),
+      ], Lang.en);
+
+      expect(lines.map((l) => (l.name, l.kind)), [('Raksha Bandhan', FestivalKind.mahaparva)]);
+    });
+
+    test('keeps its own name on a date the named entry is not on', () {
+      final lines = festivalLines([
+        festival(category: 'vrat', start: nov9, id: 'rakshabandhan_vrat', name: 'Rakshabandhan Vrat'),
+        festival(category: 'mahaparv', start: nov9, id: 'shravana_purnima_rakshabandhan', name: 'Shravana Purnima'),
+      ], Lang.en);
+
+      expect(lines.map((l) => (l.name, l.kind)), [('Rakshabandhan Vrat', FestivalKind.mahaparva)]);
+    });
+
+    test('carries the span of the entry it is named after', () {
+      final line = festivalLines([
+        festival(category: 'mahaparv', start: nov9, end: const CivilDate(2026, 11, 11), id: 'diwali', name: 'Diwali'),
+        festival(category: 'mahaparv', start: nov9, id: 'mahavir_nirvana_deepavali', name: 'n'),
+      ], Lang.en).single;
+
+      expect((line.start, line.end), (nov9, const CivilDate(2026, 11, 11)));
+    });
+
+    test('stays apart from another group on the same date', () {
+      final lines = festivalLines([
+        festival(category: 'mahaparv', start: nov9, id: 'diwali', name: 'Diwali'),
+        festival(category: 'mahaparv', start: nov9, id: 'raksha_bandhan', name: 'Raksha Bandhan'),
+      ], Lang.en);
+
+      expect(lines.map((l) => l.name), ['Diwali', 'Raksha Bandhan']);
+    });
+
+    test('names only entries the bundled registry has', () {
+      final registry = jsonDecode(File('assets/festival_registry.json').readAsStringSync()) as Map<String, Object?>;
+      final ids = {for (final f in registry['festivals']! as List<Object?>) (f! as Map<String, Object?>)['id']};
+
+      for (final group in sameEvents) {
+        expect(ids, containsAll({group.shown, ...group.also}), reason: group.shown);
+      }
+    });
+  });
+
   group('the marks in a Month cell', () {
     test('one per kind, in the lines\' order, at most three', () {
       final lines = festivalLines([
@@ -194,6 +259,71 @@ void main() {
       final next = upcomingFestivals(year, after: const CivilDate(2026, 11, 18), lang: Lang.en);
 
       expect(next.map((d) => d.date), const [CivilDate(2026, 11, 30)]);
+    });
+  });
+
+  group('the Festivals list', () {
+    const oct31 = CivilDate(2026, 10, 31);
+    final year = [
+      festival(category: 'kalyanak', start: const CivilDate(2026, 10, 20), name: 'past'),
+      festival(
+        category: 'mahaparv',
+        start: const CivilDate(2026, 10, 29),
+        end: const CivilDate(2026, 11, 2),
+        name: 'ongoing',
+      ),
+      festival(category: 'vrat', start: oct31, name: 'v31'),
+      festival(category: 'kalyanak', start: const CivilDate(2026, 11, 3), name: 'k3'),
+      festival(category: 'parva', start: const CivilDate(2026, 11, 3), name: 'p3'),
+      festival(category: 'vrat', start: const CivilDate(2026, 11, 4), name: 'v4'),
+    ];
+
+    test('starts at the given date and puts an ongoing span on it', () {
+      final dates = festivalDates(year, from: oct31, lang: Lang.en);
+
+      expect(dates.map((d) => d.date), const [oct31, CivilDate(2026, 11, 3), CivilDate(2026, 11, 4)]);
+      expect(dates.first.lines.map((l) => l.name), ['ongoing', 'v31']);
+      expect(dates[1].lines.map((l) => l.name), ['k3', 'p3']);
+    });
+
+    test('a filter keeps only its kind and drops the dates left empty', () {
+      final dates = festivalDates(year, from: oct31, lang: Lang.en, filter: FestivalFilter.vrat);
+
+      expect(
+        [for (final d in dates) (d.date, d.lines.map((l) => l.name).join())],
+        [(oct31, 'v31'), (const CivilDate(2026, 11, 4), 'v4')],
+      );
+    });
+
+    test('each kind\'s filter keeps that kind alone, and all keeps every kind', () {
+      final every = [
+        for (final category in ['mahaparv', 'kalyanak', 'parva', 'vrat'])
+          festival(category: category, start: oct31, name: category),
+      ];
+
+      for (final filter in FestivalFilter.values) {
+        final kinds = festivalDates(every, from: oct31, lang: Lang.en, filter: filter).single.lines.map((l) => l.kind);
+        expect(kinds, filter.kind == null ? FestivalKind.values : [filter.kind], reason: filter.name);
+      }
+    });
+
+    test('a merged event is filed under its strongest mark', () {
+      final nov9 = const CivilDate(2026, 11, 9);
+      final day = [
+        festival(category: 'mahaparv', start: nov9, id: 'diwali', name: 'Diwali'),
+        festival(
+          category: 'kalyanak',
+          start: nov9,
+          id: 'shri_mahavira_ji___liberation_kalyanak_15_vrindavan_uttarapurana_ashadhara',
+          name: 'k',
+        ),
+      ];
+
+      expect(festivalDates(day, from: nov9, lang: Lang.en, filter: FestivalFilter.kalyanak), isEmpty);
+      expect(
+        festivalDates(day, from: nov9, lang: Lang.en, filter: FestivalFilter.mahaparva).single.lines.single.name,
+        'Diwali',
+      );
     });
   });
 

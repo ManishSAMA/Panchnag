@@ -44,17 +44,37 @@ String festivalName(FestivalOccurrence f, Lang lang) =>
 
 typedef FestivalLine = ({String name, FestivalKind kind, CivilDate start, CivilDate end});
 
-/// One line per name, since a rule's events share their entry's name until
-/// Phase 6 titles them; by kind, then in the engine's order.
+/// Registry entries that name one event, one per school or source. On a date
+/// they share they make one line, named after [shown] when it is there
+/// (decided 2026-10-31). The display alone merges them, so the engine keeps
+/// matching the Python reference.
+const sameEvents = <({String shown, Set<String> also})>[
+  (
+    shown: 'diwali',
+    also: {
+      'mahavir_nirvana_deepavali',
+      'kartika_amavasya_mahavira_nirvana',
+      'shri_mahavir_swami_ji___moksha_kalyanak__the_nirvana_liberation_of_lord_mahavira__celebrated_as_jain_diwali',
+      'shri_mahavira_ji___liberation_kalyanak_15_vrindavan_uttarapurana_ashadhara',
+    },
+  ),
+  (shown: 'raksha_bandhan', also: {'rakshabandhan_vrat', 'shravana_purnima_rakshabandhan'}),
+  (shown: 'shri_parshvanath_ji___birth_kalyanak_11_vrindavan_uttarapurana_ashadhara', also: {'parshvanath_jayanti'}),
+];
+
+final _groupOf = {
+  for (final group in sameEvents)
+    for (final rule in {group.shown, ...group.also}) rule: group.shown,
+};
+
+/// One line per event: an entry's events share its name until Phase 6 titles
+/// them, and [sameEvents] joins entries. By kind, then in the engine's order.
 List<FestivalLine> festivalLines(Iterable<FestivalOccurrence> festivals, Lang lang) {
-  final byName = <String, FestivalLine>{};
+  final byEvent = <String, List<FestivalOccurrence>>{};
   for (final f in festivals) {
-    byName.putIfAbsent(
-      festivalName(f, lang),
-      () => (name: festivalName(f, lang), kind: kindOf(f.category), start: f.start, end: f.end),
-    );
+    (byEvent[_groupOf[f.ruleId] ?? festivalName(f, lang)] ??= []).add(f);
   }
-  final lines = byName.values.indexed.toList()
+  final lines = [for (final same in byEvent.values) _lineOf(same, lang)].indexed.toList()
     ..sort(
       (a, b) => switch (a.$2.kind.index.compareTo(b.$2.kind.index)) {
         0 => a.$1.compareTo(b.$1),
@@ -62,6 +82,12 @@ List<FestivalLine> festivalLines(Iterable<FestivalOccurrence> festivals, Lang la
       },
     );
   return [for (final (_, line) in lines) line];
+}
+
+FestivalLine _lineOf(List<FestivalOccurrence> same, Lang lang) {
+  final named = same.firstWhere((f) => _groupOf[f.ruleId] == f.ruleId, orElse: () => same.first);
+  final kind = same.map((f) => kindOf(f.category)).reduce((a, b) => a.index <= b.index ? a : b);
+  return (name: festivalName(named, lang), kind: kind, start: named.start, end: named.end);
 }
 
 /// A Month cell has room for three marks.
@@ -83,6 +109,43 @@ List<FestivalDate> upcomingFestivals(
     if (f.start.compareTo(after) > 0 && !kindOf(f.category).isVrat) (starting[f.start] ??= []).add(f);
   }
   return [for (final date in starting.keys.take(count)) (date: date, lines: festivalLines(starting[date]!, lang))];
+}
+
+/// The Festivals tab's chips: every mark, or one.
+enum FestivalFilter {
+  all(null),
+  mahaparva(FestivalKind.mahaparva),
+  kalyanak(FestivalKind.kalyanak),
+  parva(FestivalKind.parva),
+  vrat(FestivalKind.vrat);
+
+  const FestivalFilter(this.kind);
+
+  final FestivalKind? kind;
+
+  bool shows(FestivalKind kind) => this.kind == null || this.kind == kind;
+}
+
+/// The Festivals tab's dates from [from] on: each festival on its first day,
+/// a span already under way on [from] itself. A merged event is filed under
+/// its line's mark, so a filter never shows a line under a mark it lacks.
+List<FestivalDate> festivalDates(
+  Iterable<FestivalOccurrence> festivals, {
+  required CivilDate from,
+  required Lang lang,
+  FestivalFilter filter = FestivalFilter.all,
+}) {
+  final byDate = <CivilDate, List<FestivalOccurrence>>{};
+  for (final f in festivals) {
+    if (f.end.compareTo(from) >= 0) (byDate[f.start.compareTo(from) < 0 ? from : f.start] ??= []).add(f);
+  }
+  final dates = byDate.keys.toList()..sort((a, b) => a.compareTo(b));
+  return [
+    for (final date in dates)
+      if (festivalLines(byDate[date]!, lang).where((l) => filter.shows(l.kind)).toList() case final lines
+          when lines.isNotEmpty)
+        (date: date, lines: lines),
+  ];
 }
 
 String dateRange(CivilDate start, CivilDate end, Lang lang) => start.month == end.month

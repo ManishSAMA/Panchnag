@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jainpanchang/engine/festival_reading.dart';
@@ -51,26 +49,6 @@ Future<void> tapDay(WidgetTester tester, CivilDate date) async {
   await tester.ensureVisible(cell(date));
   await tester.tap(cell(date));
   await tester.pumpAndSettle();
-}
-
-/// A reader that answers only when the test lets it, as a slow phone would.
-final class HeldFestivals {
-  final requests = <FestivalRequest>[];
-  final _held = <Completer<List<FestivalOccurrence>>>[];
-
-  Future<List<FestivalOccurrence>> call(FestivalRequest request) {
-    requests.add(request);
-    final answer = Completer<List<FestivalOccurrence>>();
-    _held.add(answer);
-    return answer.future;
-  }
-
-  void release() {
-    for (final (i, answer) in _held.indexed) {
-      answer.complete(readFestivals(requests[i], registry: testRegistry));
-    }
-    _held.clear();
-  }
 }
 
 final october2026 = [for (var d = const CivilDate(2026, 10, 1); d.month == 10; d = d.next()) d];
@@ -230,6 +208,16 @@ void main() {
       expect(inPanel(find.text('17–24 नवंबर')), findsOneWidget);
     });
 
+    testWidgets('Raksha Bandhan\'s three registry entries are one line', (tester) async {
+      await openMonth(tester, now: ist(2026, 8, 20));
+      await tapDay(tester, const CivilDate(2026, 8, 28));
+
+      expect(inPanel(find.text('रक्षाबंधन (विष्णुकुमार मुनि पर्व)')), findsOneWidget);
+      expect(inPanel(find.text('रक्षाबंधन व्रत')), findsNothing);
+      expect(inPanel(find.text('श्रावण पूर्णिमा रक्षाबंधन (७०० मुनि रक्षा दिवस)')), findsNothing);
+      expect(inPanel(find.text('श्री श्रेयांसनाथ जी — मोक्ष कल्याणक')), findsOneWidget);
+    });
+
     testWidgets('a name the engine gives several times is listed once', (tester) async {
       await openMonth(tester, now: ist(2026, 8, 20));
       final date = const CivilDate(2026, 8, 29);
@@ -295,6 +283,20 @@ void main() {
 
       expect(find.descendant(of: parvaBand, matching: find.text('अष्टाह्निक महापर्व')), findsOneWidget);
       expect(find.descendant(of: parvaBand, matching: find.text('17–24 नवंबर')), findsOneWidget);
+    });
+
+    testWidgets('Mahavir Nirvana shows once, though five registry entries name it', (tester) async {
+      final nov9 = const CivilDate(2026, 11, 9);
+      final entries = {
+        for (final f in festivalsOn(engineYear(2026), nov9))
+          if (!kindOf(f.category).isVrat) f.ruleId,
+      };
+      expect(entries, hasLength(5));
+
+      await openApp(tester, now: ist(2026, 11, 9));
+
+      expect(find.descendant(of: parvaBand, matching: find.text('दीपावली (भगवान महावीर निर्वाण)')), findsOneWidget);
+      expect(find.descendant(of: parvaBand, matching: find.text('महापर्व')), findsOneWidget);
     });
 
     testWidgets('a day without festivals has neither band', (tester) async {

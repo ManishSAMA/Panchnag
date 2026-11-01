@@ -7,6 +7,7 @@
   "tabToday": "Today",
   "tabMonth": "Month",
   "tabPachchakkhan": "Pachchakkhan",
+  "tabFestivals": "Festivals",
 
   "previousMonth": "Previous month",
   "nextMonth": "Next month",
@@ -130,5 +131,7 @@
   "upcomingDateLine": "{month} · {weekday} · {ahead}",
   "daysAhead": "{count, plural, =1{tomorrow} other{in {count} days}}",
   "tileFestivals": "Festivals",
-  "moonOfTithi": "Moon on {tithi}"
+  "moonOfTithi": "Moon on {tithi}",
+  "festivalsAll": "All",
+  "festivalsLoading": "Working out the festivals…"
 }

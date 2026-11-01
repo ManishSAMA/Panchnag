@@ -14,18 +14,20 @@ NavpadGlyph festivalGlyph(FestivalKind kind) => switch (kind) {
 
 /// A festival's mark: its picture in red, or green for a vrat. With [badge] it
 /// sits in a 32 dp circle tinted with the same colour, as in lists. The words
-/// go alongside, so the mark itself is silent.
+/// go alongside, so the mark itself is silent. On a filled row it takes the
+/// row's text colour ([colour]).
 class FestivalIcon extends StatelessWidget {
-  const FestivalIcon({super.key, required this.kind, this.size = 24, this.strokeWidth = 1.8, this.badge = false});
+  const FestivalIcon({super.key, required this.kind, this.size = 24, this.strokeWidth = 1.8, this.badge = false, this.colour});
 
   final FestivalKind kind;
   final double size, strokeWidth;
   final bool badge;
+  final Color? colour;
 
   @override
   Widget build(BuildContext context) {
     final n = Theme.of(context).extension<Navpad>()!;
-    final colour = kind.isVrat ? n.green : n.red;
+    final colour = this.colour ?? (kind.isVrat ? n.green : n.red);
     final icon = NavpadIcon(festivalGlyph(kind), size: size, color: colour, strokeWidth: strokeWidth);
     if (!badge) return icon;
     return Container(

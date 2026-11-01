@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jainpanchang/app.dart';
 import 'package:jainpanchang/engine/day_reading.dart';
+import 'package:jainpanchang/features/festivals/festival_state.dart';
 import 'package:jainpanchang/features/today/today_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/harness.dart';
 
 Future<SharedPreferences> preferences([Map<String, Object> saved = const {}]) async {
   SharedPreferences.setMockInitialValues(saved);
@@ -21,6 +24,7 @@ Future<void> launch(WidgetTester tester, SharedPreferences prefs, {Locale phone 
         clockProvider.overrideWithValue(() => now),
         nowProvider.overrideWith((ref) => Stream.value(now)),
         dayReaderProvider.overrideWithValue((request) async => readDay(request)),
+        festivalReaderProvider.overrideWithValue(realFestivals),
       ],
     ),
   );
@@ -64,14 +68,14 @@ void main() {
     expect(find.text('अपना शहर चुनें'), findsOneWidget);
   });
 
-  testWidgets('the tabs are Today, Month and Pachchakkhan, in that order', (tester) async {
+  testWidgets('the tabs are Today, Month, Pachchakkhan and Festivals, in that order', (tester) async {
     await launch(tester, await preferences({'location.city': 'delhi'}));
 
     final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(bar.destinations, hasLength(3));
+    expect(bar.destinations, hasLength(4));
     expect(find.descendant(of: find.byType(NavigationBar), matching: find.text('आज')), findsOneWidget);
 
-    for (final (index, label) in [(1, 'माह'), (2, 'पच्चक्खाण')]) {
+    for (final (index, label) in [(1, 'माह'), (2, 'पच्चक्खाण'), (3, 'पर्व')]) {
       await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text(label)));
       await tester.pumpAndSettle();
       expect(tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex, index, reason: label);
