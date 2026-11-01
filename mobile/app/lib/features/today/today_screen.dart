@@ -26,6 +26,7 @@ import '../choghadiya/choghadiya_band.dart';
 import '../festivals/festival_state.dart';
 import '../month/month_state.dart';
 import 'feature_tiles.dart';
+import '../share/share_button.dart';
 import 'today_state.dart';
 
 /// Today (mobile-ui-design.md §3.1). The festival bands and the upcoming
@@ -52,7 +53,7 @@ class TodayScreen extends ConsumerWidget {
       appBar: AppBar(
         titleSpacing: 6,
         title: _LocationButton(city: city),
-        actions: const [SettingsButton()],
+        actions: const [ShareButton(), SettingsButton()],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),

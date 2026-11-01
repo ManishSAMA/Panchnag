@@ -153,6 +153,8 @@
   "@choghadiyaFootnoteTitle": {"description": "Footnote title on the Choghadiya screen."},
   "choghadiyaFootnote": "सूर्योदय से सूर्यास्त तक का दिन और सूर्यास्त से अगले सूर्योदय तक की रात, दोनों आठ बराबर भागों में बँटते हैं। हर भाग एक चौघड़िया है, और हर वार का क्रम तय है।",
   "@choghadiyaFootnote": {"description": "How the slots are made."},
+  "share": "साझा करें",
+  "@share": {"description": "Tooltip of the share button in Today's top bar: shares the date shown as a picture and text."},
   "settings": "सेटिंग्स",
   "@settings": {"description": "Settings screen title, and the tooltip of the gear in each tab's top bar."},
   "settingsLocation": "स्थान",

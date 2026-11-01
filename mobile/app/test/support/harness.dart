@@ -12,6 +12,7 @@ import 'package:jainpanchang/engine/day_reading.dart';
 import 'package:jainpanchang/engine/festival_reading.dart';
 import 'package:jainpanchang/features/festivals/festival_state.dart';
 import 'package:jainpanchang/features/month/month_state.dart';
+import 'package:jainpanchang/features/share/share_button.dart';
 import 'package:jainpanchang/features/today/today_state.dart';
 import 'package:jainpanchang/location/gps.dart';
 import 'package:panchang_engine/panchang_engine.dart';
@@ -51,6 +52,9 @@ final class HeldFestivals {
   }
 }
 
+/// Tests that never tap share get a share sheet that fails if they do.
+Future<void> noShare(SharedDay day) async => throw StateError('This test did not expect a share.');
+
 /// Tests that never tap the GPS action get one that fails if they do.
 Future<GpsOutcome> noGps() async => throw StateError('This test did not expect a GPS request.');
 
@@ -63,6 +67,7 @@ Future<SharedPreferences> openApp(
   Map<String, Object> saved = const {'location.city': 'delhi'},
   GpsLocator gps = noGps,
   FestivalReader festivals = realFestivals,
+  Sharer sharer = noShare,
 }) async {
   SharedPreferences.resetStatic();
   SharedPreferences.setMockInitialValues(saved);
@@ -72,14 +77,14 @@ Future<SharedPreferences> openApp(
   tester.platformDispatcher.textScaleFactorTestValue = textScale;
   addTearDown(tester.view.reset);
   addTearDown(tester.platformDispatcher.clearAllTestValues);
-  return _pumpApp(tester, now: now, gps: gps, festivals: festivals);
+  return _pumpApp(tester, now: now, gps: gps, festivals: festivals, sharer: sharer);
 }
 
 /// A cold start: a fresh app reading back only what the last run saved.
 Future<SharedPreferences> restartApp(WidgetTester tester, {required DateTime now, GpsLocator gps = noGps}) async {
   await tester.pumpWidget(const SizedBox());
   SharedPreferences.resetStatic();
-  return _pumpApp(tester, now: now, gps: gps, festivals: realFestivals);
+  return _pumpApp(tester, now: now, gps: gps, festivals: realFestivals, sharer: noShare);
 }
 
 Future<SharedPreferences> _pumpApp(
@@ -87,6 +92,7 @@ Future<SharedPreferences> _pumpApp(
   required DateTime now,
   required GpsLocator gps,
   required FestivalReader festivals,
+  required Sharer sharer,
 }) async {
   final prefs = await SharedPreferences.getInstance();
   await tester.pumpWidget(
@@ -101,6 +107,7 @@ Future<SharedPreferences> _pumpApp(
         monthReaderProvider.overrideWithValue((request) async => readMonth(request)),
         festivalReaderProvider.overrideWithValue(festivals),
         gpsLocatorProvider.overrideWithValue(gps),
+        sharerProvider.overrideWithValue(sharer),
       ],
     ),
   );

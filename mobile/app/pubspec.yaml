@@ -18,6 +18,7 @@ dependencies:
   intl: ^0.20.3
   panchang_engine:
     path: ../packages/panchang_engine
+  share_plus: ^13.3.1
   shared_preferences: ^2.5.6
   timezone: ^0.11.2
 
