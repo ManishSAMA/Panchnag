@@ -111,6 +111,7 @@ abstract final class NavpadType {
   );
   static const displayMonth = TextStyle(fontFamily: _tiro, fontSize: 26, fontWeight: FontWeight.w400, height: 1.2);
   static const displayHeading = TextStyle(fontFamily: _tiro, fontSize: 24, fontWeight: FontWeight.w400, height: 1.2);
+  static const displayGroup = TextStyle(fontFamily: _tiro, fontSize: 22, fontWeight: FontWeight.w400, height: 1.2);
   static const cellDay = TextStyle(
     fontFamily: _mukta,
     fontSize: 19,

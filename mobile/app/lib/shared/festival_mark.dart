@@ -13,17 +13,19 @@ String festivalKindLabel(FestivalKind kind, AppLocalizations l10n) => switch (ki
 
 /// DESIGN.md's marks: a red square for mahaparva, a red ring for kalyanak, a
 /// red dot for parva and a green dot for vrat; 10 dp in lists, 7 dp in the grid.
-/// The words go alongside, so the mark itself is silent.
+/// The words go alongside, so the mark itself is silent. On a filled row the
+/// mark takes the row's text colour ([colour]).
 class FestivalMark extends StatelessWidget {
-  const FestivalMark({super.key, required this.kind, this.size = 10});
+  const FestivalMark({super.key, required this.kind, this.size = 10, this.colour});
 
   final FestivalKind kind;
   final double size;
+  final Color? colour;
 
   @override
   Widget build(BuildContext context) {
     final n = Theme.of(context).extension<Navpad>()!;
-    final colour = kind.isVrat ? n.green : n.red;
+    final colour = this.colour ?? (kind.isVrat ? n.green : n.red);
     final decoration = switch (kind) {
       FestivalKind.mahaparva => BoxDecoration(color: colour, borderRadius: BorderRadius.circular(size / 5)),
       FestivalKind.kalyanak => BoxDecoration(

@@ -4,6 +4,7 @@ import 'package:panchang_engine/panchang_engine.dart';
 
 import '../../engine/engine_worker.dart';
 import '../../engine/festival_reading.dart';
+import '../../format/festival_text.dart';
 import '../../location/location_store.dart';
 import '../../settings/settings_store.dart';
 
@@ -40,3 +41,8 @@ List<FestivalOccurrence>? festivalYear(WidgetRef ref, int year) {
   );
   return ref.watch(festivalYearProvider(request)).value;
 }
+
+/// The Festivals tab's chip, kept across restarts (mobile-ui-design.md §3).
+final festivalFilterProvider = NotifierProvider<EnumSetting<FestivalFilter>, FestivalFilter>(
+  () => EnumSetting('festivals.filter', FestivalFilter.values, FestivalFilter.all),
+);

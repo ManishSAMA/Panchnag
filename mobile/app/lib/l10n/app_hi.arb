@@ -14,6 +14,8 @@
   "@tabMonth": {"description": "Navigation bar destination: Month."},
   "tabPachchakkhan": "पच्चक्खाण",
   "@tabPachchakkhan": {"description": "Navigation bar destination: Pachchakkhan."},
+  "tabFestivals": "पर्व",
+  "@tabFestivals": {"description": "Navigation bar destination and top-bar title: the Festivals list."},
 
   "previousMonth": "पिछला माह",
   "@previousMonth": {"description": "Tooltip of the Month tab's previous-month arrow."},
@@ -227,5 +229,9 @@
   "festivalsMore": "+{count} और",
   "@festivalsMore": {"description": "Sub-line of a Today band with more festivals than the one it names.", "placeholders": {"count": {"type": "int"}}},
   "upcomingFestivals": "आगामी पर्व",
-  "@upcomingFestivals": {"description": "Today section heading: the next festival dates."}
+  "@upcomingFestivals": {"description": "Today section heading: the next festival dates."},
+  "festivalsAll": "सभी",
+  "@festivalsAll": {"description": "Festivals filter chip: every kind of festival."},
+  "festivalsLoading": "पर्व गिने जा रहे हैं…",
+  "@festivalsLoading": {"description": "Festivals tab, while the year's festivals are being computed (a second or more on a phone)."}
 }

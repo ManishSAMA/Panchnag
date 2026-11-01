@@ -2,6 +2,7 @@
 /// read on the test's own isolate.
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -29,6 +30,26 @@ final testRegistry = FestivalRegistry.fromJson(File('assets/festival_registry.js
 /// each year, so a test file computes it once.
 Future<List<FestivalOccurrence>> realFestivals(FestivalRequest request) async =>
     readFestivals(request, registry: testRegistry);
+
+/// A reader that answers only when the test lets it, as a slow phone would.
+final class HeldFestivals {
+  final requests = <FestivalRequest>[];
+  final _held = <Completer<List<FestivalOccurrence>>>[];
+
+  Future<List<FestivalOccurrence>> call(FestivalRequest request) {
+    requests.add(request);
+    final answer = Completer<List<FestivalOccurrence>>();
+    _held.add(answer);
+    return answer.future;
+  }
+
+  void release() {
+    for (final (i, answer) in _held.indexed) {
+      answer.complete(readFestivals(requests[i], registry: testRegistry));
+    }
+    _held.clear();
+  }
+}
 
 /// Tests that never tap the GPS action get one that fails if they do.
 Future<GpsOutcome> noGps() async => throw StateError('This test did not expect a GPS request.');

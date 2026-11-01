@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'features/choghadiya/choghadiya_screen.dart';
+import 'features/festivals/festivals_screen.dart';
 import 'features/location/city_picker_screen.dart';
 import 'features/month/month_screen.dart';
 import 'features/pachchakkhan/pachchakkhan_screen.dart';
@@ -9,8 +10,8 @@ import 'features/settings/settings_screen.dart';
 import 'features/today/today_screen.dart';
 import 'l10n/app_localizations.dart';
 
-/// Tabs appear as their screens are built: Festivals joins later
-/// (mobile-ui-design.md §1), never as an empty placeholder.
+/// Tabs appear as their screens are built (mobile-ui-design.md §1), never as
+/// an empty placeholder.
 GoRouter buildRouter({required bool hasLocation}) => GoRouter(
   initialLocation: hasLocation ? '/today' : '/location',
   routes: [
@@ -28,6 +29,9 @@ GoRouter buildRouter({required bool hasLocation}) => GoRouter(
         ),
         StatefulShellBranch(
           routes: [GoRoute(path: '/pachchakkhan', builder: (context, state) => const PachchakkhanScreen())],
+        ),
+        StatefulShellBranch(
+          routes: [GoRoute(path: '/festivals', builder: (context, state) => const FestivalsScreen())],
         ),
       ],
     ),
@@ -66,6 +70,12 @@ class _TabShell extends StatelessWidget {
               icon: const Icon(Icons.schedule_outlined),
               selectedIcon: const Icon(Icons.schedule),
               label: l10n.tabPachchakkhan,
+            ),
+            // A placeholder until visual-refresh's kalash icon lands.
+            NavigationDestination(
+              icon: const Icon(Icons.celebration_outlined),
+              selectedIcon: const Icon(Icons.celebration),
+              label: l10n.tabFestivals,
             ),
           ],
         ),
