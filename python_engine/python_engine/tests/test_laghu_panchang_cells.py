@@ -14,6 +14,8 @@ import pytest
 from laghu_panchang import (
     bhadra_text,
     clock_from_midnight,
+    coordinates_text,
+    made_for_text,
     end_time_cell,
     festival_text,
     moon_sign_cell,
@@ -195,3 +197,23 @@ def test_the_shubh_mark_is_the_right_facing_swastika():
 
     assert mark == "卐"
     assert "卍" not in mark
+
+
+# ── coordinates ──────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize(
+    "lat, lon, expected",
+    [
+        (40.2203, -74.7658, "अक्षांश 40.22° उ., देशांतर 74.77° प."),  # Trenton, NJ
+        (28.6139, 77.2090, "अक्षांश 28.61° उ., देशांतर 77.21° पू."),  # New Delhi
+        (-33.8688, 151.2093, "अक्षांश 33.87° द., देशांतर 151.21° पू."),  # Sydney
+    ],
+)
+def test_coordinates_read_in_hindi_with_their_hemispheres(lat, lon, expected):
+    assert coordinates_text(lat, lon) == expected
+
+
+def test_the_closing_line_names_the_place_and_its_coordinates():
+    assert made_for_text("ट्रेंटन, न्यू जर्सी", 40.2203, -74.7658) == (
+        "यह पंचांग ट्रेंटन, न्यू जर्सी (अक्षांश 40.22° उ., देशांतर 74.77° प.) के लिए बनाया गया है।"
+    )

@@ -13,7 +13,7 @@ from functools import cache
 
 from hindi_export import RASHI_HI
 from jain_observances.festival_service import generate_jain_festivals
-from laghu_panchang import AHORATRA, COLUMN_HEADERS, LaghuHalf, build_laghu_year
+from laghu_panchang import AHORATRA, COLUMN_HEADERS, OMITTED_FROM_BOOKLET, LaghuHalf, build_laghu_year
 
 DELHI = {"lat": 28.6139, "lon": 77.2090, "tz_name": "Asia/Kolkata"}
 TRENTON = {"lat": 40.2203, "lon": -74.7658, "tz_name": "America/New_York"}
@@ -101,9 +101,13 @@ def test_headers_name_the_gregorian_span_and_both_samvats():
 
 
 def test_the_app_calendars_kalyanaks_appear_on_their_dates():
+    """Every single-day festival the app lists, bar the ones the booklet leaves out on purpose."""
     calendar = generate_jain_festivals(2027, DELHI["lat"], DELHI["lon"], "Lahiri", PROFILE)
     by_date = {day.date.isoformat(): day.events for day in _days()}
-    single_day = [f for f in calendar["festivals"] if f["start_date"] == f["end_date"] and f.get("name_hindi")]
+    single_day = [
+        f for f in calendar["festivals"]
+        if f["start_date"] == f["end_date"] and f.get("name_hindi") and not f["id"].startswith(OMITTED_FROM_BOOKLET)
+    ]
 
     assert single_day
     for festival in single_day:

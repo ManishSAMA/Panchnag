@@ -207,6 +207,28 @@ def _hindi_native_tag(label: str) -> str:
     return f"{_NATIVE_TITHI_TAG_HI[tag]} {rest}" if tag in _NATIVE_TITHI_TAG_HI else label
 
 
+# Left out of the booklet only, at the user's request (2026-10-30); the app's
+# calendar and other exports keep them. Matched by id prefix, as rule-built
+# occurrences carry the year ("jina_murti_sthapna_2027").
+OMITTED_FROM_BOOKLET = ("parshvanath_jayanti", "jina_murti_sthapna")
+
+
+def _in_booklet(festival: dict) -> bool:
+    return not str(festival.get("id", "")).startswith(OMITTED_FROM_BOOKLET)
+
+
+def coordinates_text(lat: float, lon: float) -> str:
+    """The place's latitude and longitude in Hindi, for the booklet's front page."""
+    lat_side = "उ." if lat >= 0 else "द."
+    lon_side = "पू." if lon >= 0 else "प."
+    return f"अक्षांश {abs(lat):.2f}° {lat_side}, देशांतर {abs(lon):.2f}° {lon_side}"
+
+
+def made_for_text(place: str, lat: float, lon: float) -> str:
+    """The booklet's closing line: the place and coordinates it was computed for."""
+    return f"यह पंचांग {place} ({coordinates_text(lat, lon)}) के लिए बनाया गया है।"
+
+
 def festival_text(festivals: list[dict]) -> str:
     """Hindi festival names for the day, de-duplicated across schools."""
     labels = []
@@ -414,7 +436,10 @@ def build_laghu_year(
 
     calendar_for_year = generate_jain_festivals(year, lat, lon, ayanamsa, profile, sunrise_rule=sunrise_rule)
     date_to_fests, _ = build_festival_index(
-        [{**calendar_for_year, "festivals": festivals_for_school(calendar_for_year["festivals"], school)}]
+        [{
+            **calendar_for_year,
+            "festivals": [f for f in festivals_for_school(calendar_for_year["festivals"], school) if _in_booklet(f)],
+        }]
     )
     january_offset = utc_offset_hours(tz_name, date(year, 1, 1), clock=clock)
     chaitra_shukla_1 = find_chaitra_shukla_1(year, lat, lon, january_offset, ayanamsa, sunrise_rule=sunrise_rule)

@@ -35,6 +35,7 @@ body { margin: 0; font-family: 'Nirmala UI', 'Mangal', 'Noto Sans Devanagari', s
 .head { text-align: center; font-size: 6.6pt; line-height: 1.25; font-weight: 600; }
 .head .samvat { color: #7a1f1f; }
 .head .span { font-size: 7.4pt; font-weight: 700; }
+.head .coords { color: #444; font-weight: 600; }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 2px; }
 th, td { border: 0.5pt solid #555; padding: 0.5pt 1pt; font-size: var(--cell-size, 5.6pt); line-height: 1.15;
          text-align: center; vertical-align: middle; word-wrap: break-word; }
@@ -44,6 +45,10 @@ td.shubh { color: #b3001b; font-weight: 700; }
 td.tithi-long { font-size: calc(var(--cell-size, 5.6pt) * 0.86); white-space: nowrap; }
 tr.sunday td { background: #fff4f4; }
 .place { font-size: 5pt; color: #666; text-align: right; margin-top: 1px; }
+/* The last page wraps a full-width closing line under its halves, pinned to the bottom. */
+.page.closing-page { flex-wrap: wrap; align-content: space-between; row-gap: 0; }
+.closing { flex: 0 0 100%; text-align: center; font-size: 6pt; line-height: 1.2; font-weight: 600;
+           color: #7a1f1f; white-space: nowrap; }
 """
 
 # A festival-heavy half (Mahavir Jayanti, Paryushan) can outgrow its fixed page,
@@ -53,8 +58,10 @@ tr.sunday td { background: #fff4f4; }
 _FIT_SCRIPT = """
 document.querySelectorAll('section.page').forEach(function (page) {
   var halves = Array.prototype.slice.call(page.querySelectorAll('.half'));
+  var closing = page.querySelector('.closing');
   var overflowing = function () {
-    return halves.some(function (half) { return half.scrollHeight > page.clientHeight; });
+    var room = page.clientHeight - (closing ? closing.offsetHeight : 0);
+    return halves.some(function (half) { return half.scrollHeight > room; });
   };
   for (var size = 5.6; overflowing() && size > 3.4; size -= 0.1) {
     page.style.setProperty('--cell-size', (size - 0.1).toFixed(1) + 'pt');
@@ -63,12 +70,14 @@ document.querySelectorAll('section.page').forEach(function (page) {
 """
 
 
-def _half_html(half: LaghuHalf, location_name: str) -> str:
+def _half_html(half: LaghuHalf, location_name: str, coordinates: str = "") -> str:
+    # Both halves carry the line so their tables stay level.
+    coords = f'<div class="coords">{escape(coordinates)}</div>' if coordinates else ""
     head = (
         f'<div class="head"><div class="samvat">{escape(half.samvat)}</div>'
         f'<div class="span">{escape(half.date_range)}</div>'
         f"<div>{escape(half.tithi_range)}</div>"
-        f"<div>{escape(half.sun_times)}</div></div>"
+        f"<div>{escape(half.sun_times)}</div>{coords}</div>"
     )
     columns = "".join(f'<col style="width:{width}%">' for width in _COLUMN_WIDTHS)
     headers = "".join(f"<th>{escape(header)}</th>" for header in COLUMN_HEADERS)
@@ -102,11 +111,29 @@ def _months(halves: tuple[LaghuHalf, ...]) -> list[list[LaghuHalf]]:
     return [list(group) for _, group in by_month]
 
 
-def render_html(halves: tuple[LaghuHalf, ...], *, title: str, location_name: str) -> str:
-    """The whole booklet: one 8in x 5in page per month, two half-month tables each."""
+def _page_html(month: list[LaghuHalf], *, location_name: str, coordinates: str, closing_line: str) -> str:
+    halves = "".join(_half_html(half, location_name, coordinates) for half in month)
+    if not closing_line:
+        return f'<section class="page">{halves}</section>'
+    return f'<section class="page closing-page">{halves}<div class="closing">{escape(closing_line)}</div></section>'
+
+
+def render_html(
+    halves: tuple[LaghuHalf, ...], *, title: str, location_name: str, coordinates: str = "", closing_line: str = "",
+) -> str:
+    """The whole booklet: one 8in x 5in page per month, two half-month tables each.
+
+    The place's coordinates, when given, print on the first page only; the
+    closing line at the foot of the last page.
+    """
+    months = _months(halves)
     pages = "".join(
-        '<section class="page">' + "".join(_half_html(half, location_name) for half in month) + "</section>"
-        for month in _months(halves)
+        _page_html(
+            month, location_name=location_name,
+            coordinates=coordinates if index == 0 else "",
+            closing_line=closing_line if index == len(months) - 1 else "",
+        )
+        for index, month in enumerate(months)
     )
     return (
         '<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8">'
@@ -115,11 +142,17 @@ def render_html(halves: tuple[LaghuHalf, ...], *, title: str, location_name: str
     )
 
 
-def write_pdf(halves: tuple[LaghuHalf, ...], path: str | Path, *, title: str, location_name: str) -> str:
+def write_pdf(
+    halves: tuple[LaghuHalf, ...], path: str | Path, *, title: str, location_name: str, coordinates: str = "",
+    closing_line: str = "",
+) -> str:
     """Write the PDF; returns its path, or the HTML's when no browser could print it."""
     pdf_path = Path(path)
     html_path = pdf_path.with_suffix(".html")
-    html_path.write_text(render_html(halves, title=title, location_name=location_name), encoding="utf-8")
+    html = render_html(
+        halves, title=title, location_name=location_name, coordinates=coordinates, closing_line=closing_line,
+    )
+    html_path.write_text(html, encoding="utf-8")
     if hindi_calendar_pdf._html_to_pdf(str(html_path), str(pdf_path), css_page_size=True):
         return str(pdf_path)
     return str(html_path)
@@ -135,13 +168,14 @@ _TITLE_FONT = Font(bold=True, size=12)
 _THIN = Side(style="thin", color="999999")
 _BORDER = Border(left=_THIN, right=_THIN, top=_THIN, bottom=_THIN)
 _EXCEL_WIDTHS = (5, 6, 11, 11, 5, 10, 8, 10, 7, 12, 45)
-_HEADER_LINES = 4
+_HEADER_LINES = 5  # samvat, dates, tithis, sun times, and the coordinates (first sheet only)
 _GAP_COLUMNS = 1
 
 
-def _write_half(sheet, half: LaghuHalf, first_column: int) -> None:
+def _write_half(sheet, half: LaghuHalf, first_column: int, coordinates: str = "") -> None:
     last_column = first_column + len(COLUMN_HEADERS) - 1
-    for row, line in enumerate((half.samvat, half.date_range, half.tithi_range, half.sun_times), start=1):
+    lines = (half.samvat, half.date_range, half.tithi_range, half.sun_times, coordinates)
+    for row, line in enumerate(lines, start=1):
         sheet.merge_cells(start_row=row, start_column=first_column, end_row=row, end_column=last_column)
         cell = sheet.cell(row=row, column=first_column, value=line)
         cell.alignment = Alignment(horizontal="center")
@@ -164,16 +198,33 @@ def _write_half(sheet, half: LaghuHalf, first_column: int) -> None:
             )
 
 
-def write_excel(halves: tuple[LaghuHalf, ...], path: str | Path, *, title: str, location_name: str) -> str:
+def _write_closing_line(sheet, line: str) -> None:
+    """Under the last sheet's tables, across both halves."""
+    row = sheet.max_row + 2
+    sheet.merge_cells(start_row=row, start_column=1, end_row=row, end_column=sheet.max_column)
+    cell = sheet.cell(row=row, column=1, value=line)
+    cell.alignment = Alignment(horizontal="center")
+    cell.font = Font(bold=True)
+
+
+def write_excel(
+    halves: tuple[LaghuHalf, ...], path: str | Path, *, title: str, location_name: str, coordinates: str = "",
+    closing_line: str = "",
+) -> str:
     """One sheet per month, laid out like the printed page: both halves side by side."""
     workbook = Workbook()
     workbook.remove(workbook.active)
     workbook.properties.title = f"{title} — {location_name}"
-    for month in _months(halves):
+    for month_index, month in enumerate(_months(halves)):
         first_date = month[0].days[0].date
         sheet = workbook.create_sheet(f"{GREG_MONTHS_HINDI[first_date.month - 1]} {first_date.year}")
         for index, half in enumerate(month):
-            _write_half(sheet, half, first_column=1 + index * (len(COLUMN_HEADERS) + _GAP_COLUMNS))
+            _write_half(
+                sheet, half, first_column=1 + index * (len(COLUMN_HEADERS) + _GAP_COLUMNS),
+                coordinates=coordinates if month_index == 0 else "",
+            )
         sheet.freeze_panes = sheet.cell(row=_HEADER_LINES + 2, column=1)
+    if closing_line:
+        _write_closing_line(sheet, closing_line)
     workbook.save(path)
     return str(path)

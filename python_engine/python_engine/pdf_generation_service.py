@@ -7,7 +7,7 @@ from uuid import uuid4
 import hindi_calendar_pdf
 from hindi_calendar_pdf import SCHOOL_NAMES_HI
 from export_pdf import generate_pdf_calendar
-from laghu_panchang import build_laghu_year
+from laghu_panchang import build_laghu_year, coordinates_text, made_for_text
 from laghu_panchang_render import write_excel, write_pdf
 from range_generation_service import export_timezone
 from panchang_service import resolve_location
@@ -158,9 +158,14 @@ def generate_laghu_panchang_export(
     title = f"लघु पंचांग {year}"
     caption = location.name if school == "all" else f"{location.name} · {SCHOOL_NAMES_HI[school]} मत"
 
+    labels = {
+        "title": title, "location_name": caption,
+        "coordinates": coordinates_text(location.lat, location.lon),
+        "closing_line": made_for_text(location.name, location.lat, location.lon),
+    }
     writers = {
-        "pdf": lambda: write_pdf(halves, stem.with_suffix(".pdf"), title=title, location_name=caption),
-        "excel": lambda: write_excel(halves, stem.with_suffix(".xlsx"), title=title, location_name=caption),
+        "pdf": lambda: write_pdf(halves, stem.with_suffix(".pdf"), **labels),
+        "excel": lambda: write_excel(halves, stem.with_suffix(".xlsx"), **labels),
     }
     formats = ("pdf", "excel") if output_format == "both" else (output_format,)
     written = [Path(writers[fmt]()) for fmt in formats]

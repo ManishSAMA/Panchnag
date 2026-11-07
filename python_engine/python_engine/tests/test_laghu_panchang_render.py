@@ -243,3 +243,86 @@ def test_no_column_header_breaks_inside_a_word():
             browser.close()
 
     assert broken == []
+
+
+# ── coordinates on the front page ───────────────────────────────────────
+
+COORDS = "अक्षांश 40.22° उ., देशांतर 74.77° प."
+
+
+def test_the_coordinates_print_on_the_first_page_only():
+    html = render_html(make_year(), title="t", location_name="Trenton", coordinates=COORDS)
+    first, second = html.split('<section class="page">')[1:]
+
+    assert COORDS in first
+    assert COORDS not in second
+
+
+def test_without_coordinates_no_line_is_printed():
+    html = render_html(make_year(), title="t", location_name="Delhi")
+
+    assert 'class="coords"' not in html
+
+
+def test_excel_puts_the_coordinates_on_the_first_sheet_only(tmp_path):
+    path = write_excel(make_year(), tmp_path / "laghu.xlsx", title="t", location_name="Trenton", coordinates=COORDS)
+    workbook = load_workbook(path)
+
+    def values(sheet):
+        return [cell for row in sheet.iter_rows(values_only=True) for cell in row if cell is not None]
+
+    first, second = (workbook[name] for name in workbook.sheetnames)
+    assert COORDS in values(first)
+    assert COORDS not in values(second)
+    assert values(first).count("तुला") == 31
+
+
+# ── closing line on the last page ───────────────────────────────────────
+
+CLOSING = "यह पंचांग ट्रेंटन, न्यू जर्सी (अक्षांश 40.22° उ., देशांतर 74.77° प.) के लिए बनाया गया है।"
+
+
+def test_the_closing_line_prints_on_the_last_page_only():
+    html = render_html(make_year(), title="t", location_name="Trenton", closing_line=CLOSING)
+    first, last = html.split('<section class="page')[1:]
+
+    assert CLOSING not in first
+    assert CLOSING in last
+
+
+@pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="needs Playwright")
+def test_the_closing_line_sits_below_the_tables_and_inside_a_crowded_page():
+    from playwright.sync_api import sync_playwright
+
+    html = render_html(make_month(2027, 3, events=CROWDED_DAY), title="t", location_name="x", closing_line=CLOSING)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        try:
+            page = browser.new_page()
+            page.set_content(html)
+            page.emulate_media(media="print")
+            box = page.evaluate("""() => {
+                const p = document.querySelector('section.page').getBoundingClientRect();
+                const c = document.querySelector('.closing').getBoundingClientRect();
+                const tables = Math.max(...[...document.querySelectorAll('table')].map(t => t.getBoundingClientRect().bottom));
+                return {pageBottom: p.bottom, top: c.top, bottom: c.bottom, tables, lines: Math.round(c.height / parseFloat(getComputedStyle(document.querySelector('.closing')).lineHeight))};
+            }""")
+        finally:
+            browser.close()
+
+    assert box["top"] >= box["tables"]
+    assert box["bottom"] <= box["pageBottom"] + 0.5
+    assert box["lines"] == 1
+
+
+def test_excel_puts_the_closing_line_below_the_last_sheets_tables(tmp_path):
+    path = write_excel(make_year(), tmp_path / "laghu.xlsx", title="t", location_name="x", closing_line=CLOSING)
+    workbook = load_workbook(path)
+    first, last = (workbook[name] for name in workbook.sheetnames)
+
+    def rows_with(sheet, text):
+        return [i for i, row in enumerate(sheet.iter_rows(values_only=True), 1) if text in row]
+
+    assert rows_with(first, CLOSING) == []
+    [closing_row] = rows_with(last, CLOSING)
+    assert closing_row > max(rows_with(last, "तुला"))

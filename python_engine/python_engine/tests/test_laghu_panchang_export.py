@@ -177,3 +177,33 @@ def test_the_cli_writes_the_booklet_to_the_output_directory(tmp_path):
     assert written == [".pdf", ".xlsx"]
     workbook = load_workbook(next(tmp_path.rglob("*.xlsx")))
     assert len(workbook.sheetnames) == 1
+
+
+def test_the_service_prints_the_places_coordinates_on_the_front_page(tmp_path):
+    with patch.object(pdf_generation_service, "build_laghu_year", _fake_build), \
+         patch.object(hindi_calendar_pdf, "_html_to_pdf", _fake_renderer):
+        result = generate_laghu_panchang_export(
+            year=2027, city=None, ayanamsa_name="Lahiri", output_format="both",
+            profile="shwetambar_murtipujak_tapagachchha", output_dir=str(tmp_path), lat=40.2203, lon=-74.7658,
+        )
+
+    [pdf, xlsx] = (Path(f["path"]) for f in result["files"])
+    coords = "अक्षांश 40.22° उ., देशांतर 74.77° प."
+    assert coords in pdf.with_suffix(".html").read_text(encoding="utf-8")
+    first_sheet = load_workbook(xlsx).worksheets[0]
+    assert coords in [cell for row in first_sheet.iter_rows(values_only=True) for cell in row]
+
+
+def test_the_service_closes_the_booklet_with_the_place_it_was_made_for(tmp_path):
+    with patch.object(pdf_generation_service, "build_laghu_year", _fake_build), \
+         patch.object(hindi_calendar_pdf, "_html_to_pdf", _fake_renderer):
+        result = generate_laghu_panchang_export(
+            year=2027, city="ट्रेंटन, न्यू जर्सी", ayanamsa_name="Lahiri", output_format="pdf",
+            profile="shwetambar_murtipujak_tapagachchha", output_dir=str(tmp_path), lat=40.2203, lon=-74.7658,
+        )
+
+    [pdf] = (Path(f["path"]) for f in result["files"])
+    assert (
+        "यह पंचांग ट्रेंटन, न्यू जर्सी (अक्षांश 40.22° उ., देशांतर 74.77° प.) के लिए बनाया गया है।"
+        in pdf.with_suffix(".html").read_text(encoding="utf-8")
+    )

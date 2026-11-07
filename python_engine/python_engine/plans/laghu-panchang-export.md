@@ -12,6 +12,11 @@ Decisions already made with the user:
 - Include everything the app can compute; skip what it can't (acharya/muni anniversaries, melas).
 - Location comes from the app; header sunrise/sunset = the app's own values (1st and 16th of month).
 
+Additions 2026-10-30 (user directive):
+- The first page's half headers, and the first Excel sheet, carry a fifth line with the place's coordinates: `अक्षांश 40.22° उ., देशांतर 74.77° प.` (`coordinates_text`). Both halves print it so the tables stay level.
+- The last page ends with a full-width line, `यह पंचांग ट्रेंटन, न्यू जर्सी (अक्षांश 40.22° उ., देशांतर 74.77° प.) के लिए बनाया गया है।` (`made_for_text`), pinned to the page foot; the fit script reserves its height. The Excel workbook writes it under the last sheet's tables.
+- `OMITTED_FROM_BOOKLET` leaves श्री पार्श्वनाथ जयंती and जिन मूर्ति स्थापना दिवस out of the booklet only; the app's calendar and other exports keep them.
+
 ## Target layout (decoded from the reference PDF)
 
 One Gregorian month per page, landscape 8in × 5in, two half-month tables side by side (1–15 | 16–end).
