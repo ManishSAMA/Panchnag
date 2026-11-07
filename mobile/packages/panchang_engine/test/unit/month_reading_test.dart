@@ -18,6 +18,7 @@ List<Object?> fieldsOf(PanchangDay d) => [
   d.amantaMonth,
   d.vikramSamvat,
   d.viraNirvanaSamvat,
+  d.shakaSamvat,
   d.choghadiya,
   d.vriddhi,
   d.kshaya,

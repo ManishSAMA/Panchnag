@@ -24,6 +24,16 @@ import swisseph
 
 from astronomy import SUNRISE_RULES, get_ayanamsa, get_planetary_longitude
 from choghadiya_service import calculate_choghadiya_slots
+from day_elements import (
+    Gata,
+    gata,
+    karanas_in_day,
+    moon_rashi_pair,
+    nakshatra_pair,
+    sun_rashis_in_day,
+    tithi_pair,
+    yoga_pair,
+)
 from jain_observances.festival_service import generate_jain_festivals
 from panchang import HINDU_MONTH_NAMES, get_hindu_month
 from panchang_service import generate_location_panchang, resolve_location
@@ -157,7 +167,23 @@ def day_row(location: FixtureLocation, local_date: date, *, sunrise_rule: str) -
         "vikram_samvat": panchang["vikram_samvat"],
         "vira_nirvana_samvat": panchang["vira_nirvana_samvat"],
         "choghadiya": [slot["name"] for slot in choghadiya],
+        # The app's Panchang section (plans/panchang-section-and-pothi.md).
+        "tithi_next": _spans(tithi_pair(panchang["jain_tithi"]["reference"]["jd"]))[1],
+        "nakshatra_next": _spans(nakshatra_pair(sunrise))[1],
+        "yoga": _spans(yoga_pair(sunrise)),
+        "karana": _spans(karanas_in_day(sunrise, next_sunrise)),
+        "moon_rashi": _spans(moon_rashi_pair(sunrise)),
+        "sun_rashi": _spans(sun_rashis_in_day(sunrise, next_sunrise)),
+        "gata": _gata_row(gata(next_sunrise, lat=location.lat, lon=location.lon, rule=sunrise_rule)),
     }
+
+
+def _spans(spans) -> list[dict]:
+    return [{"index": s.index, "ends": s.ends_jd} for s in spans]
+
+
+def _gata_row(reading: Gata) -> dict:
+    return {"rashi": reading.rashi, "day": reading.day}
 
 
 def _dumps(obj: object) -> bytes:

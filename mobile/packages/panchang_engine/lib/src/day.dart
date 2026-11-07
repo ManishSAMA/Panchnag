@@ -9,6 +9,7 @@ import 'calendar/samvat.dart';
 import 'festivals/festivals.dart';
 import 'festivals/registry.dart';
 import 'panchang/choghadiya.dart';
+import 'panchang/day_elements.dart';
 import 'panchang/elements.dart';
 import 'panchang/pachchakkhan.dart';
 import 'time/civil_day.dart';
@@ -31,6 +32,16 @@ typedef JainTithi = ({int index, DateTime startsAt, DateTime endsAt, DateTime re
 
 /// The nakshatra and its pada (1-4) at sunrise.
 typedef NakshatraReading = ({int index, int pada, DateTime endsAt});
+
+/// A tithi, nakshatra, yoga, karana or Rashi and when it ends.
+typedef ElementSpan = ({int index, DateTime endsAt});
+
+/// The Sun's Rashi within a day; [endsAt] is null when it lasts past the next sunrise.
+typedef RashiSpan = ({int index, DateTime? endsAt});
+
+/// The Rashi the Sun is in (0 = Mesha) and the day of its stay, the
+/// Sankranti day being day 1.
+typedef Gata = ({int rashi, int day});
 
 /// A tithi that holds at no reference instant, lost between yesterday's and today's.
 typedef Kshaya = ({int lost, DateTime startsAt, DateTime endsAt});
@@ -125,6 +136,7 @@ final class PanchangDay {
     required this.vriddhi,
     required this.kshaya,
     required this.pachchakkhan,
+    required this.shakaSamvat,
   });
 
   final CivilDate date;
@@ -149,6 +161,44 @@ final class PanchangDay {
   final Vriddhi? vriddhi;
   final Kshaya? kshaya;
   final PachchakkhanDay pachchakkhan;
+
+  final int shakaSamvat;
+}
+
+/// The Panchang section's readings for a day, beyond [PanchangDay]: a
+/// separate read, so the Month tab's [PanchangEngine.month] does not pay for
+/// them (they double a day's cost).
+final class PanchangSection {
+  const PanchangSection({
+    required this.nextTithi,
+    required this.nextNakshatra,
+    required this.yogas,
+    required this.karanas,
+    required this.moonRashis,
+    required this.sunRashis,
+    required this.gata,
+  });
+
+  /// The tithi after the Jain tithi, until its own end (which may be after
+  /// the next sunrise).
+  final ElementSpan nextTithi;
+
+  /// The nakshatra after the one at sunrise.
+  final ElementSpan nextNakshatra;
+
+  /// The yoga (1-27) at sunrise, then the next.
+  final List<ElementSpan> yogas;
+
+  /// Every karana (1-60) from sunrise up to the one holding at the next
+  /// sunrise: two to four.
+  final List<ElementSpan> karanas;
+
+  /// The Moon's Rashi (0 = Mesha) at sunrise, then the next.
+  final List<ElementSpan> moonRashis;
+
+  /// The Sun's Rashi, and on a Sankranti day the one it enters.
+  final List<RashiSpan> sunRashis;
+  final Gata gata;
 }
 
 final class PanchangEngine {
@@ -255,6 +305,32 @@ final class PanchangEngine {
         evening: _utc(times.evening),
         parana: _utc(times.parana),
       ),
+      // Both eras turn over on Chaitra Shukla Pratipada: Shaka 1 is Vikram 136.
+      shakaSamvat: samvat.vikram - 135,
+    );
+  }
+
+  /// The Panchang section for [date]: Throws [StateError] where [day] does.
+  PanchangSection section({
+    required Location location,
+    required CivilDate date,
+    SunriseRule sunriseRule = SunriseRule.modern,
+  }) {
+    final Location(:lat, :lon, :timezone) = location;
+    double sunriseAfter(double jd) => sunrise(jd, lat, lon, sunriseRule);
+    final rise = sunriseAfter(civilDayAnchor(date, timezone));
+    final nextRise = sunriseAfter(civilDayAnchor(date.next(), timezone));
+    return PanchangSection(
+      nextTithi: _spans(pairFrom(rise + jainTithiOffsetDays, tithiAt, tithiEnd)).last,
+      nextNakshatra: _spans(pairFrom(rise, nakshatraAt, nakshatraEnd)).last,
+      yogas: _spans(pairFrom(rise, yogaAt, yogaEnd)),
+      karanas: _spans(dayKaranas(rise, nextRise)),
+      moonRashis: _spans(pairFrom(rise, moonRashiAt, moonRashiEnd)),
+      sunRashis: [
+        for (final s in daySunRashis(rise, nextRise))
+          (index: s.index, endsAt: s.endsAt == null ? null : _utc(s.endsAt!)),
+      ],
+      gata: gataOf(nextRise, sunriseAfter: sunriseAfter),
     );
   }
 
@@ -270,6 +346,8 @@ final class PanchangEngine {
 }
 
 DateTime _utc(double jd) => utcFromJulianDay(jd);
+
+List<ElementSpan> _spans(List<Span> spans) => [for (final s in spans) (index: s.index, endsAt: _utc(s.endsAt))];
 
 /// Past a transition, so a solver started here finds the next one.
 const double _nudgeDays = 30 / 86400;

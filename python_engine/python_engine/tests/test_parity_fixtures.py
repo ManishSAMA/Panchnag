@@ -13,6 +13,14 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
+from day_elements import (
+    karanas_in_day,
+    moon_rashi_pair,
+    nakshatra_pair,
+    sun_rashis_in_day,
+    tithi_pair,
+    yoga_pair,
+)
 from location_service import get_timezone_name
 from panchang import JAIN_TITHI_OFFSET_DAYS
 from panchang_service import generate_location_panchang
@@ -248,6 +256,26 @@ class TestDayRow:
                     assert row["month_amanta"] == row["month"]
                 else:
                     assert row["month_amanta"]["index"] == (row["month"]["index"] - 1) % 12
+
+    def test_carries_the_panchang_sections_elements_as_day_elements_reads_them(self):
+        # Makar Sankranti 2025 (14 Jan, 09:03 IST) falls inside Delhi's day.
+        loc = a_location("Delhi")
+        on = date(2025, 1, 14)
+        row = day_row(loc, on, sunrise_rule="modern")
+        sunrise, next_sunrise = row["sunrise"], row["next_sunrise"]
+
+        def spans(values):
+            return [{"index": s.index, "ends": s.ends_jd} for s in values]
+
+        assert row["tithi_next"] == spans(tithi_pair(row["jain_tithi"]["reference"]))[1]
+        assert row["tithi_next"]["index"] == row["jain_tithi"]["index"] % 30 + 1
+        assert row["nakshatra_next"] == spans(nakshatra_pair(sunrise))[1]
+        assert row["yoga"] == spans(yoga_pair(sunrise))
+        assert row["karana"] == spans(karanas_in_day(sunrise, next_sunrise))
+        assert row["moon_rashi"] == spans(moon_rashi_pair(sunrise))
+        assert row["sun_rashi"] == spans(sun_rashis_in_day(sunrise, next_sunrise))
+        assert [s["ends"] is None for s in row["sun_rashi"]] == [False, True]
+        assert row["gata"] == {"rashi": 9, "day": 1}
 
     def test_traditional_sunrise_is_later_than_modern(self):
         # Disc centre with no refraction rises after the refracted upper limb.

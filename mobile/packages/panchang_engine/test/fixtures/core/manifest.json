@@ -2,6 +2,7 @@
   "engine_sources": {
     "astronomy.py": "810bd81b6d4cea918041d5adf0099d611df21722ade74a53b1255efe7317d8c5",
     "choghadiya_service.py": "06659430a37742b0b954b5fed510d1816dc88cbd833ee47e2d66a097452437f7",
+    "day_elements.py": "8f469fe472fd892f6c654388583551f3a4bfe22818e68fc43adbb2f5b7e700c3",
     "hindi_calendar_pdf.py": "a988e0c4a56ec29f7fc98a7cad802e1ca9c3e912e6b3365c7a6ec2acb1fd716c",
     "hindi_observance_map.py": "0fa68ff6ab38a169b90b096b99dd295fec4666beff8db218434d1f7fc6a6bd90",
     "jain_observances/__init__.py": "ad2e13b69c4fc1fda46413f740f426fc1793cfc6d6da8d226ba619f1aef48be7",
@@ -20,7 +21,7 @@
     "location_service.py": "5ba7cfc40a3f7f6644fabce3c5c4b09dcbea4c53ee03e247d631b3a781952a61",
     "panchang.py": "5fa26223841d1787fadcd14b3ebff25fd7f446229ea0652a5d5678f01c6e9b9e",
     "panchang_service.py": "6da5a0d9b3d48bb3d64f59b7834de7cc707902b632cd8f40149e6887f8a6f11b",
-    "parity_fixtures.py": "49025a0354c88a51173e4b4d0fa3618f74c19e72e9b6122e5546cb118ebb7eb7",
+    "parity_fixtures.py": "7156bc91083d15e97861cf40f029b9ae3521faf63b0bc98728e57dcc507561c1",
     "request_parsing.py": "084b4e428020aa65da4f612f24d7ad5e5e0a0a4215492fd0430a3c1833b76ef1"
   },
   "locations": [
