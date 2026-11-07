@@ -24,12 +24,6 @@ class FeatureTiles extends StatelessWidget {
         .isNotEmpty;
     final tiles = [
       _Tile(
-        key: const Key('tile-full-panchang'),
-        glyph: NavpadGlyph.fullPanchang,
-        label: l10n.fullPanchang,
-        onTap: () => context.push('/full-panchang'),
-      ),
-      _Tile(
         key: const Key('tile-choghadiya'),
         glyph: NavpadGlyph.ghatika,
         label: l10n.choghadiyaTitle,
@@ -55,10 +49,11 @@ class FeatureTiles extends StatelessWidget {
         onTap: onMonth,
       ),
     ];
-    // Three columns at ordinary text and two at enlarged text keep every label readable.
+    // Three columns at ordinary text and two at enlarged text keep every label readable;
+    // four tiles sit two by two, so none is left alone on a row.
     // Android scales text non-linearly, so measure at the label's own 14 sp.
     final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-    final perRow = scale >= 1.3 ? 2 : 3;
+    final perRow = scale >= 1.3 || tiles.length == 4 ? 2 : 3;
     final rows = [
       for (var i = 0; i < tiles.length; i += perRow)
         tiles.sublist(i, (i + perRow).clamp(0, tiles.length)),

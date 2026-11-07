@@ -111,6 +111,14 @@ void main() {
     },
   );
 
+  testWidgets('Full Panchang has no tile: the Panchang card above opens it', (
+    tester,
+  ) async {
+    await openApp(tester, now: ist(2026, 10, 22));
+
+    expect(tile('full-panchang'), findsNothing);
+  });
+
   testWidgets('each tile is a button named for a screen reader', (
     tester,
   ) async {
@@ -130,6 +138,7 @@ void main() {
   testWidgets('चौघड़िया opens the Choghadiya screen', (tester) async {
     await openApp(tester, now: ist(2026, 10, 22));
 
+    await tester.ensureVisible(tile('choghadiya'));
     await tester.tap(tile('choghadiya'));
     await tester.pumpAndSettle();
 
@@ -139,6 +148,7 @@ void main() {
   testWidgets('पच्चक्खाण opens the Pachchakkhan tab', (tester) async {
     await openApp(tester, now: ist(2026, 10, 22));
 
+    await tester.ensureVisible(tile('pachchakkhan'));
     await tester.tap(tile('pachchakkhan'));
     await tester.pumpAndSettle();
 
@@ -150,6 +160,7 @@ void main() {
     await tester.tap(nav('अगला दिन'));
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(tile('month'));
     await tester.tap(tile('month'));
     await tester.pumpAndSettle();
 
@@ -227,6 +238,29 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('festivals screen'), findsOneWidget);
       },
+    );
+  });
+
+  testWidgets('four tiles sit two by two, with no tile left alone', (
+    tester,
+  ) async {
+    await pumpTiles(tester, withFestivals: true);
+    double top(String name) => tester.getTopLeft(tile(name)).dy;
+    double left(String name) => tester.getTopLeft(tile(name)).dx;
+
+    expect(top('pachchakkhan'), top('choghadiya'));
+    expect(top('month'), top('festivals'));
+    expect(top('festivals'), greaterThan(top('choghadiya')));
+    expect(left('festivals'), left('choghadiya'));
+    expect(left('month'), left('pachchakkhan'));
+  });
+
+  testWidgets('three tiles share one row', (tester) async {
+    await pumpTiles(tester, withFestivals: false);
+
+    expect(
+      tester.getTopLeft(tile('month')).dy,
+      tester.getTopLeft(tile('choghadiya')).dy,
     );
   });
 

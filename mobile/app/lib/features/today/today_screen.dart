@@ -26,6 +26,7 @@ import '../choghadiya/choghadiya_band.dart';
 import '../festivals/festival_state.dart';
 import '../month/month_state.dart';
 import 'feature_tiles.dart';
+import 'panchang_card.dart';
 import '../share/share_button.dart';
 import 'today_state.dart';
 
@@ -38,17 +39,14 @@ class TodayScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final city = ref.watch(locationProvider)!;
     final date = ref.watch(selectedDateProvider);
-    final reading = ref.watch(
-      dayReadingProvider(
-        DayRequest(
-          date: date,
-          lat: city.lat,
-          lon: city.lon,
-          timezone: city.timezone,
-          rule: ref.watch(sunriseRuleProvider),
-        ),
-      ),
+    final request = DayRequest(
+      date: date,
+      lat: city.lat,
+      lon: city.lon,
+      timezone: city.timezone,
+      rule: ref.watch(sunriseRuleProvider),
     );
+    final reading = ref.watch(dayReadingProvider(request));
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 6,
@@ -62,7 +60,7 @@ class TodayScreen extends ConsumerWidget {
           children: [
             DateNavigator(date: date, timezone: city.timezone),
             ...switch (reading) {
-              AsyncData(:final value) => [_DayView(reading: value, timezone: city.timezone)],
+              AsyncData(:final value) => [_DayView(reading: value, request: request, timezone: city.timezone)],
               AsyncError(:final error) => [
                 Note(icon: NoteIcon.alert, title: AppLocalizations.of(context).appTitle, body: '$error'),
               ],
@@ -111,9 +109,10 @@ class _LocationButton extends StatelessWidget {
 }
 
 class _DayView extends ConsumerWidget {
-  const _DayView({required this.reading, required this.timezone});
+  const _DayView({required this.reading, required this.request, required this.timezone});
 
   final PanchangDay reading;
+  final DayRequest request;
   final String timezone;
 
   @override
@@ -193,6 +192,7 @@ class _DayView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _Hero(reading: reading, month: lunarMonthOf(reading, ref.watch(monthSystemProvider)), wall: wall),
+        PanchangCard(day: reading, request: request, isToday: isToday),
         FeatureTiles(onMonth: openMonth),
         if (notes.isNotEmpty)
           KeyedSubtree(
@@ -211,7 +211,6 @@ class _DayView extends ConsumerWidget {
         const ListTop(),
         _clockRow(l10n.sunrise, NavpadGlyph.sunrise, reading.sunrise, wall, lang),
         _clockRow(l10n.sunset, NavpadGlyph.sunset, reading.sunset, wall, lang),
-        _nakshatraRow(l10n, lang, wall),
         SectionHeading(title: l10n.pachchakkhan, linkLabel: l10n.seeAll, onLink: () => context.go('/pachchakkhan')),
         const ListTop(),
         for (final p in reading.pachchakkhan.completions)
@@ -272,23 +271,6 @@ class _DayView extends ConsumerWidget {
     );
   }
 
-  Widget _nakshatraRow(AppLocalizations l10n, Lang lang, DateTime Function(DateTime) wall) {
-    final local = wall(reading.nakshatra.endsAt);
-    final (:period, :time) = clockTime(local, lang);
-    final day = CivilDate(local.year, local.month, local.day);
-    final when = day == reading.date ? period : '${shortDate(day, lang)}, $period';
-    return TimeRow(
-      name: l10n.nakshatra,
-      icon: const NavpadIcon(NavpadGlyph.nakshatra),
-      subtitle: l10n.nakshatraDetail(
-        nakshatraName(reading.nakshatra.index, lang),
-        reading.nakshatra.pada,
-        nakshatraName(reading.nakshatra.index % 27 + 1, lang),
-      ),
-      time: l10n.until(lang == Lang.hi ? time : '$time $when'),
-      prefix: lang == Lang.hi ? when : null,
-    );
-  }
 }
 
 class _Hero extends StatelessWidget {

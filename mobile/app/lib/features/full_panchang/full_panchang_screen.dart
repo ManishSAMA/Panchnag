@@ -482,21 +482,7 @@ class _Group extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Semantics(
-            header: true,
-            child: Text(
-              title,
-              style: NavpadType.displayGroup.copyWith(
-                color: p.accent,
-                fontSize: 23,
-              ),
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.only(top: 5),
-            height: 2,
-            color: p.accent,
-          ),
+          PothiHeading(title: title),
           ...rows,
           ...children,
         ],
@@ -654,14 +640,14 @@ List<Widget> panchangSectionRows({
     section.nextNakshatra,
   ];
   return [
-    _LinesRow(
+    SectionRow(
       label: l10n.tithiLabel,
       lines: spans('section-tithi', [
         (index: day.jainTithi.index, endsAt: day.jainTithi.endsAt),
         section.nextTithi,
       ], (i) => tithiName(i, lang)),
     ),
-    _LinesRow(
+    SectionRow(
       label: l10n.nakshatra,
       lines: [
         for (final (k, span) in nakshatras.indexed)
@@ -678,11 +664,11 @@ List<Widget> panchangSectionRows({
           ),
       ],
     ),
-    _LinesRow(
+    SectionRow(
       label: l10n.yogaLabel,
       lines: spans('section-yoga', section.yogas, (i) => yogaName(i, lang)),
     ),
-    _LinesRow(
+    SectionRow(
       label: l10n.karanaLabel,
       lines: spans(
         'section-karana',
@@ -690,37 +676,37 @@ List<Widget> panchangSectionRows({
         (i) => karanaName(i, lang),
       ),
     ),
-    _LinesRow(
+    SectionRow(
       label: l10n.varaLabel,
       lines: [line('section-vara', weekdayName(day.date, lang))],
     ),
     gap,
-    _LinesRow(
+    SectionRow(
       label: l10n.lunarMonthLabel,
       lines: [line('section-month', monthName(month, lang))],
     ),
-    _LinesRow(
+    SectionRow(
       label: l10n.pakshaLabel,
       lines: [line('section-paksha', pakshaName(day.jainTithi.index, lang))],
     ),
-    _LinesRow(
+    SectionRow(
       label: l10n.gataLabel,
       lines: [GataLine(key: const Key('section-gata'), gata: section.gata)],
     ),
-    _LinesRow(
+    SectionRow(
       label: l10n.vikramSamvat,
       lines: [line('section-vikram', '${day.vikramSamvat}')],
     ),
-    _LinesRow(
+    SectionRow(
       label: l10n.viraNirvanaSamvat,
       lines: [line('section-vira-nirvana', '${day.viraNirvanaSamvat}')],
     ),
-    _LinesRow(
+    SectionRow(
       label: l10n.shakaSamvat,
       lines: [line('section-shaka', '${day.shakaSamvat}')],
     ),
     gap,
-    _LinesRow(
+    SectionRow(
       label: l10n.moonRashiLabel,
       lines: [
         for (final (k, span) in section.moonRashis.indexed)
@@ -733,7 +719,7 @@ List<Widget> panchangSectionRows({
           ),
       ],
     ),
-    _LinesRow(
+    SectionRow(
       label: l10n.sunRashiLabel,
       lines: [
         for (final (k, span) in section.sunRashis.indexed)
@@ -746,54 +732,4 @@ List<Widget> panchangSectionRows({
       ],
     ),
   ];
-}
-
-class _LinesRow extends StatelessWidget {
-  const _LinesRow({required this.label, required this.lines});
-
-  final String label;
-  final List<Widget> lines;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = Theme.of(context).extension<Pothi>() ?? Pothi.light;
-    return Container(
-      constraints: const BoxConstraints(minHeight: 48),
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: p.rule)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Both columns are Expanded, so every row's values end on the same edge.
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.bodyMedium!
-                    .copyWith(color: p.secondary),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 5,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                for (final (k, line) in lines.indexed)
-                  Padding(
-                    padding: EdgeInsets.only(top: k == 0 ? 0 : 4),
-                    child: line,
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

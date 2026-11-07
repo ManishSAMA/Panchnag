@@ -79,7 +79,6 @@ void main() {
 
       expect(glyphOfRow(tester, 'सूर्योदय'), NavpadGlyph.sunrise);
       expect(glyphOfRow(tester, 'सूर्यास्त'), NavpadGlyph.sunset);
-      expect(glyphOfRow(tester, 'नक्षत्र'), NavpadGlyph.nakshatra);
       final sunriseRow = find.ancestor(of: find.text('सूर्योदय'), matching: find.byType(TimeRow));
       final badge = find.descendant(of: sunriseRow, matching: find.byType(IconBadge));
       expect(tester.getSize(badge), const Size.square(36));
@@ -208,6 +207,7 @@ void main() {
     testWidgets('the band opens the Pachchakkhan tab', (tester) async {
       await openApp(tester, now: ist(2026, 10, 22));
 
+      await tester.ensureVisible(find.text('अगला: पुरिमड्ढ'));
       await tester.tap(find.text('अगला: पुरिमड्ढ'));
       await tester.pumpAndSettle();
 
@@ -215,12 +215,12 @@ void main() {
     });
   });
 
-  testWidgets("today's times list sunrise, sunset and the nakshatra with its pada", (tester) async {
+  testWidgets("today's times list sunrise and sunset; the nakshatra lives in the Panchang card", (tester) async {
     await openApp(tester, now: ist(2026, 10, 22));
 
     expect(find.text('सूर्योदय'), findsOneWidget);
     expect(find.text('सूर्यास्त'), findsOneWidget);
-    expect(find.textContaining(RegExp(r'^शतभिषा \(चरण [1-4]\), फिर पूर्वा भाद्रपद$')), findsOneWidget);
+    expect(find.ancestor(of: find.text('नक्षत्र'), matching: find.byType(TimeRow)), findsNothing);
   });
 
   group('notes', () {

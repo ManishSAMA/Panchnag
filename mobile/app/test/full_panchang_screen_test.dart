@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jainpanchang/engine/day_reading.dart';
 import 'package:jainpanchang/format/panchang_text.dart';
 import 'package:jainpanchang/location/city_time.dart';
 import 'package:jainpanchang/shared/panchang_symbols.dart';
@@ -8,9 +7,10 @@ import 'package:jainpanchang/theme/pothi.dart';
 import 'package:panchang_engine/panchang_engine.dart';
 
 import 'support/harness.dart';
+import 'support/section_lines.dart';
 
 final fullPage = find.byKey(const Key('full-panchang-screen'));
-final fullTile = find.byKey(const Key('tile-full-panchang'));
+final fullButton = find.byKey(const Key('today-full-panchang'));
 
 Future<void> openFullPanchang(
   WidgetTester tester, {
@@ -24,51 +24,10 @@ Future<void> openFullPanchang(
     phone: phone,
     textScale: textScale,
   );
-  await tester.ensureVisible(fullTile);
-  await tester.tap(fullTile);
+  await tester.ensureVisible(fullButton);
+  await tester.tap(fullButton);
   await tester.pumpAndSettle();
 }
-
-PanchangDay delhiDay([CivilDate date = const CivilDate(2026, 10, 22)]) =>
-    readDay(
-      DayRequest(
-        date: date,
-        lat: 28.6139,
-        lon: 77.2090,
-        timezone: 'Asia/Kolkata',
-      ),
-    );
-
-PanchangSection delhiSection([
-  CivilDate date = const CivilDate(2026, 10, 22),
-]) => readSection(
-  SectionRequest(
-    DayRequest(
-      date: date,
-      lat: 28.6139,
-      lon: 77.2090,
-      timezone: 'Asia/Kolkata',
-    ),
-  ),
-);
-
-/// The end of a section line as shown: the time, dated when off the day.
-String shownEnd(DateTime utc, CivilDate day, Lang lang) => instantPhrase(
-  roundDownToMinute(cityWall(utc, 'Asia/Kolkata')),
-  day: day,
-  lang: lang,
-);
-
-Finder line(String key) => find.byKey(Key(key));
-
-String lineText(WidgetTester tester, String key) => tester
-    .widget<RichText>(
-      find.descendant(of: line(key), matching: find.byType(RichText)).first,
-    )
-    .text
-    .toPlainText(includePlaceholders: false)
-    // Section lines glue times together with non-breaking spaces.
-    .replaceAll('\u00A0', ' ');
 
 String shownTime(DateTime utc) =>
     clockPhrase(roundDownToMinute(cityWall(utc, 'Asia/Kolkata')), Lang.hi);
@@ -86,7 +45,7 @@ void main() {
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
       expect(fullPage, findsNothing);
-      expect(fullTile, findsOneWidget);
+      expect(fullButton, findsOneWidget);
     },
   );
 
@@ -457,7 +416,8 @@ void main() {
       expect(find.text('क्षय तिथि'), findsOneWidget);
 
       await restartApp(tester, now: ist(2026, 10, 18));
-      await tester.tap(fullTile);
+      await tester.ensureVisible(fullButton);
+      await tester.tap(fullButton);
       await tester.pumpAndSettle();
       expect(find.text('वृद्धि तिथि · पहला दिन'), findsOneWidget);
     },

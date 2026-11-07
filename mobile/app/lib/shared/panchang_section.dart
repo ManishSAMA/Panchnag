@@ -10,6 +10,7 @@ import 'package:panchang_engine/panchang_engine.dart';
 import '../format/panchang_text.dart';
 import '../l10n/app_localizations.dart';
 import '../location/city_time.dart';
+import '../theme/navpad.dart';
 import '../theme/pothi.dart';
 import 'panchang_symbols.dart';
 
@@ -147,6 +148,89 @@ class GataLine extends StatelessWidget {
         },
       ),
       textAlign: TextAlign.end,
+    );
+  }
+}
+
+/// A Pothi group heading: red, with a red rule under it.
+class PothiHeading extends StatelessWidget {
+  const PothiHeading({super.key, required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = Theme.of(context).extension<Pothi>() ?? Pothi.light;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(
+            title,
+            style: NavpadType.displayGroup.copyWith(
+              color: p.accent,
+              fontSize: 23,
+            ),
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.only(top: 5),
+          height: 2,
+          color: p.accent,
+        ),
+      ],
+    );
+  }
+}
+
+/// A label on the left and its lines on the right, ruled underneath.
+class SectionRow extends StatelessWidget {
+  const SectionRow({super.key, required this.label, required this.lines});
+
+  final String label;
+  final List<Widget> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = Theme.of(context).extension<Pothi>() ?? Pothi.light;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 48),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: p.rule)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Both columns are Expanded, so every row's values end on the same edge.
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodyMedium!
+                    .copyWith(color: p.secondary),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (final (k, line) in lines.indexed)
+                  Padding(
+                    padding: EdgeInsets.only(top: k == 0 ? 0 : 4),
+                    child: line,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -32,7 +32,6 @@
   "sunrise": "Sunrise",
   "sunset": "Sunset",
   "nakshatra": "Nakshatra",
-  "nakshatraDetail": "{name} (pada {pada}), then {next}",
   "nakshatraWithPada": "{name} (pada {pada})",
   "until": "until {time}",
 
@@ -158,6 +157,8 @@
   "symbolEclipses": "Eclipses",
   "symbolsReferenceOnly": "Reference only · these symbols do not show calculated positions, aspects, or eclipses for the selected date.",
   "panchangHeading": "Panchang",
+  "todayPanchangHeading": "Today's Panchang",
+  "seeFullPanchang": "See full Panchang",
   "tithiLabel": "Tithi",
   "yogaLabel": "Yoga",
   "karanaLabel": "Karana",

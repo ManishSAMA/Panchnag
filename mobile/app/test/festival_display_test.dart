@@ -322,6 +322,7 @@ void main() {
       await tester.tap(nav('अगला दिन'));
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(parvaBand);
       await tester.tap(parvaBand);
       await tester.pumpAndSettle();
 
