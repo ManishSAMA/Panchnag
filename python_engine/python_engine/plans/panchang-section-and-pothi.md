@@ -70,7 +70,7 @@ Parity: extend `parity_fixtures.day_row` with the new fields, regenerate
 - No duplicates on Full Panchang: Sun & Moon drops its Nakshatra row (the pada moves to the section's current nakshatra, "चित्रा (चरण 1)"); Tithi & Lunar Month drops the Jain tithi's name and end, both month rows and both samvat rows, keeping the reference time, the start and the tithi sequence.
 - The Today button reads "पूरा पंचांग देखें" ("See full Panchang"), matching the page title, with an arrow icon.
 - Today's card (Phase 3) shows all five lines with the Pothi heading and rows on Today's background (the parchment and stitch wait for Phase 4); the times list's Nakshatra row goes, and the button replaces the Full Panchang tile.
-- Later: the WhatsApp share card becomes the full-day card (Example B: header, sun times + samvats, the day's Panchang, festivals and vrat, Choghadiya Amrit/Shubh/Labh/Chal for day and night), replacing the current card, with the app's 12-hour times.
+- Built 2026-11-07: the WhatsApp share card becomes the full-day card (Example B: header, sun times + samvats, the day's Panchang, festivals and vrat, Choghadiya Amrit/Shubh/Labh/Chal for day and night), replacing the current card, with the app's 12-hour times. Boxes like the picture (rounded, a red title tab), the greeting and big tithi kept on top, festivals as first name + count, the short caption kept.
 - The Tithi lines lead with the **Jain tithi** (at sunrise + 6 ghati, as the
   hero shows), then the tithi after it, each with its end.
 - Karana lists **every** Karana holding during the sunrise-to-sunrise day:

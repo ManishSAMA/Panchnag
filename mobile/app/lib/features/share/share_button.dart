@@ -49,10 +49,9 @@ class ShareButton extends ConsumerWidget {
     final view = View.of(context);
     final date = ref.read(selectedDateProvider);
     final rule = ref.read(sunriseRuleProvider);
-    final reading = await ref.read(
-      dayReadingProvider(DayRequest(date: date, lat: place.lat, lon: place.lon, timezone: place.timezone, rule: rule))
-          .future,
-    );
+    final request = DayRequest(date: date, lat: place.lat, lon: place.lon, timezone: place.timezone, rule: rule);
+    final reading = await ref.read(dayReadingProvider(request).future);
+    final section = await ref.read(sectionReadingProvider(SectionRequest(request)).future);
     final festivals = await ref.read(
       festivalYearProvider(
         FestivalRequest(
@@ -67,6 +66,7 @@ class ShareButton extends ConsumerWidget {
     );
     final content = shareCardContent(
       reading: reading,
+      section: section,
       month: lunarMonthOf(reading, ref.read(monthSystemProvider)),
       festivals: festivals,
       place: placeName,
