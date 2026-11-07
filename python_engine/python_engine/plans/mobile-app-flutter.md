@@ -16,7 +16,7 @@
 | Data | Calculated on the phone, fully offline, **any GPS location** | No city packs, no server, no network clause |
 | Date range | 2016-01-01 → 2040-12-31 | Supported and fully checked against Python |
 | Preset cities | Delhi, Ahmedabad, Mumbai, Surat, Palitana, Jaipur, Udaipur, Indore, Kolkata, Bengaluru, Chennai | Quick-pick list in the app, and the core of the parity tests |
-| Beta scope | Today, Month grid, Choghadiya, Festivals (all 3 Shwetambar profiles), Settings; English + Hindi | Same as the earlier plan's §1 |
+| Beta scope | Today, Month grid, **Pachchakkhan**, Choghadiya, Festivals (all 3 Shwetambar profiles), Settings; English + Hindi (no Gujarati) | Same as the earlier plan's §1. Pachchakkhan was added on 2026-10-27 after market research ([`mobile-market-screens.md`](mobile-market-screens.md)); it is calculated in Dart only. |
 | Deferred | Karana, Yoga, Hora, Rahu Kaal, Dainika Muhurta, PDF export, audio, vow trackers, accounts | Post-beta |
 | Repo layout | Same repo, new `mobile/` folder next to `python_engine/` | One CI run compares the two engines |
 | iOS builds (after the beta) | Cloud macOS (Codemagic or GitHub Actions macOS runner); a friend's Mac only for occasional Simulator checks | No Mac owned |
@@ -164,7 +164,7 @@ Each phase ends in a working, tested state. TDD throughout: Python with pytest, 
 - CI is already in place by now (§1a build order, step 1).
 
 ### Phase 4: Screens, one at a time
-- Order: Today (full) → Month grid with day bottom sheet → Choghadiya with live countdown → Settings (location by GPS or preset, profile, language, Purnimanta/Amanta).
+- Order: Today (full) → Month grid with day bottom sheet → Pachchakkhan tab (Dart-only `pachchakkhanTimes` first, test-driven) → Choghadiya with live countdown (opened from Today) → Settings (location by GPS or preset, profile, language, Purnimanta/Amanta).
 - For each screen: paper sketch, then widget tests, then build, then use it on the phone for a few days.
 - UI design, tokens and the clickable mockup: [`mobile-ui-design.md`](mobile-ui-design.md).
 

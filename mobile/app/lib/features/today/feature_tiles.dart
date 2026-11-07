@@ -5,8 +5,8 @@ import '../../l10n/app_localizations.dart';
 import '../../shared/navpad_icons.dart';
 import '../../theme/navpad.dart';
 
-/// Today's row of feature tiles under the hero, so a new reader sees what the
-/// app can do. Flat `surface` tiles with 12 dp corners: DESIGN.md's one
+/// Today's feature tiles under the hero, so a new reader sees what the app can
+/// do. Flat `surface` tiles with 12 dp corners: DESIGN.md's one
 /// exception to "no cards". The festivals tile waits until a `/festivals`
 /// route exists, so it never opens onto nothing.
 class FeatureTiles extends StatelessWidget {
@@ -19,8 +19,16 @@ class FeatureTiles extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final router = GoRouter.of(context);
-    final hasFestivals = router.configuration.findMatch(Uri.parse('/festivals')).isNotEmpty;
+    final hasFestivals = router.configuration
+        .findMatch(Uri.parse('/festivals'))
+        .isNotEmpty;
     final tiles = [
+      _Tile(
+        key: const Key('tile-full-panchang'),
+        glyph: NavpadGlyph.fullPanchang,
+        label: l10n.fullPanchang,
+        onTap: () => context.push('/full-panchang'),
+      ),
       _Tile(
         key: const Key('tile-choghadiya'),
         glyph: NavpadGlyph.ghatika,
@@ -40,14 +48,21 @@ class FeatureTiles extends StatelessWidget {
           label: l10n.tileFestivals,
           onTap: () => context.go('/festivals'),
         ),
-      _Tile(key: const Key('tile-month'), glyph: NavpadGlyph.monthcal, label: l10n.tabMonth, onTap: onMonth),
+      _Tile(
+        key: const Key('tile-month'),
+        glyph: NavpadGlyph.monthcal,
+        label: l10n.tabMonth,
+        onTap: onMonth,
+      ),
     ];
-    // Large text gets two tiles a row (four tiles from 1.3x, any from 1.6x), so the longest
-    // label keeps one line. Measured at the label's own 14 sp: Android scales text
-    // non-linearly, so scale(1) is not the factor the label gets.
+    // Three columns at ordinary text and two at enlarged text keep every label readable.
+    // Android scales text non-linearly, so measure at the label's own 14 sp.
     final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
-    final perRow = scale >= 1.6 || (scale >= 1.3 && tiles.length > 3) ? 2 : tiles.length;
-    final rows = [for (var i = 0; i < tiles.length; i += perRow) tiles.sublist(i, (i + perRow).clamp(0, tiles.length))];
+    final perRow = scale >= 1.3 ? 2 : 3;
+    final rows = [
+      for (var i = 0; i < tiles.length; i += perRow)
+        tiles.sublist(i, (i + perRow).clamp(0, tiles.length)),
+    ];
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 2, 12, 16),
       child: Column(
@@ -61,7 +76,8 @@ class FeatureTiles extends StatelessWidget {
                 children: [
                   for (final tile in row) Expanded(child: tile),
                   // A short last row keeps the tiles above it in their columns.
-                  for (var i = row.length; i < perRow; i++) const Expanded(child: SizedBox()),
+                  for (var i = row.length; i < perRow; i++)
+                    const Expanded(child: SizedBox()),
                 ],
               ),
             ),
@@ -72,7 +88,12 @@ class FeatureTiles extends StatelessWidget {
 }
 
 class _Tile extends StatelessWidget {
-  const _Tile({super.key, required this.glyph, required this.label, required this.onTap});
+  const _Tile({
+    super.key,
+    required this.glyph,
+    required this.label,
+    required this.onTap,
+  });
 
   final NavpadGlyph glyph;
   final String label;
@@ -105,7 +126,11 @@ class _Tile extends StatelessWidget {
                   Text(
                     label,
                     textAlign: TextAlign.center,
-                    style: text.labelLarge!.copyWith(color: n.ink, fontSize: 14, height: 1.15),
+                    style: text.labelLarge!.copyWith(
+                      color: n.ink,
+                      fontSize: 14,
+                      height: 1.15,
+                    ),
                   ),
                 ],
               ),

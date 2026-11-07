@@ -11,18 +11,29 @@ import 'support/harness.dart';
 
 Finder tile(String name) => find.byKey(Key('tile-$name'));
 
-NavpadGlyph glyphIn(WidgetTester tester, Finder finder) =>
-    tester.widget<NavpadIcon>(find.descendant(of: finder, matching: find.byType(NavpadIcon))).glyph;
+NavpadGlyph glyphIn(WidgetTester tester, Finder finder) => tester
+    .widget<NavpadIcon>(
+      find.descendant(of: finder, matching: find.byType(NavpadIcon)),
+    )
+    .glyph;
 
 /// The tiles under a router that has, or lacks, a `/festivals` route.
-Future<void> pumpTiles(WidgetTester tester, {required bool withFestivals}) async {
+Future<void> pumpTiles(
+  WidgetTester tester, {
+  required bool withFestivals,
+}) async {
   final router = GoRouter(
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => Scaffold(body: FeatureTiles(onMonth: () {})),
+        builder: (context, state) =>
+            Scaffold(body: FeatureTiles(onMonth: () {})),
       ),
-      if (withFestivals) GoRoute(path: '/festivals', builder: (context, state) => const Text('festivals screen')),
+      if (withFestivals)
+        GoRoute(
+          path: '/festivals',
+          builder: (context, state) => const Text('festivals screen'),
+        ),
     ],
   );
   addTearDown(router.dispose);
@@ -39,48 +50,78 @@ Future<void> pumpTiles(WidgetTester tester, {required bool withFestivals}) async
 }
 
 void main() {
-  testWidgets('sit under the hero, above the bands, each a flat surface tile with a picture over its name', (
+  testWidgets(
+    'sit under the hero, above the bands, each a flat surface tile with a picture over its name',
+    (tester) async {
+      await openApp(tester, now: ist(2026, 10, 22));
+      final tiles = find.byType(FeatureTiles);
+
+      expect(
+        tester.getTopLeft(tiles).dy,
+        greaterThan(
+          tester.getBottomLeft(find.byKey(const Key('today-hero-tithi'))).dy,
+        ),
+      );
+      expect(
+        tester.getBottomLeft(tiles).dy,
+        lessThanOrEqualTo(
+          tester
+              .getTopLeft(find.byKey(const Key('today-band-pachchakkhan')))
+              .dy,
+        ),
+      );
+      final expected = {
+        'choghadiya': (NavpadGlyph.ghatika, 'चौघड़िया'),
+        'pachchakkhan': (NavpadGlyph.sunpath, 'पच्चक्खाण'),
+        'month': (NavpadGlyph.monthcal, 'माह'),
+      };
+      for (final MapEntry(key: name, value: (glyph, label))
+          in expected.entries) {
+        expect(glyphIn(tester, tile(name)), glyph, reason: name);
+        expect(
+          find.descendant(of: tile(name), matching: find.text(label)),
+          findsOneWidget,
+        );
+        expect(tester.getSize(tile(name)).height, greaterThanOrEqualTo(76));
+        final icon = find.descendant(
+          of: tile(name),
+          matching: find.byType(NavpadIcon),
+        );
+        expect(tester.getSize(icon), const Size.square(28));
+        final text = find.descendant(
+          of: tile(name),
+          matching: find.text(label),
+        );
+        expect(
+          tester.getTopLeft(icon).dy,
+          lessThan(tester.getTopLeft(text).dy),
+        );
+        final box = find
+            .descendant(of: tile(name), matching: find.byType(Material))
+            .first;
+        final material = tester.widget<Material>(box);
+        final n = Theme.of(tester.element(box)).extension<Navpad>()!;
+        expect(material.color, n.surface);
+        expect(material.elevation, 0);
+        expect(
+          material.shape,
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        );
+      }
+    },
+  );
+
+  testWidgets('each tile is a button named for a screen reader', (
     tester,
   ) async {
-    await openApp(tester, now: ist(2026, 10, 22));
-    final tiles = find.byType(FeatureTiles);
-
-    expect(
-      tester.getTopLeft(tiles).dy,
-      greaterThan(tester.getBottomLeft(find.byKey(const Key('today-hero-tithi'))).dy),
-    );
-    expect(
-      tester.getBottomLeft(tiles).dy,
-      lessThanOrEqualTo(tester.getTopLeft(find.byKey(const Key('today-band-pachchakkhan'))).dy),
-    );
-    final expected = {
-      'choghadiya': (NavpadGlyph.ghatika, 'चौघड़िया'),
-      'pachchakkhan': (NavpadGlyph.sunpath, 'पच्चक्खाण'),
-      'month': (NavpadGlyph.monthcal, 'माह'),
-    };
-    for (final MapEntry(key: name, value: (glyph, label)) in expected.entries) {
-      expect(glyphIn(tester, tile(name)), glyph, reason: name);
-      expect(find.descendant(of: tile(name), matching: find.text(label)), findsOneWidget);
-      expect(tester.getSize(tile(name)).height, greaterThanOrEqualTo(76));
-      final icon = find.descendant(of: tile(name), matching: find.byType(NavpadIcon));
-      expect(tester.getSize(icon), const Size.square(28));
-      final text = find.descendant(of: tile(name), matching: find.text(label));
-      expect(tester.getTopLeft(icon).dy, lessThan(tester.getTopLeft(text).dy));
-      final box = find.descendant(of: tile(name), matching: find.byType(Material)).first;
-      final material = tester.widget<Material>(box);
-      final n = Theme.of(tester.element(box)).extension<Navpad>()!;
-      expect(material.color, n.surface);
-      expect(material.elevation, 0);
-      expect(material.shape, RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)));
-    }
-  });
-
-  testWidgets('each tile is a button named for a screen reader', (tester) async {
     await openApp(tester, now: ist(2026, 10, 22));
 
     for (final label in ['चौघड़िया', 'पच्चक्खाण', 'माह']) {
       final node = tester.getSemantics(
-        find.descendant(of: find.byType(FeatureTiles), matching: find.bySemanticsLabel(label)),
+        find.descendant(
+          of: find.byType(FeatureTiles),
+          matching: find.bySemanticsLabel(label),
+        ),
       );
       expect(node.flagsCollection.isButton, isTrue, reason: label);
     }
@@ -114,50 +155,99 @@ void main() {
 
     expect(find.text('अक्टूबर 2026'), findsOneWidget);
     expect(
-      find.descendant(of: find.byKey(const Key('month-day-panel')), matching: find.text('शुक्रवार, 23 अक्टूबर 2026')),
+      find.descendant(
+        of: find.byKey(const Key('month-day-panel')),
+        matching: find.text('शुक्रवार, 23 अक्टूबर 2026'),
+      ),
       findsOneWidget,
     );
   });
 
   testWidgets('are in English on an English phone', (tester) async {
-    await openApp(tester, now: ist(2026, 10, 22), phone: const Locale('en', 'US'));
+    await openApp(
+      tester,
+      now: ist(2026, 10, 22),
+      phone: const Locale('en', 'US'),
+    );
 
     for (final label in ['Choghadiya', 'Pachchakkhan', 'Month']) {
-      expect(find.descendant(of: find.byType(FeatureTiles), matching: find.text(label)), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(FeatureTiles),
+          matching: find.text(label),
+        ),
+        findsOneWidget,
+      );
     }
   });
 
   group('पर्व सूची', () {
-    testWidgets('is hidden while the app has no festivals screen', (tester) async {
+    testWidgets('is hidden while the app has no festivals screen', (
+      tester,
+    ) async {
       await pumpTiles(tester, withFestivals: false);
 
       expect(tile('festivals'), findsNothing);
       expect(tile('month'), findsOneWidget);
     });
 
-    testWidgets('shows the kalash and opens the festivals screen once it exists', (tester) async {
-      await pumpTiles(tester, withFestivals: true);
+    testWidgets(
+      'shows the kalash and opens the festivals screen once it exists',
+      (tester) async {
+        await pumpTiles(tester, withFestivals: true);
 
-      expect(glyphIn(tester, tile('festivals')), NavpadGlyph.kalash);
-      expect(find.descendant(of: tile('festivals'), matching: find.text('पर्व सूची')), findsOneWidget);
-      // In the mockup's order: choghadiya, pachchakkhan, festivals, month.
-      expect(tester.getCenter(tile('festivals')).dx, greaterThan(tester.getCenter(tile('pachchakkhan')).dx));
-      expect(tester.getCenter(tile('festivals')).dx, lessThan(tester.getCenter(tile('month')).dx));
+        expect(glyphIn(tester, tile('festivals')), NavpadGlyph.kalash);
+        expect(
+          find.descendant(
+            of: tile('festivals'),
+            matching: find.text('पर्व सूची'),
+          ),
+          findsOneWidget,
+        );
+        final tileKeys = tester
+            .widgetList<Widget>(
+              find.byWidgetPredicate(
+                (widget) =>
+                    widget.key is ValueKey<String> &&
+                    (widget.key! as ValueKey<String>).value.startsWith('tile-'),
+              ),
+            )
+            .map((widget) => (widget.key! as ValueKey<String>).value)
+            .toList();
+        expect(
+          tileKeys.indexOf('tile-festivals'),
+          greaterThan(tileKeys.indexOf('tile-pachchakkhan')),
+        );
+        expect(
+          tileKeys.indexOf('tile-festivals'),
+          lessThan(tileKeys.indexOf('tile-month')),
+        );
 
-      await tester.tap(tile('festivals'));
-      await tester.pumpAndSettle();
-      expect(find.text('festivals screen'), findsOneWidget);
-    });
+        await tester.tap(tile('festivals'));
+        await tester.pumpAndSettle();
+        expect(find.text('festivals screen'), findsOneWidget);
+      },
+    );
   });
 
   for (final scale in [1.3, 1.6]) {
-    testWidgets('at ${scale}x text every label fits, unclipped', (tester) async {
+    testWidgets('at ${scale}x text every label fits, unclipped', (
+      tester,
+    ) async {
       await openApp(tester, now: ist(2026, 10, 22), textScale: scale);
 
       expect(tester.takeException(), isNull);
       for (final name in ['choghadiya', 'pachchakkhan', 'month']) {
-        final label = find.descendant(of: tile(name), matching: find.byType(Text));
-        expect(tester.getRect(tile(name)).contains(tester.getRect(label).bottomRight - const Offset(1, 1)), isTrue);
+        final label = find.descendant(
+          of: tile(name),
+          matching: find.byType(Text),
+        );
+        expect(
+          tester
+              .getRect(tile(name))
+              .contains(tester.getRect(label).bottomRight - const Offset(1, 1)),
+          isTrue,
+        );
       }
     });
   }

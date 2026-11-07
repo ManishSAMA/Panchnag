@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import 'features/choghadiya/choghadiya_screen.dart';
 import 'features/festivals/festivals_screen.dart';
+import 'features/full_panchang/full_panchang_screen.dart';
+import 'features/full_panchang/symbol_guide_screen.dart';
 import 'features/location/city_picker_screen.dart';
 import 'features/month/month_screen.dart';
 import 'features/pachchakkhan/pachchakkhan_screen.dart';
@@ -16,23 +18,57 @@ import 'shared/navpad_icons.dart';
 GoRouter buildRouter({required bool hasLocation}) => GoRouter(
   initialLocation: hasLocation ? '/today' : '/location',
   routes: [
-    GoRoute(path: '/location', builder: (context, state) => const CityPickerScreen()),
+    GoRoute(
+      path: '/location',
+      builder: (context, state) => const CityPickerScreen(),
+    ),
     GoRoute(path: '/choghadiya', pageBuilder: choghadiyaPage),
-    GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+    GoRoute(
+      path: '/full-panchang',
+      builder: (context, state) => const FullPanchangScreen(),
+    ),
+    GoRoute(
+      path: '/panchang-symbols',
+      builder: (context, state) => const SymbolGuideScreen(),
+    ),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const SettingsScreen(),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => _TabShell(shell: shell),
       branches: [
         StatefulShellBranch(
-          routes: [GoRoute(path: '/today', builder: (context, state) => const TodayScreen())],
+          routes: [
+            GoRoute(
+              path: '/today',
+              builder: (context, state) => const TodayScreen(),
+            ),
+          ],
         ),
         StatefulShellBranch(
-          routes: [GoRoute(path: '/month', builder: (context, state) => const MonthScreen())],
+          routes: [
+            GoRoute(
+              path: '/month',
+              builder: (context, state) => const MonthScreen(),
+            ),
+          ],
         ),
         StatefulShellBranch(
-          routes: [GoRoute(path: '/pachchakkhan', builder: (context, state) => const PachchakkhanScreen())],
+          routes: [
+            GoRoute(
+              path: '/pachchakkhan',
+              builder: (context, state) => const PachchakkhanScreen(),
+            ),
+          ],
         ),
         StatefulShellBranch(
-          routes: [GoRoute(path: '/festivals', builder: (context, state) => const FestivalsScreen())],
+          routes: [
+            GoRoute(
+              path: '/festivals',
+              builder: (context, state) => const FestivalsScreen(),
+            ),
+          ],
         ),
       ],
     ),
@@ -51,16 +87,33 @@ class _TabShell extends StatelessWidget {
       body: shell,
       bottomNavigationBar: DecoratedBox(
         decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: Theme.of(context).dividerTheme.color!)),
+          border: Border(
+            top: BorderSide(color: Theme.of(context).dividerTheme.color!),
+          ),
         ),
         child: NavigationBar(
           selectedIndex: shell.currentIndex,
-          onDestinationSelected: (index) => shell.goBranch(index, initialLocation: index == shell.currentIndex),
+          onDestinationSelected: (index) => shell.goBranch(
+            index,
+            initialLocation: index == shell.currentIndex,
+          ),
           destinations: [
-            NavigationDestination(icon: const NavpadIcon(NavpadGlyph.sunrise), label: l10n.tabToday),
-            NavigationDestination(icon: const NavpadIcon(NavpadGlyph.monthcal), label: l10n.tabMonth),
-            NavigationDestination(icon: const NavpadIcon(NavpadGlyph.sunpath), label: l10n.tabPachchakkhan),
-            NavigationDestination(icon: const NavpadIcon(NavpadGlyph.kalash), label: l10n.tabFestivals),
+            NavigationDestination(
+              icon: const NavpadIcon(NavpadGlyph.sunrise),
+              label: l10n.tabToday,
+            ),
+            NavigationDestination(
+              icon: const NavpadIcon(NavpadGlyph.monthcal),
+              label: l10n.tabMonth,
+            ),
+            NavigationDestination(
+              icon: const NavpadIcon(NavpadGlyph.sunpath),
+              label: l10n.tabPachchakkhan,
+            ),
+            NavigationDestination(
+              icon: const NavpadIcon(NavpadGlyph.kalash),
+              label: l10n.tabFestivals,
+            ),
           ],
         ),
       ),

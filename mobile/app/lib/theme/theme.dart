@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'navpad.dart';
+import 'pothi.dart';
 
 /// The hand-built Material theme over the Navpad roles (DESIGN.md "Flutter
 /// mapping"). No seed and no dynamic colour.
@@ -31,14 +32,48 @@ ThemeData navpadTheme(Brightness brightness) {
   );
   const tabular = [FontFeature.tabularFigures()];
   final text = const TextTheme(
-    headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, height: 1.25),
-    titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, height: 1.3),
-    titleMedium: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, height: 1.3),
-    bodyLarge: TextStyle(fontSize: 17, fontWeight: FontWeight.w400, height: 1.35, fontFeatures: tabular),
-    bodyMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, height: 1.45, fontFeatures: tabular),
-    labelLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.3),
-    labelMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, height: 1.3),
-    labelSmall: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
+    headlineSmall: TextStyle(
+      fontSize: 24,
+      fontWeight: FontWeight.w700,
+      height: 1.25,
+    ),
+    titleLarge: TextStyle(
+      fontSize: 20,
+      fontWeight: FontWeight.w700,
+      height: 1.3,
+    ),
+    titleMedium: TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.w700,
+      height: 1.3,
+    ),
+    bodyLarge: TextStyle(
+      fontSize: 17,
+      fontWeight: FontWeight.w400,
+      height: 1.35,
+      fontFeatures: tabular,
+    ),
+    bodyMedium: TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w400,
+      height: 1.45,
+      fontFeatures: tabular,
+    ),
+    labelLarge: TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+      height: 1.3,
+    ),
+    labelMedium: TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      height: 1.3,
+    ),
+    labelSmall: TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      height: 1.3,
+    ),
   ).apply(fontFamily: 'Mukta', bodyColor: n.ink, displayColor: n.ink);
 
   return ThemeData(
@@ -48,7 +83,7 @@ ThemeData navpadTheme(Brightness brightness) {
     fontFamily: 'Mukta',
     scaffoldBackgroundColor: n.ground,
     materialTapTargetSize: MaterialTapTargetSize.padded,
-    extensions: [n],
+    extensions: [n, brightness == Brightness.light ? Pothi.light : Pothi.dark],
     dividerTheme: DividerThemeData(color: n.hair, thickness: 1, space: 1),
     appBarTheme: AppBarTheme(
       backgroundColor: n.ground,
@@ -64,10 +99,15 @@ ThemeData navpadTheme(Brightness brightness) {
       elevation: 0,
       indicatorColor: n.pill,
       labelTextStyle: WidgetStateProperty.resolveWith(
-        (states) => text.labelSmall!.copyWith(color: states.contains(WidgetState.selected) ? n.ink : n.ink2),
+        (states) => text.labelSmall!.copyWith(
+          color: states.contains(WidgetState.selected) ? n.ink : n.ink2,
+        ),
       ),
       iconTheme: WidgetStateProperty.resolveWith(
-        (states) => IconThemeData(size: 24, color: states.contains(WidgetState.selected) ? n.ink : n.ink2),
+        (states) => IconThemeData(
+          size: 24,
+          color: states.contains(WidgetState.selected) ? n.ink : n.ink2,
+        ),
       ),
     ),
     chipTheme: ChipThemeData(
@@ -76,7 +116,9 @@ ThemeData navpadTheme(Brightness brightness) {
       checkmarkColor: n.ink,
       labelStyle: text.labelLarge,
       side: BorderSide(color: n.ink3),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(20)),
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 8),
     ),
   );

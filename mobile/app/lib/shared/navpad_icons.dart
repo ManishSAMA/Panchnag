@@ -31,6 +31,7 @@ enum NavpadGlyph {
   /// Vrat.
   diya,
   monthcal,
+  fullPanchang,
   siddhashila,
 }
 
@@ -75,7 +76,9 @@ const _glyphs = <NavpadGlyph, List<_Part>>{
     ),
   ],
   NavpadGlyph.nakshatra: [
-    _Stroke('M11 3.5l1.7 4.6 4.6 1.7-4.6 1.7L11 16.1l-1.7-4.6-4.6-1.7 4.6-1.7z'),
+    _Stroke(
+      'M11 3.5l1.7 4.6 4.6 1.7-4.6 1.7L11 16.1l-1.7-4.6-4.6-1.7 4.6-1.7z',
+    ),
     _Dot(18.5, 17.5, 1.4),
     _Dot(5, 19.5, 1.1),
     _Dot(19.5, 4.5, 1),
@@ -88,7 +91,9 @@ const _glyphs = <NavpadGlyph, List<_Part>>{
   ],
   NavpadGlyph.sunpath: [_horizon, _dayPath, _Dot(12, 10, 2.6)],
   NavpadGlyph.kalash: [
-    _Stroke('M6.5 11.5h11M8 11.5c-2.4 2-2.4 6.4.2 9h7.6c2.6-2.6 2.6-7 .2-9M9.3 11.5V9.3h5.4v2.2'),
+    _Stroke(
+      'M6.5 11.5h11M8 11.5c-2.4 2-2.4 6.4.2 9h7.6c2.6-2.6 2.6-7 .2-9M9.3 11.5V9.3h5.4v2.2',
+    ),
     _Dot(12, 5.8, 2.2, filled: false),
     _Stroke('M10 8.6 6.8 6.7M14 8.6l3.2-1.9M8.2 15.5h7.6'),
   ],
@@ -108,10 +113,19 @@ const _glyphs = <NavpadGlyph, List<_Part>>{
   ],
   NavpadGlyph.monthcal: [
     _Box(3, 5, 18, 16, 2.5),
-    _Stroke('M3 9.5h18M8 3v4M16 3v4M13.8 12.6a3.4 3.4 0 1 0 1.6 5.6 3 3 0 0 1-1.6-5.6z'),
+    _Stroke(
+      'M3 9.5h18M8 3v4M16 3v4M13.8 12.6a3.4 3.4 0 1 0 1.6 5.6 3 3 0 0 1-1.6-5.6z',
+    ),
+  ],
+  NavpadGlyph.fullPanchang: [
+    _Stroke(
+      'M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1zM12 5v15M6 8h3M15 8h3M6 12h3M15 12h3',
+    ),
   ],
   NavpadGlyph.siddhashila: [
-    _Stroke('M4.5 12.5a7.5 7.5 0 0 0 15 0c-2 2.6-4.6 3.6-7.5 3.6s-5.5-1-7.5-3.6z'),
+    _Stroke(
+      'M4.5 12.5a7.5 7.5 0 0 0 15 0c-2 2.6-4.6 3.6-7.5 3.6s-5.5-1-7.5-3.6z',
+    ),
     _Dot(12, 7, 2),
   ],
 };
@@ -119,7 +133,14 @@ const _glyphs = <NavpadGlyph, List<_Part>>{
 /// One of the app's own icons. Silent to a screen reader unless [semanticLabel]
 /// is given, since the words beside it say the same thing.
 class NavpadIcon extends StatelessWidget {
-  const NavpadIcon(this.glyph, {super.key, this.size, this.color, this.strokeWidth = 1.8, this.semanticLabel});
+  const NavpadIcon(
+    this.glyph, {
+    super.key,
+    this.size,
+    this.color,
+    this.strokeWidth = 1.8,
+    this.semanticLabel,
+  });
 
   final NavpadGlyph glyph;
   final double? size;
@@ -130,8 +151,13 @@ class NavpadIcon extends StatelessWidget {
   final String? semanticLabel;
 
   @override
-  Widget build(BuildContext context) =>
-      _GlyphBox(parts: _glyphs[glyph]!, size: size, color: color, strokeWidth: strokeWidth, label: semanticLabel);
+  Widget build(BuildContext context) => _GlyphBox(
+    parts: _glyphs[glyph]!,
+    size: size,
+    color: color,
+    strokeWidth: strokeWidth,
+    label: semanticLabel,
+  );
 }
 
 /// The pachchakkhan icon with the sun where it stands at [fraction] of the day:
@@ -147,7 +173,11 @@ class SunPathIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final angle = math.pi * (1 - fraction.clamp(0, 1));
     return _GlyphBox(
-      parts: [_horizon, _dayPath, _Dot(12 + 8.5 * math.cos(angle), 18.5 - 8.5 * math.sin(angle), 2.6)],
+      parts: [
+        _horizon,
+        _dayPath,
+        _Dot(12 + 8.5 * math.cos(angle), 18.5 - 8.5 * math.sin(angle), 2.6),
+      ],
       size: size,
       color: color,
       strokeWidth: 1.8,
@@ -177,11 +207,21 @@ class _GlyphBox extends StatelessWidget {
     final side = size ?? theme.size ?? 24;
     final painted = CustomPaint(
       size: Size.square(side),
-      painter: _GlyphPainter(parts, color ?? theme.color ?? const Color(0xFF000000), strokeWidth),
+      painter: _GlyphPainter(
+        parts,
+        color ?? theme.color ?? const Color(0xFF000000),
+        strokeWidth,
+      ),
     );
     return label == null
         ? ExcludeSemantics(child: painted)
-        : Semantics(container: true, label: label, image: true, excludeSemantics: true, child: painted);
+        : Semantics(
+            container: true,
+            label: label,
+            image: true,
+            excludeSemantics: true,
+            child: painted,
+          );
   }
 }
 
@@ -210,14 +250,32 @@ class _GlyphPainter extends CustomPainter {
           canvas.drawPath(_dashed(svgPath(d), on, off), stroke);
         case _Dot(:final cx, :final cy, :final r, :final filled):
           canvas.drawCircle(Offset(cx, cy), r, filled ? fill : stroke);
-        case _Box(:final x, :final y, :final width, :final height, :final radius):
-          canvas.drawRRect(RRect.fromLTRBR(x, y, x + width, y + height, Radius.circular(radius)), stroke);
+        case _Box(
+          :final x,
+          :final y,
+          :final width,
+          :final height,
+          :final radius,
+        ):
+          canvas.drawRRect(
+            RRect.fromLTRBR(
+              x,
+              y,
+              x + width,
+              y + height,
+              Radius.circular(radius),
+            ),
+            stroke,
+          );
       }
     }
   }
 
   @override
-  bool shouldRepaint(_GlyphPainter old) => old.parts != parts || old.color != color || old.strokeWidth != strokeWidth;
+  bool shouldRepaint(_GlyphPainter old) =>
+      old.parts != parts ||
+      old.color != color ||
+      old.strokeWidth != strokeWidth;
 }
 
 Path _dashed(Path source, double on, double off) {
@@ -230,7 +288,9 @@ Path _dashed(Path source, double on, double off) {
   return dashes;
 }
 
-final _token = RegExp(r'[MmLlHhVvAaCcSsZz]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?');
+final _token = RegExp(
+  r'[MmLlHhVvAaCcSsZz]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?',
+);
 
 /// SVG path data as a [Path]: the commands the icon set uses (M L H V A C S Z,
 /// absolute and relative, with implicit repeats).
@@ -277,7 +337,11 @@ Path svgPath(String d) {
         path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, end.dx, end.dy);
         (lastControl, current) = (c2, end);
       case 'A':
-        final rx = next(), ry = next(), rotation = next(), large = next() != 0, sweep = next() != 0;
+        final rx = next(),
+            ry = next(),
+            rotation = next(),
+            large = next() != 0,
+            sweep = next() != 0;
         current = point();
         path.arcToPoint(
           current,

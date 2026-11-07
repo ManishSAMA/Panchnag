@@ -1,7 +1,17 @@
 ---
 name: Jain Panchang
-description: "Navpad Colours: the Siddhachakra's five colours, each with exactly one job, on a white ground."
+description: "Navpad Colours for daily navigation, with a stitched Pothi Almanac surface for complete daily reading."
 colors:
+  pothi-ground: "#F1E5C8"
+  pothi-ground-dark: "#171C29"
+  pothi-ink: "#243B64"
+  pothi-ink-dark: "#F2E8D5"
+  pothi-secondary: "#514A3C"
+  pothi-secondary-dark: "#C9BFA9"
+  pothi-accent: "#A33B2B"
+  pothi-accent-dark: "#E8957F"
+  pothi-rule: "#C9B98F"
+  pothi-rule-dark: "#665B49"
   ground: "#FFFFFF"
   surface: "#F4F5F8"
   surface2: "#E9ECF2"
@@ -43,6 +53,16 @@ colors:
   onGreen2-dark: "#D7EFDF"
   pill-dark: "#2E3A57"
 typography:
+  display-pothi:
+    fontFamily: "Tiro Devanagari Hindi, serif"
+    fontSize: "30sp"
+    fontWeight: 400
+    lineHeight: 1.1
+  display-pothi-section:
+    fontFamily: "Tiro Devanagari Hindi, serif"
+    fontSize: "23sp"
+    fontWeight: 400
+    lineHeight: 1.2
   display-hero:
     fontFamily: "Tiro Devanagari Hindi, serif"
     fontSize: "44sp"
@@ -150,7 +170,26 @@ spacing:
   md: "12dp"
   gutter: "18dp"
   section: "30dp"
+  pothi-section: "22dp"
+  pothi-left: "30dp"
+  pothi-stitch: "14dp"
 components:
+  pothi-group:
+    textColor: "{colors.pothi-accent}"
+    typography: "{typography.display-pothi-section}"
+  pothi-row:
+    backgroundColor: "{colors.pothi-ground}"
+    textColor: "{colors.pothi-ink}"
+    typography: "{typography.body-large}"
+    padding: "8dp 0"
+    height: "48dp"
+  pothi-section-link:
+    textColor: "{colors.pothi-accent}"
+    typography: "{typography.label-action}"
+    height: "48dp"
+  pothi-lunar-seal:
+    textColor: "{colors.pothi-accent}"
+    size: "54dp"
   band-red:
     backgroundColor: "{colors.red}"
     textColor: "{colors.onRed}"
@@ -306,30 +345,35 @@ components:
 
 **Creative North Star: "Navpad Colours"**
 
-The Siddhachakra's five colours, known by heart from Navpad Oli, are the app's only colour language, and each colour has exactly one job. White is the ground. Navy is ink, and it also carries the tithi and choghadiya. Red is parva and kalyanak. Yellow is the next pachchakkhan, only on today. Green is vrat and tapasya. A colour appears in exactly three forms: a solid full-bleed band, a filled list row, or a small festival icon (kalash, five lights, temple flag, diya) in a list or the Month grid. Nothing is tinted for decoration, so when a colour appears the reader already knows what it means.
+The Siddhachakra's five colours, known by heart from Navpad Oli, are the core app's colour language, and each colour has exactly one job. White is the ground. Navy is ink, and it also carries the tithi and choghadiya. Red is parva and kalyanak. Yellow is the next pachchakkhan, only on today. Green is vrat and tapasya. A colour appears in exactly three forms: a solid full-bleed band, a filled list row, or a small festival icon (kalash, five lights, temple flag, diya) in a list or the Month grid. Nothing is tinted for decoration, so when a colour appears the reader already knows what it means.
 
-The system is built for an elder reading in daylight at the start or end of a fast. Type is large: body is 16 sp or more, and the hero tithi is 44 sp Tiro Devanagari. Every touch target is 48 dp. The page is flat white with hairline lists and no cards, and the bands are the only weight on it. Material 3 supplies the structure (app bar, navigation bar, chips, segmented buttons, switches, sheets). Navpad supplies every colour, through a hand-built `ColorScheme` plus a `ThemeExtension`. Dynamic colour is never used.
+The system is built for an elder reading in daylight at the start or end of a fast. Type is large: body is 16 sp or more, and the hero tithi is 44 sp Tiro Devanagari. Every touch target is 48 dp. The core pages are flat white with hairline lists and no cards, and the bands are their only weight. Material 3 supplies the structure (app bar, navigation bar, chips, segmented buttons, switches, sheets). Navpad supplies every core colour, through a hand-built `ColorScheme` plus a `ThemeExtension`. Dynamic colour is never used.
 
-Dark mode is a first-class scheme, not an inversion. The ground becomes a deep navy-black (`ground-dark`), the five meanings keep their hues at slightly adjusted values, and the text on each band keeps its contrast.
+Dark mode is a first-class scheme, not an inversion. The core ground becomes a deep navy-black (`ground-dark`), the five meanings keep their hues at slightly adjusted values, and the text on each band keeps its contrast.
+
+Full Panchang and its Symbol Guide form a deliberate surface-specific world, **The Pothi Almanac**. A continuous warm-paper reading surface, indigo ink, vermilion rules, a stitched left edge, and a double-ring lunar seal translate the printed booklet without copying the competitor's red-and-gold tables. It retains Material navigation, bilingual labels, real engine values, and the same bundled typefaces. Dark mode uses deep indigo paper and light vermilion structure.
 
 **Key Characteristics:**
-- Five meaning colours, one job each, never decorative.
+- Five meaning colours, one job each, never decorative on core surfaces.
 - Full-bleed 58 dp bands in a fixed order: red, yellow, green, navy.
 - Hairline lists: 1 dp `hair` dividers, no cards, no shadows.
 - Tiro Devanagari for display, Mukta for everything else.
 - One right-aligned column of tabular times on every screen.
 - Selection is always the navy-tint `pill` plus a check, never a meaning colour.
+- Full Panchang is a stitched Pothi reading surface, not a dashboard of cards.
 
 ## Colors
 
-A white ground with navy ink, plus four saturated meaning colours that appear only as solid fills or marks.
+Core screens use a white ground with navy ink and four saturated meaning colours. Full Panchang instead uses its documented Pothi paper, ink, and vermilion roles.
 
 ### Primary
 - **Siddha Navy** (`navy`, `navy-dark`): ink, the choghadiya band, the current-choghadiya row, the filled button, the "on" switch track, the selected radio dot, onboarding progress dots, the 2 dp ring around today in the Month grid, and the dark part of the moon of the tithi. In light mode it is the same value as `ink`. Text on navy is `onNavy`, and secondary lines are `onNavy2`.
+- **Pothi Indigo** (`pothi-ink`, `pothi-ink-dark`): all primary text and reference symbols on Full Panchang and its Symbol Guide.
 
 ### Secondary
 - **Parva Red** (`red`, `red-dark`): parva and kalyanak only. It appears as the ongoing-parva band, the filled mahaparva row in Festivals, the kalash (mahaparva), five-lights (kalyanak) and temple-flag (parva) icons with their 8 % tinted circles, and the share card's ongoing-parva strip. Text on red is `onRed`, and secondary lines are `onRed2`.
 - **Pachchakkhan Yellow** (`yellow`, `yellow-dark`): only the next pachchakkhan, and only on today. It appears as the Today band, the Pachchakkhan hero, and the "next" row in the Pachchakkhan list. Text on yellow is navy (`onYellow`), never white, and secondary lines are `onYellow2`.
+- **Pothi Vermilion** (`pothi-accent`, `pothi-accent-dark`): section names, 2 dp group rules, section links, stitching, and the lunar seal on the Pothi surface. It is structural print ink, not a second parva signal.
 
 ### Tertiary
 - **Vrat Green** (`green`, `green-dark`): vrat and tapasya only. It appears as the vrat band and the diya icon with its 8 % tinted circle. Text on green is `onGreen`, and secondary lines are `onGreen2`.
@@ -343,12 +387,17 @@ A white ground with navy ink, plus four saturated meaning colours that appear on
 - **Ink 2** (`ink2`, `ink2-dark`): secondary text: sub-lines, date lines, legends, inactive nav labels.
 - **Ink 3** (`ink3`, `ink3-dark`): past or done times, outlines on chips, segmented buttons, outlined buttons and switches, and disabled icon buttons.
 - **Pill** (`pill`, `pill-dark`): the navy tint for the navigation-bar indicator and every selection: the selected filter chip, the selected segment, and the selected Month day.
+- **Pothi Paper** (`pothi-ground`, `pothi-ground-dark`): the continuous Full Panchang and Symbol Guide field.
+- **Pothi Secondary Ink** (`pothi-secondary`, `pothi-secondary-dark`): dates, samvat lines, subtitles, English translations, and the reference-only explanation.
+- **Pothi Rule** (`pothi-rule`, `pothi-rule-dark`): quiet 1 dp row dividers against the paper.
 
 ### Flutter mapping
-Build `ColorScheme` by hand for each brightness: `primary` = navy, `onPrimary` = onNavy, `secondaryContainer` = pill, `onSecondaryContainer` = ink, `surface` = ground, `onSurface` = ink, `onSurfaceVariant` = ink2, `outline` = ink3, `outlineVariant` = hair, `surfaceContainer` = surface, `surfaceContainerHighest` = surface2. With this mapping, the M3 NavigationBar indicator, FilterChip, SegmentedButton, Switch and FilledButton land on the built colours without per-widget overrides. Red, yellow and green and their `on`/`on2` pairs live only in the Navpad `ThemeExtension`. `ColorScheme.error` is required, but no widget in the build uses the error role, because denied-permission and limit states are neutral notes.
+Build `ColorScheme` by hand for each brightness: `primary` = navy, `onPrimary` = onNavy, `secondaryContainer` = pill, `onSecondaryContainer` = ink, `surface` = ground, `onSurface` = ink, `onSurfaceVariant` = ink2, `outline` = ink3, `outlineVariant` = hair, `surfaceContainer` = surface, `surfaceContainerHighest` = surface2. With this mapping, the M3 NavigationBar indicator, FilterChip, SegmentedButton, Switch and FilledButton land on the built colours without per-widget overrides. Red, yellow and green and their `on`/`on2` pairs live only in the Navpad `ThemeExtension`. The separate `Pothi` extension carries ground, ink, secondary, accent, and rule in light and dark. `ColorScheme.error` is required, but no widget in the build uses the error role, because denied-permission and limit states are neutral notes.
 
 ### Named Rules
-**The One Job Rule.** Each of the five colours has one meaning: navy for ink, tithi and choghadiya; red for parva and kalyanak; yellow for the next pachchakkhan; green for vrat. A colour never appears anywhere else, so it is never used for accent, emphasis, selection, error or brand decoration.
+**The One Job Rule.** On core surfaces, each of the five colours has one meaning: navy for ink, tithi and choghadiya; red for parva and kalyanak; yellow for the next pachchakkhan; green for vrat. A colour never appears anywhere else on those surfaces, so it is never used for accent, emphasis, selection, error or brand decoration. The explicitly documented Pothi reading surface is the only exception.
+
+**The Pothi Surface Rule.** Warm paper, indigo, secondary ink, vermilion, and quiet rules belong only to Full Panchang and its Symbol Guide. They never recolour Today, Month, Pachchakkhan, Festivals, Choghadiya, or Settings.
 
 **The Today-Only Yellow Rule.** Yellow appears only for the next pachchakkhan, and only when the date shown is today. On any other date there is no yellow band, no yellow row and no hero. After sunset the hero becomes a quiet ink row.
 
@@ -367,6 +416,8 @@ Build `ColorScheme` by hand for each brightness: `primary` = navy, `onPrimary` =
 
 ### Hierarchy
 - **Display hero** (Tiro 400, 44 sp, 1.12): the Today tithi. It has no label above it.
+- **Display Pothi** (Tiro 400, 30 sp): the Full Panchang tithi below its lunar seal.
+- **Display Pothi section** (Tiro 400, 23 sp): Full Panchang group names; Symbol Guide group names use 24 sp.
 - **Display brand** (Tiro 400, 40 sp, 1.15): the onboarding brand line and the share-card greeting.
 - **Display band** (Tiro 400, 36 sp, 1.1): the Pachchakkhan and Choghadiya hero names inside their grown bands.
 - **Display month / heading / group** (Tiro 400, 26 / 24 / 22 sp): the Month title, the day-sheet title and the Festivals date numerals, and the Festivals month headings. Group (22 sp) is also the day numeral of each upcoming date on Today.
@@ -381,32 +432,36 @@ Build `ColorScheme` by hand for each brightness: `primary` = navy, `onPrimary` =
 - **Cell day / cell tithi** (Mukta 600 19 sp / 400 12 sp): Month grid cells only. The kshaya/vriddhi corner flag is 11 sp/700.
 
 ### Named Rules
-**The Display-Is-Few Rule.** Tiro is only for the names of days, tithis, months and hero slots. Buttons, rows, labels and numbers are always Mukta.
+**The Display-Is-Few Rule.** Tiro is only for the names of days, tithis, months, hero slots, and Pothi section headings. Buttons, rows, labels and numbers are always Mukta.
 
 **The Time Column Rule.** Every number is tabular, and times sit in one right-aligned column on every screen, with the period word (सुबह, शाम) in a lighter weight before the value.
 
-**The Scale Rule.** Sizes are multiplied by the system `textScaler` up to 1.6×, and layouts are tested at 1.3×. No letter-spacing is applied anywhere.
+**The Scale Rule.** Sizes follow the system `textScaler`, with support required through 1.6× and layouts tested at 1.3×. Full Panchang is also tested at 2.0×. No letter-spacing is applied anywhere.
 
 ## Layout
 
-The app is a single column, 390 dp wide in the mockup, with an 18 dp gutter on text and lists. Bands and list dividers run full-bleed to both edges. The rhythm on Today is: 28 dp status bar, then the 64 dp top app bar, then the date navigator (48 dp prev/next buttons around a centred two-line date), then the hero (10 dp top, 18 dp bottom), then a row of feature tiles (12 dp side margin, 8 dp gaps, 16 dp below), then up to four bands stacked with 2 dp gaps, then sections. Each section starts 30 dp above its 20 sp heading. Lists start with a top hairline, and each row is at least 52 dp with 8 dp × 18 dp padding.
+The app is a single column, 390 dp wide in the mockup, with an 18 dp gutter on text and lists. Bands and list dividers run full-bleed to both edges. The rhythm on Today is: 28 dp status bar, then the 64 dp top app bar, then the date navigator (48 dp prev/next buttons around a centred two-line date), then the hero (10 dp top, 18 dp bottom), then a wrapping grid of feature tiles (12 dp side margin, 8 dp gaps, 16 dp below), then up to four bands stacked with 2 dp gaps, then sections. Each section starts 30 dp above its 20 sp heading. Lists start with a top hairline, and each row is at least 52 dp with 8 dp × 18 dp padding.
 
 The navigation bar is 80 dp, and the content scrolls under it. The Month grid has 7 equal columns inside a 10 dp side margin, with 64 dp cells drawn by hairlines. The Festivals list is a 58 dp date column next to a flexible festival column, and each festival line ends in a 48 dp bell button. Chip rows wrap, or scroll horizontally for filters, with 8 dp gaps.
+
+Full Panchang has no bottom tab bar. Its stitched rule sits 14 dp from the left; reading groups use a 30 dp left inset, 18 dp right inset, and 22 dp separation. A centred header leads to horizontally scrollable section links and continuous ruled rows with a 48 dp minimum height. The Symbol Guide uses 18 dp page gutters, one column on a phone, and two columns only at 500 dp or more with ordinary text scale.
 
 **The 48 dp Rule.** Every tappable element is at least 48 × 48 dp. Chips are 40 dp tall but add a 4 dp invisible hit extension above and below. Nothing is gesture-only.
 
 ## Elevation & Depth
 
-The system is flat. There are no shadows anywhere in the app. Depth comes from tone only: `surface` sits under `ground` for the navigation bar, notes and the docked day sheet, and a 1 dp `hair` line marks every edge. The only inset stroke is the 2 dp navy ring around today in the Month grid; it is a marker, not elevation. In Flutter, set `surfaceTintColor` to transparent and elevation to 0 on app bars, nav bars and sheets.
+The system is flat. There are no shadows anywhere in the app. On core screens, depth comes from tone only: `surface` sits under `ground` for the navigation bar, notes and the docked day sheet, and a 1 dp `hair` line marks every edge. Pothi uses paper tone and printed rules rather than elevation. The only inset stroke is the 2 dp navy ring around today in the Month grid; it is a marker, not elevation. In Flutter, set `surfaceTintColor` to transparent and elevation to 0 on app bars, nav bars and sheets.
 
 ### Named Rules
-**The Flat Page Rule.** Lists are hairline rows, never cards or shadows. The bands are the only weight on the page. The one deliberate exception is Today's row of feature tiles: flat `surface` blocks with 12 dp corners and no border or shadow, which show a new reader what the app can do. Nothing else becomes a card.
+**The Flat Page Rule.** Lists are hairline rows, never cards or shadows. On core pages the bands are the only weight. Today's feature tiles are flat `surface` blocks with 12 dp corners and no border or shadow. Full Panchang and Symbol Guide remain continuous ruled reading surfaces. Nothing becomes a floating card.
 
 **The Grow-Into-Header Rule.** Motion is the only depth device. When a time passes, the yellow band advances in place with a 200 ms cross-fade. Tapping a band grows it into the next screen's header with a Material container transform. With "Remove animations" on, both are instant.
 
+**The Almanac Wayfinding Rule.** A Pothi section link scrolls its group into view over 350 ms with an ease-out curve and briefly washes the destination in vermilion at 10 % opacity. With animations disabled, the scroll and highlight are instant.
+
 ## Shapes
 
-Edges are square wherever a meaning colour sits. Bands, filled rows and hero bands have 0 dp corners and run edge to edge. The one exception is the mahaparva row in Festivals, which is inset and has 4 dp corners. Controls are fully round: buttons and segmented groups are 24 dp, chips 20 dp, and the nav indicator and switch 16 dp. Notes have gentle 8 dp corners, and the focus ring has 4 dp corners. Feature tiles have 12 dp corners. Icons are 24 dp line icons with a 1.8 stroke and round caps and joins, drawn as vectors (see Icons).
+Edges are square wherever a meaning colour sits. Bands, filled rows and hero bands have 0 dp corners and run edge to edge. The one exception is the mahaparva row in Festivals, which is inset and has 4 dp corners. Controls are fully round: buttons and segmented groups are 24 dp, chips 20 dp, and the nav indicator and switch 16 dp. Notes have gentle 8 dp corners, and the focus ring has 4 dp corners. Feature tiles have 12 dp corners. Pothi rows are square and uncarded; its lunar seal is two concentric circular vermilion strokes. Icons are 24 dp line icons with a 1.8 stroke and round caps and joins, drawn as vectors (see Icons).
 
 ## Icons
 
@@ -418,7 +473,9 @@ The app draws its own line icons (`shared/navpad_icons.dart`: a `CustomPainter` 
 - **Sunpath:** the sun on its dashed day arc over the horizon. Used on the पच्चक्खाण tab and tile. In pachchakkhan rows and the yellow band and hero, the sun stands where it will be at that time, (time − sunrise) ÷ (sunset − sunrise): Navkarsi's sun has just risen, and Chauvihar's sits on the right-hand horizon. Rows without a time of their own show the plain icon.
 - **Kalash** (mahaparva), **five lights in a ring** (kalyanak), **temple flag** (parva) and **diya** (vrat): the festival icons, mapped in one place (`shared/festival_icon.dart`), in red, or green for vrat.
 - **Month calendar:** a calendar with a crescent. Used on the माह tab and tile.
+- **Full Panchang:** an open almanac. Used on the Full Panchang feature tile; a Material outlined book opens the Symbol Guide.
 - **Siddhashila:** the crescent with a dot above it; the app mark.
+- **Panchang reference symbols:** 38 custom vector glyphs in `shared/panchang_symbols.dart`: 11 planets/node, 12 zodiac signs, 9 aspects, 4 moon phases, and 2 eclipses. They use a 24-unit grid, 1.55 stroke, round caps and joins, and render at 32 dp in the guide. They are not Unicode text, an icon font, calculated positions, or event markers.
 
 Plain app actions keep their Material shapes: location, settings, back, chevrons and ✓.
 
@@ -430,16 +487,22 @@ Plain app actions keep their Material shapes: location, settings, back, chevrons
 The full-bleed colour band is the system's signature: a 58 dp tappable strip with a bold title and a sub-line on the left, a tabular value and a chevron on the right. They come in a fixed order: red (ongoing parva), yellow (next pachchakkhan with a countdown), green (vrat), navy (current choghadiya). Each appears only when it has content, and each opens its screen. The yellow and navy bands grow into 132 dp and 120 dp hero headers on Pachchakkhan and Choghadiya, with the name in 36 sp Tiro and the countdown right-aligned.
 
 ### Feature tiles (Today)
-Under the hero sits one row of flat `surface` tiles with 12 dp corners, no border and no shadow. Each is at least 76 dp tall, with a 28 dp icon over a centred 14 sp/600 label. In order:
+Under the hero sits a wrapping grid of flat `surface` tiles with 12 dp corners, no border and no shadow. Each is at least 76 dp tall, with a 28 dp icon over a centred 14 sp/600 label. In logical order:
+- पूरा पंचांग (fullPanchang) opens Full Panchang outside the tabs.
 - चौघड़िया (ghatika) opens Choghadiya.
 - पच्चक्खाण (sunpath) opens that tab.
 - पर्व सूची (kalash) opens the Festivals tab, and appears only once that route exists.
 - माह (monthcal) opens Month on the date shown.
 
-Each tile is a button named by its label. With four tiles they wrap two to a row from 1.3× text, and any number do from 1.6× (measured at the label's 14 sp, since Android scales text non-linearly).
+Each tile is a button named by its label. Three columns are used at ordinary text and two from 1.3× text, measured at the label's 14 sp because Android scales text non-linearly. A short final row keeps earlier tiles aligned to their columns.
 
 ### Moon of the tithi
-It is 58 dp beside the Today hero tithi, with the short tithi (12 sp/600, `ink2`) under it, and it is named to screen readers ("कृष्ण षष्ठी का चंद्रमा"). It is 11 dp before the short tithi in each Month cell, and 24 dp in the circle of the day panel's tithi row.
+It is 58 dp beside the Today hero tithi, with the short tithi (12 sp/600, `ink2`) under it, and it is named to screen readers ("कृष्ण षष्ठी का चंद्रमा"). It is 11 dp before the short tithi in each Month cell, and 24 dp in the circle of the day panel's tithi row. On Full Panchang the calculated 40 dp disc sits inside a 54 dp double-ring vermilion seal, centred above the 30 sp tithi, with the same semantic label.
+
+### Pothi Almanac (Full Panchang signature)
+A standard Material back app bar carries the Full Panchang title and a labelled book action for the Symbol Guide. The shared date navigator and place sit above the lunar seal, tithi, lunar month, and both samvats. Four underlined section links lead to Sun & Moon, Tithi & Lunar Month, Pachchakkhan, and Choghadiya; festivals follow below. Every supported value appears: both month systems and samvats, every tithi span, Jain start/end/reference, sunrise/sunset/next sunrise, nakshatra/pada/end, all pachchakkhan values, all 16 choghadiya periods, festivals/spans, and kshaya/vriddhi/boundary explanations. Completion times retain their existing rounding rules.
+
+The Symbol Guide groups all 38 drawn reference symbols under planets, zodiac, aspects, moon phases, and eclipses. Aspect degrees sit at the right. Hindi rows include their English names. A visible disclaimer says the guide does not show calculated positions, aspects, or eclipse events; unsupported competitor calculations are not added.
 
 ### Buttons
 - **Shape:** fully round (24 dp), 48 dp tall.
@@ -479,21 +542,24 @@ Seven hairline columns of 64 dp cells: the day number (19 sp/600), the 11 dp moo
 ## Do's and Don'ts
 
 ### Do:
-- **Do** give each colour exactly one job: navy for ink, tithi and choghadiya; red for parva and kalyanak; yellow for the next pachchakkhan on today; green for vrat.
-- **Do** show meaning colour only as a full-bleed band, a filled row, or a festival icon.
-- **Do** draw Jain ideas with the app's own icons, and keep Material shapes for plain actions.
+- **Do** give each core colour exactly one job: navy for ink, tithi and choghadiya; red for parva and kalyanak; yellow for the next pachchakkhan on today; green for vrat.
+- **Do** show meaning colour only as a full-bleed band, a filled row, or a festival icon on core surfaces.
+- **Do** draw Jain ideas and reference symbols with the app's own vectors, and keep Material shapes for plain actions.
 - **Do** use the `pill` tint with a ✓ for every selected state.
 - **Do** put navy (`onYellow`) text on yellow, and white text on red, green and navy.
 - **Do** keep every time in one right-aligned, tabular column.
 - **Do** carry every meaning in words, icons or weight as well as colour.
-- **Do** keep touch targets at 48 dp and body text at 16 sp or larger, and scale with `textScaler` up to 1.6×.
+- **Do** keep touch targets at 48 dp and body text at 16 sp or larger, and scale with `textScaler` through at least 1.6×.
 - **Do** bundle Mukta and Tiro Devanagari Hindi as assets.
+- **Do** confine the warm-paper Pothi palette and stitched edge to Full Panchang and its Symbol Guide.
+- **Do** label the Symbol Guide as reference-only and show only supported engine calculations on Full Panchang.
 
 ### Don't:
 - **Don't** use yellow on any date other than today, or for anything but the next pachchakkhan, including text selection.
 - **Don't** colour choghadiya quality, kshaya or vriddhi red or green.
 - **Don't** put lists in cards or give any surface a shadow. Today's feature tiles are the only card-like blocks, and they stay flat.
 - **Don't** use Material You dynamic colour or `ColorScheme.fromSeed`.
-- **Don't** use saffron, beige or any colour outside the Navpad set.
+- **Don't** introduce saffron, beige, or other unapproved colours on Navpad surfaces; Pothi uses only its documented tokens.
 - **Don't** set Tiro Devanagari on buttons, rows or numbers.
 - **Don't** put a label or eyebrow above the hero tithi.
+- **Don't** present reference glyphs as calculated planetary positions, active aspects, or eclipse events.
