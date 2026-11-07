@@ -18,6 +18,7 @@ import '../../shared/day_notes.dart';
 import '../../shared/festival_icon.dart';
 import '../../shared/festival_mark.dart';
 import '../../shared/moon_phase.dart';
+import '../../shared/pothi_page.dart';
 import '../../shared/navpad_icons.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../shared/panchang_section.dart';
@@ -100,8 +101,7 @@ class _FullPanchangScreenState extends ConsumerState<FullPanchangScreen> {
           ),
         ],
       ),
-      body: CustomPaint(
-        painter: _StitchPainter(color: p.accent),
+      body: PothiPage(
         child: SingleChildScrollView(
           controller: _scroll,
           padding: const EdgeInsets.only(bottom: 28),
@@ -165,7 +165,7 @@ class _AlmanacHeader extends StatelessWidget {
     final p = Theme.of(context).extension<Pothi>() ?? Pothi.light;
     final tithi = tithiName(reading.jainTithi.index, lang);
     return Container(
-      margin: const EdgeInsets.fromLTRB(30, 8, 18, 0),
+      margin: const EdgeInsets.fromLTRB(8, 8, 18, 0),
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
         border: Border(
@@ -478,7 +478,7 @@ class _Group extends StatelessWidget {
           ? Duration.zero
           : const Duration(milliseconds: 250),
       color: highlighted ? p.accent.withValues(alpha: 0.10) : null,
-      margin: const EdgeInsets.only(left: 30, right: 18, top: 22),
+      margin: const EdgeInsets.only(left: 8, right: 18, top: 22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -576,31 +576,6 @@ class _Row extends StatelessWidget {
       ),
     );
   }
-}
-
-class _StitchPainter extends CustomPainter {
-  const _StitchPainter({required this.color});
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.4
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      const Offset(14, 0),
-      Offset(14, size.height),
-      paint..strokeWidth = 1.8,
-    );
-    paint.strokeWidth = 1.4;
-    for (var y = 18.0; y < size.height; y += 32) {
-      canvas.drawLine(Offset(9, y), Offset(19, y + 4), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_StitchPainter old) => old.color != color;
 }
 
 /// The पंचांग section, in the user's order: tithi, nakshatra, yoga, karana

@@ -10,6 +10,7 @@ import '../../settings/settings_store.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../theme/navpad.dart';
 import '../location/gps_action.dart';
+import '../../shared/pothi_page.dart';
 
 /// Settings (mobile-ui-design.md §3 · Settings). Each choice applies at once
 /// to the open tabs. The theme joins with dark mode (Phase 6), reminders and
@@ -25,7 +26,7 @@ class SettingsScreen extends ConsumerWidget {
     final text = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings)),
-      body: ListView(
+      body: PothiPage(child: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
           SectionHeading(title: l10n.settingsLocation),
@@ -94,7 +95,7 @@ class SettingsScreen extends ConsumerWidget {
               child: Text(line, style: text.bodyLarge!.copyWith(color: n.ink2)),
             ),
         ],
-      ),
+      )),
     );
   }
 }

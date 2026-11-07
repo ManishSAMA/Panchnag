@@ -51,7 +51,7 @@ Future<void> pumpTiles(
 
 void main() {
   testWidgets(
-    'sit under the hero, above the bands, each a flat surface tile with a picture over its name',
+    'sit under the hero, above the bands, each a parchment tile edged with a hairline, a picture over its name',
     (tester) async {
       await openApp(tester, now: ist(2026, 10, 22));
       final tiles = find.byType(FeatureTiles);
@@ -105,7 +105,7 @@ void main() {
         expect(material.elevation, 0);
         expect(
           material.shape,
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: n.hair)),
         );
       }
     },

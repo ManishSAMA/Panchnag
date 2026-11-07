@@ -24,8 +24,13 @@ const greeting = 'जय जिनेन्द्र';
 
 typedef CardStrip = ({String title, String subtitle});
 
-/// One element's words, after the zodiac signs (Rashi indices) drawn before them.
-typedef CardPart = ({String text, List<int> rashis});
+/// When an element ends: a date when it falls on a later day ("21 अक्टूबर, "
+/// or empty), then the clock phrase, each glued with non-breaking spaces.
+typedef CardEnd = ({String dated, String time});
+
+/// One element: its name after the zodiac signs (Rashi indices) drawn before
+/// it, and when it ends (none for the last named element).
+typedef CardPart = ({String name, CardEnd? end, List<int> rashis});
 
 /// A line of the पंचांग box: an element and the one after it.
 typedef CardLine = ({String key, String label, List<CardPart> parts});
@@ -50,6 +55,7 @@ final class ShareCardContent {
     required this.samvats,
     required this.panchangTitle,
     required this.thenWord,
+    required this.untilWord,
     required this.panchang,
     required this.festivalsTitle,
     required this.choghadiyaTitle,
@@ -71,6 +77,7 @@ final class ShareCardContent {
   final List<String> samvats;
   final String panchangTitle,
       thenWord,
+      untilWord,
       festivalsTitle,
       choghadiyaTitle,
       dayLabel,
@@ -110,11 +117,19 @@ ShareCardContent shareCardContent({
   );
   // Non-breaking spaces keep a date, a time, its period word and तक together:
   // a wrap never strands "AM" or "तक".
-  String until(String name, DateTime utc) =>
-      '$name ${l10n.until(instantPhrase(wall(utc), day: reading.date, lang: lang)).replaceAll(' ', '\u00A0')}';
-
-  CardPart part(String text, [List<int> rashis = const []]) =>
-      (text: text, rashis: rashis);
+  String glued(String words) => words.replaceAll(' ', '\u00A0');
+  CardPart until(String name, DateTime utc, [List<int> rashis = const []]) {
+    final at = wall(utc);
+    final date = CivilDate(at.year, at.month, at.day);
+    return (
+      name: name,
+      end: (
+        dated: date == reading.date ? '' : glued('${shortDate(date, lang)}, '),
+        time: glued(clockPhrase(at, lang)),
+      ),
+      rashis: rashis,
+    );
+  }
   final [yoga, nextYoga, ...] = section.yogas;
   final [karana, nextKarana, ...] = section.karanas;
   final [moon, nextMoon, ...] = section.moonRashis;
@@ -165,22 +180,19 @@ ShareCardContent shareCardContent({
     ],
     panchangTitle: l10n.panchangHeading,
     thenWord: l10n.thenWord,
+    untilWord: l10n.untilWord,
     panchang: [
       (
         key: 'tithi',
         label: l10n.tithiLabel,
         parts: [
-          part(
-            until(
-              tithiName(reading.jainTithi.index, lang),
-              reading.jainTithi.endsAt,
-            ),
+          until(
+            tithiName(reading.jainTithi.index, lang),
+            reading.jainTithi.endsAt,
           ),
-          part(
-            until(
-              tithiName(section.nextTithi.index, lang),
-              section.nextTithi.endsAt,
-            ),
+          until(
+            tithiName(section.nextTithi.index, lang),
+            section.nextTithi.endsAt,
           ),
         ],
       ),
@@ -188,21 +200,17 @@ ShareCardContent shareCardContent({
         key: 'nakshatra',
         label: l10n.nakshatra,
         parts: [
-          part(
-            until(
-              l10n.nakshatraWithPada(
-                nakshatraName(nakshatra.index, lang),
-                nakshatra.pada,
-              ),
-              nakshatra.endsAt,
+          until(
+            l10n.nakshatraWithPada(
+              nakshatraName(nakshatra.index, lang),
+              nakshatra.pada,
             ),
+            nakshatra.endsAt,
             nakshatraRashis(nakshatra.index),
           ),
-          part(
-            until(
-              nakshatraName(section.nextNakshatra.index, lang),
-              section.nextNakshatra.endsAt,
-            ),
+          until(
+            nakshatraName(section.nextNakshatra.index, lang),
+            section.nextNakshatra.endsAt,
             nakshatraRashis(section.nextNakshatra.index),
           ),
         ],
@@ -211,24 +219,24 @@ ShareCardContent shareCardContent({
         key: 'yoga',
         label: l10n.yogaLabel,
         parts: [
-          part(until(yogaName(yoga.index, lang), yoga.endsAt)),
-          part(until(yogaName(nextYoga.index, lang), nextYoga.endsAt)),
+          until(yogaName(yoga.index, lang), yoga.endsAt),
+          until(yogaName(nextYoga.index, lang), nextYoga.endsAt),
         ],
       ),
       (
         key: 'karana',
         label: l10n.karanaLabel,
         parts: [
-          part(until(karanaName(karana.index, lang), karana.endsAt)),
-          part(until(karanaName(nextKarana.index, lang), nextKarana.endsAt)),
+          until(karanaName(karana.index, lang), karana.endsAt),
+          until(karanaName(nextKarana.index, lang), nextKarana.endsAt),
         ],
       ),
       (
         key: 'moon-rashi',
         label: l10n.moonRashiLabel,
         parts: [
-          part(until(rashiName(moon.index, lang), moon.endsAt)),
-          part(rashiName(nextMoon.index, lang)),
+          until(rashiName(moon.index, lang), moon.endsAt),
+          (name: rashiName(nextMoon.index, lang), end: null, rashis: const []),
         ],
       ),
     ],
@@ -400,7 +408,7 @@ class ShareCard extends StatelessWidget {
                     child: Column(
                       children: [
                         for (final line in c.panchang)
-                          _CardLineView(line: line, thenWord: c.thenWord),
+                          _CardLineView(line: line, thenWord: c.thenWord, untilWord: c.untilWord, lang: c.lang),
                       ],
                     ),
                   ),
@@ -540,17 +548,22 @@ class _Box extends StatelessWidget {
 }
 
 /// A label, then its element and the one after it: "द्वितीया … तक, फिर तृतीया … तक".
+/// As in the app's Panchang section, each time is slightly bold and तक and
+/// फिर stand back in the quieter ink.
 class _CardLineView extends StatelessWidget {
-  const _CardLineView({required this.line, required this.thenWord});
+  const _CardLineView({required this.line, required this.thenWord, required this.untilWord, required this.lang});
 
   final CardLine line;
-  final String thenWord;
+  final String thenWord, untilWord;
+  final Lang lang;
 
   @override
   Widget build(BuildContext context) {
     final n = Theme.of(context).extension<Navpad>()!;
     final style = Theme.of(context).textTheme.bodyMedium!
         .copyWith(color: n.ink, height: 1.35);
+    final quiet = TextStyle(color: n.ink2);
+    const strong = TextStyle(fontWeight: FontWeight.w600);
     return Padding(
       key: Key('share-line-${line.key}'),
       padding: const EdgeInsets.symmetric(vertical: 3),
@@ -570,7 +583,7 @@ class _CardLineView extends StatelessWidget {
                 style: style,
                 children: [
                   for (final (k, part) in line.parts.indexed) ...[
-                    if (k > 0) TextSpan(text: ', $thenWord '),
+                    if (k > 0) TextSpan(text: ', $thenWord ', style: quiet),
                     for (final (g, rashi) in part.rashis.indexed)
                       WidgetSpan(
                         alignment: PlaceholderAlignment.middle,
@@ -585,7 +598,22 @@ class _CardLineView extends StatelessWidget {
                           ),
                         ),
                       ),
-                    TextSpan(text: part.text),
+                    TextSpan(text: part.name),
+                    ...switch ((part.end, lang)) {
+                      (null, _) => const <InlineSpan>[],
+                      (final end?, Lang.hi) => [
+                        TextSpan(text: ' ${end.dated}'),
+                        TextSpan(text: end.time, style: strong),
+                        const TextSpan(text: '\u00A0'),
+                        TextSpan(text: untilWord, style: quiet),
+                      ],
+                      (final end?, Lang.en) => [
+                        const TextSpan(text: ' '),
+                        TextSpan(text: untilWord, style: quiet),
+                        TextSpan(text: '\u00A0${end.dated}'),
+                        TextSpan(text: end.time, style: strong),
+                      ],
+                    },
                   ],
                 ],
               ),

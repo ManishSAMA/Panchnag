@@ -12,6 +12,7 @@ import 'package:jainpanchang/l10n/app_localizations.dart';
 import 'package:jainpanchang/location/city_time.dart';
 import 'package:jainpanchang/settings/settings_store.dart';
 import 'package:jainpanchang/shared/panchang_symbols.dart';
+import 'package:jainpanchang/theme/navpad.dart';
 import 'package:panchang_engine/panchang_engine.dart';
 
 import 'support/harness.dart';
@@ -92,6 +93,21 @@ String _rawLine(WidgetTester tester, String name) => tester
     )
     .text
     .toPlainText(includePlaceholders: false);
+
+/// A line's text spans, each with its own style.
+List<TextSpan> _spans(WidgetTester tester, String name) {
+  final root = tester
+      .widget<RichText>(
+        find.descendant(of: find.byKey(Key('share-line-$name')), matching: find.byType(RichText)).last,
+      )
+      .text;
+  final spans = <TextSpan>[];
+  root.visitChildren((span) {
+    if (span is TextSpan && span.text != null) spans.add(span);
+    return true;
+  });
+  return spans;
+}
 
 String _line(WidgetTester tester, String name) =>
     _rawLine(tester, name).replaceAll('\u00A0', ' ');
@@ -257,6 +273,27 @@ void main() {
           _line(tester, 'moon-rashi'),
           '${until(rashiName(moon.index, Lang.hi), moon.endsAt)}, फिर ${rashiName(nextMoon.index, Lang.hi)}',
         );
+      },
+    );
+
+    testWidgets(
+      'sets each time slightly bold and तक and फिर in the quieter ink, as the app does',
+      (tester) async {
+        const date = CivilDate(2026, 10, 22);
+        final day = _day(date);
+        final section = _section(date);
+        await _pumpCard(tester, await _content(date));
+        final spans = _spans(tester, 'tithi');
+        TextStyle? styleOf(String text) => spans.firstWhere((s) => s.text == text).style;
+        final quiet = Navpad.light.ink2;
+
+        for (final utc in [day.jainTithi.endsAt, section.nextTithi.endsAt]) {
+          final clock = _clock(utc, Lang.hi).replaceAll(' ', '\u00A0');
+          expect(styleOf(clock)!.fontWeight, FontWeight.w600, reason: clock);
+        }
+        expect(spans.where((s) => s.text == 'तक').map((s) => s.style!.color), everyElement(quiet));
+        expect(styleOf(', फिर ')!.color, quiet);
+        expect(styleOf(tithiName(day.jainTithi.index, Lang.hi))?.fontWeight, isNot(FontWeight.w600));
       },
     );
 
@@ -431,7 +468,7 @@ void main() {
       },
     );
 
-    testWidgets('keeps the light Navpad ground on a dark phone', (
+    testWidgets('keeps the light parchment ground on a dark phone', (
       tester,
     ) async {
       tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
@@ -441,7 +478,7 @@ void main() {
       final ground = tester.widget<ColoredBox>(
         find.byKey(const Key('share-card')),
       );
-      expect(ground.color, const Color(0xFFFFFFFF));
+      expect(ground.color, const Color(0xFFF1E5C8));
     });
   });
 

@@ -28,6 +28,7 @@ import '../month/month_state.dart';
 import 'feature_tiles.dart';
 import 'panchang_card.dart';
 import '../share/share_button.dart';
+import '../../shared/pothi_page.dart';
 import 'today_state.dart';
 
 /// Today (mobile-ui-design.md §3.1). The festival bands and the upcoming
@@ -53,7 +54,7 @@ class TodayScreen extends ConsumerWidget {
         title: _LocationButton(city: city),
         actions: const [ShareButton(), SettingsButton()],
       ),
-      body: SingleChildScrollView(
+      body: PothiPage(child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -68,7 +69,7 @@ class TodayScreen extends ConsumerWidget {
             },
           ],
         ),
-      ),
+      )),
     );
   }
 }
@@ -208,11 +209,9 @@ class _DayView extends ConsumerWidget {
           ),
         ChoghadiyaBand(date: reading.date, topGap: bands.isNotEmpty ? 2 : firstGap),
         SectionHeading(title: isToday ? l10n.timesToday : l10n.timesOfDay),
-        const ListTop(),
         _clockRow(l10n.sunrise, NavpadGlyph.sunrise, reading.sunrise, wall, lang),
         _clockRow(l10n.sunset, NavpadGlyph.sunset, reading.sunset, wall, lang),
         SectionHeading(title: l10n.pachchakkhan, linkLabel: l10n.seeAll, onLink: () => context.go('/pachchakkhan')),
-        const ListTop(),
         for (final p in reading.pachchakkhan.completions)
           pachchakkhanRow(
             l10n: l10n,

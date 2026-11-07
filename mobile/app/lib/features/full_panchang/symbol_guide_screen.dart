@@ -4,6 +4,7 @@ import '../../format/panchang_text.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/panchang_symbols.dart';
 import '../../theme/pothi.dart';
+import '../../shared/pothi_page.dart';
 
 class SymbolGuideScreen extends StatelessWidget {
   const SymbolGuideScreen({super.key});
@@ -28,7 +29,7 @@ class SymbolGuideScreen extends StatelessWidget {
         foregroundColor: p.ink,
         title: Text(l10n.symbolGuide),
       ),
-      body: SingleChildScrollView(
+      body: PothiPage(child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(18, 10, 18, 28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -77,7 +78,7 @@ class SymbolGuideScreen extends StatelessWidget {
             ],
           ],
         ),
-      ),
+      )),
     );
   }
 }

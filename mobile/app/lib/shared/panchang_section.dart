@@ -154,26 +154,35 @@ class GataLine extends StatelessWidget {
 
 /// A Pothi group heading: red, with a red rule under it.
 class PothiHeading extends StatelessWidget {
-  const PothiHeading({super.key, required this.title});
+  const PothiHeading({super.key, required this.title, this.trailing});
 
   final String title;
+
+  /// Sits at the title's end, above the rule (a heading's link).
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     final p = Theme.of(context).extension<Pothi>() ?? Pothi.light;
+    final heading = Semantics(
+      header: true,
+      child: Text(
+        title,
+        style: NavpadType.displayGroup.copyWith(
+          color: p.accent,
+          fontSize: 23,
+        ),
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Semantics(
-          header: true,
-          child: Text(
-            title,
-            style: NavpadType.displayGroup.copyWith(
-              color: p.accent,
-              fontSize: 23,
-            ),
+        switch (trailing) {
+          null => heading,
+          final trailing => Row(
+            children: [Expanded(child: heading), trailing],
           ),
-        ),
+        },
         Container(
           margin: const EdgeInsets.only(top: 5),
           height: 2,

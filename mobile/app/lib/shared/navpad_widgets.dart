@@ -5,6 +5,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../theme/navpad.dart';
+import 'panchang_section.dart';
 
 enum BandColour { red, yellow, green, navy }
 
@@ -147,7 +148,9 @@ class Note extends StatelessWidget {
   }
 }
 
-/// A section heading, 30 dp below what precedes it, with an optional link.
+/// A section heading, 30 dp below what precedes it: a red Pothi title over
+/// its red rule, with an optional link at its end. The rule is the list's top
+/// line, so no hairline follows it.
 class SectionHeading extends StatelessWidget {
   const SectionHeading({super.key, required this.title, this.linkLabel, this.onLink});
 
@@ -159,22 +162,21 @@ class SectionHeading extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 30, 6, 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Semantics(header: true, child: Text(title, style: text.titleLarge)),
-          ),
-          if (linkLabel != null)
-            TextButton(
-              onPressed: onLink,
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.onSurface,
-                textStyle: text.labelLarge!.copyWith(decoration: TextDecoration.underline),
-              ),
-              child: Text(linkLabel!),
+      padding: const EdgeInsets.fromLTRB(18, 30, 18, 4),
+      child: PothiHeading(
+        title: title,
+        trailing: switch (linkLabel) {
+          null => null,
+          final label => TextButton(
+            onPressed: onLink,
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.onSurface,
+              textStyle: text.labelLarge!.copyWith(decoration: TextDecoration.underline),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
             ),
-        ],
+            child: Text(label),
+          ),
+        },
       ),
     );
   }

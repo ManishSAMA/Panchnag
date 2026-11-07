@@ -14,6 +14,7 @@ import '../../shared/settings_button.dart';
 import '../../theme/navpad.dart';
 import '../month/month_state.dart';
 import '../today/today_state.dart';
+import '../../shared/pothi_page.dart';
 import 'festival_state.dart';
 
 /// Festivals (mobile-ui-design.md §3 · Festivals): the rest of this year from
@@ -30,7 +31,7 @@ class FestivalsScreen extends ConsumerWidget {
     final festivals = festivalYear(ref, today.year);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.tabFestivals), actions: const [SettingsButton()]),
-      body: Column(
+      body: PothiPage(child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _FilterChips(selected: filter),
@@ -42,7 +43,7 @@ class FestivalsScreen extends ConsumerWidget {
                   ),
           ),
         ],
-      ),
+      )),
     );
   }
 }

@@ -95,7 +95,7 @@ ThemeData navpadTheme(Brightness brightness) {
     ),
     navigationBarTheme: NavigationBarThemeData(
       height: 80,
-      backgroundColor: n.surface,
+      backgroundColor: n.ground,
       elevation: 0,
       indicatorColor: n.pill,
       labelTextStyle: WidgetStateProperty.resolveWith(
@@ -110,6 +110,23 @@ ThemeData navpadTheme(Brightness brightness) {
         ),
       ),
     ),
+    // Navy is a fill (filled button, bands); a control with no fill of its
+    // own draws in ink, which is navy by day and still reads on navy paper.
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: ButtonStyle(
+        foregroundColor: WidgetStatePropertyAll(n.ink),
+        side: WidgetStatePropertyAll(BorderSide(color: n.ink3)),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: ButtonStyle(foregroundColor: WidgetStatePropertyAll(n.ink)),
+    ),
+    radioTheme: RadioThemeData(
+      fillColor: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.selected) ? n.ink : n.ink3,
+      ),
+    ),
+    progressIndicatorTheme: ProgressIndicatorThemeData(color: n.ink),
     chipTheme: ChipThemeData(
       backgroundColor: n.ground,
       selectedColor: n.pill,

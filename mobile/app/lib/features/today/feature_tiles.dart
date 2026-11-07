@@ -105,7 +105,7 @@ class _Tile extends StatelessWidget {
       child: Material(
         color: n.surface,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: n.hair)),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,

@@ -14,6 +14,7 @@ import '../../shared/navpad_icons.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../theme/navpad.dart';
 import '../today/today_state.dart';
+import '../../shared/pothi_page.dart';
 import 'choghadiya_state.dart';
 
 /// Choghadiya (mobile-ui-design.md §3 · Choghadiya): a full screen opened from
@@ -41,7 +42,7 @@ class ChoghadiyaScreen extends ConsumerWidget {
     final reading = watchChoghadiya(ref, city: city, date: date, now: now);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.choghadiyaTitle)),
-      body: SingleChildScrollView(
+      body: PothiPage(child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -53,7 +54,7 @@ class ChoghadiyaScreen extends ConsumerWidget {
               _ChoghadiyaView(reading: reading, now: now, timezone: city.timezone),
           ],
         ),
-      ),
+      )),
     );
   }
 }
@@ -111,10 +112,8 @@ class _ChoghadiyaView extends StatelessWidget {
             ),
           ),
         SectionHeading(title: l10n.dayHeading),
-        const ListTop(),
         for (var i = 0; i < 8; i++) row(i),
         SectionHeading(title: l10n.nightHeading),
-        const ListTop(),
         for (var i = 8; i < 16; i++) row(i),
         const SizedBox(height: 24),
         Note(icon: NoteIcon.info, title: l10n.choghadiyaFootnoteTitle, body: l10n.choghadiyaFootnote),

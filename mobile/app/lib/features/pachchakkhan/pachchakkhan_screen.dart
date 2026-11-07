@@ -16,6 +16,7 @@ import '../../shared/pachchakkhan_row.dart';
 import '../../shared/settings_button.dart';
 import '../../theme/navpad.dart';
 import '../today/today_state.dart';
+import '../../shared/pothi_page.dart';
 
 /// Pachchakkhan (mobile-ui-design.md §3 · Pachchakkhan). The date is Today's:
 /// both tabs read [selectedDateProvider]. After Avaddh the hero counts down to
@@ -41,7 +42,7 @@ class PachchakkhanScreen extends ConsumerWidget {
     );
     return Scaffold(
       appBar: AppBar(title: Text(l10n.tabPachchakkhan), actions: const [SettingsButton()]),
-      body: SingleChildScrollView(
+      body: PothiPage(child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -56,7 +57,7 @@ class PachchakkhanScreen extends ConsumerWidget {
             },
           ],
         ),
-      ),
+      )),
     );
   }
 }
@@ -143,7 +144,6 @@ class _PachchakkhanView extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
           child: Text(l10n.completionNote, style: text.bodyMedium!.copyWith(color: n.ink2)),
         ),
-        const ListTop(),
         for (final p in reading.pachchakkhan.completions)
           pachchakkhanRow(
             l10n: l10n,
@@ -157,7 +157,6 @@ class _PachchakkhanView extends ConsumerWidget {
             state: stateOf(p.at, isNext: phase is NextCompletion && phase.kind == p.kind),
           ),
         SectionHeading(title: l10n.eveningHeading),
-        const ListTop(),
         pachchakkhanRow(
           l10n: l10n,
           name: l10n.eveningNames,
@@ -166,7 +165,6 @@ class _PachchakkhanView extends ConsumerWidget {
           state: stateOf(reading.pachchakkhan.evening, isNext: phase is EveningDeadline),
         ),
         SectionHeading(title: l10n.otherHeading),
-        const ListTop(),
         TimeRow(icon: _sunpath, name: l10n.mutthiSahiyam, subtitle: l10n.noFixedTime, time: ''),
         TimeRow(icon: _sunpath, name: l10n.ekasanuBiyasanu, subtitle: l10n.withATimeAbove, time: ''),
         TimeRow(
@@ -216,17 +214,27 @@ class _Hero extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 132),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         child: ExcludeSemantics(
-          child: Row(
-            children: [
-              IconBadge(
-                background: n.onYellow.withAlpha(0x14),
-                foreground: n.onYellow,
-                child: SunPathIcon(fraction: sun),
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: label),
-              if (!stacked) ...[const SizedBox(width: 12), countdown],
-            ],
+          child: LayoutBuilder(
+            builder: (context, box) => Row(
+              children: [
+                IconBadge(
+                  background: n.onYellow.withAlpha(0x14),
+                  foreground: n.onYellow,
+                  child: SunPathIcon(fraction: sun),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: label),
+                // Capped so the name always keeps half the row; the clock
+                // shrinks instead on a narrow page at large text.
+                if (!stacked) ...[
+                  const SizedBox(width: 12),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: box.maxWidth / 2),
+                    child: FittedBox(fit: BoxFit.scaleDown, child: countdown),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),

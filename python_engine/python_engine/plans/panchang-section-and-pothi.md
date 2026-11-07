@@ -61,6 +61,7 @@ Parity: extend `parity_fixtures.day_row` with the new fields, regenerate
 2. Full Panchang section.
 3. Today card + button.
 4. Pothi palette, stitch and spacing on every screen; dull connective words.
+   Built 2026-11-07: the parchment / navy-paper palette (contrast checked in `theme_test.dart`), both bars on the page ground, `PothiPage` (stitch, 22 dp binding) on every screen but the Month grid, `SectionHeading` drawn as a `PothiHeading` (the doubled `ListTop` hairline removed), hairline-edged tiles, and the share card on parchment. The Pachchakkhan hero's countdown is capped at half the row so the narrower page never squeezes the name.
 
 ## Settled follow-ups (2026-11-07)
 

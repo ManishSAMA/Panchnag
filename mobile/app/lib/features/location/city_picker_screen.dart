@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/city_name.dart';
 import '../../location/cities.dart';
 import '../../location/location_store.dart';
+import '../../shared/pothi_page.dart';
 import 'gps_action.dart';
 
 /// The onboarding location step: the preset cities as chips. Opened on first
@@ -29,7 +30,7 @@ class CityPickerScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(automaticallyImplyLeading: context.canPop()),
-      body: SafeArea(
+      body: PothiPage(child: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
           children: [
@@ -56,7 +57,7 @@ class CityPickerScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 }
