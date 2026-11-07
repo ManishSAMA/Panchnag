@@ -39,6 +39,26 @@ PanchangDay readDay(DayRequest request) => const PanchangEngine().day(
   sunriseRule: request.rule,
 );
 
+/// A day's Panchang section (yoga, karana, Rashis, gata), read apart from
+/// the day so the Month tab never pays for it.
+final class SectionRequest {
+  const SectionRequest(this.day);
+
+  final DayRequest day;
+
+  @override
+  bool operator ==(Object other) => other is SectionRequest && other.day == day;
+
+  @override
+  int get hashCode => day.hashCode;
+}
+
+PanchangSection readSection(SectionRequest request) => const PanchangEngine().section(
+  location: Location(lat: request.day.lat, lon: request.day.lon, timezone: request.day.timezone),
+  date: request.day.date,
+  sunriseRule: request.day.rule,
+);
+
 /// Every day of a Gregorian month, for the Month tab; plain values, like [DayRequest].
 final class MonthRequest {
   const MonthRequest({

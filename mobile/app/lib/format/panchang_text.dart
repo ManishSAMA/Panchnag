@@ -70,6 +70,60 @@ const _nakshatraEn = [
 
 String nakshatraName(int index, Lang lang) => (lang == Lang.hi ? _nakshatraHi : _nakshatraEn)[index - 1];
 
+/// The Rashis (0 = Mesha) a nakshatra's four padas fall in: one, or two when
+/// a sign boundary splits it. A pada is 3°20′, a ninth of a Rashi.
+List<int> nakshatraRashis(int nakshatra) {
+  final (first, last) = ((4 * (nakshatra - 1)) ~/ 9, (4 * nakshatra - 1) ~/ 9);
+  return first == last ? [first] : [first, last];
+}
+
+const _yogaHi = [
+  'विष्कुम्भ', 'प्रीति', 'आयुष्मान', 'सौभाग्य', 'शोभन', 'अतिगण्ड', 'सुकर्मा', 'धृति', 'शूल', //
+  'गण्ड', 'वृद्धि', 'ध्रुव', 'व्याघात', 'हर्षण', 'वज्र', 'सिद्धि', 'व्यतीपात', 'वरीयान', //
+  'परिघ', 'शिव', 'सिद्ध', 'साध्य', 'शुभ', 'शुक्ल', 'ब्रह्म', 'इन्द्र', 'वैधृति',
+];
+const _yogaEn = [
+  'Vishkumbha', 'Priti', 'Ayushman', 'Saubhagya', 'Shobhana', 'Atiganda', 'Sukarma', 'Dhriti', 'Shula', //
+  'Ganda', 'Vriddhi', 'Dhruva', 'Vyaghata', 'Harshana', 'Vajra', 'Siddhi', 'Vyatipata', 'Variyana', //
+  'Parigha', 'Shiva', 'Siddha', 'Sadhya', 'Shubha', 'Shukla', 'Brahma', 'Indra', 'Vaidhriti',
+];
+
+/// [index] is 1-27, from Vishkumbha.
+String yogaName(int index, Lang lang) => (lang == Lang.hi ? _yogaHi : _yogaEn)[index - 1];
+
+const _movableKaranaHi = ['बव', 'बालव', 'कौलव', 'तैतिल', 'गर', 'वणिज', 'विष्टि (भद्रा)'];
+const _movableKaranaEn = ['Bava', 'Balava', 'Kaulava', 'Taitila', 'Garaja', 'Vanija', 'Vishti (Bhadra)'];
+const _fixedKaranaHi = {1: 'किंस्तुघ्न', 58: 'शकुनि', 59: 'चतुष्पद', 60: 'नाग'};
+const _fixedKaranaEn = {1: 'Kimstughna', 58: 'Shakuni', 59: 'Chatushpada', 60: 'Naga'};
+
+/// [index] is 1-60 within the lunar month: Kimstughna, the seven movable
+/// karanas eight times over, then Shakuni, Chatushpada and Naga.
+String karanaName(int index, Lang lang) =>
+    (lang == Lang.hi ? _fixedKaranaHi : _fixedKaranaEn)[index] ??
+    (lang == Lang.hi ? _movableKaranaHi : _movableKaranaEn)[(index - 2) % 7];
+
+const _rashiHi = ['मेष', 'वृषभ', 'मिथुन', 'कर्क', 'सिंह', 'कन्या', 'तुला', 'वृश्चिक', 'धनु', 'मकर', 'कुंभ', 'मीन'];
+const _rashiEn = [
+  'Mesha (Aries)', 'Vrishabha (Taurus)', 'Mithuna (Gemini)', 'Karka (Cancer)', 'Simha (Leo)', 'Kanya (Virgo)', //
+  'Tula (Libra)', 'Vrishchika (Scorpio)', 'Dhanu (Sagittarius)', 'Makara (Capricorn)', 'Kumbha (Aquarius)', //
+  'Meena (Pisces)',
+];
+
+/// [index] is 0-11, from Mesha.
+String rashiName(int index, Lang lang) => (lang == Lang.hi ? _rashiHi : _rashiEn)[index];
+
+/// The paksha of a tithi (1-30).
+String pakshaName(int tithi, Lang lang) => switch (lang) {
+  Lang.hi => tithi <= 15 ? 'शुक्ल' : 'कृष्ण',
+  Lang.en => tithi <= 15 ? 'Shukla' : 'Krishna',
+};
+
+/// The Rashi the Sun is in and the day of its stay: "तुला 21 गते".
+String gataText(Gata gata, Lang lang) => switch (lang) {
+  Lang.hi => '${rashiName(gata.rashi, lang)} ${gata.day} गते',
+  Lang.en => '${rashiName(gata.rashi, lang)}, day ${gata.day}',
+};
+
 String pachchakkhanName(TimedPachchakkhan kind, Lang lang) => switch ((kind, lang)) {
   (TimedPachchakkhan.navkarsi, Lang.hi) => 'नवकारसी',
   (TimedPachchakkhan.porsi, Lang.hi) => 'पोरसी',

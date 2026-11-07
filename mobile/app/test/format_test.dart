@@ -52,6 +52,56 @@ void main() {
     }
   });
 
+  group('the Panchang section (plans/panchang-section-and-pothi.md)', () {
+    test('yoga names follow panchang.py, 27 in order', () {
+      expect(yogaName(1, Lang.hi), 'विष्कुम्भ');
+      expect(yogaName(20, Lang.hi), 'शिव');
+      expect(yogaName(27, Lang.hi), 'वैधृति');
+      expect(yogaName(17, Lang.en), 'Vyatipata');
+      for (final lang in Lang.values) {
+        expect({for (var i = 1; i <= 27; i++) yogaName(i, lang)}, hasLength(27));
+      }
+    });
+
+    test('karana: Kimstughna first, seven movable karanas eight times, then Shakuni, Chatushpada, Naga', () {
+      expect(karanaName(1, Lang.hi), 'किंस्तुघ्न');
+      expect(
+        [for (var i = 2; i <= 8; i++) karanaName(i, Lang.hi)],
+        ['बव', 'बालव', 'कौलव', 'तैतिल', 'गर', 'वणिज', 'विष्टि (भद्रा)'],
+      );
+      expect(karanaName(9, Lang.hi), 'बव');
+      expect(karanaName(57, Lang.en), 'Vishti (Bhadra)');
+      expect([for (var i = 58; i <= 60; i++) karanaName(i, Lang.en)], ['Shakuni', 'Chatushpada', 'Naga']);
+    });
+
+    test('rashi names, 0 = Mesha: Hindi alone, English with the western sign', () {
+      expect(rashiName(0, Lang.hi), 'मेष');
+      expect(rashiName(6, Lang.hi), 'तुला');
+      expect(rashiName(6, Lang.en), 'Tula (Libra)');
+      expect(rashiName(11, Lang.en), 'Meena (Pisces)');
+    });
+
+    test('a nakshatra shows the one or two Rashis its four padas fall in', () {
+      expect(nakshatraRashis(1), [0]); // Ashwini: Mesha
+      expect(nakshatraRashis(3), [0, 1]); // Krittika: pada 1 in Mesha, 2-4 in Vrishabha
+      expect(nakshatraRashis(5), [1, 2]); // Mrigashirsha
+      expect(nakshatraRashis(27), [11]); // Revati: Meena
+      expect([for (var n = 1; n <= 27; n++) nakshatraRashis(n)].where((r) => r.length == 2), hasLength(9));
+    });
+
+    test('paksha from the tithi', () {
+      expect(pakshaName(1, Lang.hi), 'शुक्ल');
+      expect(pakshaName(15, Lang.hi), 'शुक्ल');
+      expect(pakshaName(16, Lang.hi), 'कृष्ण');
+      expect(pakshaName(30, Lang.en), 'Krishna');
+    });
+
+    test("the gata line names the Rashi and the day of the Sun's stay", () {
+      expect(gataText((rashi: 6, day: 21), Lang.hi), 'तुला 21 गते');
+      expect(gataText((rashi: 6, day: 21), Lang.en), 'Tula (Libra), day 21');
+    });
+  });
+
   test('pachchakkhan names', () {
     expect(TimedPachchakkhan.values.map((p) => pachchakkhanName(p, Lang.hi)), [
       'नवकारसी',
@@ -110,12 +160,18 @@ void main() {
 
   group('choghadiya (mobile-ui-design.md §3 · Choghadiya)', () {
     test('names in Hindi and as the Python engine spells them in English', () {
-      expect([for (final c in Choghadiya.values) choghadiyaName(c, Lang.hi)], [
-        'उद्वेग', 'चर', 'लाभ', 'अमृत', 'काल', 'शुभ', 'रोग', //
-      ]);
-      expect([for (final c in Choghadiya.values) choghadiyaName(c, Lang.en)], [
-        'Udveg', 'Char', 'Labh', 'Amrit', 'Kaal', 'Shubh', 'Rog', //
-      ]);
+      expect(
+        [for (final c in Choghadiya.values) choghadiyaName(c, Lang.hi)],
+        [
+          'उद्वेग', 'चर', 'लाभ', 'अमृत', 'काल', 'शुभ', 'रोग', //
+        ],
+      );
+      expect(
+        [for (final c in Choghadiya.values) choghadiyaName(c, Lang.en)],
+        [
+          'Udveg', 'Char', 'Labh', 'Amrit', 'Kaal', 'Shubh', 'Rog', //
+        ],
+      );
     });
 
     test('quality has a glyph, never just a colour', () {

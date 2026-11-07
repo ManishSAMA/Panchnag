@@ -20,6 +20,7 @@ import '../../shared/festival_mark.dart';
 import '../../shared/moon_phase.dart';
 import '../../shared/navpad_icons.dart';
 import '../../shared/navpad_widgets.dart';
+import '../../shared/panchang_section.dart';
 import '../../theme/navpad.dart';
 import '../../theme/pothi.dart';
 import '../choghadiya/choghadiya_screen.dart';
@@ -36,6 +37,7 @@ class FullPanchangScreen extends ConsumerStatefulWidget {
 class _FullPanchangScreenState extends ConsumerState<FullPanchangScreen> {
   final _scroll = ScrollController();
   final _sectionKeys = <String, GlobalKey>{
+    'panchang': GlobalKey(),
     'sun': GlobalKey(),
     'tithi': GlobalKey(),
     'pachchakkhan': GlobalKey(),
@@ -75,17 +77,14 @@ class _FullPanchangScreenState extends ConsumerState<FullPanchangScreen> {
     final p = Theme.of(context).extension<Pothi>() ?? Pothi.light;
     final city = ref.watch(locationProvider)!;
     final date = ref.watch(selectedDateProvider);
-    final reading = ref.watch(
-      dayReadingProvider(
-        DayRequest(
-          date: date,
-          lat: city.lat,
-          lon: city.lon,
-          timezone: city.timezone,
-          rule: ref.watch(sunriseRuleProvider),
-        ),
-      ),
+    final request = DayRequest(
+      date: date,
+      lat: city.lat,
+      lon: city.lon,
+      timezone: city.timezone,
+      rule: ref.watch(sunriseRuleProvider),
     );
+    final reading = ref.watch(dayReadingProvider(request));
     return Scaffold(
       key: const Key('full-panchang-screen'),
       backgroundColor: p.ground,
@@ -121,6 +120,7 @@ class _FullPanchangScreenState extends ConsumerState<FullPanchangScreen> {
                   _AlmanacHeader(reading: value, timezone: city.timezone),
                   _SectionLinks(onSelect: _showSection),
                   _FullDay(
+                    request: request,
                     reading: value,
                     timezone: city.timezone,
                     sectionKeys: _sectionKeys,
@@ -257,12 +257,14 @@ class _SectionLinks extends StatelessWidget {
 
 class _FullDay extends ConsumerWidget {
   const _FullDay({
+    required this.request,
     required this.reading,
     required this.timezone,
     required this.sectionKeys,
     required this.destination,
   });
 
+  final DayRequest request;
   final PanchangDay reading;
   final String timezone;
   final Map<String, GlobalKey> sectionKeys;
@@ -270,6 +272,9 @@ class _FullDay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final section = ref
+        .watch(sectionReadingProvider(SectionRequest(request)))
+        .value;
     final l10n = AppLocalizations.of(context);
     final lang = langOf(context);
     DateTime wall(DateTime utc) => roundDownToMinute(cityWall(utc, timezone));
@@ -287,6 +292,32 @@ class _FullDay extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        KeyedSubtree(
+          key: const Key('full-panchang-section'),
+          child: _Group(
+            id: 'panchang',
+            title: l10n.panchangHeading,
+            sectionKeys: sectionKeys,
+            destination: destination,
+            rows: const [],
+            children: switch (section) {
+              null => const [
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ],
+              final value => panchangSectionRows(
+                l10n: l10n,
+                lang: lang,
+                day: reading,
+                section: value,
+                month: lunarMonthOf(reading, ref.watch(monthSystemProvider)),
+                timezone: timezone,
+              ),
+            },
+          ),
+        ),
         _Group(
           id: 'sun',
           title: l10n.sunMoonHeading,
@@ -617,4 +648,180 @@ class _StitchPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_StitchPainter old) => old.color != color;
+}
+
+/// The पंचांग section, in the user's order: tithi, nakshatra, yoga, karana
+/// and weekday; then month, paksha, gata and the samvats; then the Rashis.
+List<Widget> panchangSectionRows({
+  required AppLocalizations l10n,
+  required Lang lang,
+  required PanchangDay day,
+  required PanchangSection section,
+  required LunarMonth month,
+  required String timezone,
+}) {
+  SectionLine line(
+    String key,
+    String name, {
+    DateTime? until,
+    List<int> rashis = const [],
+  }) => SectionLine(
+    key: Key(key),
+    name: name,
+    day: day.date,
+    timezone: timezone,
+    until: until,
+    rashis: rashis,
+  );
+  List<SectionLine> spans(
+    String key,
+    List<ElementSpan> values,
+    String Function(int) name,
+  ) => [
+    for (final (k, span) in values.indexed)
+      line('$key-$k', name(span.index), until: span.endsAt),
+  ];
+  const gap = SizedBox(height: 18);
+  final nakshatras = [
+    (index: day.nakshatra.index, endsAt: day.nakshatra.endsAt),
+    section.nextNakshatra,
+  ];
+  return [
+    _LinesRow(
+      label: l10n.tithiLabel,
+      lines: spans('section-tithi', [
+        (index: day.jainTithi.index, endsAt: day.jainTithi.endsAt),
+        section.nextTithi,
+      ], (i) => tithiName(i, lang)),
+    ),
+    _LinesRow(
+      label: l10n.nakshatra,
+      lines: [
+        for (final (k, span) in nakshatras.indexed)
+          line(
+            'section-nakshatra-$k',
+            nakshatraName(span.index, lang),
+            until: span.endsAt,
+            rashis: nakshatraRashis(span.index),
+          ),
+      ],
+    ),
+    _LinesRow(
+      label: l10n.yogaLabel,
+      lines: spans('section-yoga', section.yogas, (i) => yogaName(i, lang)),
+    ),
+    _LinesRow(
+      label: l10n.karanaLabel,
+      lines: spans(
+        'section-karana',
+        section.karanas,
+        (i) => karanaName(i, lang),
+      ),
+    ),
+    _LinesRow(
+      label: l10n.varaLabel,
+      lines: [line('section-vara', weekdayName(day.date, lang))],
+    ),
+    gap,
+    _LinesRow(
+      label: l10n.lunarMonthLabel,
+      lines: [line('section-month', monthName(month, lang))],
+    ),
+    _LinesRow(
+      label: l10n.pakshaLabel,
+      lines: [line('section-paksha', pakshaName(day.jainTithi.index, lang))],
+    ),
+    _LinesRow(
+      label: l10n.gataLabel,
+      lines: [GataLine(key: const Key('section-gata'), gata: section.gata)],
+    ),
+    _LinesRow(
+      label: l10n.vikramSamvat,
+      lines: [line('section-vikram', '${day.vikramSamvat}')],
+    ),
+    _LinesRow(
+      label: l10n.viraNirvanaSamvat,
+      lines: [line('section-vira-nirvana', '${day.viraNirvanaSamvat}')],
+    ),
+    _LinesRow(
+      label: l10n.shakaSamvat,
+      lines: [line('section-shaka', '${day.shakaSamvat}')],
+    ),
+    gap,
+    _LinesRow(
+      label: l10n.moonRashiLabel,
+      lines: [
+        for (final (k, span) in section.moonRashis.indexed)
+          line(
+            'section-moon-rashi-$k',
+            rashiName(span.index, lang),
+            // The next sign shows without an end: it lasts two days or more.
+            until: k == 0 ? span.endsAt : null,
+            rashis: [span.index],
+          ),
+      ],
+    ),
+    _LinesRow(
+      label: l10n.sunRashiLabel,
+      lines: [
+        for (final (k, span) in section.sunRashis.indexed)
+          line(
+            'section-sun-rashi-$k',
+            rashiName(span.index, lang),
+            until: span.endsAt,
+            rashis: [span.index],
+          ),
+      ],
+    ),
+  ];
+}
+
+class _LinesRow extends StatelessWidget {
+  const _LinesRow({required this.label, required this.lines});
+
+  final String label;
+  final List<Widget> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = Theme.of(context).extension<Pothi>() ?? Pothi.light;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 48),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: p.rule)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Both columns are Expanded, so every row's values end on the same edge.
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodyMedium!
+                    .copyWith(color: p.secondary),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (final (k, line) in lines.indexed)
+                  Padding(
+                    padding: EdgeInsets.only(top: k == 0 ? 0 : 4),
+                    child: line,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

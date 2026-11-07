@@ -48,6 +48,19 @@ void main() {
     expect(month[17].vriddhi, day.vriddhi);
   });
 
+  test("reads a day's Panchang section, the same as the engine does on the calling isolate", () async {
+    final worker = await EngineWorker.spawn();
+    addTearDown(worker.close);
+    final request = SectionRequest(delhi(const CivilDate(2026, 11, 7)));
+
+    final section = await worker.readSection(request);
+
+    final expected = readSection(request);
+    expect(section.yogas, expected.yogas);
+    expect(section.karanas, expected.karanas);
+    expect(section.gata, expected.gata);
+  });
+
   test('passes an engine error back to the caller and keeps working', () async {
     final worker = await EngineWorker.spawn();
     addTearDown(worker.close);

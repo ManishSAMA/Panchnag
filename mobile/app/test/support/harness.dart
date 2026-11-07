@@ -104,6 +104,7 @@ Future<SharedPreferences> _pumpApp(
         nowProvider.overrideWith((ref) => Stream.value(now)),
         // The real engine, on the test's own isolate.
         dayReaderProvider.overrideWithValue((request) async => readDay(request)),
+        sectionReaderProvider.overrideWithValue((request) async => readSection(request)),
         monthReaderProvider.overrideWithValue((request) async => readMonth(request)),
         festivalReaderProvider.overrideWithValue(festivals),
         gpsLocatorProvider.overrideWithValue(gps),

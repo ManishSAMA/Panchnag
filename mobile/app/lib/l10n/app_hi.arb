@@ -268,5 +268,22 @@
   "symbolAspects": "ग्रहीय योग और कोण",
   "symbolMoonPhases": "चंद्र कलाएँ",
   "symbolEclipses": "ग्रहण",
-  "symbolsReferenceOnly": "केवल संदर्भ के लिए · ये प्रतीक चुनी गई तिथि की गणित स्थिति, योग या ग्रहण नहीं दिखाते।"
+  "symbolsReferenceOnly": "केवल संदर्भ के लिए · ये प्रतीक चुनी गई तिथि की गणित स्थिति, योग या ग्रहण नहीं दिखाते।",
+  "panchangHeading": "पंचांग",
+  "@panchangHeading": {"description": "Heading of the Panchang section: tithi, nakshatra, yoga, karana and more."},
+  "tithiLabel": "तिथि",
+  "yogaLabel": "योग",
+  "karanaLabel": "करण",
+  "varaLabel": "वार",
+  "lunarMonthLabel": "मास",
+  "pakshaLabel": "पक्ष",
+  "gataLabel": "गते",
+  "@gataLabel": {"description": "Days the Sun has been in its Rashi; the Sankranti day is day 1."},
+  "shakaSamvat": "शक संवत",
+  "moonRashiLabel": "चंद्र राशि",
+  "sunRashiLabel": "सूर्य राशि",
+  "untilWord": "तक",
+  "@untilWord": {"description": "The quiet connective word on a section line: Hindi after the time, English before it."},
+  "gataWord": "गते",
+  "@gataWord": {"description": "The quiet word on the gata line: Hindi after the count, English before it."}
 }

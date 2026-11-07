@@ -38,6 +38,18 @@ final dayReadingProvider = FutureProvider.autoDispose.family<PanchangDay, DayReq
   (ref, request) => ref.watch(dayReaderProvider)(request),
 );
 
+typedef SectionReader = Future<PanchangSection> Function(SectionRequest request);
+
+/// A day's Panchang section, read in the background isolate like the day.
+final sectionReaderProvider = Provider<SectionReader>(
+  (ref) =>
+      (request) async => (await ref.read(engineWorkerProvider.future)).readSection(request),
+);
+
+final sectionReadingProvider = FutureProvider.autoDispose.family<PanchangSection, SectionRequest>(
+  (ref, request) => ref.watch(sectionReaderProvider)(request),
+);
+
 /// The date Today shows; it starts on the city's today.
 final selectedDateProvider = NotifierProvider<SelectedDate, CivilDate>(SelectedDate.new);
 

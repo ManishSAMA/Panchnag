@@ -159,5 +159,18 @@
   "symbolAspects": "Aspects",
   "symbolMoonPhases": "Moon phases",
   "symbolEclipses": "Eclipses",
-  "symbolsReferenceOnly": "Reference only · these symbols do not show calculated positions, aspects, or eclipses for the selected date."
+  "symbolsReferenceOnly": "Reference only · these symbols do not show calculated positions, aspects, or eclipses for the selected date.",
+  "panchangHeading": "Panchang",
+  "tithiLabel": "Tithi",
+  "yogaLabel": "Yoga",
+  "karanaLabel": "Karana",
+  "varaLabel": "Weekday",
+  "lunarMonthLabel": "Month",
+  "pakshaLabel": "Paksha",
+  "gataLabel": "Gata",
+  "shakaSamvat": "Shaka Samvat",
+  "moonRashiLabel": "Moon Rashi",
+  "sunRashiLabel": "Sun Rashi",
+  "untilWord": "until",
+  "gataWord": "day"
 }
