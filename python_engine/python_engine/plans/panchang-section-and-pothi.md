@@ -67,6 +67,8 @@ Parity: extend `parity_fixtures.day_row` with the new fields, regenerate
 - Times use the app's 12-hour clock with period words; an end on a later day is dated ("8 नवंबर, सुबह 11:28 तक"). English Rashi names carry the western sign ("Tula (Libra)"); gata reads "Tula (Libra), day 21".
 - The Moon Rashi's next sign is shown without an end (it lasts two days or more), as in the mockup.
 - Engine: the section is a separate `PanchangEngine().section()` read. On it, `month()` would go from ~220 ms to ~590 ms (desktop JIT) for fields the Month tab never shows.
+- No duplicates on Full Panchang: Sun & Moon drops its Nakshatra row (the pada moves to the section's current nakshatra, "चित्रा (चरण 1)"); Tithi & Lunar Month drops the Jain tithi's name and end, both month rows and both samvat rows, keeping the reference time, the start and the tithi sequence.
+- The Today button reads "पूरा पंचांग देखें" ("See full Panchang"), matching the page title.
 - The Tithi lines lead with the **Jain tithi** (at sunrise + 6 ghati, as the
   hero shows), then the tithi after it, each with its end.
 - Karana lists **every** Karana holding during the sunrise-to-sunrise day:

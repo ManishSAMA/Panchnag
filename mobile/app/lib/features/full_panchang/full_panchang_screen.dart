@@ -331,15 +331,6 @@ class _FullDay extends ConsumerWidget {
               value: time(reading.nextSunrise),
               subtitle: dateNote(reading.nextSunrise),
             ),
-            _Row(
-              label: l10n.nakshatra,
-              value:
-                  '${nakshatraName(reading.nakshatra.index, lang)} · ${lang == Lang.hi ? 'चरण' : 'pada'} ${reading.nakshatra.pada}',
-              subtitle: [
-                l10n.until(time(reading.nakshatra.endsAt)),
-                ?dateNote(reading.nakshatra.endsAt),
-              ].join(' · '),
-            ),
           ],
         ),
         _Group(
@@ -349,11 +340,6 @@ class _FullDay extends ConsumerWidget {
           destination: destination,
           rows: [
             _Row(
-              key: const Key('full-jain-tithi'),
-              label: l10n.jainTithiLabel,
-              value: tithiName(reading.jainTithi.index, lang),
-            ),
-            _Row(
               label: l10n.jainReference,
               value: time(reading.jainTithi.reference),
             ),
@@ -362,25 +348,6 @@ class _FullDay extends ConsumerWidget {
               label: l10n.tithiStart,
               value: time(reading.jainTithi.startsAt),
               subtitle: dateNote(reading.jainTithi.startsAt),
-            ),
-            _Row(
-              key: const Key('full-jain-tithi-end'),
-              label: l10n.tithiEnd,
-              value: time(reading.jainTithi.endsAt),
-              subtitle: dateNote(reading.jainTithi.endsAt),
-            ),
-            _Row(
-              label: l10n.purnimantaMonth,
-              value: monthName(reading.month, lang),
-            ),
-            _Row(
-              label: l10n.amantaMonth,
-              value: monthName(reading.amantaMonth, lang),
-            ),
-            _Row(label: l10n.vikramSamvat, value: '${reading.vikramSamvat}'),
-            _Row(
-              label: l10n.viraNirvanaSamvat,
-              value: '${reading.viraNirvanaSamvat}',
             ),
           ],
           children: [
@@ -700,7 +667,12 @@ List<Widget> panchangSectionRows({
         for (final (k, span) in nakshatras.indexed)
           line(
             'section-nakshatra-$k',
-            nakshatraName(span.index, lang),
+            k == 0
+                ? l10n.nakshatraWithPada(
+                    nakshatraName(span.index, lang),
+                    day.nakshatra.pada,
+                  )
+                : nakshatraName(span.index, lang),
             until: span.endsAt,
             rashis: nakshatraRashis(span.index),
           ),

@@ -111,26 +111,20 @@ void main() {
     }
   });
 
-  testWidgets(
-    'the almanac identifies the date, place, Jain tithi, both months and both samvats',
-    (tester) async {
-      final day = delhiDay();
-      await openFullPanchang(tester);
+  testWidgets('the almanac identifies the date, place, Jain tithi and month', (
+    tester,
+  ) async {
+    final day = delhiDay();
+    await openFullPanchang(tester);
 
-      expect(find.text(longDate(day.date, Lang.hi)), findsOneWidget);
-      expect(find.textContaining('दिल्ली'), findsWidgets);
-      expect(
-        tester.widget<Text>(find.byKey(const Key('full-hero-tithi'))).data,
-        tithiName(day.jainTithi.index, Lang.hi),
-      );
-      expect(find.text(monthName(day.month, Lang.hi)), findsWidgets);
-      expect(find.text(monthName(day.amantaMonth, Lang.hi)), findsWidgets);
-      expect(find.text('${day.vikramSamvat}'), findsWidgets);
-      expect(find.text('${day.viraNirvanaSamvat}'), findsWidgets);
-      expect(find.textContaining('पूर्णिमान्त'), findsWidgets);
-      expect(find.textContaining('अमान्त'), findsWidgets);
-    },
-  );
+    expect(find.text(longDate(day.date, Lang.hi)), findsOneWidget);
+    expect(find.textContaining('दिल्ली'), findsWidgets);
+    expect(
+      tester.widget<Text>(find.byKey(const Key('full-hero-tithi'))).data,
+      tithiName(day.jainTithi.index, Lang.hi),
+    );
+    expect(find.text(monthName(day.month, Lang.hi)), findsWidgets);
+  });
 
   group('the पंचांग section (plans/panchang-section-and-pothi.md)', () {
     testWidgets('comes first, before the sun and moon times', (tester) async {
@@ -196,6 +190,42 @@ void main() {
         }
         expect(line('section-karana-${reading.karanas.length}'), findsNothing);
         expect(lineText(tester, 'section-vara'), weekdayName(date, Lang.hi));
+      },
+    );
+
+    testWidgets('the current nakshatra carries its pada; the next one does not', (
+      tester,
+    ) async {
+      final day = delhiDay();
+      await openFullPanchang(tester);
+
+      expect(
+        lineText(tester, 'section-nakshatra-0'),
+        contains(
+          '${nakshatraName(day.nakshatra.index, Lang.hi)} (चरण ${day.nakshatra.pada})',
+        ),
+      );
+      expect(lineText(tester, 'section-nakshatra-1'), isNot(contains('चरण')));
+    });
+
+    testWidgets(
+      'is the one place the nakshatra, months, samvats and the Jain tithi with its end appear',
+      (tester) async {
+        final day = delhiDay();
+        await openFullPanchang(tester);
+
+        expect(find.text('नक्षत्र'), findsOneWidget);
+        expect(
+          find.textContaining('चरण ${day.nakshatra.pada}'),
+          findsOneWidget,
+        );
+        expect(find.text('पूर्णिमान्त मास'), findsNothing);
+        expect(find.text('अमान्त मास'), findsNothing);
+        expect(find.text('विक्रम संवत'), findsOneWidget);
+        expect(find.text('वीर निर्वाण संवत'), findsOneWidget);
+        expect(find.byKey(const Key('full-jain-tithi')), findsNothing);
+        expect(find.byKey(const Key('full-jain-tithi-end')), findsNothing);
+        expect(find.byKey(const Key('full-jain-tithi-start')), findsOneWidget);
       },
     );
 
@@ -312,12 +342,16 @@ void main() {
         );
         expect(lineText(tester, 'section-moon-rashi-0'), contains('('));
         expect(lineText(tester, 'section-tithi-0'), contains('until '));
+        expect(
+          lineText(tester, 'section-nakshatra-0'),
+          contains('(pada ${delhiDay().nakshatra.pada})'),
+        );
       },
     );
   });
 
   testWidgets(
-    'all solar, nakshatra, Jain reference and tithi-span values come from the selected engine day',
+    'all solar, Jain reference and tithi-span values come from the selected engine day',
     (tester) async {
       final day = delhiDay();
       await openFullPanchang(tester);
@@ -325,18 +359,8 @@ void main() {
       for (final instant in [day.sunrise, day.sunset, day.nextSunrise]) {
         expect(find.text(shownTime(instant)), findsWidgets);
       }
-      expect(
-        find.textContaining(nakshatraName(day.nakshatra.index, Lang.hi)),
-        findsWidgets,
-      );
-      expect(find.textContaining('चरण ${day.nakshatra.pada}'), findsWidgets);
-      expect(
-        find.textContaining(shownTime(day.nakshatra.endsAt)),
-        findsWidgets,
-      );
       expect(find.text(shownTime(day.jainTithi.reference)), findsWidgets);
       expect(find.byKey(const Key('full-jain-tithi-start')), findsOneWidget);
-      expect(find.byKey(const Key('full-jain-tithi-end')), findsOneWidget);
       for (final (index, span) in day.tithis.indexed) {
         final row = find.byKey(Key('full-tithi-span-$index'));
         expect(row, findsOneWidget);
@@ -450,10 +474,8 @@ void main() {
       tester.widget<Text>(find.byKey(const Key('full-hero-tithi'))).data,
       tithiName(day.jainTithi.index, Lang.en),
     );
-    expect(find.text('Purnimanta month'), findsOneWidget);
-    expect(find.text('Amanta month'), findsOneWidget);
-    expect(find.text('Vikram Samvat'), findsWidgets);
-    expect(find.text('Vira Nirvana Samvat'), findsWidgets);
+    expect(find.text('Vikram Samvat'), findsOneWidget);
+    expect(find.text('Vira Nirvana Samvat'), findsOneWidget);
     expect(find.text('Next sunrise'), findsOneWidget);
     expect(find.byTooltip('Symbol guide'), findsOneWidget);
   });
