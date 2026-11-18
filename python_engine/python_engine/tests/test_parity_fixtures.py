@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import gzip
 import json
+from dataclasses import asdict
 from datetime import date, timedelta
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
@@ -22,6 +23,7 @@ from day_elements import (
     yoga_pair,
 )
 from location_service import get_timezone_name
+from muhurat_day import muhurat_day
 from panchang import JAIN_TITHI_OFFSET_DAYS
 from panchang_service import generate_location_panchang
 from jain_observances.festival_service import generate_jain_festivals
@@ -276,6 +278,24 @@ class TestDayRow:
         assert row["sun_rashi"] == spans(sun_rashis_in_day(sunrise, next_sunrise))
         assert [s["ends"] is None for s in row["sun_rashi"]] == [False, True]
         assert row["gata"] == {"rashi": 9, "day": 1}
+
+    def test_carries_the_days_muhurats_as_muhurat_day_reads_them(self):
+        loc = a_location("Delhi")
+        on = date(2026, 10, 21)
+        row = day_row(loc, on, sunrise_rule="modern")
+        reading = muhurat_day(
+            local_date=on,
+            sunrise_jd=row["sunrise"],
+            sunset_jd=row["sunset"],
+            next_sunrise_jd=row["next_sunrise"],
+            tz_name=loc.timezone,
+        )
+
+        assert row["muhurat"] == json.loads(json.dumps(asdict(reading)))
+        assert set(row["muhurat"]) == {
+            "rahu_kaal", "yamaganda", "gulika", "abhijit", "panchak",
+            "bhadra", "gandmool", "chandra_bal", "agni_vaas", "yogas",
+        }
 
     def test_traditional_sunrise_is_later_than_modern(self):
         # Disc centre with no refraction rises after the refracted upper limb.

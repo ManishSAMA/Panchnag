@@ -35,6 +35,7 @@ from day_elements import (
     yoga_pair,
 )
 from jain_observances.festival_service import generate_jain_festivals
+from muhurat_day import muhurat_day
 from panchang import HINDU_MONTH_NAMES, get_hindu_month
 from panchang_service import generate_location_panchang, resolve_location
 from request_parsing import VALID_PROFILES
@@ -175,7 +176,28 @@ def day_row(location: FixtureLocation, local_date: date, *, sunrise_rule: str) -
         "moon_rashi": _spans(moon_rashi_pair(sunrise)),
         "sun_rashi": _spans(sun_rashis_in_day(sunrise, next_sunrise)),
         "gata": _gata_row(gata(next_sunrise, lat=location.lat, lon=location.lon, rule=sunrise_rule)),
+        # The app's Muhurat section (plans/muhurat-section.md).
+        "muhurat": _plain(
+            asdict(
+                muhurat_day(
+                    local_date=local_date,
+                    sunrise_jd=sunrise,
+                    sunset_jd=sunset,
+                    next_sunrise_jd=next_sunrise,
+                    tz_name=location.timezone,
+                )
+            )
+        ),
     }
+
+
+def _plain(value: object) -> object:
+    """Tuples as lists, so a row equals its own JSON round trip."""
+    if isinstance(value, dict):
+        return {key: _plain(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(item) for item in value]
+    return value
 
 
 def _spans(spans) -> list[dict]:

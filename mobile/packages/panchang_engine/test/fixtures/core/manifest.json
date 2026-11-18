@@ -19,10 +19,14 @@
     "jain_observances/vrats/shodashkaran.py": "a806f1a83eb1a7f156ada869c1c8b470f1decda712de10200c23d291614c6c8b",
     "jain_observances/vriddhi.py": "d144763bba12c521129b8892925cb1db86c17a4a44bcf2f16bc723829b204afc",
     "location_service.py": "5ba7cfc40a3f7f6644fabce3c5c4b09dcbea4c53ee03e247d631b3a781952a61",
-    "panchang.py": "5fa26223841d1787fadcd14b3ebff25fd7f446229ea0652a5d5678f01c6e9b9e",
+    "muhurat_day.py": "af529a5226b6d5580600e744e0e8a903eca428af2609795e5abb0f046e5f5437",
+    "panchang.py": "bcc7c6695d4d3ce7bfc7a51bd0235b2dab0eb253267ce01bcfb05aa006b77d25",
     "panchang_service.py": "6da5a0d9b3d48bb3d64f59b7834de7cc707902b632cd8f40149e6887f8a6f11b",
-    "parity_fixtures.py": "7156bc91083d15e97861cf40f029b9ae3521faf63b0bc98728e57dcc507561c1",
-    "request_parsing.py": "084b4e428020aa65da4f612f24d7ad5e5e0a0a4215492fd0430a3c1833b76ef1"
+    "parity_fixtures.py": "b05a2ab049ab91f137cfb2f3b3cf73a100f8c171b08d7296fa4ac952346dfa1b",
+    "request_parsing.py": "084b4e428020aa65da4f612f24d7ad5e5e0a0a4215492fd0430a3c1833b76ef1",
+    "yoga_engine.py": "56e251eafaa90ff3d9aec003345fbaf0237a13cb0e747ca40e8779258b9f2727",
+    "yoga_rules.py": "f11926cd44d97d742e18149b9e82d97116e98b192212841cf2a746f7aeaf9cf0",
+    "yoga_service.py": "f3d874b522cc907977a5c69234b1741f998507e33b8999368db1931cec86ecf4"
   },
   "locations": [
     {

@@ -480,6 +480,7 @@ def _gandmool(
             "end_jd": w_end,
             "clipped_start": w_start == sunrise_jd,
             "clipped_end": w_end == next_sunrise_jd,
+            "nakshatra": nak_indices[0],
             "trigger_detail": f"Moon in {naks}",
         })
     return results

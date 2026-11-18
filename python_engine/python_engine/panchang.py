@@ -74,6 +74,15 @@ _RAHU_KAAL_SLOT: dict[int, int] = {
     6: 3,  # Saturday
 }
 
+# Yamaganda and Gulika take one of the same eight daylight parts as Rahu Kaal,
+# the part again set by the weekday (Sunday … Saturday).
+_YAMAGANDA_SLOT: dict[int, int] = dict(enumerate((5, 4, 3, 2, 1, 7, 6)))
+_GULIKA_SLOT: dict[int, int] = dict(enumerate((7, 6, 5, 4, 3, 2, 1)))
+
+# Abhijit is the middle of the fifteen daylight muhurtas: the 8th, around local noon.
+_ABHIJIT_PART = 8
+_DAY_MUHURTAS = 15
+
 # Hindu/Jain lunar month names (Sanskrit/formal and common colloquial forms).
 # Index 0–11 corresponds to Sun Rashi index 0–11 (Mesha→Chaitra … Meena→Phalguna).
 HINDU_MONTH_NAMES: list[str] = [
@@ -509,10 +518,58 @@ def calculate_rahu_kaal(
     Returns:
         Dict with 'start_jd' and 'end_jd'.
     """
-    slot = _RAHU_KAAL_SLOT[weekday_index]
-    part = (sunset_jd - sunrise_jd) / 8
-    start_jd = sunrise_jd + (slot - 1) * part
-    return {"start_jd": start_jd, "end_jd": start_jd + part}
+    return daylight_part(
+        sunrise_jd, sunset_jd, part=_RAHU_KAAL_SLOT[weekday_index], parts=8
+    )
+
+
+def daylight_part(
+    sunrise_jd: float, sunset_jd: float, *, part: int, parts: int
+) -> dict[str, float]:
+    """Part `part` (1-based) of `parts` equal parts of sunrise-to-sunset."""
+    length = (sunset_jd - sunrise_jd) / parts
+    start_jd = sunrise_jd + (part - 1) * length
+    return {"start_jd": start_jd, "end_jd": start_jd + length}
+
+
+def calculate_yamaganda(
+    sunrise_jd: float, sunset_jd: float, weekday_index: int
+) -> dict[str, float]:
+    """Yamaganda: one eighth of the daylight, the part set by the weekday (0=Sunday)."""
+    return daylight_part(
+        sunrise_jd, sunset_jd, part=_YAMAGANDA_SLOT[weekday_index], parts=8
+    )
+
+
+def calculate_gulika(
+    sunrise_jd: float, sunset_jd: float, weekday_index: int
+) -> dict[str, float]:
+    """Gulika Kaal: one eighth of the daylight, the part set by the weekday (0=Sunday)."""
+    return daylight_part(
+        sunrise_jd, sunset_jd, part=_GULIKA_SLOT[weekday_index], parts=8
+    )
+
+
+# Chandra Bal: counting from a birth Rashi (as 1) to the Moon's Rashi, these
+# places are good. The 8th, Ashtama Chandra, is the worst.
+_CHANDRA_BAL_COUNTS = frozenset({1, 3, 6, 7, 10, 11})
+
+
+def chandra_bal_rashis(moon_rashi: int) -> tuple[int, ...]:
+    """Birth Rashis (0 = Mesha) that have Chandra Bal while the Moon is in `moon_rashi`."""
+    if not 0 <= moon_rashi < 12:
+        raise ValueError(f"Invalid Rashi index {moon_rashi}")
+    return tuple(
+        birth for birth in range(12)
+        if (moon_rashi - birth) % 12 + 1 in _CHANDRA_BAL_COUNTS
+    )
+
+
+def calculate_abhijit(sunrise_jd: float, sunset_jd: float) -> dict[str, float]:
+    """Abhijit Muhurta: the 8th of the 15 daylight muhurtas, on every weekday."""
+    return daylight_part(
+        sunrise_jd, sunset_jd, part=_ABHIJIT_PART, parts=_DAY_MUHURTAS
+    )
 
 
 def get_tithi_at_jd(jd: float, ayanamsa_name: str) -> int:
