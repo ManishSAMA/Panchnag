@@ -61,6 +61,20 @@ void main() {
     expect(section.gata, expected.gata);
   });
 
+  test("reads a day's Muhurat windows, the same as the engine does on the calling isolate", () async {
+    final worker = await EngineWorker.spawn();
+    addTearDown(worker.close);
+    final request = MuhuratRequest(delhi(const CivilDate(2026, 11, 7)));
+
+    final muhurat = await worker.readMuhurat(request);
+
+    final expected = readMuhurat(request);
+    expect(muhurat.rahuKaal, expected.rahuKaal);
+    expect(muhurat.panchak, expected.panchak);
+    expect(muhurat.yogas, expected.yogas);
+    expect(muhurat.agniVaas, expected.agniVaas);
+  });
+
   test('passes an engine error back to the caller and keeps working', () async {
     final worker = await EngineWorker.spawn();
     addTearDown(worker.close);

@@ -25,6 +25,52 @@ void main() {
       }
     });
 
+    /// The palette colours a glyph fills with, drawn at 96 dp with [outline].
+    Future<Set<Color>> fills(WidgetTester tester, NavpadGlyph glyph, Color outline) async {
+      final pixels = (await paint(tester, NavpadIcon(glyph, size: 96, color: outline))).painted.toList();
+      return {
+        for (final ink in IconInk.palette)
+          if (pixels.where((p) => near(p.colour, ink, tolerance: 0.03)).length > 12) ink,
+      };
+    }
+
+    testWidgets('every glyph is a small painting, filled with palette colours', (tester) async {
+      for (final glyph in NavpadGlyph.values) {
+        expect(await fills(tester, glyph, red), isNotEmpty, reason: '$glyph');
+      }
+    });
+
+    testWidgets('only the outline follows the text colour; the fills stay day and night', (tester) async {
+      for (final glyph in NavpadGlyph.values) {
+        final day = await paint(tester, NavpadIcon(glyph, size: 96, color: Navpad.light.ink));
+        final night = await paint(tester, NavpadIcon(glyph, size: 96, color: Navpad.dark.ink));
+        // Inside a fill: a palette colour with the same colour all round it,
+        // so a blend at an outline's edge never counts.
+        bool inside(({int x, int y, Color colour}) p) => [
+          for (final (dx, dy) in [(-2, 0), (2, 0), (0, -2), (0, 2)])
+            near(day.at((p.x + dx).toDouble(), (p.y + dy).toDouble()), p.colour, tolerance: 0.01),
+        ].every((same) => same);
+        final filled = [
+          for (final p in day.painted)
+            if (p.x > 2 && p.y > 2 && p.x < 93 && p.y < 93)
+              if (IconInk.palette.any((ink) => near(p.colour, ink, tolerance: 0.01)) && inside(p)) p,
+        ];
+        expect(filled, isNotEmpty, reason: '$glyph');
+        expect(
+          filled.where((p) => !near(night.at(p.x.toDouble(), p.y.toDouble()), p.colour, tolerance: 0.01)),
+          isEmpty,
+          reason: '$glyph',
+        );
+      }
+    });
+
+    test('the Muhurat section has an icon for each of its tiles', () {
+      expect(
+        NavpadGlyph.values.map((g) => g.name),
+        containsAll(['panchak', 'yoga', 'abhijit', 'rahuKaal', 'gandmool', 'bhadra', 'chandraBal', 'agniVaas']),
+      );
+    });
+
     testWidgets('takes its size from the IconTheme', (tester) async {
       await tester.pumpWidget(
         const IconTheme(

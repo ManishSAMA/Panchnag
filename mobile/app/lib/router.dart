@@ -7,6 +7,8 @@ import 'features/full_panchang/full_panchang_screen.dart';
 import 'features/full_panchang/symbol_guide_screen.dart';
 import 'features/location/city_picker_screen.dart';
 import 'features/month/month_screen.dart';
+import 'features/muhurat/muhurat_grid.dart';
+import 'features/muhurat/muhurat_screen.dart';
 import 'features/pachchakkhan/pachchakkhan_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/today/today_screen.dart';
@@ -23,6 +25,17 @@ GoRouter buildRouter({required bool hasLocation}) => GoRouter(
       builder: (context, state) => const CityPickerScreen(),
     ),
     GoRoute(path: '/choghadiya', pageBuilder: choghadiyaPage),
+    GoRoute(
+      path: '/muhurat',
+      builder: (context, state) => const MuhuratScreen(),
+      routes: [
+        GoRoute(
+          path: ':kind',
+          redirect: (context, state) => MuhuratKind.fromSlug(state.pathParameters['kind']!) == null ? '/muhurat' : null,
+          builder: (context, state) => MuhuratDetailScreen(kind: MuhuratKind.fromSlug(state.pathParameters['kind']!)!),
+        ),
+      ],
+    ),
     GoRoute(
       path: '/full-panchang',
       builder: (context, state) => const FullPanchangScreen(),

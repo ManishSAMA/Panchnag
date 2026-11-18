@@ -230,7 +230,20 @@ night_slot_duration = (next_sunrise - sunset) / 8
 
 The starting Choghadiya depends on the weekday, and each following slot advances through the fixed Choghadiya order.
 
-## 11. Important Scope Note
+## 11. Muhurat Windows
+
+`muhurat_day.py` collects the windows of one sunrise-to-sunrise day; the Dart engine's `PanchangEngine().muhurat()` matches it through the parity fixtures.
+
+- **Rahu Kaal, Yamaganda, Gulika:** the daylight in 8 equal parts; the weekday picks the part (Sunday to Saturday). Rahu Kaal 8, 2, 7, 5, 6, 4, 3; Yamaganda 5, 4, 3, 2, 1, 7, 6; Gulika 7, 6, 5, 4, 3, 2, 1.
+- **Abhijit:** the daylight in 15 equal parts; the 8th part, on every weekday.
+- **Panchak:** the Moon's sidereal longitude from 300° to 360°. The period runs from the 300° crossing to the next 0° crossing, found to about 0.01 s. On a day without Panchak, the next period is given.
+- **Bhadra:** the Vishti karana windows between sunrise and the next sunrise, cut where the Moon changes Rashi. The Moon's Rashi gives the residence: Karka, Simha, Kumbha, Meena on Earth; Mesha, Vrishabha, Mithuna, Vrishchika in Swarga; the rest in Patal.
+- **Gandmool:** the Moon in Ashwini, Ashlesha, Magha, Jyeshtha, Mula or Revati.
+- **Chandra Bal:** counted from each birth Rashi to the Moon's Rashi; good at 1, 3, 6, 7, 10 and 11. When the Moon changes Rashi before the next sunrise, a second list follows.
+- **Agni Vaas:** (tithi + weekday + 1) mod 4, with Sunday = 1; Prithvi is good, Aakash and Patal are not.
+- **Day yogas:** the Dainika, Aanandadi (with varjya), Ravi and Jwalamukhi yogas of `yoga_rules.py` and `yoga_service.py`, exported to `shared/yoga_rules.json` for the Dart engine.
+
+## 12. Important Scope Note
 
 This project currently calculates a sunrise-based Panchang and exposes comparison snapshots for alternative offset inspection.
 

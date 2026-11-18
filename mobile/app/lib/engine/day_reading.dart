@@ -59,6 +59,26 @@ PanchangSection readSection(SectionRequest request) => const PanchangEngine().se
   sunriseRule: request.day.rule,
 );
 
+/// A day's Muhurat windows and yogas, read apart from the day, as the
+/// section is.
+final class MuhuratRequest {
+  const MuhuratRequest(this.day);
+
+  final DayRequest day;
+
+  @override
+  bool operator ==(Object other) => other is MuhuratRequest && other.day == day;
+
+  @override
+  int get hashCode => Object.hash(MuhuratRequest, day);
+}
+
+PanchangMuhurat readMuhurat(MuhuratRequest request) => const PanchangEngine().muhurat(
+  location: Location(lat: request.day.lat, lon: request.day.lon, timezone: request.day.timezone),
+  date: request.day.date,
+  sunriseRule: request.day.rule,
+);
+
 /// Every day of a Gregorian month, for the Month tab; plain values, like [DayRequest].
 final class MonthRequest {
   const MonthRequest({

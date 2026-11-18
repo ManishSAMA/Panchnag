@@ -103,6 +103,8 @@ Done (2026-11-18): `yoga_rules_json.py` + `scripts/export_yoga_rules.py` write `
 8. Icons: the tiles use existing `NavpadGlyph`s where one fits. New glyphs come from an approved mockup in `.impeccable/mocks/`, as the current icons did. Ask the user to approve the mockup before the glyphs go in.
 9. Tests by the `harness.dart` pattern: values on screen equal the engine values, English and Hindi, text scale 1.3/1.6/2.0, tap target guidelines.
 
+Done (2026-11-18): as above, with these changes from the plan. The user asked for colour icons and a 2-column grid: every app icon became a colour painting (`IconInk` palette, mockup `.impeccable/mocks/muhurat-icons.html`, approved), and the Muhurat tiles are 2 to a row at every text size, icon left. Chandra Bal lists the Rashi names without zodiac signs. Confirmed display choices: Bhadra is marked ✕ only when on Earth; the 9 bad nitya yogas are an app-side list; the Hindi day-yoga names in `format/muhurat_text.dart`. Tests: `test/muhurat_screen_test.dart`, `test/feature_tiles_test.dart`, `test/engine_worker_test.dart`, `test/navpad_icons_test.dart`.
+
 ### Phase 5 — Documents
 
 Update `CLAUDE.md` (a "Muhurat section" item), `plans/mobile-app-flutter.md` (the Deferred row), `docs/calculations.md` (the new rules) and `DESIGN.md` (new icons).

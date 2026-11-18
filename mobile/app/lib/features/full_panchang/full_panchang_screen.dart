@@ -26,6 +26,7 @@ import '../../theme/navpad.dart';
 import '../../theme/pothi.dart';
 import '../choghadiya/choghadiya_screen.dart';
 import '../festivals/festival_state.dart';
+import '../muhurat/muhurat_grid.dart';
 import '../today/today_state.dart';
 
 class FullPanchangScreen extends ConsumerStatefulWidget {
@@ -43,6 +44,7 @@ class _FullPanchangScreenState extends ConsumerState<FullPanchangScreen> {
     'tithi': GlobalKey(),
     'pachchakkhan': GlobalKey(),
     'choghadiya': GlobalKey(),
+    'muhurat': GlobalKey(),
   };
   String? _destination;
   Timer? _highlightTimer;
@@ -230,6 +232,7 @@ class _SectionLinks extends StatelessWidget {
       ('tithi', l10n.tithiMonthHeading),
       ('pachchakkhan', l10n.pachchakkhan),
       ('choghadiya', l10n.choghadiyaTitle),
+      ('muhurat', l10n.muhuratTitle),
     ];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -413,6 +416,14 @@ class _FullDay extends ConsumerWidget {
               ),
             ],
           ],
+        ),
+        _Group(
+          id: 'muhurat',
+          title: l10n.muhuratTitle,
+          sectionKeys: sectionKeys,
+          destination: destination,
+          rows: const [],
+          children: const [MuhuratGrid()],
         ),
         _Group(
           id: 'festivals',

@@ -345,7 +345,7 @@ components:
 
 **Creative North Star: "Navpad Colours"**
 
-The Siddhachakra's five colours, known by heart from Navpad Oli, are the core app's colour language, and each colour has exactly one job. Parchment is the ground (deep navy at night). Navy is ink, and it also carries the tithi and choghadiya. Red is parva and kalyanak. Yellow is the next pachchakkhan, only on today. Green is vrat and tapasya. A colour appears in exactly three forms: a solid full-bleed band, a filled list row, or a small festival icon (kalash, five lights, temple flag, diya) in a list or the Month grid. Nothing is tinted for decoration, so when a colour appears the reader already knows what it means.
+The Siddhachakra's five colours, known by heart from Navpad Oli, are the core app's colour language, and each colour has exactly one job. Parchment is the ground (deep navy at night). Navy is ink, and it also carries the tithi and choghadiya. Red is parva and kalyanak. Yellow is the next pachchakkhan, only on today. Green is vrat and tapasya. A colour appears in exactly three forms: a solid full-bleed band, a filled list row, or a small festival icon (kalash, five lights, temple flag, diya) in a list or the Month grid. Nothing is tinted for decoration, so when a colour appears the reader already knows what it means. The app's icons are the one exception: they are small paintings in their own warm manuscript palette (see Icons), which is never used as a band, a row fill or text.
 
 The system is built for an elder reading in daylight at the start or end of a fast. Type is large: body is 16 sp or more, and the hero tithi is 44 sp Tiro Devanagari. Every touch target is 48 dp. The pages are flat parchment with hairline lists and no cards, and the bands are their only weight. Material 3 supplies the structure (app bar, navigation bar, chips, segmented buttons, switches, sheets). Navpad supplies every core colour, through a hand-built `ColorScheme` plus a `ThemeExtension`. Dynamic colour is never used.
 
@@ -461,11 +461,26 @@ The system is flat. There are no shadows anywhere in the app. Depth comes from t
 
 ## Shapes
 
-Edges are square wherever a meaning colour sits. Bands, filled rows and hero bands have 0 dp corners and run edge to edge. The one exception is the mahaparva row in Festivals, which is inset and has 4 dp corners. Controls are fully round: buttons and segmented groups are 24 dp, chips 20 dp, and the nav indicator and switch 16 dp. Notes have gentle 8 dp corners, and the focus ring has 4 dp corners. Feature tiles have 12 dp corners. Pothi rows are square and uncarded; its lunar seal is two concentric circular vermilion strokes. Icons are 24 dp line icons with a 1.8 stroke and round caps and joins, drawn as vectors (see Icons).
+Edges are square wherever a meaning colour sits. Bands, filled rows and hero bands have 0 dp corners and run edge to edge. The one exception is the mahaparva row in Festivals, which is inset and has 4 dp corners. Controls are fully round: buttons and segmented groups are 24 dp, chips 20 dp, and the nav indicator and switch 16 dp. Notes have gentle 8 dp corners, and the focus ring has 4 dp corners. Feature tiles have 12 dp corners. Pothi rows are square and uncarded; its lunar seal is two concentric circular vermilion strokes. Icons are 24 dp vector paintings with a thin round-capped outline (see Icons).
 
 ## Icons
 
-The app draws its own line icons (`shared/navpad_icons.dart`: a `CustomPainter` over the approved mockup's SVG path data, with no icon font or SVG package). They are 24 dp on a 24-unit grid, 1.8 stroke, round caps and joins, and take their size and colour from `IconTheme`. They are silent to screen readers unless given a label, since words always sit beside them.
+The app draws its own icons (`shared/navpad_icons.dart`: a `CustomPainter` over the approved mockup's SVG path data, `.impeccable/mocks/muhurat-icons.html`, with no icon font, image or SVG package). Each is a small flat painting on a 24-unit grid: shapes filled from the manuscript palette `IconInk`, with a 1.3-unit round-capped outline. A lamp looks like a lamp: a clay bowl, a saffron flame. Size and the outline colour come from `IconTheme`; only the outline follows day and night, and the fills stay the same on parchment and on navy paper (`navpad_icons_test.dart` checks both). They are silent to screen readers unless given a label, since words always sit beside them.
+
+| `IconInk` | Hex | Use |
+|---|---|---|
+| vermilion | `#C8432B` | flags, the calendar header, book covers, the setting sun |
+| saffron | `#E8902C` | flames, sunset sun, rays |
+| gold | `#E2B33C` | suns, stars, kalash |
+| leaf | `#4E8A4A` | ground, leaves, the sunrise arrow |
+| sky | `#5B7FB8` | water |
+| clay | `#B8653A` | bowls, pots, the havan kund |
+| cream | `#FFF4D6` | pages, moons, highlights |
+| silver | `#E4DCC4` | moon discs |
+| shade | `#4A3350` | Rahu's disc, the dark half of Bhadra |
+| wood | `#8A5A34` | the flag pole, wood |
+
+The palette is decoration, not meaning: a festival kind is still told by its shape, its outline colour (red, or green for vrat) and its words.
 
 - **Sunrise / sunset:** a half sun on the horizon with an arrow up or down. Used on the sun rows of Today and the day panel; sunrise is also the आज tab.
 - **Nakshatra:** a four-pointed star with three small stars. Used on Today's nakshatra row.
@@ -475,6 +490,7 @@ The app draws its own line icons (`shared/navpad_icons.dart`: a `CustomPainter` 
 - **Month calendar:** a calendar with a crescent. Used on the माह tab and tile.
 - **Full Panchang:** an open almanac. Used on the Full Panchang feature tile; a Material outlined book opens the Symbol Guide.
 - **Siddhashila:** the crescent with a dot above it; the app mark.
+- **Muhurat section:** panchak (the Moon over the last five nakshatras), yoga (Sun and Moon joined), abhijit (the noon Sun; also the मुहूर्त tile), rahuKaal (the Sun under Rahu's dark disc), gandmool (two paths crossing), bhadra (a half-dark disc), chandraBal (the crescent with an arrow up) and agniVaas (a flame in the havan kund).
 - **Panchang reference symbols:** 38 custom vector glyphs in `shared/panchang_symbols.dart`: 11 planets/node, 12 zodiac signs, 9 aspects, 4 moon phases, and 2 eclipses. They use a 24-unit grid, 1.55 stroke, round caps and joins, and render at 32 dp in the guide. They are not Unicode text, an icon font, calculated positions, or event markers.
 
 Plain app actions keep their Material shapes: location, settings, back, chevrons and ✓.
@@ -489,12 +505,15 @@ The full-bleed colour band is the system's signature: a 58 dp tappable strip wit
 ### Feature tiles (Today)
 Under the hero sits a wrapping grid of flat `surface` tiles with 12 dp corners, no border and no shadow. Each is at least 76 dp tall, with a 28 dp icon over a centred 14 sp/600 label. In logical order:
 - पूरा पंचांग (fullPanchang) opens Full Panchang outside the tabs.
-- चौघड़िया (ghatika) opens Choghadiya.
+- मुहूर्त (abhijit) opens the Muhurat grid.
 - पच्चक्खाण (sunpath) opens that tab.
 - पर्व सूची (kalash) opens the Festivals tab, and appears only once that route exists.
 - माह (monthcal) opens Month on the date shown.
 
 Each tile is a button named by its label. Three columns are used at ordinary text and two from 1.3× text, measured at the label's 14 sp because Android scales text non-linearly. A short final row keeps earlier tiles aligned to their columns.
+
+### Muhurat grid
+Two flat `surface` tiles to a row at every text size, 12 dp corners, a hairline edge, at least 76 dp tall, 8 dp apart. Each tile has its 38 dp colour icon on the left, then its name (15 sp/600), the day's value (13 sp, `ink2`; "आज नहीं" when the window misses the day) and a mark in words (12 sp/600: ✓ अच्छा, –, ✕ टालें; Chandra Bal says "6 राशियाँ"). A short last row keeps its tile in the left column. The same grid is the मुहूर्त group of Full Panchang. Each tile is a button named by its name, value and mark. The detail screens are hairline `TimeRow` lists under the date navigator; the window running now carries "अभी".
 
 ### Moon of the tithi
 It is 58 dp beside the Today hero tithi, with the short tithi (12 sp/600, `ink2`) under it, and it is named to screen readers ("कृष्ण षष्ठी का चंद्रमा"). It is 11 dp before the short tithi in each Month cell, and 24 dp in the circle of the day panel's tithi row. On Full Panchang the calculated 40 dp disc sits inside a 54 dp double-ring vermilion seal, centred above the 30 sp tithi, with the same semantic label.

@@ -12,6 +12,7 @@ import 'package:jainpanchang/engine/day_reading.dart';
 import 'package:jainpanchang/engine/festival_reading.dart';
 import 'package:jainpanchang/features/festivals/festival_state.dart';
 import 'package:jainpanchang/features/month/month_state.dart';
+import 'package:jainpanchang/features/muhurat/muhurat_state.dart';
 import 'package:jainpanchang/features/share/share_button.dart';
 import 'package:jainpanchang/features/today/today_state.dart';
 import 'package:jainpanchang/location/gps.dart';
@@ -105,6 +106,7 @@ Future<SharedPreferences> _pumpApp(
         // The real engine, on the test's own isolate.
         dayReaderProvider.overrideWithValue((request) async => readDay(request)),
         sectionReaderProvider.overrideWithValue((request) async => readSection(request)),
+        muhuratReaderProvider.overrideWithValue((request) async => readMuhurat(request)),
         monthReaderProvider.overrideWithValue((request) async => readMonth(request)),
         festivalReaderProvider.overrideWithValue(festivals),
         gpsLocatorProvider.overrideWithValue(gps),

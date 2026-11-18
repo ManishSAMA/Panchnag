@@ -47,6 +47,9 @@ final class EngineWorker {
   /// Fails with a [RemoteError] when the engine throws, as [read] does.
   Future<PanchangSection> readSection(SectionRequest request) => _ask(request);
 
+  /// Fails with a [RemoteError] when the engine throws, as [read] does.
+  Future<PanchangMuhurat> readMuhurat(MuhuratRequest request) => _ask(request);
+
   /// Fails with a [RemoteError] when the engine throws on any day of the month.
   Future<List<PanchangDay>> readMonth(MonthRequest request) => _ask(request);
 
@@ -79,6 +82,7 @@ void _serve((SendPort, String?) start) {
         switch (request) {
           final DayRequest day => readDay(day),
           final SectionRequest section => readSection(section),
+          final MuhuratRequest muhurat => readMuhurat(muhurat),
           final MonthRequest month => readMonth(month),
           final FestivalRequest year when registry != null => readFestivals(year, registry: registry),
           _ => throw ArgumentError('Not an engine request: $request'),

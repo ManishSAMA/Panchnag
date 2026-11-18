@@ -17,7 +17,7 @@
 | Date range | 2016-01-01 → 2040-12-31 | Supported and fully checked against Python |
 | Preset cities | Delhi, Ahmedabad, Mumbai, Surat, Palitana, Jaipur, Udaipur, Indore, Kolkata, Bengaluru, Chennai | Quick-pick list in the app, and the core of the parity tests |
 | Beta scope | Today, Month grid, **Pachchakkhan**, Choghadiya, Festivals (all 3 Shwetambar profiles), Settings; English + Hindi (no Gujarati) | Same as the earlier plan's §1. Pachchakkhan was added on 2026-10-27 after market research ([`mobile-market-screens.md`](mobile-market-screens.md)); it is calculated in Dart only. |
-| Deferred | Hora, Rahu Kaal, Dainika Muhurta, PDF export, audio, vow trackers, accounts | Post-beta |
+| Deferred | Hora, PDF export, audio, vow trackers, accounts | Post-beta. Rahu Kaal and the day's yogas moved into the beta on 2026-11-10, as the Muhurat section ([`muhurat-section.md`](muhurat-section.md)). |
 | Repo layout | Same repo, new `mobile/` folder next to `python_engine/` | One CI run compares the two engines |
 | iOS builds (after the beta) | Cloud macOS (Codemagic or GitHub Actions macOS runner); a friend's Mac only for occasional Simulator checks | No Mac owned |
 

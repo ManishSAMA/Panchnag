@@ -71,7 +71,7 @@ void main() {
         ),
       );
       final expected = {
-        'choghadiya': (NavpadGlyph.ghatika, 'चौघड़िया'),
+        'muhurat': (NavpadGlyph.abhijit, 'मुहूर्त'),
         'pachchakkhan': (NavpadGlyph.sunpath, 'पच्चक्खाण'),
         'month': (NavpadGlyph.monthcal, 'माह'),
       };
@@ -124,7 +124,7 @@ void main() {
   ) async {
     await openApp(tester, now: ist(2026, 10, 22));
 
-    for (final label in ['चौघड़िया', 'पच्चक्खाण', 'माह']) {
+    for (final label in ['मुहूर्त', 'पच्चक्खाण', 'माह']) {
       final node = tester.getSemantics(
         find.descendant(
           of: find.byType(FeatureTiles),
@@ -135,14 +135,14 @@ void main() {
     }
   });
 
-  testWidgets('चौघड़िया opens the Choghadiya screen', (tester) async {
+  testWidgets('मुहूर्त opens the Muhurat grid', (tester) async {
     await openApp(tester, now: ist(2026, 10, 22));
 
-    await tester.ensureVisible(tile('choghadiya'));
-    await tester.tap(tile('choghadiya'));
+    await tester.ensureVisible(tile('muhurat'));
+    await tester.tap(tile('muhurat'));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('choghadiya-hero')), findsOneWidget);
+    expect(find.byKey(const Key('muhurat-tile-rahu-kaal')), findsOneWidget);
   });
 
   testWidgets('पच्चक्खाण opens the Pachchakkhan tab', (tester) async {
@@ -181,7 +181,7 @@ void main() {
       phone: const Locale('en', 'US'),
     );
 
-    for (final label in ['Choghadiya', 'Pachchakkhan', 'Month']) {
+    for (final label in ['Muhurat', 'Pachchakkhan', 'Month']) {
       expect(
         find.descendant(
           of: find.byType(FeatureTiles),
@@ -248,10 +248,10 @@ void main() {
     double top(String name) => tester.getTopLeft(tile(name)).dy;
     double left(String name) => tester.getTopLeft(tile(name)).dx;
 
-    expect(top('pachchakkhan'), top('choghadiya'));
+    expect(top('pachchakkhan'), top('muhurat'));
     expect(top('month'), top('festivals'));
-    expect(top('festivals'), greaterThan(top('choghadiya')));
-    expect(left('festivals'), left('choghadiya'));
+    expect(top('festivals'), greaterThan(top('muhurat')));
+    expect(left('festivals'), left('muhurat'));
     expect(left('month'), left('pachchakkhan'));
   });
 
@@ -260,7 +260,7 @@ void main() {
 
     expect(
       tester.getTopLeft(tile('month')).dy,
-      tester.getTopLeft(tile('choghadiya')).dy,
+      tester.getTopLeft(tile('muhurat')).dy,
     );
   });
 
@@ -271,7 +271,7 @@ void main() {
       await openApp(tester, now: ist(2026, 10, 22), textScale: scale);
 
       expect(tester.takeException(), isNull);
-      for (final name in ['choghadiya', 'pachchakkhan', 'month']) {
+      for (final name in ['muhurat', 'pachchakkhan', 'month']) {
         final label = find.descendant(
           of: tile(name),
           matching: find.byType(Text),

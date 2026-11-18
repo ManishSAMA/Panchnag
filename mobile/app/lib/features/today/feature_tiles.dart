@@ -24,10 +24,10 @@ class FeatureTiles extends StatelessWidget {
         .isNotEmpty;
     final tiles = [
       _Tile(
-        key: const Key('tile-choghadiya'),
-        glyph: NavpadGlyph.ghatika,
-        label: l10n.choghadiyaTitle,
-        onTap: () => context.push('/choghadiya'),
+        key: const Key('tile-muhurat'),
+        glyph: NavpadGlyph.abhijit,
+        label: l10n.muhuratTitle,
+        onTap: () => context.push('/muhurat'),
       ),
       _Tile(
         key: const Key('tile-pachchakkhan'),
