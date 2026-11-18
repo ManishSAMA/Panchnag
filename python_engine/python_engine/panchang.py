@@ -1201,7 +1201,7 @@ def _find_panchak_crossing_jd(
 
     entering=True : lo_jd is outside panchak, hi_jd is inside  → find entry
     entering=False: lo_jd is inside panchak,  hi_jd is outside → find exit
-    Converges to < ~1 minute (0.0007 JD).
+    Converges to about 0.01 s (1e-7 JD), as the Dart engine's boundary solver does.
     """
     for _ in range(40):
         mid = (lo_jd + hi_jd) / 2.0
@@ -1216,7 +1216,7 @@ def _find_panchak_crossing_jd(
                 lo_jd = mid
             else:
                 hi_jd = mid
-        if (hi_jd - lo_jd) < 0.0007:
+        if (hi_jd - lo_jd) < 1e-7:
             break
     return hi_jd
 

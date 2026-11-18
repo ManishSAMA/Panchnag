@@ -208,3 +208,18 @@ def test_a_month_holds_a_flagged_yoga_and_a_varjya() -> None:
     yogas = [y for d in MONTH for y in _day(d).yogas]
     assert any(y.varjya for y in yogas)
     assert any(y.is_nullified or y.cancelled or y.diminished for y in yogas)
+
+
+ONE_SECOND = 1 / 86400
+
+
+def _moon(jd: float) -> float:
+    return get_planetary_longitude(jd, "Moon", "Lahiri")
+
+
+@pytest.mark.parametrize("local_date", MONTH)
+def test_panchak_period_is_the_moons_crossings_to_the_second(local_date: date) -> None:
+    panchak = _day(local_date).panchak
+    period = panchak.period or panchak.next_period
+    assert _moon(period.start_jd - ONE_SECOND) < 300.0 <= _moon(period.start_jd + ONE_SECOND)
+    assert _moon(period.end_jd - ONE_SECOND) >= 300.0 > _moon(period.end_jd + ONE_SECOND)

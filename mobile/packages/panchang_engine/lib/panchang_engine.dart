@@ -11,5 +11,7 @@ export 'src/day.dart';
 export 'src/festivals/festivals.dart' show FestivalOccurrence, festivalProfiles;
 export 'src/festivals/registry.dart' show DayRule, FestivalEntry, FestivalRegistry;
 export 'src/panchang/choghadiya.dart' show Choghadiya, ChoghadiyaNature;
+export 'src/panchang/day_yogas.dart' show DayYogaKind, YogaNature;
+export 'src/panchang/muhurat.dart' show AgniVaas, BhadraResidence;
 export 'src/panchang/pachchakkhan.dart' show TimedPachchakkhan;
 export 'src/time/civil_day.dart' show CivilDate;

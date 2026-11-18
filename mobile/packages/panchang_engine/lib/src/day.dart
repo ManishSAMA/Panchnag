@@ -4,6 +4,7 @@
 library;
 
 import 'astro/rise_set.dart';
+import 'astro/sidereal.dart';
 import 'calendar/month.dart';
 import 'calendar/samvat.dart';
 import 'festivals/festivals.dart';
@@ -11,6 +12,8 @@ import 'festivals/registry.dart';
 import 'panchang/choghadiya.dart';
 import 'panchang/day_elements.dart';
 import 'panchang/elements.dart';
+import 'panchang/day_yogas.dart';
+import 'panchang/muhurat.dart';
 import 'panchang/pachchakkhan.dart';
 import 'time/civil_day.dart';
 import 'time/julian_day.dart';
@@ -201,6 +204,74 @@ final class PanchangSection {
   final Gata gata;
 }
 
+typedef TimeWindow = ({DateTime start, DateTime end});
+
+/// Today's Panchak [window] and its whole [period], or, on a day without
+/// Panchak, the [nextPeriod].
+typedef PanchakReading = ({TimeWindow? window, TimeWindow? period, TimeWindow? nextPeriod});
+
+/// A Vishti karana window, cut at a Moon Rashi change (0 = Mesha).
+typedef BhadraWindow = ({DateTime start, DateTime end, int moonRashi, BhadraResidence residence});
+
+/// The Moon in a junction nakshatra (1-27).
+typedef GandmoolWindow = ({DateTime start, DateTime end, int nakshatra});
+
+/// The Moon's Rashi until [endsAt] (null: past the next sunrise), and the
+/// six birth [rashis] with Chandra Bal in it.
+typedef ChandraBalSpan = ({int moonRashi, DateTime? endsAt, List<int> rashis});
+
+/// One of the day's yogas. [isNullified]: an inauspicious yoga a supreme
+/// yoga overlaps; [cancelled]: Dusht Tithi on a Sarvartha Siddhi day;
+/// [diminished]: Amrit Siddhi under an active Dusht Tithi; [varjya]: the
+/// part of an Aanandadi yoga to avoid, from its start.
+typedef DayYoga = ({
+  DayYogaKind kind,
+  String name,
+  YogaNature nature,
+  DateTime start,
+  DateTime end,
+  bool isNullified,
+  bool cancelled,
+  bool diminished,
+  TimeWindow? varjya,
+});
+
+/// The Muhurat section's readings for a day: a separate read, as
+/// [PanchangSection] is, so neither [PanchangEngine.day] nor
+/// [PanchangEngine.month] pays for them.
+final class PanchangMuhurat {
+  const PanchangMuhurat({
+    required this.rahuKaal,
+    required this.yamaganda,
+    required this.gulika,
+    required this.abhijit,
+    required this.panchak,
+    required this.bhadra,
+    required this.gandmool,
+    required this.chandraBal,
+    required this.agniVaas,
+    required this.yogas,
+  });
+
+  /// Each one eighth of the daylight, by weekday.
+  final TimeWindow rahuKaal, yamaganda, gulika;
+
+  /// The 8th of the 15 daylight muhurtas.
+  final TimeWindow abhijit;
+  final PanchakReading panchak;
+  final List<BhadraWindow> bhadra;
+  final List<GandmoolWindow> gandmool;
+
+  /// One span, or two when the Moon changes Rashi before the next sunrise.
+  final List<ChandraBalSpan> chandraBal;
+
+  /// From the tithi at sunrise and the weekday.
+  final AgniVaas agniVaas;
+
+  /// Dainika, then Aanandadi (one per Moon nakshatra), Ravi and Jwalamukhi.
+  final List<DayYoga> yogas;
+}
+
 final class PanchangEngine {
   const PanchangEngine();
 
@@ -334,6 +405,66 @@ final class PanchangEngine {
     );
   }
 
+  /// The Muhurat section for [date]. Throws [StateError] where [day] does.
+  PanchangMuhurat muhurat({
+    required Location location,
+    required CivilDate date,
+    SunriseRule sunriseRule = SunriseRule.modern,
+  }) {
+    final Location(:lat, :lon, :timezone) = location;
+    final rise = sunrise(civilDayAnchor(date, timezone), lat, lon, sunriseRule);
+    final set = sunset(civilDayAnchor(date, timezone), lat, lon, sunriseRule);
+    final nextRise = sunrise(civilDayAnchor(date.next(), timezone), lat, lon, sunriseRule);
+    final panchak = panchakOf(rise, nextRise);
+    final nakshatras = daySegments(rise, nextRise, nakshatraAt, nakshatraEnd);
+    return PanchangMuhurat(
+      rahuKaal: _window(rahuKaal(rise, set, date.vara)),
+      yamaganda: _window(yamaganda(rise, set, date.vara)),
+      gulika: _window(gulika(rise, set, date.vara)),
+      abhijit: _window(abhijit(rise, set)),
+      panchak: (
+        window: _maybeWindow(panchak.window),
+        period: _maybeWindow(panchak.period),
+        nextPeriod: _maybeWindow(panchak.nextPeriod),
+      ),
+      bhadra: [
+        for (final b in bhadraOf(rise, nextRise))
+          (start: _utc(b.start), end: _utc(b.end), moonRashi: b.moonRashi, residence: bhadraResidenceOf(b.moonRashi)),
+      ],
+      gandmool: [
+        for (final g in gandmoolOf(nakshatras)) (start: _utc(g.start), end: _utc(g.end), nakshatra: g.nakshatra),
+      ],
+      chandraBal: [
+        for (final c in chandraBalSpans(rise, nextRise))
+          (
+            moonRashi: c.moonRashi,
+            endsAt: c.endsAt == null ? null : _utc(c.endsAt!),
+            rashis: chandraBalRashis(c.moonRashi),
+          ),
+      ],
+      agniVaas: agniVaasOf(tithiAt(rise), date.vara),
+      yogas: [
+        for (final y in dayYogas(
+          vara: date.vara,
+          tithis: daySegments(rise, nextRise, tithiAt, tithiEnd),
+          nakshatras: nakshatras,
+          sunNakshatra: nakshatraOf(siderealSunLongitude(rise)),
+        ))
+          (
+            kind: y.kind,
+            name: y.name,
+            nature: y.nature,
+            start: _utc(y.start),
+            end: _utc(y.end),
+            isNullified: y.isNullified,
+            cancelled: y.cancelled,
+            diminished: y.diminished,
+            varjya: _maybeWindow(y.varjya),
+          ),
+      ],
+    );
+  }
+
   /// The festivals whose first day falls in [year], sorted by date. Throws
   /// [ArgumentError] for a profile not in [festivalProfiles].
   List<FestivalOccurrence> festivals({
@@ -346,6 +477,9 @@ final class PanchangEngine {
 }
 
 DateTime _utc(double jd) => utcFromJulianDay(jd);
+
+TimeWindow _window(JdWindow w) => (start: _utc(w.start), end: _utc(w.end));
+TimeWindow? _maybeWindow(JdWindow? w) => w == null ? null : _window(w);
 
 List<ElementSpan> _spans(List<Span> spans) => [for (final s in spans) (index: s.index, endsAt: _utc(s.endsAt))];
 

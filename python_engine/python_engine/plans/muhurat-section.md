@@ -71,11 +71,17 @@ Each phase is TDD (RED, GREEN, MUTATE, KILL MUTANTS, REFACTOR) and ends with a c
 3. Export the new types from `panchang_engine.dart`.
 4. Add parity tests against the Phase 1 fixtures, and unit tests for the invariants.
 
+Decision (user, 2026-11-18): the Python Panchak search (`_find_panchak_crossing_jd`) stopped at a 60 s interval, which is more than the 10 s parity tolerance. It now stops at 1e-7 JD (about 0.01 s), as the Dart boundary solver does, so the web app's Panchak times can move up to 1 minute earlier. The core fixtures were regenerated for it.
+
+Done (2026-11-18): `src/panchang/muhurat.dart` (pure JD functions) and `PanchangEngine().muhurat()` → `PanchangMuhurat` (`TimeWindow`, `PanchakReading`, `BhadraWindow` + `BhadraResidence`, `GandmoolWindow`, `ChandraBalSpan`, `AgniVaas`). The Dart Panchak finds the period as the first crossing of 300° from 6 days before sunrise (when the Moon is in Panchak at sunrise) or from sunrise, and the exit as the next crossing of 0° after it. Tests: `test/unit/muhurat_test.dart`, `test/parity/muhurat_test.dart` (windows shorter than the tolerance are left out, because a boundary near a sunrise can make a sliver on one side only).
+
 ### Phase 3 — Dart engine: the day's yogas
 
 1. Export the rules of `yoga_rules.py` to `shared/yoga_rules.json` with a new `scripts/export_yoga_rules.py`. Add a freshness test, as for `shared/festival_registry.json`.
 2. Port `match_dainika`, the overrides, `match_aanandadi` (with its varjya window), `_detect_ravi_yoga` and Jwalamukhi to Dart. They read the JSON.
 3. Add the yogas to `PanchangMuhurat`. Add parity tests.
+
+Done (2026-11-18): `yoga_rules_json.py` + `scripts/export_yoga_rules.py` write `shared/yoga_rules.json` and the engine's `lib/src/panchang/yoga_rules.g.dart` (the same JSON text as a Dart `const String`, like the other Python-generated `.g.dart` files, so the engine needs no asset and `muhurat()` takes no rules argument). JSON has no int keys or tuples: weekday keys are strings, a (ghati, pala) varjya is a list. `tests/test_yoga_rules_json.py` fails while either file is stale. `src/panchang/day_yogas.dart` ports `match_dainika`, the Dusht Tithi / Amrit Siddhi overrides, dosha bhanga and Aanandadi nullification, Aanandadi with varjya, Ravi Yoga (Sunday exceptions) and Jwalamukhi; `daySegments` builds the tithi and nakshatra segments (Gandmool reuses them). `PanchangMuhurat.yogas` is a list of `DayYoga` (`DayYogaKind`, `YogaNature`). Kept as Python has them: a whole-day varjya (`"full_day"`) gives no varjya window, and Jwalamukhi's pairs name Shukla tithis (1-15) only.
 
 ### Phase 4 — App: Muhurat screen and detail screens (`mobile/app/`)
 

@@ -1,0 +1,1552 @@
+{
+  "aanandadi": [
+    {
+      "fal": "Sarva Siddhi",
+      "meaning": "Joy and bliss — all undertakings succeed; highly auspicious for any new start.",
+      "name": "Anand",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "highly_auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Haani",
+      "meaning": "Time of doom — entire period is forbidden; avoid all auspicious and new undertakings.",
+      "name": "Kaal",
+      "nature": "ashubh",
+      "severe": true,
+      "severity": "highly_inauspicious",
+      "varjya": "full_day"
+    },
+    {
+      "fal": "Dukh",
+      "meaning": "Smoke and confusion — creates obstacles, delays, and unclear outcomes.",
+      "name": "Dhumra",
+      "nature": "ashubh",
+      "severe": false,
+      "severity": "inauspicious",
+      "varjya": [
+        1,
+        0
+      ]
+    },
+    {
+      "fal": "Laabh",
+      "meaning": "Lord of Beings — creative energy; auspicious for new beginnings and growth.",
+      "name": "Prajapati",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Sukh",
+      "meaning": "Gentle and benevolent — peaceful energy; favourable for social and family activities.",
+      "name": "Soumya",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Kshati",
+      "meaning": "Crow omen — inauspicious; avoid travel, new agreements, and auspicious ceremonies.",
+      "name": "Dhwanksha",
+      "nature": "ashubh",
+      "severe": false,
+      "severity": "inauspicious",
+      "varjya": [
+        2,
+        0
+      ]
+    },
+    {
+      "fal": "Vijay",
+      "meaning": "Victory flag — success in endeavours; especially favourable for competitive activities.",
+      "name": "Dhwaja",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Dhana Laabh",
+      "meaning": "Mark of Vishnu — wealth and prosperity; highly auspicious for financial transactions.",
+      "name": "Shreevatsa",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "highly_auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Peeda",
+      "meaning": "Thunderbolt — sudden disruptions and sharp reversals; avoid risky ventures.",
+      "name": "Vajra",
+      "nature": "ashubh",
+      "severe": false,
+      "severity": "inauspicious",
+      "varjya": [
+        2,
+        0
+      ]
+    },
+    {
+      "fal": "Kasht",
+      "meaning": "Hammer — forceful obstacles; projects require extra effort and face resistance.",
+      "name": "Mudgar",
+      "nature": "ashubh",
+      "severe": false,
+      "severity": "inauspicious",
+      "varjya": [
+        2,
+        0
+      ]
+    },
+    {
+      "fal": "Samman",
+      "meaning": "Royal umbrella — protection and prestige; auspicious for authority and leadership.",
+      "name": "Chhatra",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Maitri",
+      "meaning": "Friendship — supportive social energy; excellent for alliances and partnerships.",
+      "name": "Mitra",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Siddhi",
+      "meaning": "Mind — clarity and focus; favourable for intellectual and mental work.",
+      "name": "Manas",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Shree Laabh",
+      "meaning": "Lotus — beauty, wealth, and Lakshmi's grace; highly auspicious for prosperity.",
+      "name": "Padma",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "highly_auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Kshay",
+      "meaning": "Decay and suspension — delays and deterioration; avoid finalising contracts.",
+      "name": "Lumbak",
+      "nature": "ashubh",
+      "severe": false,
+      "severity": "inauspicious",
+      "varjya": [
+        1,
+        36
+      ]
+    },
+    {
+      "fal": "Sarva Nashta",
+      "meaning": "Calamity — entire period is forbidden; avoid all auspicious or important acts.",
+      "name": "Utpat",
+      "nature": "ashubh",
+      "severe": true,
+      "severity": "highly_inauspicious",
+      "varjya": "full_day"
+    },
+    {
+      "fal": "Maran",
+      "meaning": "Death — entire period is forbidden; avoid all new undertakings without exception.",
+      "name": "Mrityu",
+      "nature": "ashubh",
+      "severe": true,
+      "severity": "highly_inauspicious",
+      "varjya": "full_day"
+    },
+    {
+      "fal": "Kaan Peeda",
+      "meaning": "Loss — deficits and troubles; avoid financial decisions and new commitments.",
+      "name": "Kaan",
+      "nature": "ashubh",
+      "severe": false,
+      "severity": "inauspicious",
+      "varjya": [
+        0,
+        48
+      ]
+    },
+    {
+      "fal": "Siddhi",
+      "meaning": "Achievement — success guaranteed; highly favourable for completing important work.",
+      "name": "Siddhi",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "highly_auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Shubh",
+      "meaning": "Auspicious — generally favourable energy; good for most activities.",
+      "name": "Shubha",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Amrut Phal",
+      "meaning": "Nectar — the finest Aanandadi yoga; actions taken here yield exceptional lasting results.",
+      "name": "Amrut",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "highly_auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Kshati",
+      "meaning": "Pestle — grinding difficulties; hard work yields poor results; avoid major decisions.",
+      "name": "Musal",
+      "nature": "ashubh",
+      "severe": false,
+      "severity": "inauspicious",
+      "varjya": [
+        0,
+        48
+      ]
+    },
+    {
+      "fal": "Rog",
+      "meaning": "Mace — health challenges and confrontations; avoid surgery and physical risks.",
+      "name": "Gada",
+      "nature": "ashubh",
+      "severe": false,
+      "severity": "inauspicious",
+      "varjya": [
+        2,
+        48
+      ]
+    },
+    {
+      "fal": "Vriddhi",
+      "meaning": "Elephant — powerful and steady energy; auspicious for important decisions.",
+      "name": "Matanga",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Sarva Kasht",
+      "meaning": "Demon — entire period is forbidden; avoid all auspicious acts without exception.",
+      "name": "Rakshasa",
+      "nature": "ashubh",
+      "severe": true,
+      "severity": "highly_inauspicious",
+      "varjya": "full_day"
+    },
+    {
+      "fal": "Safar Laabh",
+      "meaning": "Dynamic movement — favourable for travel, change, and transition activities.",
+      "name": "Chara",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Sthirta",
+      "meaning": "Stability — excellent for laying foundations, construction, and long-term commitments.",
+      "name": "Sthira",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "auspicious",
+      "varjya": null
+    },
+    {
+      "fal": "Vriddhi",
+      "meaning": "Growth and increase — favourable for business expansion and accumulation.",
+      "name": "Vriddhi",
+      "nature": "shubh",
+      "severe": false,
+      "severity": "auspicious",
+      "varjya": null
+    }
+  ],
+  "dainika": [
+    {
+      "meaning": "Accomplishment — work started here reaches completion successfully.",
+      "name": "Siddhi Yoga Tithi",
+      "nature": "shubh",
+      "severity": "auspicious",
+      "trigger": "tithi",
+      "vara_map": {
+        "2": [
+          3,
+          8,
+          13
+        ],
+        "3": [
+          2,
+          7,
+          12
+        ],
+        "4": [
+          5,
+          10,
+          15
+        ],
+        "5": [
+          1,
+          6,
+          11
+        ],
+        "6": [
+          4,
+          9,
+          14
+        ]
+      }
+    },
+    {
+      "meaning": "Burnt — work started here gets destroyed. Avoid new beginnings.",
+      "name": "Dagdha Tithi",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "tithi",
+      "vara_map": {
+        "0": [
+          12
+        ],
+        "1": [
+          11
+        ],
+        "2": [
+          5
+        ],
+        "3": [
+          3
+        ],
+        "4": [
+          6
+        ],
+        "5": [
+          8
+        ],
+        "6": [
+          9
+        ]
+      }
+    },
+    {
+      "meaning": "Consumed by fire — efforts get destroyed. Harmful for auspicious starts.",
+      "name": "Hutashan Tithi",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "tithi",
+      "vara_map": {
+        "0": [
+          12
+        ],
+        "1": [
+          6
+        ],
+        "2": [
+          7
+        ],
+        "3": [
+          8
+        ],
+        "4": [
+          9
+        ],
+        "5": [
+          10
+        ],
+        "6": [
+          11
+        ]
+      }
+    },
+    {
+      "meaning": "Poison — undertakings here tend to have harmful or toxic results.",
+      "name": "Vishakhya Tithi",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "tithi",
+      "vara_map": {
+        "0": [
+          4
+        ],
+        "1": [
+          6
+        ],
+        "2": [
+          7
+        ],
+        "3": [
+          2
+        ],
+        "4": [
+          8
+        ],
+        "5": [
+          9
+        ],
+        "6": [
+          7
+        ]
+      }
+    },
+    {
+      "meaning": "Lowest/inferior — work here gives degraded or base results.",
+      "name": "Adham Tithi",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "tithi",
+      "vara_map": {
+        "0": [
+          7,
+          12
+        ],
+        "1": [
+          11
+        ],
+        "2": [
+          10
+        ],
+        "3": [
+          1,
+          9
+        ],
+        "4": [
+          8
+        ],
+        "5": [
+          7
+        ],
+        "6": [
+          6
+        ]
+      }
+    },
+    {
+      "meaning": "Death — one of the most inauspicious yogas. Strongly avoid all auspicious muhurtas.",
+      "name": "Mrityu Yoga Tithi",
+      "nature": "ashubh",
+      "severe": true,
+      "severity": "highly_inauspicious",
+      "trigger": "tithi",
+      "vara_map": {
+        "0": [
+          1,
+          6,
+          11
+        ],
+        "1": [
+          2,
+          7,
+          12
+        ],
+        "2": [
+          1,
+          6,
+          11
+        ],
+        "3": [
+          3,
+          8,
+          13
+        ],
+        "4": [
+          4,
+          9,
+          14
+        ],
+        "5": [
+          2,
+          7,
+          12
+        ],
+        "6": [
+          5,
+          10,
+          15
+        ]
+      }
+    },
+    {
+      "meaning": "Saw — cuts through benefits. Efforts will be cut short or disrupted.",
+      "name": "Krakach Tithi",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "tithi",
+      "vara_map": {
+        "0": [
+          12
+        ],
+        "1": [
+          11
+        ],
+        "2": [
+          10
+        ],
+        "3": [
+          9
+        ],
+        "4": [
+          8
+        ],
+        "5": [
+          7
+        ],
+        "6": [
+          6
+        ]
+      }
+    },
+    {
+      "meaning": "Wicked/corrupt — gives corrupted results. Cancelled by Sarvartha Siddhi.",
+      "name": "Dusht Tithi",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "tithi",
+      "vara_map": {
+        "0": [
+          1,
+          3,
+          7
+        ],
+        "1": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "2": [
+          3,
+          9,
+          12
+        ],
+        "3": [
+          7,
+          9,
+          11
+        ],
+        "6": [
+          11,
+          12,
+          13
+        ]
+      }
+    },
+    {
+      "meaning": "Forbidden nakshatra+vara — strictly avoid for auspicious muhurtas.",
+      "name": "Varjit Tithi Nakshatra",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          13
+        ],
+        "1": [
+          5
+        ],
+        "2": [
+          1
+        ],
+        "3": [
+          22
+        ],
+        "4": [
+          8
+        ],
+        "5": [
+          27
+        ],
+        "6": [
+          4
+        ]
+      }
+    },
+    {
+      "meaning": "Calamity — creates turbulence and unexpected trouble.",
+      "name": "Utpat Nakshatra",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          16
+        ],
+        "1": [
+          20
+        ],
+        "2": [
+          23
+        ],
+        "3": [
+          27
+        ],
+        "4": [
+          4
+        ],
+        "5": [
+          8
+        ],
+        "6": [
+          12
+        ]
+      }
+    },
+    {
+      "meaning": "Death yoga via Nakshatra — extremely inauspicious. No muhurta should be given.",
+      "name": "Mrityu Yoga Nakshatra",
+      "nature": "ashubh",
+      "severe": true,
+      "severity": "highly_inauspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          17
+        ],
+        "1": [
+          21
+        ],
+        "2": [
+          24
+        ],
+        "3": [
+          1
+        ],
+        "4": [
+          5
+        ],
+        "5": [
+          9
+        ],
+        "6": [
+          13
+        ]
+      }
+    },
+    {
+      "meaning": "One-eyed — incomplete results. Especially bad for legal, contractual, medical muhurtas.",
+      "name": "Kaan Yoga",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          18
+        ],
+        "1": [
+          28
+        ],
+        "2": [
+          25
+        ],
+        "3": [
+          2
+        ],
+        "4": [
+          6
+        ],
+        "5": [
+          10
+        ],
+        "6": [
+          14
+        ]
+      }
+    },
+    {
+      "meaning": "Burnt — all good effects are burnt away. Work does not bear fruit.",
+      "name": "Dagdha Yoga",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          2
+        ],
+        "1": [
+          14
+        ],
+        "2": [
+          21
+        ],
+        "3": [
+          23
+        ],
+        "4": [
+          12
+        ],
+        "5": [
+          18
+        ],
+        "6": [
+          27
+        ]
+      }
+    },
+    {
+      "meaning": "Bell of Yama — highly inauspicious. Signals proximity to harmful outcomes.",
+      "name": "Yam Ghant",
+      "nature": "ashubh",
+      "severe": true,
+      "severity": "highly_inauspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          10
+        ],
+        "1": [
+          16
+        ],
+        "2": [
+          6
+        ],
+        "3": [
+          19
+        ],
+        "4": [
+          3
+        ],
+        "5": [
+          4
+        ],
+        "6": [
+          13
+        ]
+      }
+    },
+    {
+      "meaning": "Pestle — crushes efforts. Especially bad for business starts and partnerships.",
+      "name": "Musal Yoga",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          28
+        ],
+        "1": [
+          25
+        ],
+        "2": [
+          2
+        ],
+        "3": [
+          6
+        ],
+        "4": [
+          10
+        ],
+        "5": [
+          14
+        ],
+        "6": [
+          18
+        ]
+      }
+    },
+    {
+      "meaning": "Staff of time — punishes actions started in it. Bad for government and legal matters.",
+      "name": "Kaal Dand",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          2
+        ],
+        "1": [
+          6
+        ],
+        "2": [
+          10
+        ],
+        "3": [
+          14
+        ],
+        "4": [
+          18
+        ],
+        "5": [
+          28
+        ],
+        "6": [
+          25
+        ]
+      }
+    },
+    {
+      "meaning": "Thunderbolt — strikes suddenly. Harmful for marriage, travel, new partnerships.",
+      "name": "Vajra",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          9
+        ],
+        "1": [
+          13
+        ],
+        "2": [
+          17
+        ],
+        "3": [
+          21
+        ],
+        "4": [
+          24
+        ],
+        "5": [
+          1
+        ],
+        "6": [
+          5
+        ]
+      }
+    },
+    {
+      "meaning": "Demon — one of the most feared yogas. All auspicious muhurtas forbidden.",
+      "name": "Rakshas Yoga",
+      "nature": "ashubh",
+      "severe": true,
+      "severity": "highly_inauspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          24
+        ],
+        "1": [
+          1
+        ],
+        "2": [
+          5
+        ],
+        "3": [
+          9
+        ],
+        "4": [
+          13
+        ],
+        "5": [
+          17
+        ],
+        "6": [
+          21
+        ]
+      }
+    },
+    {
+      "meaning": "Crow — brings bad news, separation, dark outcomes. Avoid family and social events.",
+      "name": "Dhwanksh",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          6
+        ],
+        "1": [
+          10
+        ],
+        "2": [
+          14
+        ],
+        "3": [
+          18
+        ],
+        "4": [
+          28
+        ],
+        "5": [
+          25
+        ],
+        "6": [
+          2
+        ]
+      }
+    },
+    {
+      "meaning": "Smoke — clouds clarity. Results unclear or obscured. Avoid contracts and negotiations.",
+      "name": "Dhumra",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          3
+        ],
+        "1": [
+          7
+        ],
+        "2": [
+          11
+        ],
+        "3": [
+          15
+        ],
+        "4": [
+          19
+        ],
+        "5": [
+          22
+        ],
+        "6": [
+          26
+        ]
+      }
+    },
+    {
+      "meaning": "Disease — brings illness or heavy obstacles. Avoided for health and medical muhurtas.",
+      "name": "Gad",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          22
+        ],
+        "1": [
+          26
+        ],
+        "2": [
+          3
+        ],
+        "3": [
+          7
+        ],
+        "4": [
+          11
+        ],
+        "5": [
+          15
+        ],
+        "6": [
+          19
+        ]
+      }
+    },
+    {
+      "meaning": "Joy/bliss — brings happiness. Good for celebrations and social gatherings.",
+      "name": "Anand",
+      "nature": "shubh",
+      "severity": "auspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          1
+        ],
+        "1": [
+          5
+        ],
+        "2": [
+          9
+        ],
+        "3": [
+          13
+        ],
+        "4": [
+          17
+        ],
+        "5": [
+          21
+        ],
+        "6": [
+          24
+        ]
+      }
+    },
+    {
+      "meaning": "Divine mark of Vishnu — brings prosperity and divine grace. Good for financial muhurtas.",
+      "name": "Shrivatsa",
+      "nature": "shubh",
+      "severity": "auspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          8
+        ],
+        "1": [
+          12
+        ],
+        "2": [
+          16
+        ],
+        "3": [
+          20
+        ],
+        "4": [
+          23
+        ],
+        "5": [
+          27
+        ],
+        "6": [
+          4
+        ]
+      }
+    },
+    {
+      "meaning": "Gentle/benevolent — calmness and pleasant outcomes. Good for relationships and healing.",
+      "name": "Saumya",
+      "nature": "shubh",
+      "severity": "auspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          5
+        ],
+        "1": [
+          9
+        ],
+        "2": [
+          13
+        ],
+        "3": [
+          17
+        ],
+        "4": [
+          21
+        ],
+        "5": [
+          24
+        ],
+        "6": [
+          1
+        ]
+      }
+    },
+    {
+      "meaning": "Royal canopy — protection and prestige. Good for authority and leadership muhurtas.",
+      "name": "Chatra",
+      "nature": "shubh",
+      "severity": "auspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          11
+        ],
+        "1": [
+          15
+        ],
+        "2": [
+          19
+        ],
+        "3": [
+          22
+        ],
+        "4": [
+          26
+        ],
+        "5": [
+          3
+        ],
+        "6": [
+          7
+        ]
+      }
+    },
+    {
+      "meaning": "Auspicious/good — blesses any work started in it with good results.",
+      "name": "Shubh",
+      "nature": "shubh",
+      "severity": "auspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          20
+        ],
+        "1": [
+          23
+        ],
+        "2": [
+          27
+        ],
+        "3": [
+          4
+        ],
+        "4": [
+          8
+        ],
+        "5": [
+          12
+        ],
+        "6": [
+          16
+        ]
+      }
+    },
+    {
+      "meaning": "Nectar — excellent, long-lasting, fruitful results. Highly recommended for muhurtas.",
+      "name": "Amrit",
+      "nature": "shubh",
+      "severity": "highly_auspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          21
+        ],
+        "1": [
+          24
+        ],
+        "2": [
+          1
+        ],
+        "3": [
+          5
+        ],
+        "4": [
+          9
+        ],
+        "5": [
+          13
+        ],
+        "6": [
+          17
+        ]
+      }
+    },
+    {
+      "meaning": "Friend — friendly, cooperative energy. Excellent for partnerships and marriages.",
+      "name": "Mitra",
+      "nature": "shubh",
+      "severity": "auspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          12
+        ],
+        "1": [
+          16
+        ],
+        "2": [
+          20
+        ],
+        "3": [
+          23
+        ],
+        "4": [
+          27
+        ],
+        "5": [
+          4
+        ],
+        "6": [
+          8
+        ]
+      }
+    },
+    {
+      "meaning": "Accomplished — work reaches its intended goal. Great for precision tasks.",
+      "name": "Siddhi Yoga",
+      "nature": "shubh",
+      "severity": "auspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          19
+        ],
+        "1": [
+          22
+        ],
+        "2": [
+          26
+        ],
+        "3": [
+          3
+        ],
+        "4": [
+          7
+        ],
+        "5": [
+          11
+        ],
+        "6": [
+          15
+        ]
+      }
+    },
+    {
+      "meaning": "Nectar of accomplishment — highest auspicious yoga. Work is blessed with completion and longevity.",
+      "name": "Amrit Siddhi",
+      "nature": "shubh",
+      "severity": "highly_auspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          13
+        ],
+        "1": [
+          22
+        ],
+        "2": [
+          1
+        ],
+        "3": [
+          17
+        ],
+        "4": [
+          8
+        ],
+        "5": [
+          27
+        ],
+        "6": [
+          4
+        ]
+      }
+    },
+    {
+      "meaning": "Accomplishment of all purposes — extremely powerful. Fulfils any objective.",
+      "name": "Sarvartha Siddhi",
+      "nature": "shubh",
+      "severity": "highly_auspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          13,
+          19,
+          7,
+          1
+        ],
+        "1": [
+          22,
+          4,
+          5,
+          8,
+          17
+        ],
+        "2": [
+          1,
+          26,
+          3,
+          9
+        ],
+        "3": [
+          4,
+          3,
+          5
+        ],
+        "4": [
+          27,
+          17,
+          1,
+          7,
+          8
+        ],
+        "5": [
+          27,
+          17,
+          1,
+          7,
+          22
+        ],
+        "6": [
+          4,
+          22,
+          15
+        ]
+      }
+    },
+    {
+      "meaning": "Sun-Pushya nectar — extremely auspicious conjunction of Sunday and Pushya nakshatra.",
+      "name": "Ravi Pushya Amrit",
+      "nature": "shubh",
+      "severity": "highly_auspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "0": [
+          8
+        ]
+      }
+    },
+    {
+      "meaning": "Guru-Pushya nectar — most auspicious conjunction of Thursday and Pushya nakshatra.",
+      "name": "Guru Pushya Amrit",
+      "nature": "shubh",
+      "severity": "highly_auspicious",
+      "trigger": "nakshatra",
+      "vara_map": {
+        "4": [
+          8
+        ]
+      }
+    },
+    {
+      "meaning": "Triple multiplication — events triple in effect. Losses triple; avoid inauspicious acts.",
+      "nakshatra_values": [
+        3,
+        7,
+        12,
+        16,
+        21,
+        25
+      ],
+      "name": "Tripushkar",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "tithi_values": [
+        2,
+        7,
+        12,
+        17,
+        22,
+        27
+      ],
+      "trigger": "tithi_and_nakshatra",
+      "vara_map": {
+        "0": true,
+        "2": true,
+        "6": true
+      }
+    },
+    {
+      "meaning": "Double multiplication — events double in effect. Losses double; avoid inauspicious acts.",
+      "nakshatra_values": [
+        5,
+        14,
+        23
+      ],
+      "name": "Dwipushkar",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "tithi_values": [
+        2,
+        7,
+        12,
+        17,
+        22,
+        27
+      ],
+      "trigger": "tithi_and_nakshatra",
+      "vara_map": {
+        "0": true,
+        "3": true,
+        "5": true
+      }
+    },
+    {
+      "meaning": "Youthful energy — auspicious for education, new learning, and children-related activities.",
+      "nakshatra_values": [
+        1,
+        4,
+        7,
+        10,
+        13,
+        16,
+        19,
+        22,
+        25
+      ],
+      "name": "Kumar Yog",
+      "nature": "shubh",
+      "severity": "auspicious",
+      "tithi_values": [
+        1,
+        5,
+        6,
+        10,
+        11
+      ],
+      "trigger": "tithi_and_nakshatra",
+      "vara_map": {
+        "1": true,
+        "2": true,
+        "3": true,
+        "4": true
+      }
+    },
+    {
+      "meaning": "Forbidden Kumar Yoga — causes obstacles in education and children-related matters. Avoid.",
+      "nakshatra_values": [
+        16
+      ],
+      "name": "Kumar Yog (Tyajya)",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "tithi_values": [
+        11
+      ],
+      "trigger": "tithi_and_nakshatra",
+      "vara_map": {
+        "1": true
+      }
+    },
+    {
+      "meaning": "Forbidden Kumar Yoga — causes obstacles in education and children-related matters. Avoid.",
+      "nakshatra_values": [
+        25
+      ],
+      "name": "Kumar Yog (Tyajya)",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "tithi_values": [
+        10
+      ],
+      "trigger": "tithi_and_nakshatra",
+      "vara_map": {
+        "2": true
+      }
+    },
+    {
+      "meaning": "Forbidden Kumar Yoga — causes obstacles in education and children-related matters. Avoid.",
+      "nakshatra_values": [
+        1,
+        19
+      ],
+      "name": "Kumar Yog (Tyajya)",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "tithi_values": [
+        9
+      ],
+      "trigger": "tithi_and_nakshatra",
+      "vara_map": {
+        "3": true
+      }
+    },
+    {
+      "meaning": "Forbidden Kumar Yoga — causes obstacles in education and children-related matters. Avoid.",
+      "nakshatra_values": [
+        4
+      ],
+      "name": "Kumar Yog (Tyajya)",
+      "nature": "ashubh",
+      "severity": "inauspicious",
+      "tithi_values": [
+        10
+      ],
+      "trigger": "tithi_and_nakshatra",
+      "vara_map": {
+        "4": true
+      }
+    },
+    {
+      "meaning": "Royal alignment — excellent for career, authority, and government work.",
+      "nakshatra_values": [
+        5,
+        14,
+        23
+      ],
+      "name": "Raj Yog",
+      "nature": "shubh",
+      "severity": "highly_auspicious",
+      "tithi_values": [
+        2,
+        7,
+        12
+      ],
+      "trigger": "tithi_and_nakshatra",
+      "vara_map": {
+        "2": true,
+        "4": true
+      }
+    },
+    {
+      "meaning": "Royal alignment — excellent for career, authority, and government work.",
+      "nakshatra_values": [
+        2,
+        5,
+        8,
+        11,
+        14,
+        17,
+        20,
+        23,
+        26
+      ],
+      "name": "Raj Yog",
+      "nature": "shubh",
+      "severity": "highly_auspicious",
+      "tithi_values": [
+        2,
+        3,
+        7,
+        12,
+        15
+      ],
+      "trigger": "tithi_and_nakshatra",
+      "vara_map": {
+        "0": true,
+        "1": true,
+        "2": true,
+        "3": true
+      }
+    },
+    {
+      "meaning": "Royal alignment — excellent for career, authority, and government work.",
+      "nakshatra_values": [
+        2,
+        5,
+        8,
+        11,
+        14,
+        17,
+        20,
+        23,
+        25
+      ],
+      "name": "Raj Yog",
+      "nature": "shubh",
+      "severity": "highly_auspicious",
+      "tithi_values": [
+        2,
+        3,
+        7,
+        12,
+        15
+      ],
+      "trigger": "tithi_and_nakshatra",
+      "vara_map": {
+        "4": true
+      }
+    },
+    {
+      "meaning": "Stability — excellent for long-term investments, construction, and foundational work.",
+      "nakshatra_values": [
+        1,
+        3,
+        6,
+        12,
+        15,
+        18,
+        21,
+        24,
+        27
+      ],
+      "name": "Sthir Yog",
+      "nature": "shubh",
+      "severity": "auspicious",
+      "tithi_values": [
+        4,
+        8,
+        9,
+        13,
+        14
+      ],
+      "trigger": "tithi_and_nakshatra",
+      "vara_map": {
+        "4": true,
+        "6": true
+      }
+    }
+  ],
+  "schema_version": 1
+}

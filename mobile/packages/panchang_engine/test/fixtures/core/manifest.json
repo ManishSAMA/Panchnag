@@ -20,7 +20,7 @@
     "jain_observances/vriddhi.py": "d144763bba12c521129b8892925cb1db86c17a4a44bcf2f16bc723829b204afc",
     "location_service.py": "5ba7cfc40a3f7f6644fabce3c5c4b09dcbea4c53ee03e247d631b3a781952a61",
     "muhurat_day.py": "af529a5226b6d5580600e744e0e8a903eca428af2609795e5abb0f046e5f5437",
-    "panchang.py": "bcc7c6695d4d3ce7bfc7a51bd0235b2dab0eb253267ce01bcfb05aa006b77d25",
+    "panchang.py": "01a46e55b0fda88dbcc949cd6c97b3f92aab0558430b00892ea863da12822905",
     "panchang_service.py": "6da5a0d9b3d48bb3d64f59b7834de7cc707902b632cd8f40149e6887f8a6f11b",
     "parity_fixtures.py": "b05a2ab049ab91f137cfb2f3b3cf73a100f8c171b08d7296fa4ac952346dfa1b",
     "request_parsing.py": "084b4e428020aa65da4f612f24d7ad5e5e0a0a4215492fd0430a3c1833b76ef1",
