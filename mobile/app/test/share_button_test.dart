@@ -22,10 +22,16 @@ Future<List<SharedDay>> _openRecording(
   return shared;
 }
 
-Future<void> _tapShare(WidgetTester tester, String tooltip) async {
+/// Taps share and waits until [shared] holds the share. The card paints and
+/// encodes on the real event loop, which a slow machine makes slow, so the
+/// test waits for the share itself, not for a fixed time.
+Future<void> _tapShare(WidgetTester tester, String tooltip, List<SharedDay> shared) async {
+  final before = shared.length;
   await tester.tap(find.byTooltip(tooltip));
-  // The card paints and encodes on the real event loop.
-  await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 500)));
+  for (var waited = 0; shared.length == before && waited < 200; waited++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pump();
+  }
   await tester.pumpAndSettle();
 }
 
@@ -42,7 +48,7 @@ void main() {
   testWidgets('hands the share sheet a PNG of the card and its text', (tester) async {
     final shared = await _openRecording(tester, now: ist(2026, 10, 22));
 
-    await _tapShare(tester, 'साझा करें');
+    await _tapShare(tester, 'साझा करें', shared);
 
     expect(shared, hasLength(1));
     expect(shared.single.png.sublist(0, 4), [0x89, 0x50, 0x4E, 0x47]);
@@ -55,7 +61,7 @@ void main() {
 
     await tester.tap(nav('अगला दिन'));
     await tester.pumpAndSettle();
-    await _tapShare(tester, 'साझा करें');
+    await _tapShare(tester, 'साझा करें', shared);
 
     expect(shared.single.text, contains('शुक्रवार, 23 अक्टूबर 2026'));
     expect(shared.single.fileName, 'jain-panchang-2026-10-23.png');
@@ -64,7 +70,7 @@ void main() {
   testWidgets('includes the date\'s festivals', (tester) async {
     final shared = await _openRecording(tester, now: ist(2026, 10, 20));
 
-    await _tapShare(tester, 'साझा करें');
+    await _tapShare(tester, 'साझा करें', shared);
 
     expect(shared.single.text, contains('श्री नेमिनाथ जी — केवलज्ञान कल्याणक · कल्याणक'));
   });
@@ -72,11 +78,11 @@ void main() {
   testWidgets('names the month in the chosen month system', (tester) async {
     // 31 Oct 2026 is Krishna Shashthi: Kartika when months end at Purnima, Ashwin when they end at Amavasya.
     final purnimanta = await _openRecording(tester, now: ist(2026, 10, 31));
-    await _tapShare(tester, 'साझा करें');
+    await _tapShare(tester, 'साझा करें', purnimanta);
     expect(purnimanta.single.text, contains('कृष्ण षष्ठी · कार्तिक'));
 
     final amanta = await _openRecording(tester, now: ist(2026, 10, 31), settings: {'settings.monthSystem': 'amanta'});
-    await _tapShare(tester, 'साझा करें');
+    await _tapShare(tester, 'साझा करें', amanta);
     expect(amanta.single.text, contains('कृष्ण षष्ठी · आश्विन'));
   });
 
@@ -84,13 +90,13 @@ void main() {
     String sunriseLine(List<SharedDay> shared) =>
         shared.single.text.split('\n').firstWhere((l) => l.startsWith('सूर्योदय'));
     final modern = await _openRecording(tester, now: ist(2026, 10, 22));
-    await _tapShare(tester, 'साझा करें');
+    await _tapShare(tester, 'साझा करें', modern);
     final traditional = await _openRecording(
       tester,
       now: ist(2026, 10, 22),
       settings: {'settings.sunriseRule': 'traditional'},
     );
-    await _tapShare(tester, 'साझा करें');
+    await _tapShare(tester, 'साझा करें', traditional);
 
     expect(sunriseLine(traditional), isNot(sunriseLine(modern)));
   });
@@ -98,7 +104,7 @@ void main() {
   testWidgets('is in English on an English phone', (tester) async {
     final shared = await _openRecording(tester, now: ist(2026, 10, 22), phone: const Locale('en', 'US'));
 
-    await _tapShare(tester, 'Share');
+    await _tapShare(tester, 'Share', shared);
 
     expect(shared.single.text, contains('Thursday, 22 October 2026 · Delhi'));
     expect(shared.single.text, endsWith('— Jain Panchang'));
