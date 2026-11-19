@@ -7,7 +7,7 @@ import '../../engine/day_reading.dart';
 import '../../format/panchang_text.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/panchang_section.dart';
-import '../../theme/pothi.dart';
+import '../../theme/navpad.dart';
 import 'today_state.dart';
 
 /// Today's Panchang under the hero: the Jain tithi, the nakshatra (with its
@@ -31,16 +31,9 @@ class PanchangCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final lang = langOf(context);
-    final p = Theme.of(context).extension<Pothi>() ?? Pothi.light;
-    final section = ref
-        .watch(sectionReadingProvider(SectionRequest(request)))
-        .value;
-    SectionLine line(
-      String key,
-      String name, {
-      DateTime? until,
-      List<int> rashis = const [],
-    }) => SectionLine(
+    final n = Theme.of(context).extension<Navpad>()!;
+    final section = ref.watch(sectionReadingProvider(SectionRequest(request))).value;
+    SectionLine line(String key, String name, {DateTime? until, List<int> rashis = const []}) => SectionLine(
       key: Key('today-panchang-$key'),
       name: name,
       day: day.date,
@@ -53,28 +46,17 @@ class PanchangCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          PothiHeading(
-            title: isToday ? l10n.todayPanchangHeading : l10n.panchangHeading,
-          ),
+          PothiHeading(title: isToday ? l10n.todayPanchangHeading : l10n.panchangHeading),
           SectionRow(
             label: l10n.tithiLabel,
-            lines: [
-              line(
-                'tithi',
-                tithiName(day.jainTithi.index, lang),
-                until: day.jainTithi.endsAt,
-              ),
-            ],
+            lines: [line('tithi', tithiName(day.jainTithi.index, lang), until: day.jainTithi.endsAt)],
           ),
           SectionRow(
             label: l10n.nakshatra,
             lines: [
               line(
                 'nakshatra',
-                l10n.nakshatraWithPada(
-                  nakshatraName(day.nakshatra.index, lang),
-                  day.nakshatra.pada,
-                ),
+                l10n.nakshatraWithPada(nakshatraName(day.nakshatra.index, lang), day.nakshatra.pada),
                 until: day.nakshatra.endsAt,
                 rashis: nakshatraRashis(day.nakshatra.index),
               ),
@@ -83,42 +65,37 @@ class PanchangCard extends ConsumerWidget {
           if (section != null) ...[
             SectionRow(
               label: l10n.yogaLabel,
-              lines: [
-                line(
-                  'yoga',
-                  yogaName(section.yogas.first.index, lang),
-                  until: section.yogas.first.endsAt,
-                ),
-              ],
+              lines: [line('yoga', yogaName(section.yogas.first.index, lang), until: section.yogas.first.endsAt)],
             ),
             SectionRow(
               label: l10n.karanaLabel,
               lines: [
-                line(
-                  'karana',
-                  karanaName(section.karanas.first.index, lang),
-                  until: section.karanas.first.endsAt,
-                ),
+                line('karana', karanaName(section.karanas.first.index, lang), until: section.karanas.first.endsAt),
               ],
             ),
           ],
-          SectionRow(
-            label: l10n.varaLabel,
-            lines: [line('vara', weekdayName(day.date, lang))],
-          ),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            // The arrow is an icon: Mukta has no "→".
-            child: TextButton.icon(
-              key: const Key('today-full-panchang'),
-              style: TextButton.styleFrom(
-                foregroundColor: p.accent,
-                minimumSize: const Size(48, 48),
+          SectionRow(label: l10n.varaLabel, lines: [line('vara', weekdayName(day.date, lang))]),
+          // A filled red pill in the middle: Today's one way into Full
+          // Panchang, so it should invite a push. The arrow is an icon:
+          // Mukta has no "→".
+          Padding(
+            padding: const EdgeInsets.only(top: 14, bottom: 4),
+            child: Center(
+              child: FilledButton.icon(
+                key: const Key('today-full-panchang'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: n.red,
+                  foregroundColor: n.onRed,
+                  shape: const StadiumBorder(),
+                  minimumSize: const Size(48, 52),
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  textStyle: NavpadType.labelAction,
+                ),
+                onPressed: () => context.push('/full-panchang'),
+                icon: const Icon(Icons.arrow_forward, size: 18),
+                iconAlignment: IconAlignment.end,
+                label: Text(l10n.seeFullPanchang),
               ),
-              onPressed: () => context.push('/full-panchang'),
-              icon: const Icon(Icons.arrow_forward, size: 18),
-              iconAlignment: IconAlignment.end,
-              label: Text(l10n.seeFullPanchang),
             ),
           ),
         ],

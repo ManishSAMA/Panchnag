@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jainpanchang/features/today/feature_tiles.dart';
 import 'package:jainpanchang/format/panchang_text.dart';
 import 'package:jainpanchang/shared/panchang_symbols.dart';
+import 'package:jainpanchang/theme/navpad.dart';
 import 'package:jainpanchang/theme/pothi.dart';
 
 import 'support/harness.dart';
@@ -103,6 +104,30 @@ void main() {
 
       expect(find.byKey(const Key('full-panchang-screen')), findsOneWidget);
     });
+
+    testWidgets('its button is a red pill in the middle of the card, to invite a push', (tester) async {
+      await openApp(tester, now: ist(2026, 10, 22));
+      await tester.ensureVisible(fullButton);
+      final n = Theme.of(tester.element(fullButton)).extension<Navpad>()!;
+      final paper = tester.widget<Material>(find.descendant(of: fullButton, matching: find.byType(Material)).first);
+
+      expect(paper.color, n.red);
+      expect(paper.shape, isA<StadiumBorder>());
+      final label = tester.widget<Text>(find.descendant(of: fullButton, matching: find.text('पूरा पंचांग देखें')));
+      expect(label.style?.color ?? DefaultTextStyle.of(tester.element(find.text('पूरा पंचांग देखें'))).style.color, n.onRed);
+      expect(tester.getCenter(fullButton).dx, moreOrLessEquals(tester.getCenter(card).dx, epsilon: 1));
+      expect(tester.getSize(fullButton).height, greaterThanOrEqualTo(52));
+    });
+
+    for (final scale in [1.6, 2.0]) {
+      testWidgets('its pill fits at ${scale}x text', (tester) async {
+        await openApp(tester, now: ist(2026, 10, 22), textScale: scale);
+        await tester.ensureVisible(fullButton);
+
+        expect(tester.takeException(), isNull);
+        expect(tester.getRect(fullButton).right, lessThanOrEqualTo(tester.getRect(card).right));
+      });
+    }
 
     testWidgets('on another date the heading drops "today"', (tester) async {
       await openApp(tester, now: ist(2026, 10, 22));
