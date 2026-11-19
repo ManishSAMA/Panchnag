@@ -27,13 +27,13 @@ class FeatureTiles extends StatelessWidget {
         key: const Key('tile-muhurat'),
         glyph: NavpadGlyph.abhijit,
         label: l10n.muhuratTitle,
-        onTap: () => context.push('/muhurat'),
+        onTap: () => context.go('/muhurat'),
       ),
       _Tile(
         key: const Key('tile-pachchakkhan'),
         glyph: NavpadGlyph.sunpath,
         label: l10n.tabPachchakkhan,
-        onTap: () => context.go('/pachchakkhan'),
+        onTap: () => context.push('/pachchakkhan'),
       ),
       if (hasFestivals)
         _Tile(

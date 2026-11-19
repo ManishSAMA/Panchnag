@@ -62,7 +62,7 @@ void main() {
   final oct22 = ist(2026, 10, 22);
 
   group('Settings opens', () {
-    for (final tab in ['आज', 'माह', 'पच्चक्खाण']) {
+    for (final tab in ['आज', 'माह', 'मुहूर्त']) {
       testWidgets('from the gear on the $tab tab, and Back returns to it', (tester) async {
         await openApp(tester, now: oct22);
         if (tab != 'आज') await openTab(tester, tab);
@@ -74,6 +74,20 @@ void main() {
         expect(find.byType(NavigationBar), findsOneWidget);
       });
     }
+
+    testWidgets('from the gear on Pachchakkhan, and Back returns to it', (tester) async {
+      await openApp(tester, now: oct22);
+      final tile = find.byKey(const Key('tile-pachchakkhan'));
+      await tester.ensureVisible(tile);
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+
+      await openSettings(tester);
+      expect(find.text('स्थान'), findsOneWidget);
+
+      await goBack(tester);
+      expect(find.descendant(of: find.byType(AppBar), matching: find.text('पच्चक्खाण')), findsOneWidget);
+    });
 
     testWidgets("from Today's location chip, showing the city, its coordinates and time zone", (tester) async {
       await openApp(tester, now: oct22);

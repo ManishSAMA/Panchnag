@@ -100,7 +100,7 @@ class MuhuratBand extends ConsumerWidget {
                 glued(clockRange(wall(next.start), wall(next.end), lang)),
               ),
         value: l10n.untilAndCountdown(endText, durationText(end.difference(now), lang)),
-        onTap: () => context.push('/muhurat'),
+        onTap: () => context.go('/muhurat'),
       ),
     );
   }

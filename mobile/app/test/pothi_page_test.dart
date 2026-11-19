@@ -17,7 +17,7 @@ Finder get _stitch => find.byKey(const Key('pothi-stitch'));
 Future<void> _open(WidgetTester tester, String path) async {
   await openApp(tester, now: ist(2026, 11, 7));
   final router = GoRouter.of(tester.element(find.byType(Scaffold).first));
-  if (const ['/today', '/month', '/pachchakkhan', '/festivals'].contains(path)) {
+  if (const ['/today', '/month', '/muhurat', '/festivals'].contains(path)) {
     router.go(path);
   } else {
     router.push(path);

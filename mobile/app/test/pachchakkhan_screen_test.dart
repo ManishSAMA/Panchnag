@@ -14,11 +14,17 @@ Future<void> openPachchakkhan(
   double textScale = 1,
 }) async {
   await openApp(tester, now: now, phone: phone, textScale: textScale);
-  await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text(tabName(phone))));
-  await tester.pumpAndSettle();
+  await openFromToday(tester);
 }
 
-String tabName(Locale phone) => phone.languageCode == 'en' ? 'Pachchakkhan' : 'पच्चक्खाण';
+/// Pachchakkhan is no tab since मुहूर्त took its place (2026-11-19): it
+/// opens from its Today tile.
+Future<void> openFromToday(WidgetTester tester) async {
+  final tile = find.byKey(const Key('tile-pachchakkhan'));
+  await tester.ensureVisible(tile);
+  await tester.tap(tile);
+  await tester.pumpAndSettle();
+}
 
 final hero = find.byKey(const Key('pachchakkhan-hero'));
 final quietHero = find.byKey(const Key('pachchakkhan-all-done'));
@@ -105,8 +111,7 @@ void main() {
     await openApp(tester, now: ist(2026, 10, 22));
     await tester.tap(nav('अगला दिन'));
     await tester.pumpAndSettle();
-    await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('पच्चक्खाण')));
-    await tester.pumpAndSettle();
+    await openFromToday(tester);
 
     expect(find.text('शुक्रवार, 23 अक्टूबर 2026'), findsOneWidget);
   });

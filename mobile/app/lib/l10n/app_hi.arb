@@ -13,7 +13,9 @@
   "tabMonth": "माह",
   "@tabMonth": {"description": "Navigation bar destination: Month."},
   "tabPachchakkhan": "पच्चक्खाण",
-  "@tabPachchakkhan": {"description": "Navigation bar destination: Pachchakkhan."},
+  "@tabPachchakkhan": {"description": "Top-bar title of the Pachchakkhan screen, and its Today tile."},
+  "pressBackAgainToExit": "बाहर जाने के लिए फिर से वापस दबाएँ",
+  "@pressBackAgainToExit": {"description": "Shown for 2 s after Back on Today: a second Back closes the app."},
   "tabFestivals": "पर्व",
   "@tabFestivals": {"description": "Navigation bar destination and top-bar title: the Festivals list."},
 

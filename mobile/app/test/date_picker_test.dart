@@ -14,7 +14,7 @@ final dialog = find.byType(DatePickerDialog);
 Future<void> openAt(WidgetTester tester, String path, {Locale phone = const Locale('hi', 'IN')}) async {
   await openApp(tester, now: ist(2026, 11, 7, 10, 0), phone: phone);
   final router = GoRouter.of(tester.element(find.byType(Scaffold).first));
-  if (const ['/today', '/month', '/pachchakkhan', '/festivals'].contains(path)) {
+  if (const ['/today', '/month', '/muhurat', '/festivals'].contains(path)) {
     router.go(path);
   } else {
     router.push(path);

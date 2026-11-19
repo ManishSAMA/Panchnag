@@ -86,7 +86,7 @@ void main() {
       expect(tester.widget<IconBadge>(badge).background, n.surface);
     });
 
-    testWidgets('the nav bar shows sunrise, the month calendar, the sun on its path and the kalash', (tester) async {
+    testWidgets('the nav bar shows sunrise, the month calendar, the noon sun of Muhurat and the kalash', (tester) async {
       await openApp(tester, now: ist(2026, 10, 22));
       final bar = find.byType(NavigationBar);
 
@@ -95,7 +95,7 @@ void main() {
           for (final icon in tester.widgetList<NavpadIcon>(find.descendant(of: bar, matching: find.byType(NavpadIcon))))
             icon.glyph,
         ],
-        [NavpadGlyph.sunrise, NavpadGlyph.monthcal, NavpadGlyph.sunpath, NavpadGlyph.kalash],
+        [NavpadGlyph.sunrise, NavpadGlyph.monthcal, NavpadGlyph.abhijit, NavpadGlyph.kalash],
       );
       expect(find.descendant(of: bar, matching: find.byType(Icon)), findsNothing);
     });

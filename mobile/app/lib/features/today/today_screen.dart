@@ -181,7 +181,7 @@ class _DayView extends ConsumerWidget {
           title: l10n.bandNextTitle(band.name),
           subtitle: band.subtitle,
           value: l10n.timeAndCountdown(band.time, durationText(band.at.difference(now), lang)),
-          onTap: () => context.go('/pachchakkhan'),
+          onTap: () => context.push('/pachchakkhan'),
         ),
       ?festivalBand(BandColour.green, 'today-band-vrat', [
         for (final l in lines)
@@ -212,7 +212,7 @@ class _DayView extends ConsumerWidget {
         SectionHeading(title: isToday ? l10n.timesToday : l10n.timesOfDay),
         _clockRow(l10n.sunrise, NavpadGlyph.sunrise, reading.sunrise, wall, lang),
         _clockRow(l10n.sunset, NavpadGlyph.sunset, reading.sunset, wall, lang),
-        SectionHeading(title: l10n.pachchakkhan, linkLabel: l10n.seeAll, onLink: () => context.go('/pachchakkhan')),
+        SectionHeading(title: l10n.pachchakkhan, linkLabel: l10n.seeAll, onLink: () => context.push('/pachchakkhan')),
         for (final p in reading.pachchakkhan.completions)
           pachchakkhanRow(
             l10n: l10n,

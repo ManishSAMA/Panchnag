@@ -13,6 +13,7 @@ import '../../shared/date_picker_button.dart';
 import '../../shared/mark.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../shared/pothi_page.dart';
+import '../../shared/settings_button.dart';
 import '../today/today_state.dart';
 import 'muhurat_grid.dart';
 import 'muhurat_state.dart';
@@ -27,7 +28,7 @@ class MuhuratScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final city = ref.watch(locationProvider)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.muhuratTitle), actions: const [DatePickerButton()]),
+      appBar: AppBar(title: Text(l10n.muhuratTitle), actions: const [DatePickerButton(), SettingsButton()]),
       body: PothiPage(
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 24),
