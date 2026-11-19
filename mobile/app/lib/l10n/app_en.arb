@@ -207,5 +207,6 @@
   "yogaDiminished": "weakened",
   "yogaVarjya": "avoid {range}",
   "@yogaVarjya": {"placeholders": {"range": {"type": "String"}}},
-  "allDay": "All day"
+  "allDay": "All day",
+  "muhuratBandNextGood": "Next good: {name} · {range}"
 }

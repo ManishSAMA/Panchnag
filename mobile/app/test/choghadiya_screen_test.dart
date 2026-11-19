@@ -16,7 +16,7 @@ PanchangDay delhi(CivilDate date) =>
 /// dropped, as Today shows sunrise and sunset.
 String hm(DateTime utc) => clockTime(roundDownToMinute(cityWall(utc, 'Asia/Kolkata')), Lang.hi).time;
 
-final band = find.textContaining(RegExp('^(चौघड़िया|Choghadiya): '));
+final choghadiyaTile = find.byKey(const Key('muhurat-tile-choghadiya'));
 final hero = find.byKey(const Key('choghadiya-hero'));
 Finder inHero(Finder finder) => find.descendant(of: hero, matching: finder);
 final nowRows = find.bySemanticsLabel(RegExp(r', (अभी|now)$'));
@@ -29,8 +29,12 @@ Future<void> openChoghadiya(
   double textScale = 1,
 }) async {
   await openApp(tester, now: now, phone: phone, textScale: textScale);
-  await tester.ensureVisible(band);
-  await tester.tap(band);
+  final muhurat = find.byKey(const Key('tile-muhurat'));
+  await tester.ensureVisible(muhurat);
+  await tester.tap(muhurat);
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(choghadiyaTile);
+  await tester.tap(choghadiyaTile);
   await tester.pumpAndSettle();
 }
 
@@ -42,86 +46,20 @@ void main() {
   final oct22 = delhi(const CivilDate(2026, 10, 22));
   final char = oct22.choghadiya[3];
 
-  group('the navy band on Today', () {
-    testWidgets('names the current slot and its quality, the next slot, its end and a countdown', (tester) async {
-      final now = ist(2026, 10, 22, 10, 52);
-      await openApp(tester, now: now);
+  testWidgets('opens from the Muhurat grid, outside the tabs, with a back arrow', (tester) async {
+    await openChoghadiya(tester, now: ist(2026, 10, 22, 10, 52));
 
-      expect(find.text('चौघड़िया: चर · – सामान्य'), findsOneWidget);
-      expect(find.text('अगला: लाभ · ✓ अच्छा'), findsOneWidget);
-      expect(find.text('${hm(char.end)} तक · ${durationText(char.end.difference(now), Lang.hi)}'), findsOneWidget);
-    });
+    expect(hero, findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
 
-    testWidgets("the last day slot ends at the sunset Today shows, seconds dropped", (tester) async {
-      final now = ist(2026, 10, 22, 16, 30);
-      final sunset = cityWall(oct22.sunset, 'Asia/Kolkata');
-      expect(sunset.second, greaterThanOrEqualTo(30), reason: 'rounding to the nearest minute would differ');
-      await openApp(tester, now: now);
-
-      expect(find.textContaining(RegExp('^${hm(oct22.sunset)} तक · ')), findsOneWidget);
-      expect(find.text(hm(oct22.sunset)), findsWidgets, reason: "Today's sunset row");
-    });
-
-    testWidgets('is in English on an English phone', (tester) async {
-      final now = ist(2026, 10, 22, 10, 52);
-      await openApp(tester, now: now, phone: const Locale('en', 'US'));
-
-      expect(find.text('Choghadiya: Char · – Neutral'), findsOneWidget);
-      expect(find.text('Next: Labh · ✓ Good'), findsOneWidget);
-      expect(find.text('until ${hm(char.end)} · ${durationText(char.end.difference(now), Lang.en)}'), findsOneWidget);
-    });
-
-    testWidgets("before sunrise it follows the sun: last night's slot is current", (tester) async {
-      final now = ist(2026, 10, 22, 5, 0);
-      final night = delhi(const CivilDate(2026, 10, 21)).choghadiya;
-      final running = night.lastWhere((s) => !s.start.isAfter(now));
-      await openApp(tester, now: now);
-
-      expect(band, findsOneWidget);
-      expect(find.textContaining('चौघड़िया: ${choghadiyaName(running.name, Lang.hi)} · '), findsOneWidget);
-    });
-
-    testWidgets('is not shown on another day', (tester) async {
-      await openApp(tester, now: ist(2026, 10, 22, 10, 52));
-      await tester.tap(nav('अगला दिन'));
-      await tester.pumpAndSettle();
-
-      expect(band, findsNothing);
-    });
-
-    testWidgets('opens the Choghadiya screen, outside the tabs, with a back arrow', (tester) async {
-      await openChoghadiya(tester, now: ist(2026, 10, 22, 10, 52));
-
-      expect(hero, findsOneWidget);
-      expect(find.byType(NavigationBar), findsNothing);
-
-      await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
-      expect(hero, findsNothing);
-      expect(band, findsOneWidget);
-    });
-
-    for (final scale in [1.3, 1.6, 2.0]) {
-      testWidgets('nothing overflows on Today at ${scale}x text', (tester) async {
-        await openApp(tester, now: ist(2026, 10, 22, 10, 52), textScale: scale);
-
-        expect(tester.takeException(), isNull);
-        expect(band, findsOneWidget);
-      });
-    }
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(hero, findsNothing);
+    expect(choghadiyaTile, findsOneWidget);
   });
 
-  testWidgets("Today's band and the hero lead with the ghatika", (tester) async {
-    await openApp(tester, now: ist(2026, 10, 22, 10, 52));
-    final bandIcon = find.descendant(
-      of: find.ancestor(of: band, matching: find.byType(InkWell)).first,
-      matching: find.byType(NavpadIcon),
-    );
-    expect(tester.widget<NavpadIcon>(bandIcon).glyph, NavpadGlyph.ghatika);
-
-    await tester.ensureVisible(band);
-    await tester.tap(band);
-    await tester.pumpAndSettle();
+  testWidgets('the hero leads with the ghatika', (tester) async {
+    await openChoghadiya(tester, now: ist(2026, 10, 22, 10, 52));
     expect(tester.widget<NavpadIcon>(inHero(find.byType(NavpadIcon))).glyph, NavpadGlyph.ghatika);
   });
 

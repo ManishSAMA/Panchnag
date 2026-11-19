@@ -303,10 +303,11 @@ void main() {
       await tapText(tester, 'पारंपरिक');
       await goBack(tester);
 
-      final band = find.textContaining('चौघड़िया: ');
-      await tester.ensureVisible(band);
-      await tester.tap(band);
-      await tester.pumpAndSettle();
+      for (final key in ['tile-muhurat', 'muhurat-tile-choghadiya']) {
+        await tester.ensureVisible(find.byKey(Key(key)));
+        await tester.tap(find.byKey(Key(key)));
+        await tester.pumpAndSettle();
+      }
 
       // Thursday's first day slot is Shubh.
       expect(find.bySemanticsLabel(RegExp('^शुभ ✓ अच्छा सुबह ${firstSlotStart(SunriseRule.traditional)}–')), findsOneWidget);

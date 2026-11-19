@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:jainpanchang/features/choghadiya/choghadiya_band.dart';
+import 'package:jainpanchang/features/muhurat/muhurat_band.dart';
 import 'package:jainpanchang/shared/date_navigator.dart';
 import 'package:jainpanchang/shared/navpad_widgets.dart';
 import 'package:jainpanchang/theme/navpad.dart';
@@ -61,7 +61,7 @@ void main() {
   testWidgets('content starts to the right of the stitch', (tester) async {
     await _open(tester, '/today');
 
-    for (final content in [find.byType(DateNavigator), find.byType(ChoghadiyaBand)]) {
+    for (final content in [find.byType(DateNavigator), find.byType(MuhuratBand)]) {
       expect(tester.getTopLeft(content).dx, greaterThanOrEqualTo(22));
     }
   });

@@ -22,7 +22,7 @@ import '../../shared/navpad_widgets.dart';
 import '../../shared/pachchakkhan_row.dart';
 import '../../shared/settings_button.dart';
 import '../../theme/navpad.dart';
-import '../choghadiya/choghadiya_band.dart';
+import '../muhurat/muhurat_band.dart';
 import '../festivals/festival_state.dart';
 import '../month/month_state.dart';
 import 'feature_tiles.dart';
@@ -207,7 +207,7 @@ class _DayView extends ConsumerWidget {
             padding: EdgeInsets.only(top: i == 0 ? firstGap : 2),
             child: b,
           ),
-        ChoghadiyaBand(date: reading.date, topGap: bands.isNotEmpty ? 2 : firstGap),
+        MuhuratBand(date: reading.date, topGap: bands.isNotEmpty ? 2 : firstGap),
         SectionHeading(title: isToday ? l10n.timesToday : l10n.timesOfDay),
         _clockRow(l10n.sunrise, NavpadGlyph.sunrise, reading.sunrise, wall, lang),
         _clockRow(l10n.sunset, NavpadGlyph.sunset, reading.sunset, wall, lang),
