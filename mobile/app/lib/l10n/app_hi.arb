@@ -337,5 +337,9 @@
   "muhuratBandNextGood": "अगला शुभ: {name} · {range}",
   "@muhuratBandNextGood": {"description": "Muhurat band sub-line on Today: the next Amrit, Shubh or Labh choghadiya and its range.", "placeholders": {"name": {"type": "String"}, "range": {"type": "String"}}},
   "pickDate": "तारीख चुनें",
-  "@pickDate": {"description": "Tooltip of the calendar button in the top bar, and the date picker's heading."}
+  "@pickDate": {"description": "Tooltip of the calendar button in the top bar, and the date picker's heading."},
+  "pickYear": "वर्ष चुनें",
+  "@pickYear": {"description": "Heading of the year list, and tooltip of the Festivals year chip."},
+  "pickMonth": "महीना चुनें",
+  "@pickMonth": {"description": "Heading of the month list after a year is picked, and the hint on the Month tab's month name."}
 }

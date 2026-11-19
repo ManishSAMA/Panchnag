@@ -225,4 +225,97 @@ void main() {
       findsOneWidget,
     );
   });
+
+  group('the year chip', () {
+    FestivalRequest delhiIn(int year) => FestivalRequest(
+      year: year,
+      lat: delhi2026.lat,
+      lon: delhi2026.lon,
+      timezone: delhi2026.timezone,
+      profile: delhi2026.profile,
+    );
+    final yearChip = find.byKey(const Key('festivals-year'));
+
+    Future<void> pickYear(WidgetTester tester, int year) async {
+      await tester.tap(yearChip);
+      await tester.pumpAndSettle();
+      final button = find.byKey(Key('year-$year'));
+      await tester.ensureVisible(button);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+    }
+
+    CivilDate firstShown(WidgetTester tester) {
+      final rows = tester.widgetList(
+        find.descendant(
+          of: list,
+          matching: find.byWidgetPredicate(
+            (w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('festival-date-'),
+          ),
+        ),
+      );
+      final iso = (rows.first.key! as ValueKey<String>).value.substring('festival-date-'.length);
+      final [y, m, d] = iso.split('-').map(int.parse).toList();
+      return CivilDate(y, m, d);
+    }
+
+    testWidgets('shows this year', (tester) async {
+      await openFestivals(tester, now: ist(2026, 10, 29));
+
+      expect(find.descendant(of: yearChip, matching: find.textContaining('2026')), findsOneWidget);
+    });
+
+    testWidgets('a later year shows all of that year, from 1 January', (tester) async {
+      await openFestivals(tester, now: ist(2026, 10, 29));
+      await pickYear(tester, 2027);
+
+      final expected = festivalDates(await realFestivals(delhiIn(2027)), from: const CivilDate(2027, 1, 1), lang: Lang.hi);
+      expect(firstShown(tester), expected.first.date);
+      expect(find.byKey(const Key('festival-month-2027-01')), findsOneWidget);
+      expect(find.descendant(of: yearChip, matching: find.textContaining('2027')), findsOneWidget);
+    });
+
+    testWidgets('a year gone by shows all of that year too', (tester) async {
+      await openFestivals(tester, now: ist(2026, 10, 29));
+      await pickYear(tester, 2025);
+
+      final expected = festivalDates(await realFestivals(delhiIn(2025)), from: const CivilDate(2025, 1, 1), lang: Lang.hi);
+      expect(firstShown(tester), expected.first.date);
+    });
+
+    testWidgets('this year again starts from today', (tester) async {
+      await openFestivals(tester, now: ist(2026, 10, 29));
+      await pickYear(tester, 2030);
+      await pickYear(tester, 2026);
+
+      expect(firstShown(tester), const CivilDate(2026, 10, 29));
+    });
+
+    testWidgets('the year list fits at 2.0x text', (tester) async {
+      await openApp(tester, now: ist(2026, 10, 29), textScale: 2.0);
+      await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('पर्व')));
+      await tester.pumpAndSettle();
+      tester.takeException();
+      await tester.ensureVisible(yearChip);
+      await tester.tap(yearChip);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      final last = find.byKey(const Key('year-2040'));
+      await tester.ensureVisible(last);
+      expect(last.hitTestable(), findsOneWidget);
+    });
+
+    testWidgets('offers every year the app covers, 2016 to 2040', (tester) async {
+      await openFestivals(tester, now: ist(2026, 10, 29));
+      await tester.tap(yearChip);
+      await tester.pumpAndSettle();
+
+      for (final year in [2016, 2026, 2040]) {
+        expect(find.byKey(Key('year-$year')), findsOneWidget, reason: '$year');
+      }
+      expect(find.byKey(const Key('year-2015')), findsNothing);
+      expect(find.byKey(const Key('year-2041')), findsNothing);
+    });
+  });
 }

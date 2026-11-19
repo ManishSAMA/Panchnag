@@ -282,4 +282,80 @@ void main() {
       expect(inPanel(find.text('वृद्धि तिथि · पहला दिन')), findsOneWidget);
     });
   });
+
+  group('a push on the month name', () {
+    final title = find.byKey(const Key('month-title'));
+
+    Future<void> pick(WidgetTester tester, {required int year, required int month}) async {
+      await tester.tap(title);
+      await tester.pumpAndSettle();
+      final yearButton = find.byKey(Key('year-$year'));
+      await tester.ensureVisible(yearButton);
+      await tester.tap(yearButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key('month-$month')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('picks a year, then a month, and shows that month', (tester) async {
+      await openMonth(tester, now: ist(2026, 10, 22));
+      await pick(tester, year: 2031, month: 3);
+
+      expect(find.text(monthTitle(2031, 3, Lang.hi)), findsOneWidget);
+      expect(cell(const CivilDate(2031, 3, 1)), findsOneWidget);
+    });
+
+    testWidgets('offers every year the app covers, 2016 to 2040', (tester) async {
+      await openMonth(tester, now: ist(2026, 10, 22));
+      await tester.tap(title);
+      await tester.pumpAndSettle();
+
+      for (final year in [2016, 2026, 2040]) {
+        expect(find.byKey(Key('year-$year')), findsOneWidget, reason: '$year');
+      }
+      expect(find.byKey(const Key('year-2041')), findsNothing);
+    });
+
+    testWidgets('names the 12 months of the picked year', (tester) async {
+      await openMonth(tester, now: ist(2026, 10, 22));
+      await tester.tap(title);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('year-2028')));
+      await tester.pumpAndSettle();
+
+      for (var month = 1; month <= 12; month++) {
+        expect(find.byKey(Key('month-$month')), findsOneWidget, reason: '$month');
+      }
+      expect(find.text(gregorianMonthName(1, Lang.hi)), findsOneWidget);
+    });
+
+    testWidgets('the month holding today selects today', (tester) async {
+      await openMonth(tester, now: ist(2026, 10, 22));
+      await pick(tester, year: 2030, month: 1);
+      await pick(tester, year: 2026, month: 10);
+
+      expect(find.text(monthTitle(2026, 10, Lang.hi)), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, 'आज'), findsNothing);
+    });
+
+    testWidgets('the year and month lists fit at 1.3x text', (tester) async {
+      await openMonth(tester, now: ist(2026, 10, 22), textScale: 1.3);
+      await tester.tap(title);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      final year = find.byKey(const Key('year-2040'));
+      await tester.ensureVisible(year);
+      await tester.tap(year);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('month-9')), findsOneWidget);
+    });
+
+    testWidgets('is a button for a screen reader', (tester) async {
+      await openMonth(tester, now: ist(2026, 10, 22));
+
+      expect(tester.getSemantics(title), isSemantics(isButton: true, isHeader: true, hint: 'महीना चुनें', hasTapAction: true));
+    });
+  });
 }

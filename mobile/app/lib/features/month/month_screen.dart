@@ -17,6 +17,7 @@ import '../../shared/moon_phase.dart';
 import '../../shared/navpad_icons.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../shared/settings_button.dart';
+import '../../shared/year_month_picker.dart';
 import '../../theme/navpad.dart';
 import '../festivals/festival_state.dart';
 import '../today/today_state.dart';
@@ -134,12 +135,29 @@ class _Header extends ConsumerWidget {
           Expanded(
             child: Column(
               children: [
+                // A push on the name picks a year, then a month (user 2026-11-19).
                 Semantics(
                   header: true,
-                  child: Text(
-                    monthTitle(view.year, view.month, lang),
-                    textAlign: TextAlign.center,
-                    style: NavpadType.displayMonth.copyWith(color: n.ink),
+                  button: true,
+                  hint: l10n.pickMonth,
+                  child: InkWell(
+                    key: const Key('month-title'),
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () async {
+                      final picked = await pickYearMonth(context, selected: (year: view.year, month: view.month));
+                      if (picked != null) months.showMonth(picked.year, picked.month);
+                    },
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48),
+                      child: Center(
+                        widthFactor: 1,
+                        child: Text(
+                          monthTitle(view.year, view.month, lang),
+                          textAlign: TextAlign.center,
+                          style: NavpadType.displayMonth.copyWith(color: n.ink),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 if (shownDays != null && shownDays.first.date.month == view.month)

@@ -210,5 +210,7 @@
   "@yogaVarjya": {"placeholders": {"range": {"type": "String"}}},
   "allDay": "All day",
   "muhuratBandNextGood": "Next good: {name} · {range}",
-  "pickDate": "Pick a date"
+  "pickDate": "Pick a date",
+  "pickYear": "Pick a year",
+  "pickMonth": "Pick a month"
 }

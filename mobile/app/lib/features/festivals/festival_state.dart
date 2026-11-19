@@ -42,6 +42,17 @@ List<FestivalOccurrence>? festivalYear(WidgetRef ref, int year) {
   return ref.watch(festivalYearProvider(request)).value;
 }
 
+/// The year the Festivals tab shows; null until one is picked, which means
+/// this year. Not saved: the tab opens on this year again after a restart.
+final festivalsYearProvider = NotifierProvider<FestivalsYear, int?>(FestivalsYear.new);
+
+final class FestivalsYear extends Notifier<int?> {
+  @override
+  int? build() => null;
+
+  void choose(int year) => state = year;
+}
+
 /// The Festivals tab's chip, kept across restarts (mobile-ui-design.md §3).
 final festivalFilterProvider = NotifierProvider<EnumSetting<FestivalFilter>, FestivalFilter>(
   () => EnumSetting('festivals.filter', FestivalFilter.values, FestivalFilter.all),

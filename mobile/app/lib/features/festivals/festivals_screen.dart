@@ -11,6 +11,7 @@ import '../../location/location_store.dart';
 import '../../shared/festival_icon.dart';
 import '../../shared/festival_mark.dart';
 import '../../shared/settings_button.dart';
+import '../../shared/year_month_picker.dart';
 import '../../theme/navpad.dart';
 import '../month/month_state.dart';
 import '../today/today_state.dart';
@@ -28,18 +29,21 @@ class FestivalsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final today = todayIn(ref.watch(locationProvider)!.timezone, ref.read(clockProvider)());
     final filter = ref.watch(festivalFilterProvider);
-    final festivals = festivalYear(ref, today.year);
+    final year = ref.watch(festivalsYearProvider) ?? today.year;
+    // This year from today; any other year whole (user 2026-11-19).
+    final from = year == today.year ? today : CivilDate(year, 1, 1);
+    final festivals = festivalYear(ref, year);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.tabFestivals), actions: const [SettingsButton()]),
       body: PothiPage(child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _FilterChips(selected: filter),
+          _FilterChips(selected: filter, year: year),
           Expanded(
             child: festivals == null
                 ? const _Loading()
                 : _FestivalList(
-                    dates: festivalDates(festivals, from: today, lang: langOf(context), filter: filter),
+                    dates: festivalDates(festivals, from: from, lang: langOf(context), filter: filter),
                   ),
           ),
         ],
@@ -49,9 +53,10 @@ class FestivalsScreen extends ConsumerWidget {
 }
 
 class _FilterChips extends ConsumerWidget {
-  const _FilterChips({required this.selected});
+  const _FilterChips({required this.selected, required this.year});
 
   final FestivalFilter selected;
+  final int year;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -66,6 +71,15 @@ class _FilterChips extends ConsumerWidget {
       child: Wrap(
         spacing: 8,
         children: [
+          ActionChip(
+            key: const Key('festivals-year'),
+            label: Text('$year ▾'),
+            tooltip: l10n.pickYear,
+            onPressed: () async {
+              final picked = await pickYear(context, selected: year);
+              if (picked != null) ref.read(festivalsYearProvider.notifier).choose(picked);
+            },
+          ),
           for (final filter in FestivalFilter.values)
             FilterChip(
               label: Text(label(filter)),

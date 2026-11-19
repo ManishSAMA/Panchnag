@@ -569,6 +569,7 @@ An M3 NavigationBar, 80 dp on `surface` with a top hairline: four destinations (
 An M3 Switch, 52 × 32 dp. Off: a `surface2` track, a 2 dp ink3 outline and a 16 dp ink3 thumb. On: a navy track and a 20 dp onNavy thumb. The thumb slides in 200 ms on the standard curve.
 
 ### Month grid
+A push on the month name (a 48 dp button, hint "महीना चुनें") opens a dialog of years 2016–2040, then the 12 months of the picked year, as 48 dp round buttons with the chosen one on the `pill`. The Festivals tab's "2026 ▾" action chip opens the same year list: this year shows from today, any other year whole.
 Seven hairline columns of 64 dp cells: the day number (19 sp/600), the 11 dp moon and the short tithi (12 sp, shrunk rather than wrapped when a cell is narrow), up to three 13 dp festival icons (2.2 stroke, in kalash, five lights, flag, diya order), and a क्ष / वृ corner flag. The legend under the grid shows the four icons at 16 dp with their words. Today has a 2 dp navy inset ring, and the selected day is filled with `pill`. The day sheet below sits on `surface`, with a 32 × 4 dp grab handle and a Tiro title.
 
 ## Do's and Don'ts

@@ -41,9 +41,15 @@ final class MonthViewNotifier extends Notifier<MonthView> {
   /// The header disables its arrows at [firstDay]'s and [lastDay]'s months.
   void shift(int months) {
     final first = DateTime.utc(state.year, state.month + months);
+    showMonth(first.year, first.month);
+  }
+
+  /// A month picked from its name: today is selected in the month holding
+  /// it, else the month's first day.
+  void showMonth(int year, int month) {
     final today = _today();
-    final holdsToday = today.year == first.year && today.month == first.month;
-    state = (year: first.year, month: first.month, selected: holdsToday ? today : CivilDate(first.year, first.month, 1));
+    final holdsToday = today.year == year && today.month == month;
+    state = (year: year, month: month, selected: holdsToday ? today : CivilDate(year, month, 1));
   }
 
   void goToday() => state = _current();
