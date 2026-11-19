@@ -109,7 +109,7 @@ class MuhuratGrid extends ConsumerWidget {
         );
       }
       if (kind == MuhuratKind.yoga) {
-        final nitya = section?.yogas.first.index;
+        final nitya = section == null ? null : nityaYogaAt(section.yogas, now).index;
         if (nitya == null) return loading;
         return marked(yogaName(nitya, lang), nityaYogaIsAuspicious(nitya) ? Mark.good : Mark.avoid);
       }

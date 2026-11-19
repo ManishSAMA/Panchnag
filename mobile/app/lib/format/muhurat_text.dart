@@ -33,6 +33,12 @@ String dayWindowText({
 bool runsAt(DateTime now, {required DateTime start, required DateTime end}) =>
     !now.isBefore(start) && now.isBefore(end);
 
+/// The nitya yoga of [yogas] (a day's, in order) still holding at [now]:
+/// on today, the one running; on a day still to come, or one gone by, the
+/// sunrise yoga.
+ElementSpan nityaYogaAt(List<ElementSpan> yogas, DateTime now) =>
+    yogas.firstWhere((y) => y.endsAt.isAfter(now), orElse: () => yogas.first);
+
 String agniVaasName(AgniVaas vaas, Lang lang) => switch ((vaas, lang)) {
   (AgniVaas.prithvi, Lang.hi) => 'पृथ्वी',
   (AgniVaas.aakash, Lang.hi) => 'आकाश',

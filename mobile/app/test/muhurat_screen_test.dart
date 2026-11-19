@@ -513,6 +513,54 @@ void main() {
     });
   });
 
+  group('the nitya yoga that runs now', () {
+    // 19 Nov 2026, 1:39 PM in Delhi: Vyaghata, the sunrise yoga, ended at
+    // 7:42 AM; the phone showed it still (user's phone check, 2026-11-19).
+    const nov19 = CivilDate(2026, 11, 19);
+    final now = ist(2026, 11, 19, 13, 39);
+    ElementSpan running() => sectionOn(nov19).yogas.firstWhere((y) => y.endsAt.isAfter(now));
+
+    test('is not the sunrise yoga on this date', () {
+      expect(sectionOn(nov19).yogas.first.endsAt.isBefore(now), isTrue);
+    });
+
+    testWidgets('is on the Yoga tile, with its own mark', (tester) async {
+      await openMuhurat(tester, now: now);
+      final y = running();
+
+      expect(onTile('yoga', yogaName(y.index, Lang.hi)), findsOneWidget);
+      expect(onTile('yoga', yogaName(sectionOn(nov19).yogas.first.index, Lang.hi)), findsNothing);
+      expect(onTile('yoga', nityaYogaIsAuspicious(y.index) ? '✓ अच्छा' : '✕ टालें'), findsOneWidget);
+    });
+
+    testWidgets('leads the Yoga screen, with its end', (tester) async {
+      await openMuhurat(tester, now: now);
+      await openDetail(tester, 'yoga');
+      final y = running();
+
+      expect(find.text(yogaName(y.index, Lang.hi)), findsOneWidget);
+      expect(find.text(yogaName(sectionOn(nov19).yogas.first.index, Lang.hi)), findsNothing);
+    });
+
+    testWidgets("on another date, the tile shows that day's sunrise yoga", (tester) async {
+      await openMuhurat(tester, now: now);
+      await tester.tap(nav('अगला दिन'));
+      await tester.pumpAndSettle();
+
+      expect(onTile('yoga', yogaName(sectionOn(const CivilDate(2026, 11, 20)).yogas.first.index, Lang.hi)), findsOneWidget);
+    });
+
+    testWidgets("on a day gone by, the tile shows that day's sunrise yoga too", (tester) async {
+      const nov18 = CivilDate(2026, 11, 18);
+      expect(sectionOn(nov18).yogas.length, greaterThan(1), reason: 'so the last differs from the first');
+      await openMuhurat(tester, now: now);
+      await tester.tap(nav('पिछला दिन'));
+      await tester.pumpAndSettle();
+
+      expect(onTile('yoga', yogaName(sectionOn(nov18).yogas.first.index, Lang.hi)), findsOneWidget);
+    });
+  });
+
   group('the Hindi yoga names', () {
     test('every yoga the engine can name has one', () {
       for (final name in [...yogaRuleNames(), 'Ravi Yoga', 'Jwalamukhi', 'Ravi Yoga (Vajra Yog)', 'Ravi Yoga (Mudgar Yog)']) {

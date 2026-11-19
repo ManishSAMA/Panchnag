@@ -239,9 +239,10 @@ class MuhuratDetailScreen extends ConsumerWidget {
       ];
     }
 
+    final nitya = section == null ? null : nityaYogaAt(section.yogas, now);
     return [
       SectionHeading(title: l10n.nityaYoga),
-      if (section?.yogas.first case final nitya?)
+      if (nitya != null)
         TimeRow(
           name: yogaName(nitya.index, lang),
           time: glued(l10n.untilTime(instantPhrase(wall(nitya.endsAt), day: date, lang: lang))),
