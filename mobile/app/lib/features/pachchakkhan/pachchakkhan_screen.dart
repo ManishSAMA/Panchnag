@@ -13,6 +13,7 @@ import '../../shared/date_navigator.dart';
 import '../../shared/navpad_icons.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../shared/pachchakkhan_row.dart';
+import '../../shared/date_picker_button.dart';
 import '../../shared/settings_button.dart';
 import '../../theme/navpad.dart';
 import '../today/today_state.dart';
@@ -41,7 +42,7 @@ class PachchakkhanScreen extends ConsumerWidget {
       ),
     );
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.tabPachchakkhan), actions: const [SettingsButton()]),
+      appBar: AppBar(title: Text(l10n.tabPachchakkhan), actions: const [DatePickerButton(), SettingsButton()]),
       body: PothiPage(child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(

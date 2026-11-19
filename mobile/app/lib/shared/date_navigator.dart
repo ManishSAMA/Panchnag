@@ -6,6 +6,7 @@ import '../features/today/today_state.dart';
 import '../format/panchang_text.dart';
 import '../l10n/app_localizations.dart';
 import '../location/city_time.dart';
+import 'date_picker_button.dart';
 
 /// ‹ date ›, shared by every tab through [selectedDateProvider].
 class DateNavigator extends ConsumerWidget {
@@ -32,10 +33,28 @@ class DateNavigator extends ConsumerWidget {
           Expanded(
             child: Column(
               children: [
-                Text(
-                  longDate(date, langOf(context)),
-                  textAlign: TextAlign.center,
-                  style: text.bodyLarge!.copyWith(fontWeight: FontWeight.w600),
+                // A push on the date opens the calendar, as the top bar's button does.
+                Semantics(
+                  button: true,
+                  hint: l10n.pickDate,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => pickDate(context, ref),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48),
+                      child: Center(
+                        widthFactor: 1,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            longDate(date, langOf(context)),
+                            textAlign: TextAlign.center,
+                            style: text.bodyLarge!.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
                 if (isToday)
                   Text(

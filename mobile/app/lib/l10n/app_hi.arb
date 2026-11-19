@@ -333,5 +333,7 @@
   "allDay": "पूरे दिन",
   "@allDay": {"description": "A Muhurat window that runs from sunrise to the next sunrise."},
   "muhuratBandNextGood": "अगला शुभ: {name} · {range}",
-  "@muhuratBandNextGood": {"description": "Muhurat band sub-line on Today: the next Amrit, Shubh or Labh choghadiya and its range.", "placeholders": {"name": {"type": "String"}, "range": {"type": "String"}}}
+  "@muhuratBandNextGood": {"description": "Muhurat band sub-line on Today: the next Amrit, Shubh or Labh choghadiya and its range.", "placeholders": {"name": {"type": "String"}, "range": {"type": "String"}}},
+  "pickDate": "तारीख चुनें",
+  "@pickDate": {"description": "Tooltip of the calendar button in the top bar, and the date picker's heading."}
 }

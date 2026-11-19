@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../../location/city_time.dart';
 import '../../location/location_store.dart';
 import '../../shared/date_navigator.dart';
+import '../../shared/date_picker_button.dart';
 import '../../shared/mark.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../shared/pothi_page.dart';
@@ -26,7 +27,7 @@ class MuhuratScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final city = ref.watch(locationProvider)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.muhuratTitle)),
+      appBar: AppBar(title: Text(l10n.muhuratTitle), actions: const [DatePickerButton()]),
       body: PothiPage(
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 24),
@@ -57,7 +58,7 @@ class MuhuratDetailScreen extends ConsumerWidget {
     final reading = ref.watch(muhuratReadingProvider(MuhuratRequest(day)));
     final section = ref.watch(sectionReadingProvider(SectionRequest(day))).value;
     return Scaffold(
-      appBar: AppBar(title: Text(kind.title(l10n))),
+      appBar: AppBar(title: Text(kind.title(l10n)), actions: const [DatePickerButton()]),
       body: PothiPage(
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(bottom: 24),

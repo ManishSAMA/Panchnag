@@ -13,6 +13,7 @@ import '../../l10n/city_name.dart';
 import '../../location/city_time.dart';
 import '../../location/location_store.dart';
 import '../../settings/settings_store.dart';
+import '../../shared/date_picker_button.dart';
 import '../../shared/date_navigator.dart';
 import '../../shared/day_notes.dart';
 import '../../shared/festival_icon.dart';
@@ -96,6 +97,7 @@ class _FullPanchangScreenState extends ConsumerState<FullPanchangScreen> {
         foregroundColor: p.ink,
         title: Text(l10n.fullPanchang),
         actions: [
+          const DatePickerButton(),
           IconButton(
             tooltip: l10n.symbolGuide,
             onPressed: () => context.push('/panchang-symbols'),

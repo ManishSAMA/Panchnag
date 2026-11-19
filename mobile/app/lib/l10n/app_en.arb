@@ -208,5 +208,6 @@
   "yogaVarjya": "avoid {range}",
   "@yogaVarjya": {"placeholders": {"range": {"type": "String"}}},
   "allDay": "All day",
-  "muhuratBandNextGood": "Next good: {name} · {range}"
+  "muhuratBandNextGood": "Next good: {name} · {range}",
+  "pickDate": "Pick a date"
 }

@@ -10,6 +10,7 @@ import '../../location/city_time.dart';
 import '../../location/location_store.dart';
 import '../../settings/settings_store.dart';
 import '../../shared/date_navigator.dart';
+import '../../shared/date_picker_button.dart';
 import '../../shared/mark.dart';
 import '../../shared/navpad_icons.dart';
 import '../../shared/navpad_widgets.dart';
@@ -42,7 +43,7 @@ class ChoghadiyaScreen extends ConsumerWidget {
     );
     final reading = watchChoghadiya(ref, city: city, date: date, now: now);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.choghadiyaTitle)),
+      appBar: AppBar(title: Text(l10n.choghadiyaTitle), actions: const [DatePickerButton()]),
       body: PothiPage(child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(

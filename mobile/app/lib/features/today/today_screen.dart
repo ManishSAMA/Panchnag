@@ -20,6 +20,7 @@ import '../../shared/moon_phase.dart';
 import '../../shared/navpad_icons.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../shared/pachchakkhan_row.dart';
+import '../../shared/date_picker_button.dart';
 import '../../shared/settings_button.dart';
 import '../../theme/navpad.dart';
 import '../muhurat/muhurat_band.dart';
@@ -52,7 +53,7 @@ class TodayScreen extends ConsumerWidget {
       appBar: AppBar(
         titleSpacing: 6,
         title: _LocationButton(city: city),
-        actions: const [ShareButton(), SettingsButton()],
+        actions: const [DatePickerButton(), ShareButton(), SettingsButton()],
       ),
       body: PothiPage(child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
