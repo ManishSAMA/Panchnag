@@ -78,7 +78,18 @@ class MuhuratGrid extends ConsumerWidget {
     final section = ref.watch(sectionReadingProvider(SectionRequest(day))).value;
     final choghadiya = watchChoghadiya(ref, city: city, date: day.date, now: now);
     DateTime wall(DateTime utc) => roundDownToMinute(cityWall(utc, city.timezone));
-    String range(DateTime start, DateTime end) => glued(clockRange(wall(start), wall(end), lang));
+    final reading = ref.watch(dayReadingProvider(day)).value;
+    final bounds = reading == null
+        ? null
+        : (sunrise: wall(reading.sunrise), nextSunrise: wall(reading.choghadiya.last.end));
+    String range(DateTime start, DateTime end) => dayWindowText(
+      start: wall(start),
+      end: wall(end),
+      bounds: bounds,
+      day: day.date,
+      lang: lang,
+      allDay: l10n.allDay,
+    );
     TileFace window(List<({DateTime start, DateTime end})> spans, Mark mark) => spans.isEmpty
         ? (face: l10n.noneToday, mark: markText(l10n, Mark.plain))
         : (face: range(spans.first.start, spans.last.end), mark: markText(l10n, mark));

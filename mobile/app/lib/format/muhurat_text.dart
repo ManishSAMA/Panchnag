@@ -10,6 +10,24 @@ import 'panchang_text.dart';
 /// "तक" or a date's month: only a span's dash may break.
 String glued(String phrase) => phrase.replaceAll(' ', ' ');
 
+/// A window of [day], from wall-clock readings: [allDay] when it runs from
+/// sunrise to the next sunrise, the bare clock range when both ends fall on
+/// [day], else the start as read on [day] and the end with its date, so a
+/// window past midnight never looks like a minute long.
+String dayWindowText({
+  required DateTime start,
+  required DateTime end,
+  required ({DateTime sunrise, DateTime nextSunrise})? bounds,
+  required CivilDate day,
+  required Lang lang,
+  required String allDay,
+}) {
+  if (bounds != null && start == bounds.sunrise && end == bounds.nextSunrise) return allDay;
+  final onDay = CivilDate(end.year, end.month, end.day) == day && CivilDate(start.year, start.month, start.day) == day;
+  if (onDay) return glued(clockRange(start, end, lang));
+  return '${glued(instantPhrase(start, day: day, lang: lang))} – ${glued(instantPhrase(end, day: day, lang: lang))}';
+}
+
 String agniVaasName(AgniVaas vaas, Lang lang) => switch ((vaas, lang)) {
   (AgniVaas.prithvi, Lang.hi) => 'पृथ्वी',
   (AgniVaas.aakash, Lang.hi) => 'आकाश',

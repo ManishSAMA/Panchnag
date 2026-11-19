@@ -70,6 +70,7 @@ class MuhuratDetailScreen extends ConsumerWidget {
                   context,
                   muhurat: value,
                   section: section,
+                  reading: ref.watch(dayReadingProvider(day)).value,
                   date: day.date,
                   timezone: city.timezone,
                   now: currentTime(ref),
@@ -87,6 +88,7 @@ class MuhuratDetailScreen extends ConsumerWidget {
     BuildContext context, {
     required PanchangMuhurat muhurat,
     required PanchangSection? section,
+    required PanchangDay? reading,
     required CivilDate date,
     required String timezone,
     required DateTime now,
@@ -94,7 +96,17 @@ class MuhuratDetailScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final lang = langOf(context);
     DateTime wall(DateTime utc) => roundDownToMinute(cityWall(utc, timezone));
-    String range(DateTime start, DateTime end) => glued(clockRange(wall(start), wall(end), lang));
+    final bounds = reading == null
+        ? null
+        : (sunrise: wall(reading.sunrise), nextSunrise: wall(reading.choghadiya.last.end));
+    String range(DateTime start, DateTime end) => dayWindowText(
+      start: wall(start),
+      end: wall(end),
+      bounds: bounds,
+      day: date,
+      lang: lang,
+      allDay: l10n.allDay,
+    );
     String span(DateTime start, DateTime end) {
       final (from, to) = spanPhrases(wall(start), wall(end), day: date, lang: lang);
       return '${glued(from)} – ${glued(to)}';
@@ -142,7 +154,7 @@ class MuhuratDetailScreen extends ConsumerWidget {
         for (final w in muhurat.bhadra)
           TimeRow(
             name: l10n.bhadra,
-            time: span(w.start, w.end),
+            time: range(w.start, w.end),
             subtitle:
                 '${bhadraResidenceText(w.residence, lang)} · '
                 '${markText(l10n, w.residence == BhadraResidence.earth ? Mark.avoid : Mark.plain)}',
@@ -152,7 +164,7 @@ class MuhuratDetailScreen extends ConsumerWidget {
         const ListTop(),
         if (muhurat.gandmool.isEmpty) none,
         for (final w in muhurat.gandmool)
-          TimeRow(name: nakshatraName(w.nakshatra, lang), time: span(w.start, w.end), subtitle: avoid),
+          TimeRow(name: nakshatraName(w.nakshatra, lang), time: range(w.start, w.end), subtitle: avoid),
       ],
       MuhuratKind.chandraBal => [
         const ListTop(),

@@ -19,6 +19,13 @@ PanchangSection sectionOn(CivilDate date) => readSection(SectionRequest(delhiOn(
 
 DateTime wall(DateTime utc) => roundDownToMinute(cityWall(utc, 'Asia/Kolkata'));
 String range(DateTime start, DateTime end, [Lang lang = Lang.hi]) => glued(clockRange(wall(start), wall(end), lang));
+/// A day's window as a tile or row reads it: the start as read on [day],
+/// the end with its date when it falls on a later one.
+String ending(DateTime start, DateTime end, CivilDate day) {
+  final (from, to) = (wall(start), wall(end));
+  if (CivilDate(to.year, to.month, to.day) == day) return range(start, end);
+  return '${glued(instantPhrase(from, day: day, lang: Lang.hi))} – ${glued(instantPhrase(to, day: day, lang: Lang.hi))}';
+}
 String span((String, String) ends) => '${glued(ends.$1)} – ${glued(ends.$2)}';
 
 Finder tile(String kind) => find.byKey(Key('muhurat-tile-$kind'));
@@ -147,9 +154,23 @@ void main() {
       final m = muhuratOn(nov17);
       await openMuhurat(tester, now: ist(2026, 11, 17));
 
-      expect(onTile('panchak', range(m.panchak.window!.start, m.panchak.window!.end)), findsOneWidget);
+      // Panchak begins in the afternoon and runs past midnight to the next sunrise.
+      expect(onTile('panchak', ending(m.panchak.window!.start, m.panchak.window!.end, nov17)), findsOneWidget);
       expect(onTile('panchak', '✕ टालें'), findsOneWidget);
       expect(onTile('bhadra', '✕ टालें'), findsOneWidget);
+    });
+
+    testWidgets('a Panchak from sunrise to the next sunrise reads पूरे दिन, on the tile and its screen', (tester) async {
+      // 19 Nov 2026: the Moon stays in Panchak (17 Nov 3:30 PM – 22 Nov) all day.
+      const nov19 = CivilDate(2026, 11, 19);
+      final day = readDay(delhiOn(nov19));
+      final w = muhuratOn(nov19).panchak.window!;
+      expect((w.start, w.end), (day.sunrise, day.choghadiya.last.end));
+      await openMuhurat(tester, now: ist(2026, 11, 19));
+
+      expect(onTile('panchak', 'पूरे दिन'), findsOneWidget);
+      await openDetail(tester, 'panchak');
+      expect(find.text('पूरे दिन'), findsOneWidget);
     });
 
     testWidgets('is in English on an English phone', (tester) async {
@@ -227,7 +248,7 @@ void main() {
       await openMuhurat(tester, now: ist(2026, 11, 17));
       await openDetail(tester, 'panchak');
 
-      expect(find.text(range(m.panchak.window!.start, m.panchak.window!.end)), findsOneWidget);
+      expect(find.text(ending(m.panchak.window!.start, m.panchak.window!.end, nov17)), findsOneWidget);
       expect(find.text(span((from, to))), findsOneWidget);
     });
 
@@ -247,8 +268,7 @@ void main() {
       await openDetail(tester, 'bhadra');
 
       for (final w in m.bhadra) {
-        final (from, to) = spanPhrases(wall(w.start), wall(w.end), day: nov17, lang: Lang.hi);
-        expect(find.text(span((from, to))), findsOneWidget);
+        expect(find.text(ending(w.start, w.end, nov17)), findsOneWidget);
       }
       expect(find.text('पृथ्वी पर · ✕ टालें'), findsOneWidget);
       expect(find.text('पाताल में · –'), findsOneWidget);
