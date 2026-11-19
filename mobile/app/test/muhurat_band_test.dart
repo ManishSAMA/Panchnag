@@ -110,6 +110,13 @@ void main() {
       expect(nextGoodChoghadiya(slots, ist(2026, 10, 22, 10, 52)), slots[4], reason: 'Labh follows Char');
     });
 
+    test('skips a slot that is not good', () {
+      final before = slots[3].start.subtract(const Duration(minutes: 1));
+      expect(slots[3].name.nature, isNot(ChoghadiyaNature.auspicious), reason: 'Char');
+
+      expect(nextGoodChoghadiya(slots, before), slots[4]);
+    });
+
     test('skips the good slot running now', () {
       expect(nextGoodChoghadiya(slots, slots[4].start), slots[5], reason: 'Amrit follows Labh');
     });
@@ -170,6 +177,18 @@ void main() {
       );
     });
 
+    testWidgets('in a Bhadra on Earth it counts down to the end of the Bhadra, not of the slot', (tester) async {
+      final m = muhuratOn(nov17);
+      final w = m.bhadra.firstWhere((w) => w.residence == BhadraResidence.earth);
+      final now = m.rahuKaal.end;
+      final slot = dayOn(nov17).choghadiya.firstWhere((s) => runsAt(now, start: s.start, end: s.end));
+      expect(slot.end, isNot(w.end));
+      await openApp(tester, now: now);
+
+      expect(find.text('भद्रा · ✕ टालें'), findsOneWidget);
+      expect(find.textContaining('${hm(w.end)} तक · '), findsOneWidget);
+    });
+
     testWidgets('is in English on an English phone', (tester) async {
       final m = muhuratOn(nov7);
       await openApp(tester, now: m.rahuKaal.start.add(const Duration(minutes: 5)), phone: const Locale('en', 'US'));
@@ -191,6 +210,15 @@ void main() {
       await openApp(tester, now: muhuratOn(nov7).rahuKaal.start);
       expect(title, findsOneWidget);
       await tester.tap(nav('अगला दिन'));
+      await tester.pumpAndSettle();
+
+      expect(title, findsNothing);
+    });
+
+    testWidgets("is not shown on yesterday's page, even in yesterday's night before sunrise", (tester) async {
+      await openApp(tester, now: ist(2026, 10, 22, 5, 0));
+      expect(title, findsOneWidget);
+      await tester.tap(nav('पिछला दिन'));
       await tester.pumpAndSettle();
 
       expect(title, findsNothing);

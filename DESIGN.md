@@ -31,6 +31,9 @@ colors:
   green: "#3F6841"
   onGreen: "#FFF6E8"
   onGreen2: "#DCE9D6"
+  markGood: "#2F5A33"
+  markAvoid: "#962F22"
+  nowFill: "#D6E6CC"
   pill: "#DFCC9F"
   ground-dark: "#171C29"
   surface-dark: "#1F2636"
@@ -51,6 +54,9 @@ colors:
   green-dark: "#47784F"
   onGreen-dark: "#F6FBF4"
   onGreen2-dark: "#EAF2E6"
+  markGood-dark: "#8CC796"
+  markAvoid-dark: "#EE8B78"
+  nowFill-dark: "#24392B"
   pill-dark: "#2E3650"
 typography:
   display-pothi:
@@ -236,8 +242,8 @@ components:
     backgroundColor: "{colors.yellow}"
     textColor: "{colors.onYellow}"
   list-row-now:
-    backgroundColor: "{colors.navy}"
-    textColor: "{colors.onNavy}"
+    backgroundColor: "{colors.nowFill}"
+    textColor: "{colors.ink}"
   festival-row-mahaparva:
     backgroundColor: "{colors.red}"
     textColor: "{colors.onRed}"
@@ -367,7 +373,7 @@ Since Phase 4 (`plans/panchang-section-and-pothi.md`) the whole app is **The Pot
 Every screen uses the parchment ground (deep navy in dark mode) with navy ink and four softened meaning colours. The Pothi roles (paper, indigo, secondary ink, vermilion, rule) carry headings, stitching and the Full Panchang reading rows.
 
 ### Primary
-- **Siddha Navy** (`navy`, `navy-dark`): ink, the choghadiya band, the current-choghadiya row, the filled button, the "on" switch track, onboarding progress dots, the 2 dp ring around today in the Month grid, and the dark part of the moon of the tithi. In light mode it is the same value as `ink`. Text on navy is `onNavy`, and secondary lines are `onNavy2`.
+- **Siddha Navy** (`navy`, `navy-dark`): ink, the मुहूर्त band, the filled button, the "on" switch track, onboarding progress dots, the 2 dp ring around today in the Month grid, and the dark part of the moon of the tithi. In light mode it is the same value as `ink`. Text on navy is `onNavy`, and secondary lines are `onNavy2`.
 - **Pothi Indigo** (`pothi-ink`, `pothi-ink-dark`): primary text and reference symbols in Pothi section rows (Full Panchang, its Symbol Guide, Today's Panchang card).
 
 ### Secondary
@@ -377,6 +383,10 @@ Every screen uses the parchment ground (deep navy in dark mode) with navy ink an
 
 ### Tertiary
 - **Vrat Green** (`green`, `green-dark`): vrat and tapasya only. It appears as the vrat band and the diya icon with its 8 % tinted circle. Text on green is `onGreen`, and secondary lines are `onGreen2`.
+
+### Marks and "now"
+- **Mark Good / Mark Avoid** (`markGood`, `markAvoid`, with `-dark`): the text colour of the ✓ अच्छा and ✕ टालें marks only (Muhurat tiles and rows, choghadiya glyphs); "–" stays `ink2`. They are text tones, darker than green and red by day and lighter by night, so they read at 4.5:1 on ground, surface, surface2 and nowFill. They are never a fill.
+- **Now Fill** (`nowFill`, `nowFill-dark`): the light-green fill of a row or tile whose time window runs now (Muhurat detail rows and tiles, the current choghadiya slot), with a 4 dp `markGood` bar on the row's left edge (a 2 dp `markGood` border on a tile) and the word "अभी". Text on it is `ink`, `ink2` and the marks.
 
 ### Neutral
 - **Ground** (`ground`, `ground-dark`): parchment; the scaffold, both bars, Month cells, and the onboarding footer.
@@ -403,7 +413,7 @@ Build `ColorScheme` by hand for each brightness: `primary` = navy, `onPrimary` =
 
 **The Navy-Tint Selection Rule.** Selection never borrows a meaning colour. Every selected state uses the `pill` fill with a ✓: the nav indicator, the filter chip, the segment, and the Month day.
 
-**The Not-By-Colour-Alone Rule.** Choghadiya quality is shown by a ✓ / – / ✕ icon, a label and the weight (good slots are bold), never by red or green. Kshaya and vriddhi are flagged by the ink letters क्ष / वृ plus a note. Festival kinds differ in shape as well as colour: kalash, five lights, temple flag, diya. Every band and mark also carries its words.
+**The Not-By-Colour-Alone Rule.** Choghadiya and Muhurat quality is shown by a ✓ / – / ✕ icon, a label and the weight (good slots are bold); the `markGood` / `markAvoid` tone (user decision 2026-11-19) only repeats them. A window running now has the word "अभी" and the edge bar as well as its light-green fill. Kshaya and vriddhi are flagged by the ink letters क्ष / वृ plus a note. Festival kinds differ in shape as well as colour: kalash, five lights, temple flag, diya. Every band and mark also carries its words.
 
 **The Moon Rule.** The moon of the tithi is the one drawing that is not a line icon: a disc whose lit part is white and whose dark part is `navy` (not `ink`, which is light in dark mode), with a 1.4-unit `ink` rim. It is lit i/15 on Shukla i and 1 − (i − 15)/15 on Krishna days, on the right while waxing, so पूर्णिमा is a white disc and अमावस a solid navy one.
 
@@ -500,7 +510,7 @@ Plain app actions keep their Material shapes: location, settings, back, chevrons
 ## Components
 
 ### Bands (signature)
-The full-bleed colour band is the system's signature: a 58 dp tappable strip with a bold title and a sub-line on the left, a tabular value and a chevron on the right. They come in a fixed order: red (ongoing parva), yellow (next pachchakkhan with a countdown), green (vrat), navy (current choghadiya). Each appears only when it has content, and each opens its screen. The yellow and navy bands grow into 132 dp and 120 dp hero headers on Pachchakkhan and Choghadiya, with the name in 36 sp Tiro and the countdown right-aligned.
+The full-bleed colour band is the system's signature: a 58 dp tappable strip with a bold title and a sub-line on the left, a tabular value and a chevron on the right. They come in a fixed order: red (ongoing parva), yellow (next pachchakkhan with a countdown), green (vrat), navy (मुहूर्त). The मुहूर्त band shows only on today: its title is the window to avoid that runs now (Rahu Kaal, then Bhadra on Earth, Yamaganda, Gulika; never Panchak or Gandmool, which run for days), else the current choghadiya slot with its mark; its value counts down to that window's end; its sub-line is the next Amrit, Shubh or Labh slot. It opens the Muhurat grid; चौघड़िया opens from the grid's tile. Each appears only when it has content, and each opens its screen. The yellow and navy bands grow into 132 dp and 120 dp hero headers on Pachchakkhan and Choghadiya, with the name in 36 sp Tiro and the countdown right-aligned.
 
 ### Feature tiles (Today)
 Under the hero sits a wrapping grid of flat `surface` tiles with 12 dp corners, no border and no shadow. Each is at least 76 dp tall, with a 28 dp icon over a centred 14 sp/600 label. In logical order:
@@ -513,7 +523,7 @@ Under the hero sits a wrapping grid of flat `surface` tiles with 12 dp corners, 
 Each tile is a button named by its label. Three columns are used at ordinary text and two from 1.3× text, measured at the label's 14 sp because Android scales text non-linearly. A short final row keeps earlier tiles aligned to their columns.
 
 ### Muhurat grid
-Two flat `surface` tiles to a row at every text size, 12 dp corners, a hairline edge, at least 76 dp tall, 8 dp apart. Each tile has its 38 dp colour icon on the left, then its name (15 sp/600), the day's value (13 sp, `ink2`; "आज नहीं" when the window misses the day) and a mark in words (12 sp/600: ✓ अच्छा, –, ✕ टालें; Chandra Bal says "6 राशियाँ"). A short last row keeps its tile in the left column. The same grid is the मुहूर्त group of Full Panchang. Each tile is a button named by its name, value and mark. The detail screens are hairline `TimeRow` lists under the date navigator; the window running now carries "अभी".
+Two flat `surface` tiles to a row at every text size, 12 dp corners, a hairline edge, at least 76 dp tall, 8 dp apart. Each tile has its 38 dp colour icon on the left, then its name (15 sp/600), the day's value (13 sp, `ink2`; "आज नहीं" when the window misses the day) and a mark in words (12 sp/600: ✓ अच्छा, –, ✕ टालें; Chandra Bal says "6 राशियाँ"). A short last row keeps its tile in the left column. The same grid is the मुहूर्त group of Full Panchang. Each tile is a button named by its name, value and mark. Marks are coloured `markGood` / `markAvoid`. A tile whose window runs now has the `nowFill` ground, a 2 dp `markGood` border and "अभी". The detail screens are hairline `TimeRow` lists under the date navigator; a row whose window runs now is a `list-row-now` with "अभी".
 
 ### Moon of the tithi
 It is 58 dp beside the Today hero tithi, with the short tithi (12 sp/600, `ink2`) under it, and it is named to screen readers ("कृष्ण षष्ठी का चंद्रमा"). It is 11 dp before the short tithi in each Month cell, and 24 dp in the circle of the day panel's tithi row. On Full Panchang the calculated 40 dp disc sits inside a 54 dp double-ring vermilion seal, centred above the 30 sp tithi, with the same semantic label.
@@ -526,6 +536,7 @@ The Symbol Guide groups all 38 drawn reference symbols under planets, zodiac, as
 ### Buttons
 - **Shape:** fully round (24 dp), 48 dp tall.
 - **Filled:** navy with onNavy text, 17 sp/600, 22 dp side padding. It is used for a single main action, such as "GPS से पता लगाएँ" or "open phone settings".
+- **Red pill:** the one red button, "पूरा पंचांग देखें" centred under Today's पंचांग card: `red` with `onRed` text, fully round, at least 52 dp tall, 28 dp side padding, the arrow icon at the end. It is an exception to the One Job Rule, approved by the user (2026-11-19) so that the way into Full Panchang invites a push.
 - **Outlined:** transparent with a 1 dp ink3 outline, ink text, 20 dp side padding. It is used for "आज" in Month and "back to today".
 - **Text:** underlined ink label, 16 sp/600, with a 4 dp underline offset. It is used for "गलत लगे तो बताएँ" (report), section links and Back.
 - **Icon:** a 48 dp circle with a 24 dp line icon; hover/press fills it with `surface`. When disabled, it shows ink3 at 45 % opacity.
@@ -542,7 +553,7 @@ A 48 dp, fully rounded group with a 1 dp ink3 outline and dividers. The selected
 - **Row:** at least 52 dp, with a 1 dp hair bottom divider, the name and a sub-line on the left, and the time column on the right.
 - **Done:** ink3 text and a ✓ icon, weight 500.
 - **Next (pachchakkhan, today only):** filled yellow, with navy text.
-- **Now (choghadiya):** filled navy, with onNavy text.
+- **Now (any time window running now):** filled `nowFill`, ink text, a 4 dp `markGood` left bar and "अभी".
 - **Mahaparva (Festivals):** a filled red row with onRed text and a white icon.
 - **Upcoming festivals (Today):** grouped by date. Each group opens with a heading behind a top hairline: the day numeral in 22 sp Tiro, then "नवंबर · शनिवार · 7 दिन बाद" in label-secondary `ink2`. The next day reads "कल" / "tomorrow", and the count starts from the date shown. Under the heading is one 48 dp row per festival: its icon in a 32 dp tinted circle, then its name and kind.
 
@@ -550,7 +561,7 @@ A 48 dp, fully rounded group with a 1 dp ink3 outline and dividers. The selected
 A bordered box: `surface` fill, a 1 dp hair border, 8 dp corners, 12 × 14 dp padding, a 22 dp info or alert icon, a 17 sp bold title and a 16 sp ink2 body. It is used for vriddhi and kshaya explanations, near-boundary warnings (with the report action), and denied-permission states. It is the only bordered container in the system.
 
 ### Navigation
-An M3 NavigationBar, 80 dp on `surface` with a top hairline: four destinations (आज, माह, पच्चक्खाण, पर्व), 24 dp app icons (sunrise, month calendar, sunpath, kalash: the same drawing whether selected or not, since the pill shows selection), 13 sp/600 labels. The active destination has ink text and icon on a 64 × 32 dp `pill` indicator. Inactive destinations are ink2. The top app bar is 64 dp on `ground`, with a 24 sp/700 title, or on Today the location chip, share and settings.
+An M3 NavigationBar, 80 dp on `surface` with a top hairline: four destinations (आज, माह, पच्चक्खाण, पर्व), 24 dp app icons (sunrise, month calendar, sunpath, kalash: the same drawing whether selected or not, since the pill shows selection), 13 sp/600 labels. The active destination has ink text and icon on a 64 × 32 dp `pill` indicator. Inactive destinations are ink2. The top app bar is 64 dp on `ground`, with a 24 sp/700 title, or on Today the location chip, calendar, share and settings. Every screen with a ‹ date › row (Today, Pachchakkhan, चौघड़िया, the Muhurat grid and details, Full Panchang) has the calendar icon first in its actions; it opens the standard phone date picker, as does a push on the date in the row. Month and Festivals have no date row and no calendar.
 
 ### Switches
 An M3 Switch, 52 × 32 dp. Off: a `surface2` track, a 2 dp ink3 outline and a 16 dp ink3 thumb. On: a navy track and a 20 dp onNavy thumb. The thumb slides in 200 ms on the standard curve.

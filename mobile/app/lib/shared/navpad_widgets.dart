@@ -254,7 +254,7 @@ class TimeRow extends StatelessWidget {
                   Text(
                     markText(AppLocalizations.of(context), mark),
                     style: text.labelMedium!.copyWith(
-                      color: state == RowState.done ? secondary : markColour(n, mark),
+                      color: markColour(n, mark),
                       fontWeight: FontWeight.w600,
                     ),
                   ),

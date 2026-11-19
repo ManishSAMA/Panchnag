@@ -46,6 +46,19 @@ Color? fillOf(WidgetTester tester, Finder text) {
   return fill;
 }
 
+/// The nearest row decoration behind [text].
+BoxDecoration rowOf(WidgetTester tester, Finder text) => tester
+    .widget<Container>(
+      find.ancestor(of: text, matching: find.byWidgetPredicate((w) => w is Container && w.decoration is BoxDecoration)).first,
+    )
+    .decoration! as BoxDecoration;
+
+/// The edge of the tile paper behind [text].
+BorderSide tileEdge(WidgetTester tester, Finder text) =>
+    (tester.widget<Material>(find.ancestor(of: text, matching: find.byType(Material)).first).shape!
+            as RoundedRectangleBorder)
+        .side;
+
 Finder tile(String kind) => find.byKey(Key('muhurat-tile-$kind'));
 Finder onTile(String kind, String text) => find.descendant(of: tile(kind), matching: find.text(text));
 
@@ -114,6 +127,18 @@ void main() {
       expect(fillOf(tester, find.text(range(m.yamaganda.start, m.yamaganda.end))), n.ground);
     });
 
+    testWidgets('its detail row has a green bar on its left edge, so it shows without the fill too', (tester) async {
+      final m = muhuratOn(nov7);
+      await openMuhurat(tester, now: m.gulika.start.add(const Duration(minutes: 5)));
+      await openDetail(tester, 'rahu-kaal');
+      final n = navpadOf(tester);
+
+      final running = rowOf(tester, find.text(range(m.gulika.start, m.gulika.end))).border! as Border;
+      expect((running.left.color, running.left.width), (n.markGood, 4));
+      final idle = rowOf(tester, find.text(range(m.rahuKaal.start, m.rahuKaal.end))).border! as Border;
+      expect(idle.left, BorderSide.none);
+    });
+
     testWidgets('fills its tile light green and says अभी', (tester) async {
       final m = muhuratOn(nov7);
       await openMuhurat(tester, now: m.rahuKaal.start.add(const Duration(minutes: 5)));
@@ -123,6 +148,16 @@ void main() {
       expect(onTile('rahu-kaal', 'अभी'), findsOneWidget);
       expect(fillOf(tester, onTile('abhijit', '✓ अच्छा')), n.surface);
       expect(onTile('abhijit', 'अभी'), findsNothing);
+    });
+
+    testWidgets('its tile has a green edge; the others keep the hairline', (tester) async {
+      final m = muhuratOn(nov7);
+      await openMuhurat(tester, now: m.rahuKaal.start.add(const Duration(minutes: 5)));
+      final n = navpadOf(tester);
+
+      final running = tileEdge(tester, onTile('rahu-kaal', '✕ टालें'));
+      expect((running.color, running.width), (n.markGood, 2));
+      expect(tileEdge(tester, onTile('abhijit', '✓ अच्छा')).color, n.hair);
     });
 
     testWidgets('a Bhadra window running now is light green', (tester) async {

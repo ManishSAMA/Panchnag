@@ -97,7 +97,7 @@ Done (2026-11-18): `yoga_rules_json.py` + `scripts/export_yoga_rules.py` write `
    - Chandra Bal: the 6 good Rashis (with zodiac signs), and the second list after a Moon Rashi change.
    - Agni Vaas: residence and good/bad.
    - Yoga: nitya yoga, then the good yogas, then the bad yogas (nullified ones marked), Ravi Yoga, Jwalamukhi.
-5. Today: replace `tile-choghadiya` with `tile-muhurat` in `FeatureTiles`. Today's `ChoghadiyaBand` stays.
+5. Today: replace `tile-choghadiya` with `tile-muhurat` in `FeatureTiles`. Today's `ChoghadiyaBand` stays. (Later replaced by the मुहूर्त band: see `plans/muhurat-band-date-picker.md`.)
 6. Full Panchang: add a `muhurat` group with the same grid. Add a jump link in `_SectionLinks`. Update `full_panchang_screen_test.dart:467-480`, which now says "Rahu Kalam" must not show.
 7. Add ARB strings in `app_hi.arb` and `app_en.arb`.
 8. Icons: the tiles use existing `NavpadGlyph`s where one fits. New glyphs come from an approved mockup in `.impeccable/mocks/`, as the current icons did. Ask the user to approve the mockup before the glyphs go in.

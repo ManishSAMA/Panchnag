@@ -119,6 +119,16 @@ void main() {
       expect(tester.getSize(fullButton).height, greaterThanOrEqualTo(52));
     });
 
+    testWidgets('its pill stays in the middle on a wide screen', (tester) async {
+      // The test font draws each letter 1 em wide, so on a phone the pill
+      // fills nearly the card and cannot show where it sits.
+      await openApp(tester, now: ist(2026, 10, 22), screen: const Size(2400, 2400));
+      await tester.ensureVisible(fullButton);
+
+      expect(tester.getSize(fullButton).width, lessThan(tester.getSize(card).width / 2));
+      expect(tester.getCenter(fullButton).dx, moreOrLessEquals(tester.getCenter(card).dx, epsilon: 1));
+    });
+
     for (final scale in [1.6, 2.0]) {
       testWidgets('its pill fits at ${scale}x text', (tester) async {
         await openApp(tester, now: ist(2026, 10, 22), textScale: scale);

@@ -1,6 +1,6 @@
 # Plan: Muhurat band, date picker, Full Panchang button, red crosses, "now" highlight
 
-Status: **approved 2026-11-19.** The user's answers to Q1–Q7 are below the questions table; they win over the table where the two differ.
+Status: **built 2026-11-19** (Phases 1–6; approved the same day). The user's answers to Q1–Q7 are below the questions table; they win over the table where the two differ.
 
 ## Context
 
@@ -102,3 +102,13 @@ Each phase is TDD (RED, GREEN, REFACTOR) in `mobile/app`. Mutation testing runs 
 
 1. `flutter analyze` is clean; `flutter test` passes.
 2. Phone: Today shows the मुहूर्त band; the pill is red and centered; the calendar opens on each screen and the date changes on all tabs; the Muhurat grid and detail show red ✕, green ✓, and a light-green row for the window that runs now.
+
+## Mutation report (Phase 6, 2026-11-19)
+
+No Dart mutation tool is set up, so 30 hand-made mutants (one changed line each) ran against the feature's tests (`muhurat_band`, `muhurat_screen`, `choghadiya_screen`, `date_picker`, `today_panchang_card`).
+
+- First run: 22 killed, 7 survived, 1 did not apply.
+- New tests killed 6 survivors: the running row's 4 dp green bar; the running tile's green edge; a neutral slot is not the "next good" one; the band hides on yesterday's page before sunrise; in a Bhadra on Earth the band counts to the Bhadra's end (Rahu Kaal, Yamaganda and Gulika are each one choghadiya slot, so only Bhadra shows this); the pill stays centred on a wide screen (the test font makes it nearly card-wide on a phone).
+- The mutant that did not apply (Rahu Kaal moved after Gulika) was run by hand: killed.
+- The last survivor was a dead branch (a "done" row with a mark: no screen makes one). The branch was removed.
+- Result: 30 of 30 killed or removed.
