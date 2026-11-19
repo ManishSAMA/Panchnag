@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../../location/city_time.dart';
 import '../../location/location_store.dart';
 import '../../shared/date_navigator.dart';
+import '../../shared/mark.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../shared/pothi_page.dart';
 import '../today/today_state.dart';
@@ -114,57 +115,64 @@ class MuhuratDetailScreen extends ConsumerWidget {
 
     final none = TimeRow(name: kind.title(l10n), time: l10n.noneToday);
 
-    /// A window that may be running now gets "अभी" in words, not only colour.
-    Widget timed(String name, TimeWindow w, {String? subtitle}) {
-      final running = !now.isBefore(w.start) && now.isBefore(w.end);
-      final time = range(w.start, w.end);
+    /// A window running now is filled light green and says "अभी", so it
+    /// never rests on colour alone. [time] defaults to the day's range.
+    Widget timed(String name, DateTime start, DateTime end, {Mark? mark, String? subtitle, String? time}) {
+      final running = runsAt(now, start: start, end: end);
+      final shown = time ?? range(start, end);
       return TimeRow(
         name: name,
-        time: time,
+        time: shown,
         subtitle: subtitle,
+        mark: mark,
+        state: running ? RowState.now : RowState.plain,
         suffix: running ? l10n.slotNow : null,
-        semanticsLabel: '$name $time${subtitle == null ? '' : ', $subtitle'}${running ? ', ${l10n.slotNow}' : ''}',
+        semanticsLabel: [
+          '$name $shown',
+          ?subtitle,
+          if (mark != null) markText(l10n, mark),
+          if (running) l10n.slotNow,
+        ].join(', '),
       );
     }
 
-    final avoid = markText(l10n, Mark.avoid);
     return switch (kind) {
       MuhuratKind.rahuKaal => [
         const ListTop(),
-        timed(l10n.rahuKaal, muhurat.rahuKaal, subtitle: avoid),
-        timed(l10n.yamaganda, muhurat.yamaganda, subtitle: avoid),
-        timed(l10n.gulika, muhurat.gulika, subtitle: avoid),
+        timed(l10n.rahuKaal, muhurat.rahuKaal.start, muhurat.rahuKaal.end, mark: Mark.avoid),
+        timed(l10n.yamaganda, muhurat.yamaganda.start, muhurat.yamaganda.end, mark: Mark.avoid),
+        timed(l10n.gulika, muhurat.gulika.start, muhurat.gulika.end, mark: Mark.avoid),
       ],
       MuhuratKind.abhijit => [
         const ListTop(),
-        timed(l10n.abhijit, muhurat.abhijit, subtitle: markText(l10n, Mark.good)),
+        timed(l10n.abhijit, muhurat.abhijit.start, muhurat.abhijit.end, mark: Mark.good),
       ],
       MuhuratKind.panchak => [
         const ListTop(),
         switch (muhurat.panchak) {
-          (window: final w?, period: _, nextPeriod: _) => timed(l10n.panchakToday, w, subtitle: avoid),
+          (window: final w?, period: _, nextPeriod: _) => timed(l10n.panchakToday, w.start, w.end, mark: Mark.avoid),
           _ => TimeRow(name: l10n.panchakToday, time: l10n.noneToday),
         },
-        if (muhurat.panchak.period case final p?) TimeRow(name: l10n.panchakPeriod, time: span(p.start, p.end)),
+        if (muhurat.panchak.period case final p?) timed(l10n.panchakPeriod, p.start, p.end, time: span(p.start, p.end)),
         if (muhurat.panchak.nextPeriod case final p?) TimeRow(name: l10n.panchakNext, time: span(p.start, p.end)),
       ],
       MuhuratKind.bhadra => [
         const ListTop(),
         if (muhurat.bhadra.isEmpty) none,
         for (final w in muhurat.bhadra)
-          TimeRow(
-            name: l10n.bhadra,
-            time: range(w.start, w.end),
-            subtitle:
-                '${bhadraResidenceText(w.residence, lang)} · '
-                '${markText(l10n, w.residence == BhadraResidence.earth ? Mark.avoid : Mark.plain)}',
+          timed(
+            l10n.bhadra,
+            w.start,
+            w.end,
+            subtitle: bhadraResidenceText(w.residence, lang),
+            mark: w.residence == BhadraResidence.earth ? Mark.avoid : Mark.plain,
           ),
       ],
       MuhuratKind.gandmool => [
         const ListTop(),
         if (muhurat.gandmool.isEmpty) none,
         for (final w in muhurat.gandmool)
-          TimeRow(name: nakshatraName(w.nakshatra, lang), time: range(w.start, w.end), subtitle: avoid),
+          timed(nakshatraName(w.nakshatra, lang), w.start, w.end, mark: Mark.avoid),
       ],
       MuhuratKind.chandraBal => [
         const ListTop(),
@@ -182,10 +190,11 @@ class MuhuratDetailScreen extends ConsumerWidget {
         const ListTop(),
         TimeRow(
           name: agniVaasName(muhurat.agniVaas, lang),
-          time: markText(l10n, muhurat.agniVaas.isAuspicious ? Mark.good : Mark.avoid),
+          time: '',
+          mark: muhurat.agniVaas.isAuspicious ? Mark.good : Mark.avoid,
         ),
       ],
-      MuhuratKind.yoga => _yogaRows(context, muhurat: muhurat, section: section, span: span, wall: wall, date: date),
+      MuhuratKind.yoga => _yogaRows(context, muhurat: muhurat, section: section, span: span, wall: wall, date: date, now: now),
       MuhuratKind.choghadiya => const [],
     };
   }
@@ -197,6 +206,7 @@ class MuhuratDetailScreen extends ConsumerWidget {
     required String Function(DateTime, DateTime) span,
     required DateTime Function(DateTime) wall,
     required CivilDate date,
+    required DateTime now,
   }) {
     final l10n = AppLocalizations.of(context);
     final lang = langOf(context);
@@ -209,6 +219,8 @@ class MuhuratDetailScreen extends ConsumerWidget {
     Widget row(DayYoga y) => TimeRow(
       name: dayYogaName(y.name, lang),
       time: span(y.start, y.end),
+      state: runsAt(now, start: y.start, end: y.end) ? RowState.now : RowState.plain,
+      suffix: runsAt(now, start: y.start, end: y.end) ? l10n.slotNow : null,
       subtitle: [
         kindName(y.kind),
         if (y.isNullified) l10n.yogaNullified,
@@ -232,7 +244,7 @@ class MuhuratDetailScreen extends ConsumerWidget {
         TimeRow(
           name: yogaName(nitya.index, lang),
           time: glued(l10n.untilTime(instantPhrase(wall(nitya.endsAt), day: date, lang: lang))),
-          subtitle: markText(l10n, nityaYogaIsAuspicious(nitya.index) ? Mark.good : Mark.avoid),
+          mark: nityaYogaIsAuspicious(nitya.index) ? Mark.good : Mark.avoid,
         ),
       ...group(l10n.goodYogas, YogaNature.shubh),
       ...group(l10n.badYogas, YogaNature.ashubh),

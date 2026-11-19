@@ -9,6 +9,7 @@ import '../../format/panchang_text.dart';
 import '../../l10n/app_localizations.dart';
 import '../../location/city_time.dart';
 import '../../location/location_store.dart';
+import '../../shared/mark.dart';
 import '../../shared/navpad_icons.dart';
 import '../../theme/navpad.dart';
 import '../choghadiya/choghadiya_screen.dart';
@@ -49,18 +50,11 @@ enum MuhuratKind {
   };
 }
 
-enum Mark { good, plain, avoid }
-
-/// The glyph and the word, so a mark never rests on colour.
-String markText(AppLocalizations l10n, Mark mark) => switch (mark) {
-  Mark.good => '✓ ${l10n.natureGood}',
-  Mark.plain => '–',
-  Mark.avoid => '✕ ${l10n.natureAvoid}',
-};
-
 /// What a tile shows under its name: a reading and a mark, either empty
-/// while the day loads.
-typedef TileFace = ({String face, String mark});
+/// while the day loads. [tone] colours the mark; null for a mark that is a
+/// count, not a judgement ("6 राशियाँ"). [now]: one of its windows runs at
+/// this moment, so the tile is filled light green and says "अभी".
+typedef TileFace = ({String face, String mark, Mark? tone, bool now});
 
 /// The nine Muhurat tiles, two to a row at every text size, for the date
 /// Today shows. Used by the Muhurat screen and Full Panchang.
@@ -90,25 +84,34 @@ class MuhuratGrid extends ConsumerWidget {
       lang: lang,
       allDay: l10n.allDay,
     );
+    TileFace marked(String face, Mark mark, {bool now = false}) =>
+        (face: face, mark: markText(l10n, mark), tone: mark, now: now);
     TileFace window(List<({DateTime start, DateTime end})> spans, Mark mark) => spans.isEmpty
-        ? (face: l10n.noneToday, mark: markText(l10n, Mark.plain))
-        : (face: range(spans.first.start, spans.last.end), mark: markText(l10n, mark));
+        ? marked(l10n.noneToday, Mark.plain)
+        : marked(
+            range(spans.first.start, spans.last.end),
+            mark,
+            now: spans.any((w) => runsAt(now, start: w.start, end: w.end)),
+          );
 
     TileFace faceOf(MuhuratKind kind) {
-      const loading = (face: '', mark: '');
+      const TileFace loading = (face: '', mark: '', tone: null, now: false);
       if (kind == MuhuratKind.choghadiya) {
         final live = choghadiya == null ? null : liveChoghadiya(choghadiya.day, now, following: choghadiya.following);
         if (live == null) return loading;
         final end = glued(l10n.untilTime(clockPhrase(wall(live.slot.end), lang)));
-        return (face: '${choghadiyaName(live.slot.name, lang)} · $end', mark: qualityText(l10n, live.slot.name.nature));
+        final nature = live.slot.name.nature;
+        return (
+          face: '${choghadiyaName(live.slot.name, lang)} · $end',
+          mark: qualityText(l10n, nature),
+          tone: markOfNature(nature),
+          now: false,
+        );
       }
       if (kind == MuhuratKind.yoga) {
         final nitya = section?.yogas.first.index;
         if (nitya == null) return loading;
-        return (
-          face: yogaName(nitya, lang),
-          mark: markText(l10n, nityaYogaIsAuspicious(nitya) ? Mark.good : Mark.avoid),
-        );
+        return marked(yogaName(nitya, lang), nityaYogaIsAuspicious(nitya) ? Mark.good : Mark.avoid);
       }
       final m = muhurat;
       if (m == null) return loading;
@@ -124,11 +127,10 @@ class MuhuratGrid extends ConsumerWidget {
         MuhuratKind.chandraBal => (
           face: l10n.moonInRashi(rashiName(m.chandraBal.first.moonRashi, lang)),
           mark: l10n.sixRashis,
+          tone: null,
+          now: false,
         ),
-        MuhuratKind.agniVaas => (
-          face: agniVaasName(m.agniVaas, lang),
-          mark: markText(l10n, m.agniVaas.isAuspicious ? Mark.good : Mark.avoid),
-        ),
+        MuhuratKind.agniVaas => marked(agniVaasName(m.agniVaas, lang), m.agniVaas.isAuspicious ? Mark.good : Mark.avoid),
         MuhuratKind.choghadiya || MuhuratKind.yoga => loading,
       };
     }
@@ -180,13 +182,17 @@ class _MuhuratTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final n = Theme.of(context).extension<Navpad>()!;
     final text = Theme.of(context).textTheme;
+    final nowWord = AppLocalizations.of(context).slotNow;
     return Semantics(
       button: true,
-      label: [title, face.face, face.mark].where((part) => part.isNotEmpty).join(', '),
+      label: [title, face.face, face.mark, if (face.now) nowWord].where((part) => part.isNotEmpty).join(', '),
       excludeSemantics: true,
       child: Material(
-        color: n.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: n.hair)),
+        color: face.now ? n.nowFill : n.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: face.now ? BorderSide(color: n.markGood, width: 2) : BorderSide(color: n.hair),
+        ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -211,9 +217,22 @@ class _MuhuratTile extends StatelessWidget {
                           Text(
                             face.mark,
                             style: text.labelMedium!.copyWith(
-                              color: n.ink,
+                              color: switch (face.tone) {
+                                final tone? => markColour(n, tone),
+                                null => n.ink,
+                              },
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
+                              height: 1.2,
+                            ),
+                          ),
+                        if (face.now)
+                          Text(
+                            nowWord,
+                            style: text.labelMedium!.copyWith(
+                              color: n.ink,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
                               height: 1.2,
                             ),
                           ),

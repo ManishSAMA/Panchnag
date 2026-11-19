@@ -4,6 +4,7 @@ import 'package:jainpanchang/engine/day_reading.dart';
 import 'package:jainpanchang/format/panchang_text.dart';
 import 'package:jainpanchang/location/city_time.dart';
 import 'package:jainpanchang/shared/navpad_icons.dart';
+import 'package:jainpanchang/theme/navpad.dart';
 import 'package:panchang_engine/panchang_engine.dart';
 
 import 'support/harness.dart';
@@ -186,7 +187,26 @@ void main() {
       expect(find.bySemanticsLabel(RegExp(r'^लाभ ✓ अच्छा ')), findsNWidgets(3));
     });
 
-    testWidgets('fill the current row navy and mute the past ones', (tester) async {
+    testWidgets('colour the ✓ of a good slot green and the ✕ of a bad one red, until it is past', (tester) async {
+      await openChoghadiya(tester, now: ist(2026, 10, 22, 10, 52));
+      final n = Theme.of(tester.element(find.byType(Scaffold).last)).extension<Navpad>()!;
+
+      for (final (glyph, colour) in [('✓', n.markGood), ('✕', n.markAvoid)]) {
+        final colours = [for (final e in find.text(glyph).evaluate()) (e.widget as Text).style?.color];
+        expect(colours, contains(colour), reason: glyph);
+        expect(colours.toSet().difference({colour, n.ink3}), isEmpty, reason: '$glyph: only its colour, or muted when past');
+      }
+    });
+
+    testWidgets('fill the current row light green, as every window running now is', (tester) async {
+      await openChoghadiya(tester, now: ist(2026, 10, 22, 10, 52));
+      final n = Theme.of(tester.element(find.byType(Scaffold).last)).extension<Navpad>()!;
+      final current = find.descendant(of: nowRows, matching: find.byType(Container)).first;
+
+      expect((tester.widget<Container>(current).decoration! as BoxDecoration).color, n.nowFill);
+    });
+
+    testWidgets('mark the current row and mute the past ones', (tester) async {
       await openChoghadiya(tester, now: ist(2026, 10, 22, 10, 52));
 
       expect(nowRows, findsOneWidget);

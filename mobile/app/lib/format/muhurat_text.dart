@@ -28,6 +28,11 @@ String dayWindowText({
   return '${glued(instantPhrase(start, day: day, lang: lang))} – ${glued(instantPhrase(end, day: day, lang: lang))}';
 }
 
+/// Whether a window from [start] to [end] runs at [now]: its start in, its
+/// end out, so a window ending at a minute hands over to the next.
+bool runsAt(DateTime now, {required DateTime start, required DateTime end}) =>
+    !now.isBefore(start) && now.isBefore(end);
+
 String agniVaasName(AgniVaas vaas, Lang lang) => switch ((vaas, lang)) {
   (AgniVaas.prithvi, Lang.hi) => 'पृथ्वी',
   (AgniVaas.aakash, Lang.hi) => 'आकाश',

@@ -10,6 +10,7 @@ import '../../location/city_time.dart';
 import '../../location/location_store.dart';
 import '../../settings/settings_store.dart';
 import '../../shared/date_navigator.dart';
+import '../../shared/mark.dart';
 import '../../shared/navpad_icons.dart';
 import '../../shared/navpad_widgets.dart';
 import '../../theme/navpad.dart';
@@ -200,7 +201,8 @@ class _Hero extends StatelessWidget {
 enum _SlotState { plain, past, now }
 
 /// A hairline row: quality glyph, name and quality word left, the range right.
-/// The current row is filled navy (DESIGN.md list-row-now); past rows are muted.
+/// The current row is filled light green, as every window running now is
+/// (Navpad.nowFill); past rows are muted.
 class _SlotRow extends StatelessWidget {
   const _SlotRow({required this.slot, required this.range, required this.state});
 
@@ -217,7 +219,7 @@ class _SlotRow extends StatelessWidget {
     final (background, ink, secondary) = switch (state) {
       _SlotState.plain => (n.ground, n.ink, n.ink2),
       _SlotState.past => (n.ground, n.ink3, n.ink3),
-      _SlotState.now => (n.navy, n.onNavy, n.onNavy2),
+      _SlotState.now => (n.nowFill, n.ink, n.ink2),
     };
     final nature = slot.name.nature;
     final good = nature == ChoghadiyaNature.auspicious;
@@ -235,7 +237,10 @@ class _SlotRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
         decoration: BoxDecoration(
           color: background,
-          border: Border(bottom: BorderSide(color: state == _SlotState.now ? n.navy : n.hair)),
+          border: Border(
+            left: state == _SlotState.now ? BorderSide(color: n.markGood, width: 4) : BorderSide.none,
+            bottom: BorderSide(color: n.hair),
+          ),
         ),
         child: Row(
           children: [
@@ -244,7 +249,10 @@ class _SlotRow extends StatelessWidget {
               child: Text(
                 natureGlyph(nature),
                 textAlign: TextAlign.center,
-                style: text.bodyLarge!.copyWith(color: ink, fontWeight: FontWeight.w700),
+                style: text.bodyLarge!.copyWith(
+                  color: state == _SlotState.past ? ink : markColour(n, markOfNature(nature)),
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             const SizedBox(width: 10),

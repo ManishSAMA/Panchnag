@@ -4,7 +4,9 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../theme/navpad.dart';
+import 'mark.dart';
 import 'panchang_section.dart';
 
 enum BandColour { red, yellow, green, navy }
@@ -182,7 +184,8 @@ class SectionHeading extends StatelessWidget {
   }
 }
 
-enum RowState { plain, done, next }
+/// [now]: a window running at this moment, filled light green (Navpad.nowFill).
+enum RowState { plain, done, next, now }
 
 /// A hairline list row: an optional icon, a name (and sub-line) left, a time
 /// column right.
@@ -195,6 +198,7 @@ class TimeRow extends StatelessWidget {
     this.subtitle,
     this.prefix,
     this.suffix,
+    this.mark,
     this.state = RowState.plain,
     this.semanticsLabel,
   });
@@ -204,6 +208,9 @@ class TimeRow extends StatelessWidget {
   /// Drawn in the row's text colour, in a 36 dp `surface` circle.
   final Widget? icon;
   final String? subtitle, prefix, suffix, semanticsLabel;
+
+  /// A line under the name: "✓ अच्छा" in green, "✕ टालें" in red.
+  final Mark? mark;
   final RowState state;
 
   @override
@@ -214,6 +221,7 @@ class TimeRow extends StatelessWidget {
       RowState.plain => (n.ground, n.ink, n.ink2),
       RowState.done => (n.ground, n.ink3, n.ink3),
       RowState.next => (n.yellow, n.onYellow, n.onYellow2),
+      RowState.now => (n.nowFill, n.ink, n.ink2),
     };
     final small = text.labelMedium!.copyWith(color: secondary, fontSize: 15);
     final row = Container(
@@ -221,7 +229,10 @@ class TimeRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
       decoration: BoxDecoration(
         color: background,
-        border: Border(bottom: BorderSide(color: state == RowState.next ? n.yellow : n.hair)),
+        border: Border(
+          left: state == RowState.now ? BorderSide(color: n.markGood, width: 4) : BorderSide.none,
+          bottom: BorderSide(color: state == RowState.next ? n.yellow : n.hair),
+        ),
       ),
       child: Row(
         children: [
@@ -239,6 +250,14 @@ class TimeRow extends StatelessWidget {
               children: [
                 Text(name, style: text.bodyLarge!.copyWith(color: ink)),
                 if (subtitle != null) Text(subtitle!, style: text.labelMedium!.copyWith(color: secondary)),
+                if (mark case final mark?)
+                  Text(
+                    markText(AppLocalizations.of(context), mark),
+                    style: text.labelMedium!.copyWith(
+                      color: state == RowState.done ? secondary : markColour(n, mark),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
               ],
             ),
           ),

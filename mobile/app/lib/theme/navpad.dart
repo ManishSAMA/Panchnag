@@ -29,6 +29,9 @@ final class Navpad extends ThemeExtension<Navpad> {
     required this.onGreen,
     required this.onGreen2,
     required this.pill,
+    required this.markGood,
+    required this.markAvoid,
+    required this.nowFill,
   });
 
   static const light = Navpad(
@@ -52,6 +55,9 @@ final class Navpad extends ThemeExtension<Navpad> {
     onGreen: Color(0xFFFFF6E8),
     onGreen2: Color(0xFFDCE9D6),
     pill: Color(0xFFDFCC9F),
+    markGood: Color(0xFF2F5A33),
+    markAvoid: Color(0xFF962F22),
+    nowFill: Color(0xFFD6E6CC),
   );
 
   static const dark = Navpad(
@@ -75,6 +81,9 @@ final class Navpad extends ThemeExtension<Navpad> {
     onGreen: Color(0xFFF6FBF4),
     onGreen2: Color(0xFFEAF2E6),
     pill: Color(0xFF2E3650),
+    markGood: Color(0xFF8CC796),
+    markAvoid: Color(0xFFEE8B78),
+    nowFill: Color(0xFF24392B),
   );
 
   final Color ground, surface, surface2, hair, ink, ink2, ink3;
@@ -83,6 +92,14 @@ final class Navpad extends ThemeExtension<Navpad> {
   final Color yellow, onYellow, onYellow2;
   final Color green, onGreen, onGreen2;
   final Color pill;
+
+  /// ✓ and ✕ as text on the page: green and red, deep by day and light by
+  /// night, so each reads at 4.5:1 where the fills [green] and [red] do not.
+  final Color markGood, markAvoid;
+
+  /// A light green behind the row or tile of a window running now, edged in
+  /// [markGood]. The word "अभी" goes with it, so it never rests on colour.
+  final Color nowFill;
 
   // The theme switches whole schemes (light/dark), never a partial copy.
   @override

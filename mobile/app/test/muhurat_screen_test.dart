@@ -9,6 +9,7 @@ import 'package:jainpanchang/format/panchang_text.dart';
 import 'package:jainpanchang/location/city_time.dart';
 import 'package:jainpanchang/shared/navpad_icons.dart';
 import 'package:jainpanchang/shared/navpad_widgets.dart';
+import 'package:jainpanchang/theme/navpad.dart';
 import 'package:panchang_engine/panchang_engine.dart';
 
 import 'support/harness.dart';
@@ -27,6 +28,23 @@ String ending(DateTime start, DateTime end, CivilDate day) {
   return '${glued(instantPhrase(from, day: day, lang: Lang.hi))} – ${glued(instantPhrase(to, day: day, lang: Lang.hi))}';
 }
 String span((String, String) ends) => '${glued(ends.$1)} – ${glued(ends.$2)}';
+
+Color? inkOf(WidgetTester tester, Finder text) => tester.widget<Text>(text).style?.color;
+Navpad navpadOf(WidgetTester tester) => Theme.of(tester.element(find.byType(Scaffold).last)).extension<Navpad>()!;
+
+/// The nearest fill behind [text]: a row's decoration or a tile's paper.
+Color? fillOf(WidgetTester tester, Finder text) {
+  Color? fill;
+  tester.element(text).visitAncestorElements((element) {
+    fill = switch (element.widget) {
+      Container(decoration: BoxDecoration(color: final colour?)) => colour,
+      Material(color: final colour?) => colour,
+      _ => null,
+    };
+    return fill == null;
+  });
+  return fill;
+}
 
 Finder tile(String kind) => find.byKey(Key('muhurat-tile-$kind'));
 Finder onTile(String kind, String text) => find.descendant(of: tile(kind), matching: find.text(text));
@@ -83,6 +101,99 @@ void main() {
   const nov7 = CivilDate(2026, 11, 7);
   const nov17 = CivilDate(2026, 11, 17);
   const nov3 = CivilDate(2026, 11, 3);
+
+  group('a window running now', () {
+    testWidgets('fills its detail row light green; the others stay on the page', (tester) async {
+      final m = muhuratOn(nov7);
+      await openMuhurat(tester, now: m.gulika.start.add(const Duration(minutes: 5)));
+      await openDetail(tester, 'rahu-kaal');
+      final n = navpadOf(tester);
+
+      expect(fillOf(tester, find.text(range(m.gulika.start, m.gulika.end))), n.nowFill);
+      expect(fillOf(tester, find.text(range(m.rahuKaal.start, m.rahuKaal.end))), n.ground);
+      expect(fillOf(tester, find.text(range(m.yamaganda.start, m.yamaganda.end))), n.ground);
+    });
+
+    testWidgets('fills its tile light green and says अभी', (tester) async {
+      final m = muhuratOn(nov7);
+      await openMuhurat(tester, now: m.rahuKaal.start.add(const Duration(minutes: 5)));
+      final n = navpadOf(tester);
+
+      expect(fillOf(tester, onTile('rahu-kaal', '✕ टालें')), n.nowFill);
+      expect(onTile('rahu-kaal', 'अभी'), findsOneWidget);
+      expect(fillOf(tester, onTile('abhijit', '✓ अच्छा')), n.surface);
+      expect(onTile('abhijit', 'अभी'), findsNothing);
+    });
+
+    testWidgets('a Bhadra window running now is light green', (tester) async {
+      final m = muhuratOn(nov17);
+      final w = m.bhadra.first;
+      await openMuhurat(tester, now: w.start.add(const Duration(minutes: 5)));
+      await openDetail(tester, 'bhadra');
+
+      expect(fillOf(tester, find.text(ending(w.start, w.end, nov17))), navpadOf(tester).nowFill);
+      expect(find.bySemanticsLabel(RegExp(r', अभी$')), findsOneWidget);
+    });
+
+    testWidgets('a Gandmool window running now is light green', (tester) async {
+      final m = muhuratOn(nov3);
+      final w = m.gandmool.first;
+      await openMuhurat(tester, now: w.start.add(const Duration(minutes: 5)));
+      await openDetail(tester, 'gandmool');
+
+      expect(fillOf(tester, find.text(nakshatraName(w.nakshatra, Lang.hi))), navpadOf(tester).nowFill);
+    });
+
+    testWidgets('a day yoga running now is light green', (tester) async {
+      final m = muhuratOn(nov7);
+      final y = m.yogas.first;
+      await openMuhurat(tester, now: y.start.add(const Duration(minutes: 1)));
+      await openDetail(tester, 'yoga');
+      final name = find.text(dayYogaName(y.name, Lang.hi)).first;
+      await tester.ensureVisible(name);
+
+      expect(fillOf(tester, name), navpadOf(tester).nowFill);
+    });
+  });
+
+  group('the marks', () {
+    testWidgets('on the tiles, ✕ is red, ✓ is green and – stays quiet', (tester) async {
+      await openMuhurat(tester, now: ist(2026, 11, 7, 10, 52));
+      final n = navpadOf(tester);
+
+      expect(inkOf(tester, onTile('rahu-kaal', '✕ टालें')), n.markAvoid);
+      expect(inkOf(tester, onTile('abhijit', '✓ अच्छा')), n.markGood);
+      expect(inkOf(tester, onTile('panchak', '–')), n.ink2);
+    });
+
+    testWidgets('on the detail screens, each mark has its own colour', (tester) async {
+      await openMuhurat(tester, now: ist(2026, 11, 17));
+      await openDetail(tester, 'bhadra');
+      final n = navpadOf(tester);
+
+      expect(inkOf(tester, find.text('✕ टालें')), n.markAvoid, reason: 'Bhadra on Earth');
+      expect(inkOf(tester, find.text('–')), n.ink2, reason: 'Bhadra in Patal');
+    });
+
+    testWidgets('Rahu Kaal, Yamaganda and Gulika each carry a red ✕', (tester) async {
+      await openMuhurat(tester, now: ist(2026, 11, 7));
+      await openDetail(tester, 'rahu-kaal');
+      final n = navpadOf(tester);
+
+      final crosses = find.text('✕ टालें');
+      expect(crosses, findsNWidgets(3));
+      for (final cross in crosses.evaluate()) {
+        expect((cross.widget as Text).style?.color, n.markAvoid);
+      }
+    });
+
+    testWidgets('a havan-friendly Agni Vaas carries a green ✓', (tester) async {
+      await openMuhurat(tester, now: ist(2026, 11, 7));
+      await openDetail(tester, 'agni-vaas');
+
+      expect(inkOf(tester, find.text('✓ अच्छा')), navpadOf(tester).markGood);
+    });
+  });
 
   group('the Muhurat grid', () {
     testWidgets("opens from Today's मुहूर्त tile, which took the Choghadiya tile's place", (tester) async {
@@ -270,8 +381,10 @@ void main() {
       for (final w in m.bhadra) {
         expect(find.text(ending(w.start, w.end, nov17)), findsOneWidget);
       }
-      expect(find.text('पृथ्वी पर · ✕ टालें'), findsOneWidget);
-      expect(find.text('पाताल में · –'), findsOneWidget);
+      expect(find.text('पृथ्वी पर'), findsOneWidget);
+      expect(find.text('पाताल में'), findsOneWidget);
+      expect(find.text('✕ टालें'), findsOneWidget);
+      expect(find.text('–'), findsOneWidget);
     });
 
     testWidgets('Gandmool names the nakshatra of each window', (tester) async {

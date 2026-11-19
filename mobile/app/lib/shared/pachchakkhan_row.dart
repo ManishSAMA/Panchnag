@@ -18,6 +18,7 @@ Widget pachchakkhanRow({
     RowState.done => l10n.stateDone,
     RowState.next => l10n.stateNext,
     RowState.plain => l10n.stateLeft,
+    RowState.now => l10n.slotNow,
     null => null,
   };
   return TimeRow(

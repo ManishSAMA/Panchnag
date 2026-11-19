@@ -77,6 +77,11 @@ void main() {
         final pairs = [
           for (final text in [n.ink, n.ink2, n.ink3])
             for (final fill in [n.ground, n.surface, n.surface2, n.pill]) (text, fill),
+          // ✓ and ✕ marks are text on the page, the tiles and the list rows.
+          for (final mark in [n.markGood, n.markAvoid])
+            for (final fill in [n.ground, n.surface, n.surface2]) (mark, fill),
+          // The light-green row of a window running now.
+          for (final text in [n.ink, n.ink2, n.ink3, n.markGood, n.markAvoid]) (text, n.nowFill),
           (n.onNavy, n.navy),
           (n.onNavy2, n.navy),
           (n.onRed, n.red),
